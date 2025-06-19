@@ -109,7 +109,7 @@ export const PRODUCTOS_BIBLIOTECA: ProductoBiblioteca[] = [
   {
     id: '5',
     nombre: 'Base de Datos Personalizada',
-    descripción: 'Desarrollo de BD específica para el evento',
+    descripcion: 'Desarrollo de BD específica para el evento',
     precioBase: 45000,
     categoria: 'Desarrollo'
   },
