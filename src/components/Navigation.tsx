@@ -39,6 +39,10 @@ const Navigation = () => {
     window.location.href = '/admin';
   };
 
+  const navigateToSettings = () => {
+    window.location.href = '/settings';
+  };
+
   return (
     <nav className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -77,7 +81,7 @@ const Navigation = () => {
                   <User className="mr-2 h-4 w-4" />
                   <span>Perfil</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-pointer" onClick={navigateToSettings}>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Configuración</span>
                 </DropdownMenuItem>
