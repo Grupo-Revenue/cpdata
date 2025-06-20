@@ -7,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import RichTextEditor from '@/components/ui/rich-text-editor';
-import { ShoppingCart, Trash2, DollarSign } from 'lucide-react';
+import { ShoppingCart, Trash2, DollarSign, Percent } from 'lucide-react';
 import { ProductoPresupuesto } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
+import { calcularTotalesPresupuesto } from '@/utils/quoteCalculations';
 
 interface QuoteEditViewProps {
   productos: ProductoPresupuesto[];
@@ -60,6 +61,15 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
     }
   };
 
+  const handleDescuentoChange = (id: string, value: string) => {
+    const numeroValue = parseFloat(value) || 0;
+    // Limitar descuento entre 0 y 100
+    const descuentoLimitado = Math.max(0, Math.min(100, numeroValue));
+    onActualizarProducto(id, 'descuentoPorcentaje', descuentoLimitado);
+  };
+
+  const totales = calcularTotalesPresupuesto(productos);
+
   if (productos.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -90,10 +100,11 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50">
-                    <TableHead className="w-[300px]">Producto</TableHead>
-                    <TableHead className="w-[80px] text-center">Cant.</TableHead>
-                    <TableHead className="w-[120px] text-center">Precio Unit.</TableHead>
-                    <TableHead className="w-[120px] text-center">Total</TableHead>
+                    <TableHead className="w-[280px]">Producto</TableHead>
+                    <TableHead className="w-[70px] text-center">Cant.</TableHead>
+                    <TableHead className="w-[110px] text-center">Precio Unit.</TableHead>
+                    <TableHead className="w-[90px] text-center">Desc. %</TableHead>
+                    <TableHead className="w-[110px] text-center">Total</TableHead>
                     <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -138,9 +149,24 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
                             value={producto.precioUnitario === 0 ? '' : formatearNumeroConSeparadores(producto.precioUnitario)}
                             onChange={(e) => handlePrecioChange(producto.id, e.target.value)}
                             onKeyDown={handlePrecioKeyPress}
-                            className="w-28 h-8 text-center text-sm pl-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-26 h-8 text-center text-sm pl-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             placeholder="0"
                             style={{ MozAppearance: 'textfield' }}
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell className="p-3 text-center">
+                        <div className="relative">
+                          <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-500" />
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            value={producto.descuentoPorcentaje}
+                            onChange={(e) => handleDescuentoChange(producto.id, e.target.value)}
+                            className="w-20 h-8 text-center text-sm pr-6"
+                            placeholder="0"
                           />
                         </div>
                       </TableCell>
@@ -190,10 +216,36 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
             
             <hr className="my-3" />
             
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Subtotal:</span>
+                <span className="font-medium">{formatearPrecio(totales.subtotal)}</span>
+              </div>
+              
+              {totales.totalDescuentos > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Descuentos:</span>
+                  <span className="font-medium text-red-600">-{formatearPrecio(totales.totalDescuentos)}</span>
+                </div>
+              )}
+              
+              <div className="flex justify-between">
+                <span className="text-gray-600">Subtotal c/desc:</span>
+                <span className="font-medium">{formatearPrecio(totales.subtotalConDescuento)}</span>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-gray-600">IVA (19%):</span>
+                <span className="font-medium">{formatearPrecio(totales.iva)}</span>
+              </div>
+            </div>
+            
+            <hr className="my-3" />
+            
             <div className="flex justify-between items-center">
               <span className="font-medium">Total:</span>
               <span className="font-bold text-lg text-green-600">
-                {formatearPrecio(total)}
+                {formatearPrecio(totales.total)}
               </span>
             </div>
             
@@ -212,3 +264,4 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
 };
 
 export default QuoteEditView;
+

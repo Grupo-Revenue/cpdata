@@ -4,6 +4,7 @@ import { useNegocio } from '@/context/NegocioContext';
 import { ProductoPresupuesto } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { useProductosBiblioteca, ProductoBiblioteca } from '@/hooks/useProductosBiblioteca';
+import { calcularTotalProducto, calcularTotalesPresupuesto } from '@/utils/quoteCalculations';
 
 type Step = 'selection' | 'editing';
 
@@ -25,7 +26,12 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
 
   useEffect(() => {
     if (presupuestoExistente) {
-      setProductos(presupuestoExistente.productos);
+      // Asegurar que todos los productos tengan el campo descuentoPorcentaje
+      const productosConDescuento = presupuestoExistente.productos.map(producto => ({
+        ...producto,
+        descuentoPorcentaje: producto.descuentoPorcentaje || 0
+      }));
+      setProductos(productosConDescuento);
       setStep('editing');
     }
   }, [presupuestoExistente]);
@@ -37,6 +43,7 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
       descripcion: productoBiblioteca.descripcion || '',
       cantidad: 1,
       precioUnitario: productoBiblioteca.precio_base,
+      descuentoPorcentaje: 0,
       total: productoBiblioteca.precio_base
     };
 
@@ -56,7 +63,8 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
     const nuevoProducto: ProductoPresupuesto = {
       id: `producto-${Date.now()}`,
       ...productoData,
-      total: productoData.cantidad * productoData.precioUnitario
+      descuentoPorcentaje: 0,
+      total: calcularTotalProducto(productoData.cantidad, productoData.precioUnitario, 0)
     };
 
     setProductos(prev => [...prev, nuevoProducto]);
@@ -67,22 +75,24 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
       if (producto.id === id) {
         const productoActualizado = { ...producto, [campo]: valor };
         
-        // Manejo especial para precio unitario cuando está vacío
-        if (campo === 'precioUnitario') {
-          if (valor === '' || valor === null || valor === undefined) {
-            productoActualizado.precioUnitario = 0;
-            productoActualizado.total = 0;
-          } else {
+        // Recalcular total cuando cambie precio, cantidad o descuento
+        if (campo === 'precioUnitario' || campo === 'cantidad' || campo === 'descuentoPorcentaje') {
+          if (campo === 'precioUnitario') {
             const precio = typeof valor === 'number' ? valor : parseFloat(valor) || 0;
             productoActualizado.precioUnitario = precio;
-            productoActualizado.total = productoActualizado.cantidad * precio;
+          } else if (campo === 'cantidad') {
+            const cantidad = typeof valor === 'number' ? valor : parseInt(valor) || 1;
+            productoActualizado.cantidad = cantidad;
+          } else if (campo === 'descuentoPorcentaje') {
+            const descuento = typeof valor === 'number' ? valor : parseFloat(valor) || 0;
+            productoActualizado.descuentoPorcentaje = Math.max(0, Math.min(100, descuento));
           }
-        } else if (campo === 'cantidad') {
-          const cantidad = typeof valor === 'number' ? valor : parseInt(valor) || 1;
-          productoActualizado.cantidad = cantidad;
-          const precio = typeof productoActualizado.precioUnitario === 'number' ? 
-            productoActualizado.precioUnitario : parseFloat(String(productoActualizado.precioUnitario)) || 0;
-          productoActualizado.total = cantidad * precio;
+          
+          productoActualizado.total = calcularTotalProducto(
+            productoActualizado.cantidad,
+            productoActualizado.precioUnitario,
+            productoActualizado.descuentoPorcentaje
+          );
         }
         
         return productoActualizado;
@@ -92,7 +102,8 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
   };
 
   const calcularTotal = () => {
-    return productos.reduce((total, producto) => total + producto.total, 0);
+    const totales = calcularTotalesPresupuesto(productos);
+    return totales.total;
   };
 
   const proceedToEdit = () => {
@@ -151,3 +162,4 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
     guardarPresupuesto
   };
 };
+
