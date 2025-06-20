@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -31,85 +31,161 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
+  
+  // Refs to prevent race conditions and duplicate calls
+  const adminCheckInProgress = useRef(false);
+  const adminCheckTimeout = useRef<NodeJS.Timeout | null>(null);
+  const retryAttempts = useRef(0);
+  const maxRetries = 3;
 
-  const checkAdminStatus = async () => {
-    if (!user) {
-      console.log('No user found, setting isAdmin to false');
+  const checkAdminStatus = useCallback(async () => {
+    const currentUser = user;
+    
+    if (!currentUser) {
+      console.log('[Auth] No user found, setting isAdmin to false');
       setIsAdmin(false);
+      retryAttempts.current = 0;
       return;
     }
 
+    // Prevent concurrent admin checks
+    if (adminCheckInProgress.current) {
+      console.log('[Auth] Admin check already in progress, skipping');
+      return;
+    }
+
+    adminCheckInProgress.current = true;
+    console.log(`[Auth] Checking admin status for user: ${currentUser.id} (attempt ${retryAttempts.current + 1})`);
+
     try {
-      console.log('Checking admin status for user:', user.id);
-      
+      // Clear any pending timeout
+      if (adminCheckTimeout.current) {
+        clearTimeout(adminCheckTimeout.current);
+        adminCheckTimeout.current = null;
+      }
+
       // Use the new check_is_admin function directly
       const { data, error } = await supabase.rpc('check_is_admin', {
-        _user_id: user.id
+        _user_id: currentUser.id
       });
 
       if (error) {
-        console.error('Error checking admin status:', error);
-        setIsAdmin(false);
-        return;
+        console.error('[Auth] Error checking admin status:', error);
+        
+        // Retry logic for transient errors
+        if (retryAttempts.current < maxRetries) {
+          retryAttempts.current++;
+          console.log(`[Auth] Retrying admin check in 1 second (attempt ${retryAttempts.current}/${maxRetries})`);
+          
+          adminCheckTimeout.current = setTimeout(() => {
+            adminCheckInProgress.current = false;
+            checkAdminStatus();
+          }, 1000);
+          return;
+        } else {
+          console.error('[Auth] Max retry attempts reached, setting isAdmin to false');
+          setIsAdmin(false);
+          retryAttempts.current = 0;
+        }
+      } else {
+        const adminResult = !!data;
+        console.log(`[Auth] Admin check successful: ${adminResult}`);
+        setIsAdmin(adminResult);
+        retryAttempts.current = 0;
       }
-
-      console.log('Admin check result:', data);
-      setIsAdmin(!!data);
     } catch (error) {
-      console.error('Error in checkAdminStatus:', error);
-      setIsAdmin(false);
+      console.error('[Auth] Exception in checkAdminStatus:', error);
+      
+      // Retry logic for exceptions
+      if (retryAttempts.current < maxRetries) {
+        retryAttempts.current++;
+        console.log(`[Auth] Retrying admin check due to exception in 1 second (attempt ${retryAttempts.current}/${maxRetries})`);
+        
+        adminCheckTimeout.current = setTimeout(() => {
+          adminCheckInProgress.current = false;
+          checkAdminStatus();
+        }, 1000);
+        return;
+      } else {
+        console.error('[Auth] Max retry attempts reached after exception, setting isAdmin to false');
+        setIsAdmin(false);
+        retryAttempts.current = 0;
+      }
+    } finally {
+      adminCheckInProgress.current = false;
     }
-  };
+  }, [user]);
 
   useEffect(() => {
-    console.log('Setting up auth state listener...');
+    console.log('[Auth] Setting up auth state listener...');
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        console.log(`[Auth] Auth state changed: ${event}`, session?.user?.email || 'no user');
+        
+        // Update session and user state synchronously
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Check admin status when user changes
-        if (session?.user) {
-          // Use setTimeout to defer the admin check and avoid any potential conflicts
-          setTimeout(() => {
-            checkAdminStatus();
-          }, 100);
-        } else {
+        // Reset admin state and retry attempts when user changes
+        if (!session?.user) {
           setIsAdmin(false);
+          retryAttempts.current = 0;
+          // Clear any pending admin check
+          if (adminCheckTimeout.current) {
+            clearTimeout(adminCheckTimeout.current);
+            adminCheckTimeout.current = null;
+          }
+          adminCheckInProgress.current = false;
         }
       }
     );
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session?.user?.email);
+      console.log('[Auth] Initial session check:', session?.user?.email || 'no user');
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      
-      if (session?.user) {
-        setTimeout(() => {
-          checkAdminStatus();
-        }, 100);
-      }
     });
 
     return () => {
-      console.log('Cleaning up auth subscription');
+      console.log('[Auth] Cleaning up auth subscription');
       subscription.unsubscribe();
+      
+      // Clean up any pending timeouts
+      if (adminCheckTimeout.current) {
+        clearTimeout(adminCheckTimeout.current);
+        adminCheckTimeout.current = null;
+      }
     };
   }, []);
 
-  // Re-check admin status when user changes
+  // Check admin status when user changes, with debouncing
   useEffect(() => {
-    if (user) {
-      checkAdminStatus();
+    if (user && !loading) {
+      console.log('[Auth] User state updated, scheduling admin check');
+      
+      // Clear any existing timeout
+      if (adminCheckTimeout.current) {
+        clearTimeout(adminCheckTimeout.current);
+      }
+      
+      // Debounce the admin check to prevent rapid successive calls
+      adminCheckTimeout.current = setTimeout(() => {
+        checkAdminStatus();
+      }, 200);
     }
-  }, [user?.id]);
+    
+    return () => {
+      if (adminCheckTimeout.current) {
+        clearTimeout(adminCheckTimeout.current);
+        adminCheckTimeout.current = null;
+      }
+    };
+  }, [user, loading, checkAdminStatus]);
 
   const signUp = async (email: string, password: string, userData?: any) => {
     const redirectUrl = `${window.location.origin}/`;
@@ -162,6 +238,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    console.log('[Auth] Signing out...');
+    
+    // Reset admin state immediately
+    setIsAdmin(false);
+    retryAttempts.current = 0;
+    
+    // Clear any pending admin checks
+    if (adminCheckTimeout.current) {
+      clearTimeout(adminCheckTimeout.current);
+      adminCheckTimeout.current = null;
+    }
+    adminCheckInProgress.current = false;
+    
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast({
@@ -170,7 +259,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         variant: "destructive"
       });
     } else {
-      setIsAdmin(false);
       toast({
         title: "Sesión cerrada",
         description: "Has cerrado sesión exitosamente"
