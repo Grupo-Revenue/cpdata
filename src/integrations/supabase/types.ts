@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      configuracion_marca: {
+        Row: {
+          color_primario: string | null
+          color_secundario: string | null
+          created_at: string
+          direccion: string | null
+          email: string | null
+          id: string
+          logo_url: string | null
+          nombre_empresa: string
+          sitio_web: string | null
+          telefono: string | null
+          updated_at: string
+        }
+        Insert: {
+          color_primario?: string | null
+          color_secundario?: string | null
+          created_at?: string
+          direccion?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          nombre_empresa?: string
+          sitio_web?: string | null
+          telefono?: string | null
+          updated_at?: string
+        }
+        Update: {
+          color_primario?: string | null
+          color_secundario?: string | null
+          created_at?: string
+          direccion?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          nombre_empresa?: string
+          sitio_web?: string | null
+          telefono?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contactos: {
         Row: {
           apellido: string
@@ -216,6 +258,39 @@ export type Database = {
           },
         ]
       }
+      productos_biblioteca: {
+        Row: {
+          activo: boolean
+          categoria: string
+          created_at: string
+          descripcion: string | null
+          id: string
+          nombre: string
+          precio_base: number
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          categoria?: string
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          precio_base?: number
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          categoria?: string
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          precio_base?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       productos_presupuesto: {
         Row: {
           cantidad: number
@@ -290,14 +365,49 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "user"
       estado_negocio: "activo" | "cerrado" | "cancelado"
       estado_presupuesto: "borrador" | "enviado" | "aprobado" | "rechazado"
       tipo_empresa: "productora" | "cliente_final"
@@ -416,6 +526,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "user"],
       estado_negocio: ["activo", "cerrado", "cancelado"],
       estado_presupuesto: ["borrador", "enviado", "aprobado", "rechazado"],
       tipo_empresa: ["productora", "cliente_final"],
