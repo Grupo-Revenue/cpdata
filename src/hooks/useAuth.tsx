@@ -39,15 +39,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .single();
+      // Use the is_admin() function instead of querying user_roles directly
+      const { data, error } = await supabase.rpc('is_admin');
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error checking admin status:', error);
+        setIsAdmin(false);
+        return;
       }
 
       setIsAdmin(!!data);
