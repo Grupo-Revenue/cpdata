@@ -40,19 +40,19 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   return (
     <div className={cn("border rounded-md", className)}>
-      {/* Toolbar */}
-      <div className="flex items-center gap-1 p-2 border-b bg-gray-50">
+      {/* Toolbar compacto */}
+      <div className="flex items-center gap-1 p-1 border-b bg-gray-50">
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={() => executeCommand('bold')}
           className={cn(
-            "h-8 w-8 p-0",
+            "h-6 w-6 p-0 text-xs",
             isCommandActive('bold') && "bg-gray-200"
           )}
         >
-          <Bold className="h-4 w-4" />
+          <Bold className="h-3 w-3" />
         </Button>
         <Button
           type="button"
@@ -60,11 +60,11 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           size="sm"
           onClick={() => executeCommand('italic')}
           className={cn(
-            "h-8 w-8 p-0",
+            "h-6 w-6 p-0 text-xs",
             isCommandActive('italic') && "bg-gray-200"
           )}
         >
-          <Italic className="h-4 w-4" />
+          <Italic className="h-3 w-3" />
         </Button>
         <Button
           type="button"
@@ -72,20 +72,20 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           size="sm"
           onClick={() => executeCommand('underline')}
           className={cn(
-            "h-8 w-8 p-0",
+            "h-6 w-6 p-0 text-xs",
             isCommandActive('underline') && "bg-gray-200"
           )}
         >
-          <Underline className="h-4 w-4" />
+          <Underline className="h-3 w-3" />
         </Button>
       </div>
 
-      {/* Editor */}
+      {/* Editor compacto */}
       <div
         ref={editorRef}
         contentEditable
         className={cn(
-          "min-h-[80px] p-3 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+          "min-h-[60px] p-2 focus:outline-none focus:ring-1 focus:ring-ring text-sm",
           "prose prose-sm max-w-none",
           "[&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-gray-400 [&:empty]:before:pointer-events-none"
         )}

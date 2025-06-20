@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import RichTextEditor from '@/components/ui/rich-text-editor';
-import { ShoppingCart, Trash2, ArrowLeft } from 'lucide-react';
+import { ShoppingCart, Trash2 } from 'lucide-react';
 import { ProductoPresupuesto } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
 
@@ -28,146 +29,158 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
   total
 }) => {
   const handlePrecioChange = (id: string, value: string) => {
-    // Si el campo está vacío, mantenerlo vacío hasta que el usuario escriba algo
     if (value === '') {
       onActualizarProducto(id, 'precioUnitario', 0);
       return;
     }
     
-    // Convertir a número, si no es válido usar 0
     const numeroValue = parseFloat(value);
     if (!isNaN(numeroValue)) {
       onActualizarProducto(id, 'precioUnitario', numeroValue);
     }
   };
 
+  if (productos.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay productos seleccionados</h3>
+            <p className="text-gray-600 mb-4">Vuelve a la selección para agregar productos</p>
+            <Button onClick={onVolver} variant="outline">
+              Ir a Selección
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Lista de productos editables */}
-      <div className="lg:col-span-2 space-y-4">
-        {productos.map((producto) => (
-          <Card key={producto.id}>
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex-1">
-                  <h4 className="font-medium text-lg mb-2">{producto.nombre}</h4>
-                  <div>
-                    <Label className="text-sm font-medium">Descripción</Label>
-                    <RichTextEditor
-                      value={producto.descripcion}
-                      onChange={(value) => onActualizarProducto(
-                        producto.id, 
-                        'descripcion', 
-                        value
-                      )}
-                      placeholder="Descripción del producto..."
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onEliminarProducto(producto.id)}
-                  className="text-red-600 hover:text-red-700 ml-4"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">Cantidad</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={producto.cantidad}
-                    onChange={(e) => onActualizarProducto(
-                      producto.id, 
-                      'cantidad', 
-                      parseInt(e.target.value) || 1
-                    )}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Precio Unitario (CLP)</Label>
-                  <Input
-                    type="number"
-                    step="1"
-                    min="0"
-                    value={producto.precioUnitario === 0 ? '' : producto.precioUnitario}
-                    onChange={(e) => handlePrecioChange(producto.id, e.target.value)}
-                    className="mt-1"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Total</Label>
-                  <div className="mt-1 p-3 bg-gray-50 rounded-md">
-                    <span className="font-bold text-green-600">
-                      {formatearPrecio(producto.total)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        
-        {productos.length === 0 && (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No hay productos seleccionados</h3>
-              <p className="text-gray-600 mb-4">Vuelve a la selección para agregar productos</p>
-              <Button onClick={onVolver} variant="outline">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Ir a Selección
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+    <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+      {/* Lista de productos editables - Tabla compacta */}
+      <div className="xl:col-span-3">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Productos del Presupuesto</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50">
+                    <TableHead className="w-[300px]">Producto</TableHead>
+                    <TableHead className="w-[80px] text-center">Cant.</TableHead>
+                    <TableHead className="w-[120px] text-center">Precio Unit.</TableHead>
+                    <TableHead className="w-[120px] text-center">Total</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {productos.map((producto) => (
+                    <TableRow key={producto.id} className="group">
+                      <TableCell className="p-3">
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-sm">{producto.nombre}</h4>
+                          <div className="w-full">
+                            <RichTextEditor
+                              value={producto.descripcion}
+                              onChange={(value) => onActualizarProducto(
+                                producto.id, 
+                                'descripcion', 
+                                value
+                              )}
+                              placeholder="Descripción del producto..."
+                              className="text-xs"
+                            />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="p-3 text-center">
+                        <Input
+                          type="number"
+                          min="1"
+                          value={producto.cantidad}
+                          onChange={(e) => onActualizarProducto(
+                            producto.id, 
+                            'cantidad', 
+                            parseInt(e.target.value) || 1
+                          )}
+                          className="w-16 h-8 text-center text-sm"
+                        />
+                      </TableCell>
+                      <TableCell className="p-3 text-center">
+                        <Input
+                          type="number"
+                          step="1"
+                          min="0"
+                          value={producto.precioUnitario === 0 ? '' : producto.precioUnitario}
+                          onChange={(e) => handlePrecioChange(producto.id, e.target.value)}
+                          className="w-24 h-8 text-center text-sm"
+                          placeholder="0"
+                        />
+                      </TableCell>
+                      <TableCell className="p-3 text-center">
+                        <span className="font-medium text-green-600 text-sm">
+                          {formatearPrecio(producto.total)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="p-3 text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onEliminarProducto(producto.id)}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Resumen del presupuesto */}
+      {/* Resumen del presupuesto - Sidebar compacto */}
       <div>
         <Card className="sticky top-4">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <ShoppingCart className="w-5 h-5 mr-2" />
-              Resumen del Presupuesto
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center text-base">
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Resumen
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between text-sm">
-                <span>Productos:</span>
-                <Badge variant="outline">{productos.length}</Badge>
-              </div>
-              
-              <div className="flex justify-between text-sm">
-                <span>Cantidad total:</span>
-                <span>{productos.reduce((sum, p) => sum + p.cantidad, 0)}</span>
-              </div>
-              
-              <hr />
-              
-              <div className="flex justify-between items-center">
-                <span className="font-bold">Total:</span>
-                <span className="font-bold text-xl text-green-600">
-                  {formatearPrecio(total)}
-                </span>
-              </div>
-              
-              <Button 
-                onClick={onConfirmar} 
-                className="w-full bg-green-600 hover:bg-green-700"
-                disabled={productos.length === 0}
-              >
-                Confirmar Presupuesto
-              </Button>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Productos:</span>
+              <Badge variant="outline" className="text-xs">{productos.length}</Badge>
             </div>
+            
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Cantidad total:</span>
+              <span className="font-medium">{productos.reduce((sum, p) => sum + p.cantidad, 0)}</span>
+            </div>
+            
+            <hr className="my-3" />
+            
+            <div className="flex justify-between items-center">
+              <span className="font-medium">Total:</span>
+              <span className="font-bold text-lg text-green-600">
+                {formatearPrecio(total)}
+              </span>
+            </div>
+            
+            <Button 
+              onClick={onConfirmar} 
+              className="w-full bg-green-600 hover:bg-green-700 mt-4"
+              disabled={productos.length === 0}
+            >
+              Confirmar Presupuesto
+            </Button>
           </CardContent>
         </Card>
       </div>
