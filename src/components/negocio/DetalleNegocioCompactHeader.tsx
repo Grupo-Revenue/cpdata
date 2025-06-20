@@ -6,6 +6,7 @@ import { ArrowLeft, Calendar, MapPin } from 'lucide-react';
 import { Negocio } from '@/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { obtenerEstadoNegocioInfo } from '@/utils/businessCalculations';
 
 interface DetalleNegocioCompactHeaderProps {
   negocio: Negocio;
@@ -20,6 +21,8 @@ const DetalleNegocioCompactHeader: React.FC<DetalleNegocioCompactHeaderProps> = 
       return fecha;
     }
   };
+
+  const { descripcionEstado, colorEstado } = obtenerEstadoNegocioInfo(negocio);
 
   return (
     <div className="bg-white rounded-lg border border-slate-200 p-4">
@@ -41,13 +44,10 @@ const DetalleNegocioCompactHeader: React.FC<DetalleNegocioCompactHeaderProps> = 
                 <h1 className="text-xl font-bold text-slate-900">Negocio #{negocio.numero}</h1>
                 <Badge 
                   variant="outline"
-                  className={`text-xs px-2 py-0.5 border ${
-                    negocio.estado === 'activo' 
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                      : 'bg-slate-50 text-slate-600 border-slate-200'
-                  }`}
+                  className={`text-xs px-2 py-0.5 border ${colorEstado}`}
+                  title={descripcionEstado}
                 >
-                  {negocio.estado.charAt(0).toUpperCase() + negocio.estado.slice(1)}
+                  {negocio.estado.charAt(0).toUpperCase() + negocio.estado.slice(1).replace('_', ' ')}
                 </Badge>
               </div>
               <p className="text-sm text-slate-600 font-medium">{negocio.evento.nombreEvento}</p>

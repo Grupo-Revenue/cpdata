@@ -480,6 +480,9 @@ export type Database = {
         | "prospecto"
         | "perdido"
         | "ganado"
+        | "parcialmente_ganado"
+        | "en_negociacion"
+        | "revision_pendiente"
       estado_presupuesto:
         | "borrador"
         | "enviado"
@@ -611,6 +614,9 @@ export const Constants = {
         "prospecto",
         "perdido",
         "ganado",
+        "parcialmente_ganado",
+        "en_negociacion",
+        "revision_pendiente",
       ],
       estado_presupuesto: [
         "borrador",

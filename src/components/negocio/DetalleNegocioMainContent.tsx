@@ -72,6 +72,53 @@ const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
     }
   };
 
+  // Enhanced status indicators with new states
+  const getStatusBadges = () => {
+    const badges = [];
+    
+    if (infoPresupuestos.presupuestosAprobados > 0) {
+      badges.push(
+        <Badge key="aprobados" className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs">
+          {infoPresupuestos.presupuestosAprobados} aprobado{infoPresupuestos.presupuestosAprobados !== 1 ? 's' : ''}
+        </Badge>
+      );
+    }
+    
+    if (infoPresupuestos.presupuestosEnviados > 0) {
+      badges.push(
+        <Badge key="enviados" className="bg-blue-100 text-blue-700 border-blue-200 text-xs">
+          {infoPresupuestos.presupuestosEnviados} enviado{infoPresupuestos.presupuestosEnviados !== 1 ? 's' : ''}
+        </Badge>
+      );
+    }
+    
+    if (infoPresupuestos.presupuestosBorrador > 0) {
+      badges.push(
+        <Badge key="borrador" className="bg-slate-100 text-slate-700 border-slate-200 text-xs">
+          {infoPresupuestos.presupuestosBorrador} borrador{infoPresupuestos.presupuestosBorrador !== 1 ? 'es' : ''}
+        </Badge>
+      );
+    }
+    
+    if (infoPresupuestos.presupuestosRechazados > 0) {
+      badges.push(
+        <Badge key="rechazados" className="bg-red-100 text-red-700 border-red-200 text-xs">
+          {infoPresupuestos.presupuestosRechazados} rechazado{infoPresupuestos.presupuestosRechazados !== 1 ? 's' : ''}
+        </Badge>
+      );
+    }
+    
+    if (infoPresupuestos.presupuestosVencidos > 0) {
+      badges.push(
+        <Badge key="vencidos" className="bg-orange-100 text-orange-700 border-orange-200 text-xs">
+          {infoPresupuestos.presupuestosVencidos} vencido{infoPresupuestos.presupuestosVencidos !== 1 ? 's' : ''}
+        </Badge>
+      );
+    }
+
+    return badges;
+  };
+
   return (
     <>
       <Card className="border-slate-200 bg-white">
@@ -99,24 +146,10 @@ const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
                 </div>
               </div>
 
-              {/* Status indicators */}
+              {/* Enhanced status indicators */}
               {infoPresupuestos.totalPresupuestos > 0 && (
-                <div className="flex gap-2">
-                  {infoPresupuestos.presupuestosAprobados > 0 && (
-                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs">
-                      {infoPresupuestos.presupuestosAprobados} aprobado{infoPresupuestos.presupuestosAprobados !== 1 ? 's' : ''}
-                    </Badge>
-                  )}
-                  {infoPresupuestos.presupuestosEnviados > 0 && (
-                    <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-xs">
-                      {infoPresupuestos.presupuestosEnviados} enviado{infoPresupuestos.presupuestosEnviados !== 1 ? 's' : ''}
-                    </Badge>
-                  )}
-                  {infoPresupuestos.presupuestosBorrador > 0 && (
-                    <Badge className="bg-slate-100 text-slate-700 border-slate-200 text-xs">
-                      {infoPresupuestos.presupuestosBorrador} borrador{infoPresupuestos.presupuestosBorrador !== 1 ? 'es' : ''}
-                    </Badge>
-                  )}
+                <div className="flex gap-2 flex-wrap">
+                  {getStatusBadges()}
                 </div>
               )}
             </div>

@@ -1,11 +1,22 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Building2, FileText, TrendingUp } from 'lucide-react';
+import { Building2, FileText, TrendingUp, Target, AlertCircle, CheckCircle } from 'lucide-react';
 import { useNegocio } from '@/context/NegocioContext';
 
 const MetricsWidget: React.FC = () => {
   const { negocios } = useNegocio();
+
+  // Calculate enhanced metrics with new states
+  const negociosActivos = negocios.filter(n => 
+    ['activo', 'revision_pendiente', 'en_negociacion'].includes(n.estado)
+  ).length;
+  
+  const negociosGanados = negocios.filter(n => 
+    ['ganado', 'parcialmente_ganado'].includes(n.estado)
+  ).length;
+  
+  const negociosProspecto = negocios.filter(n => n.estado === 'prospecto').length;
 
   const metrics = [
     {
@@ -21,17 +32,29 @@ const MetricsWidget: React.FC = () => {
       color: 'text-green-600'
     },
     {
-      label: 'Activos',
-      value: negocios.filter(n => n.estado === 'activo').length,
+      label: 'En Proceso',
+      value: negociosActivos,
       icon: TrendingUp,
       color: 'text-purple-600'
+    },
+    {
+      label: 'Ganados',
+      value: negociosGanados,
+      icon: CheckCircle,
+      color: 'text-emerald-600'
+    },
+    {
+      label: 'Prospectos',
+      value: negociosProspecto,
+      icon: Target,
+      color: 'text-orange-600'
     }
   ];
 
   return (
     <Card className="w-full">
       <CardContent className="p-6">
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-5 gap-6">
           {metrics.map((metric, index) => {
             const Icon = metric.icon;
             return (
