@@ -62,45 +62,57 @@ const ProductEditRow: React.FC<ProductEditRowProps> = ({
 
   return (
     <TableRow className="group">
-      <TableCell className="p-3">
-        <div className="space-y-3">
-          <h4 className="font-medium text-sm">
-            <span className="inline-flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full mr-2">
+      <TableCell className="p-4 align-top">
+        <div className="space-y-2">
+          {/* Header del producto más compacto */}
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-flex items-center justify-center w-5 h-5 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full flex-shrink-0">
               {index + 1}
             </span>
-            {producto.nombre}
-          </h4>
-          <div className="w-full">
-            <label className="text-xs font-medium text-gray-700 mb-1 block">Descripción</label>
-            <RichTextEditor
-              value={producto.descripcion}
-              onChange={(value) => onActualizarProducto(
-                producto.id, 
-                'descripcion', 
-                value
-              )}
-              placeholder="Descripción del producto..."
-              className="text-xs"
-              showLists={true}
-            />
+            <h4 className="font-medium text-sm text-gray-900 leading-tight">
+              {producto.nombre}
+            </h4>
           </div>
-          <div className="w-full">
-            <label className="text-xs font-medium text-gray-700 mb-1 block">Comentarios</label>
-            <RichTextEditor
-              value={producto.comentarios || ''}
-              onChange={(value) => onActualizarProducto(
-                producto.id, 
-                'comentarios', 
-                value
-              )}
-              placeholder="Comentarios adicionales..."
-              className="text-xs"
-              showLists={true}
-            />
+          
+          {/* Layout horizontal para descripción y comentarios */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-gray-600 mb-1 block">
+                Descripción
+              </label>
+              <RichTextEditor
+                value={producto.descripcion}
+                onChange={(value) => onActualizarProducto(
+                  producto.id, 
+                  'descripcion', 
+                  value
+                )}
+                placeholder="Descripción del producto..."
+                className="text-xs compact-editor"
+                showLists={true}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600 mb-1 block">
+                Comentarios
+              </label>
+              <RichTextEditor
+                value={producto.comentarios || ''}
+                onChange={(value) => onActualizarProducto(
+                  producto.id, 
+                  'comentarios', 
+                  value
+                )}
+                placeholder="Comentarios adicionales..."
+                className="text-xs compact-editor"
+                showLists={true}
+              />
+            </div>
           </div>
         </div>
       </TableCell>
-      <TableCell className="p-3 text-center">
+      
+      <TableCell className="p-4 text-center align-middle">
         <Input
           type="number"
           min="1"
@@ -110,26 +122,28 @@ const ProductEditRow: React.FC<ProductEditRowProps> = ({
             'cantidad', 
             parseInt(e.target.value) || 1
           )}
-          className="w-16 h-8 text-center text-sm"
+          className="w-16 h-9 text-center text-sm border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
         />
       </TableCell>
-      <TableCell className="p-3 text-center">
-        <div className="relative">
-          <DollarSign className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-500" />
+      
+      <TableCell className="p-4 text-center align-middle">
+        <div className="relative inline-block">
+          <DollarSign className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
           <Input
             type="text"
             value={producto.precioUnitario === 0 ? '' : formatearNumeroConSeparadores(producto.precioUnitario)}
             onChange={(e) => handlePrecioChange(producto.id, e.target.value)}
             onKeyDown={handlePrecioKeyPress}
-            className="w-26 h-8 text-center text-sm pl-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="w-28 h-9 text-center text-sm pl-7 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             placeholder="0"
             style={{ MozAppearance: 'textfield' }}
           />
         </div>
       </TableCell>
-      <TableCell className="p-3 text-center">
-        <div className="relative">
-          <Percent className="absolute right-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-500" />
+      
+      <TableCell className="p-4 text-center align-middle">
+        <div className="relative inline-block">
+          <Percent className="absolute right-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
           <Input
             type="number"
             min="0"
@@ -137,23 +151,25 @@ const ProductEditRow: React.FC<ProductEditRowProps> = ({
             step="0.1"
             value={producto.descuentoPorcentaje}
             onChange={(e) => handleDescuentoChange(producto.id, e.target.value)}
-            className="w-20 h-8 text-center text-sm pr-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="w-20 h-9 text-center text-sm pr-7 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             placeholder="0"
             style={{ MozAppearance: 'textfield' }}
           />
         </div>
       </TableCell>
-      <TableCell className="p-3 text-center">
-        <span className="font-medium text-green-600 text-sm">
+      
+      <TableCell className="p-4 text-center align-middle">
+        <span className="font-semibold text-green-600 text-sm">
           {formatearPrecio(producto.total)}
         </span>
       </TableCell>
-      <TableCell className="p-3 text-center">
+      
+      <TableCell className="p-4 text-center align-middle">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => onEliminarProducto(producto.id)}
-          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all duration-200"
         >
           <Trash2 className="w-4 h-4" />
         </Button>
