@@ -4,9 +4,8 @@ import { useNegocio } from '@/context/NegocioContext';
 import { Loader2 } from 'lucide-react';
 import CrearPresupuesto from './CrearPresupuesto';
 import { useNavigate } from 'react-router-dom';
-import DetalleNegocioHeader from './negocio/DetalleNegocioHeader';
-import InformacionGeneralCard from './negocio/InformacionGeneralCard';
-import PresupuestosCard from './negocio/PresupuestosCard';
+import DetalleNegocioCompactHeader from './negocio/DetalleNegocioCompactHeader';
+import DetalleNegocioMainContent from './negocio/DetalleNegocioMainContent';
 import { Button } from '@/components/ui/button';
 
 interface DetalleNegocioProps {
@@ -80,20 +79,12 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        {/* Header */}
-        <DetalleNegocioHeader negocio={negocio} onVolver={onVolver} />
+      <div className="max-w-6xl mx-auto px-4 py-4 space-y-4">
+        {/* Compact Header */}
+        <DetalleNegocioCompactHeader negocio={negocio} onVolver={onVolver} />
 
-        {/* General Information */}
-        <InformacionGeneralCard 
-          contacto={negocio.contacto} 
-          productora={negocio.productora} 
-          clienteFinal={negocio.clienteFinal}
-          evento={negocio.evento}
-        />
-
-        {/* Budgets */}
-        <PresupuestosCard
+        {/* Main Content */}
+        <DetalleNegocioMainContent
           negocio={negocio}
           onCrearPresupuesto={handleCrearPresupuesto}
           onEditarPresupuesto={handleEditarPresupuesto}

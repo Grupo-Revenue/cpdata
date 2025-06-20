@@ -1,0 +1,76 @@
+
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Calendar, MapPin } from 'lucide-react';
+import { Negocio } from '@/types';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+
+interface DetalleNegocioCompactHeaderProps {
+  negocio: Negocio;
+  onVolver: () => void;
+}
+
+const DetalleNegocioCompactHeader: React.FC<DetalleNegocioCompactHeaderProps> = ({ negocio, onVolver }) => {
+  const formatearFecha = (fecha: string) => {
+    try {
+      return format(new Date(fecha), 'dd/MM/yyyy', { locale: es });
+    } catch {
+      return fecha;
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-lg border border-slate-200 p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Button 
+            variant="outline" 
+            onClick={onVolver}
+            size="sm"
+            className="border-slate-300 text-slate-600 hover:bg-slate-50"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Volver
+          </Button>
+          
+          <div className="flex items-center space-x-3">
+            <div>
+              <div className="flex items-center space-x-2 mb-1">
+                <h1 className="text-xl font-bold text-slate-900">Negocio #{negocio.numero}</h1>
+                <Badge 
+                  variant="outline"
+                  className={`text-xs px-2 py-0.5 border ${
+                    negocio.estado === 'activo' 
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                      : 'bg-slate-50 text-slate-600 border-slate-200'
+                  }`}
+                >
+                  {negocio.estado.charAt(0).toUpperCase() + negocio.estado.slice(1)}
+                </Badge>
+              </div>
+              <p className="text-sm text-slate-600 font-medium">{negocio.evento.nombreEvento}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Key event info */}
+        <div className="flex items-center space-x-6 text-sm text-slate-600">
+          {negocio.evento.fechaEvento && (
+            <div className="flex items-center space-x-1">
+              <Calendar className="w-4 h-4" />
+              <span>{formatearFecha(negocio.evento.fechaEvento)}</span>
+            </div>
+          )}
+          <div className="flex items-center space-x-1">
+            <MapPin className="w-4 h-4" />
+            <span className="truncate max-w-48">{negocio.evento.locacion}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DetalleNegocioCompactHeader;
