@@ -20,18 +20,21 @@ const ProductEditTable: React.FC<ProductEditTableProps> = ({
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">Productos del Presupuesto</CardTitle>
+        <p className="text-sm text-gray-600">
+          Haz clic en "Ver detalles" para editar descripciones y comentarios
+        </p>
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50">
-                <TableHead className="w-[280px]">Producto</TableHead>
-                <TableHead className="w-[70px] text-center">Cant.</TableHead>
-                <TableHead className="w-[110px] text-center">Precio Unit.</TableHead>
-                <TableHead className="w-[90px] text-center">Desc. %</TableHead>
-                <TableHead className="w-[110px] text-center">Total</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
+                <TableHead className="w-[300px] font-semibold text-gray-700">Producto</TableHead>
+                <TableHead className="w-[80px] text-center font-semibold text-gray-700">Cant.</TableHead>
+                <TableHead className="w-[120px] text-center font-semibold text-gray-700">Precio Unit.</TableHead>
+                <TableHead className="w-[100px] text-center font-semibold text-gray-700">Desc. %</TableHead>
+                <TableHead className="w-[120px] text-center font-semibold text-gray-700">Total</TableHead>
+                <TableHead className="w-[60px] text-center font-semibold text-gray-700"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
