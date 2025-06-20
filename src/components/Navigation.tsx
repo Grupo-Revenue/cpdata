@@ -60,7 +60,10 @@ const Navigation = () => {
                   onError={(e) => {
                     console.error('Error loading logo:', e);
                     e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextElementSibling?.style.setProperty('display', 'flex');
+                    const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                    if (nextElement) {
+                      nextElement.style.display = 'flex';
+                    }
                   }}
                 />
               ) : null}
