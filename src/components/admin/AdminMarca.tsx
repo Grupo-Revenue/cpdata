@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Palette, Save, Loader2 } from 'lucide-react';
+import { Palette, Save, Loader2, Upload, Image } from 'lucide-react';
 
 interface ConfiguracionMarca {
   id?: string;
@@ -34,6 +33,7 @@ const AdminMarca: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const { toast } = useToast();
 
   const cargarConfiguracion = async () => {
@@ -60,6 +60,73 @@ const AdminMarca: React.FC = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo de archivo
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona un archivo de imagen válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validar tamaño (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "Error",
+        description: "El archivo debe ser menor a 2MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setUploadingLogo(true);
+      
+      // Crear un nombre único para el archivo
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `logos/${fileName}`;
+
+      // Subir archivo a Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('brand-assets')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Obtener URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('brand-assets')
+        .getPublicUrl(filePath);
+
+      // Actualizar configuración con la nueva URL
+      setConfiguracion(prev => ({
+        ...prev,
+        logo_url: publicUrl
+      }));
+
+      toast({
+        title: "Logo subido",
+        description: "El logo se subió correctamente. No olvides guardar los cambios."
+      });
+
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo subir el logo",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingLogo(false);
     }
   };
 
@@ -137,6 +204,44 @@ const AdminMarca: React.FC = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={guardarConfiguracion} className="space-y-6">
+            {/* Logo */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Logo de la Empresa</h3>
+              <div className="flex items-center space-x-4">
+                {configuracion.logo_url && (
+                  <div className="flex-shrink-0">
+                    <img 
+                      src={configuracion.logo_url} 
+                      alt="Logo actual" 
+                      className="h-16 w-auto object-contain border rounded-lg p-2"
+                    />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <Label htmlFor="logo_upload">Subir nuevo logo</Label>
+                  <div className="mt-1">
+                    <Input
+                      id="logo_upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      disabled={uploadingLogo}
+                      className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      PNG, JPG, GIF hasta 2MB. Recomendado: fondo transparente
+                    </p>
+                  </div>
+                  {uploadingLogo && (
+                    <div className="flex items-center mt-2">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      <span className="text-sm text-muted-foreground">Subiendo logo...</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Información Básica */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Información Básica</h3>
@@ -237,6 +342,15 @@ const AdminMarca: React.FC = () => {
                   borderColor: configuracion.color_secundario
                 }}
               >
+                {configuracion.logo_url && (
+                  <div className="mb-4">
+                    <img 
+                      src={configuracion.logo_url} 
+                      alt="Vista previa del logo" 
+                      className="h-12 w-auto object-contain"
+                    />
+                  </div>
+                )}
                 <h4 
                   className="text-2xl font-bold mb-2"
                   style={{ color: configuracion.color_primario }}
