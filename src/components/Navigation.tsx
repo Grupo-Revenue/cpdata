@@ -16,7 +16,7 @@ import { LogOut, User, Settings, Shield, Building2 } from 'lucide-react';
 
 const Navigation = () => {
   const { user, signOut, isAdmin } = useAuth();
-  const { config: brandConfig } = useBrandConfig();
+  const { config: brandConfig, loading: configLoading } = useBrandConfig();
 
   if (!user) return null;
 
@@ -52,13 +52,19 @@ const Navigation = () => {
           {/* Logo y título */}
           <div className="flex items-center space-x-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
-              {brandConfig?.logo_url ? (
+              {brandConfig?.logo_url && !configLoading ? (
                 <img 
                   src={brandConfig.logo_url} 
                   alt={brandConfig.nombre_empresa || 'Logo'} 
-                  className="h-8 w-8 object-contain"
+                  className="h-8 w-8 object-contain rounded"
+                  onError={(e) => {
+                    console.error('Error loading logo:', e);
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.style.setProperty('display', 'flex');
+                  }}
                 />
-              ) : (
+              ) : null}
+              {(!brandConfig?.logo_url || configLoading) && (
                 <Building2 className="h-6 w-6 text-white" />
               )}
             </div>
