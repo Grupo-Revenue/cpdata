@@ -1,4 +1,3 @@
-
 export interface Contacto {
   id: string;
   nombre: string;
@@ -58,7 +57,7 @@ export interface Negocio {
   evento: Evento;
   presupuestos: Presupuesto[];
   fechaCreacion: string;
-  estado: 'activo' | 'cerrado' | 'cancelado' | 'prospecto' | 'perdido' | 'ganado';
+  estado: 'activo' | 'cerrado' | 'cancelado' | 'prospecto' | 'perdido' | 'ganado' | 'revision_pendiente' | 'en_negociacion' | 'parcialmente_ganado';
 }
 
 export interface ProductoBiblioteca {

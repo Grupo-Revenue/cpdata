@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, FileText } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 interface CompactDashboardHeaderProps {
@@ -36,15 +36,7 @@ const CompactDashboardHeader: React.FC<CompactDashboardHeaderProps> = ({ onCrear
         </p>
       </div>
       
-      <div className="flex space-x-3">
-        <Button 
-          variant="outline"
-          className="flex items-center space-x-2"
-        >
-          <FileText className="h-4 w-4" />
-          <span>Nuevo Presupuesto</span>
-        </Button>
-        
+      <div>
         <Button 
           onClick={onCrearNegocio}
           className="bg-primary hover:bg-primary/90 flex items-center space-x-2"
