@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DialogTrigger } from '@/components/ui/dialog';
 import { Package, Plus, Loader2 } from 'lucide-react';
 import ProductDialog from './components/ProductDialog';
 import ProductTable from './components/ProductTable';
@@ -91,22 +90,10 @@ const AdminProductos: React.FC = () => {
               <Package className="w-5 h-5 mr-2" />
               Biblioteca de Productos
             </CardTitle>
-            <ProductDialog
-              open={dialogOpen}
-              onOpenChange={setDialogOpen}
-              formData={formData}
-              setFormData={setFormData}
-              lineasProducto={lineasProducto}
-              editingProduct={editingProduct}
-              onSubmit={handleSubmit}
-              onCancel={handleCancel}
-            />
-            <DialogTrigger asChild>
-              <Button onClick={resetForm}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nuevo Producto
-              </Button>
-            </DialogTrigger>
+            <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nuevo Producto
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -117,6 +104,17 @@ const AdminProductos: React.FC = () => {
           />
         </CardContent>
       </Card>
+
+      <ProductDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        formData={formData}
+        setFormData={setFormData}
+        lineasProducto={lineasProducto}
+        editingProduct={editingProduct}
+        onSubmit={handleSubmit}
+        onCancel={handleCancel}
+      />
     </div>
   );
 };
