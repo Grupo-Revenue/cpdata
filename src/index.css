@@ -3,7 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Sistema de diseño moderno con colores actualizados */
+/* Sistema de diseño moderno con colores CP DATA */
 
 @layer base {
   :root {
@@ -16,8 +16,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
 
-    /* Colores primarios modernos - azul vibrante */
-    --primary: 221 83% 53%;
+    /* Colores primarios CP DATA - azul corporativo */
+    --primary: 210 98% 48%;
     --primary-foreground: 210 40% 98%;
 
     /* Colores secundarios suaves */
@@ -27,22 +27,27 @@
     --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    /* Acento moderno - púrpura suave */
-    --accent: 262 83% 58%;
+    /* Acento CP DATA - cyan/light blue */
+    --accent: 191 95% 55%;
     --accent-foreground: 210 40% 98%;
+
+    /* Acento secundario - amarillo sutil */
+    --accent-secondary: 48 100% 75%;
+    --accent-secondary-foreground: 45 95% 15%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221 83% 53%;
+    --ring: 210 98% 48%;
 
     --radius: 0.75rem;
 
-    /* Variables para gradientes */
-    --gradient-primary: linear-gradient(135deg, hsl(221 83% 53%) 0%, hsl(262 83% 58%) 100%);
+    /* Variables para gradientes CP DATA */
+    --gradient-primary: linear-gradient(135deg, hsl(210 98% 48%) 0%, hsl(191 95% 55%) 100%);
     --gradient-secondary: linear-gradient(135deg, hsl(210 40% 96%) 0%, hsl(220 13% 91%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(191 95% 55%) 0%, hsl(48 100% 75%) 100%);
 
     /* Sombras modernas */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -52,12 +57,12 @@
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary: 210 98% 48%;
     --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 221 83% 53%;
+    --sidebar-ring: 210 98% 48%;
   }
 
   .dark {
@@ -70,7 +75,7 @@
     --popover: 224 71% 4%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 221 83% 53%;
+    --primary: 210 98% 48%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 215 27.9% 16.9%;
@@ -79,7 +84,7 @@
     --muted: 215 27.9% 16.9%;
     --muted-foreground: 217.9 10.6% 64.9%;
 
-    --accent: 262 83% 58%;
+    --accent: 191 95% 55%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
@@ -87,16 +92,16 @@
 
     --border: 215 27.9% 16.9%;
     --input: 215 27.9% 16.9%;
-    --ring: 221 83% 53%;
+    --ring: 210 98% 48%;
 
     --sidebar-background: 224 71% 4%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary: 210 98% 48%;
     --sidebar-primary-foreground: 210 40% 98%;
     --sidebar-accent: 215 27.9% 16.9%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 215 27.9% 16.9%;
-    --sidebar-ring: 221 83% 53%;
+    --sidebar-ring: 210 98% 48%;
   }
 }
 
@@ -129,13 +134,17 @@
 }
 
 @layer components {
-  /* Utilidades de gradiente */
+  /* Utilidades de gradiente CP DATA */
   .gradient-primary {
     background: var(--gradient-primary);
   }
 
   .gradient-secondary {
     background: var(--gradient-secondary);
+  }
+
+  .gradient-accent {
+    background: var(--gradient-accent);
   }
 
   /* Efectos de glassmorphism */

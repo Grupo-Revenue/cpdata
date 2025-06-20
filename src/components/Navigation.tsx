@@ -96,12 +96,6 @@ const Navigation = () => {
           
           {/* Botones de acción y perfil */}
           <div className="flex items-center space-x-3">
-            {/* Indicador de estado premium */}
-            <div className="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20">
-              <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
-              <span className="text-xs font-medium text-accent">Pro Plan</span>
-            </div>
-
             {/* Menú de usuario */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
