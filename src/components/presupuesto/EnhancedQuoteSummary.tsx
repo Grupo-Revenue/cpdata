@@ -8,6 +8,7 @@ import { ShoppingCart, Check, Receipt } from 'lucide-react';
 import { ProductoPresupuesto } from '@/types';
 import { calcularSubtotal, calcularIVA } from '@/utils/vatCalculations';
 import AnimatedPrice from '@/components/ui/animated-price';
+import { cn } from '@/lib/utils';
 
 interface EnhancedQuoteSummaryProps {
   productos: ProductoPresupuesto[];
