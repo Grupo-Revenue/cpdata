@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -84,9 +83,27 @@ const CrearPresupuesto: React.FC<CrearPresupuestoProps> = ({ negocioId, presupue
     setProductos(prev => prev.map(producto => {
       if (producto.id === id) {
         const productoActualizado = { ...producto, [campo]: valor };
-        if (campo === 'cantidad' || campo === 'precioUnitario') {
+        
+        // Manejo especial para precio unitario cuando está vacío
+        if (campo === 'precioUnitario') {
+          if (valor === '' || valor === null || valor === undefined) {
+            productoActualizado.precioUnitario = 0;
+            productoActualizado.total = 0;
+          } else {
+            const precio = typeof valor === 'number' ? valor : parseFloat(valor) || 0;
+            productoActualizado.precioUnitario = precio;
+            productoActualizado.total = productoActualizado.cantidad * precio;
+          }
+        } else if (campo === 'cantidad') {
+          const cantidad = typeof valor === 'number' ? valor : parseInt(valor) || 1;
+          productoActualizado.cantidad = cantidad;
+          const precio = typeof productoActualizado.precioUnitario === 'number' ? 
+            productoActualizado.precioUnitario : parseFloat(productoActualizado.precioUnitario) || 0;
+          productoActualizado.total = cantidad * precio;
+        } else if (campo === 'cantidad' || campo === 'precioUnitario') {
           productoActualizado.total = productoActualizado.cantidad * productoActualizado.precioUnitario;
         }
+        
         return productoActualizado;
       }
       return producto;

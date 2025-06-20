@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { ShoppingCart, Trash2, ArrowLeft } from 'lucide-react';
 import { ProductoPresupuesto } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
@@ -26,6 +27,20 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
   onConfirmar,
   total
 }) => {
+  const handlePrecioChange = (id: string, value: string) => {
+    // Si el campo está vacío, mantenerlo vacío hasta que el usuario escriba algo
+    if (value === '') {
+      onActualizarProducto(id, 'precioUnitario', '');
+      return;
+    }
+    
+    // Convertir a número, si no es válido usar 0
+    const numeroValue = parseFloat(value);
+    if (!isNaN(numeroValue)) {
+      onActualizarProducto(id, 'precioUnitario', numeroValue);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -36,7 +51,7 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
           </Button>
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Editar Presupuesto</h2>
-            <p className="text-gray-600">Ajusta cantidades y precios de los productos seleccionados</p>
+            <p className="text-gray-600">Ajusta cantidades, precios y descripciones de los productos seleccionados</p>
           </div>
         </div>
         <div className="text-right">
@@ -50,11 +65,23 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
         <div className="lg:col-span-2 space-y-4">
           {productos.map((producto) => (
             <Card key={producto.id}>
-              <CardContent className="p-4">
+              <CardContent className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
-                    <h4 className="font-medium text-lg">{producto.nombre}</h4>
-                    <p className="text-sm text-gray-600">{producto.descripcion}</p>
+                    <h4 className="font-medium text-lg mb-2">{producto.nombre}</h4>
+                    <div>
+                      <Label className="text-sm font-medium">Descripción</Label>
+                      <Textarea
+                        value={producto.descripcion}
+                        onChange={(e) => onActualizarProducto(
+                          producto.id, 
+                          'descripcion', 
+                          e.target.value
+                        )}
+                        placeholder="Descripción del producto..."
+                        className="mt-1 min-h-[80px]"
+                      />
+                    </div>
                   </div>
                   <Button
                     variant="outline"
@@ -87,13 +114,10 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
                       type="number"
                       step="1"
                       min="0"
-                      value={producto.precioUnitario}
-                      onChange={(e) => onActualizarProducto(
-                        producto.id, 
-                        'precioUnitario', 
-                        parseFloat(e.target.value) || 0
-                      )}
+                      value={producto.precioUnitario === '' ? '' : producto.precioUnitario}
+                      onChange={(e) => handlePrecioChange(producto.id, e.target.value)}
                       className="mt-1"
+                      placeholder="0"
                     />
                   </div>
                   <div>
