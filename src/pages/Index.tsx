@@ -6,6 +6,7 @@ import WizardCrearNegocio from '@/components/WizardCrearNegocio';
 import DetalleNegocio from '@/components/DetalleNegocio';
 import StatsCards from '@/components/dashboard/StatsCards';
 import QuickActions from '@/components/dashboard/QuickActions';
+import { SelectDebugger } from '@/components/debug/SelectDebugger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +50,7 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
         <Navigation />
+        <SelectDebugger />
         <div className="container mx-auto px-4 py-8">
           <WizardCrearNegocio
             onComplete={completarCreacionNegocio}
@@ -63,6 +65,7 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
         <Navigation />
+        <SelectDebugger />
         <div className="container mx-auto px-4 py-8">
           <DetalleNegocio
             negocioId={negocioSeleccionado}
@@ -77,6 +80,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
       <Navigation />
+      <SelectDebugger />
       
       <main className="container mx-auto px-4 py-8 space-y-8">
         {/* Header del Dashboard */}
