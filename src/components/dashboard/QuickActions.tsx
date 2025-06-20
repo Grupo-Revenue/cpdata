@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, FileText, Users, Settings, BarChart3, Calendar } from 'lucide-react';
+import { Plus, FileText, BarChart3 } from 'lucide-react';
 
 interface QuickActionProps {
   onCrearNegocio: () => void;
@@ -26,32 +26,11 @@ const QuickActions: React.FC<QuickActionProps> = ({ onCrearNegocio }) => {
       color: "from-green-500 to-emerald-500"
     },
     {
-      title: "Gestionar Clientes",
-      description: "Ver y editar clientes",
-      icon: Users,
-      action: () => console.log("Gestionar clientes"),
-      color: "from-purple-500 to-pink-500"
-    },
-    {
-      title: "Analíticas",
-      description: "Ver reportes y métricas",
+      title: "Ver Reportes",
+      description: "Analíticas y métricas",
       icon: BarChart3,
       action: () => console.log("Ver analíticas"),
-      color: "from-orange-500 to-red-500"
-    },
-    {
-      title: "Calendario",
-      description: "Programar citas",
-      icon: Calendar,
-      action: () => console.log("Abrir calendario"),
-      color: "from-indigo-500 to-purple-500"
-    },
-    {
-      title: "Configuración",
-      description: "Ajustes del sistema",
-      icon: Settings,
-      action: () => window.location.href = '/settings',
-      color: "from-gray-500 to-slate-500"
+      color: "from-purple-500 to-pink-500"
     }
   ];
 
