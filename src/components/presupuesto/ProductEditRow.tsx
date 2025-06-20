@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { DollarSign, Percent, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { DollarSign, Percent, Trash2, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
 import { ProductoPresupuesto } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
+import RichTextEditor from '@/components/ui/rich-text-editor';
 
 interface ProductEditRowProps {
   producto: ProductoPresupuesto;
@@ -58,8 +58,6 @@ const ProductEditRow: React.FC<ProductEditRowProps> = ({
     onActualizarProducto(id, 'descuentoPorcentaje', descuentoLimitado);
   };
 
-  const hasDetails = producto.descripcion || producto.comentarios;
-
   return (
     <>
       {/* Main product row */}
@@ -73,26 +71,24 @@ const ProductEditRow: React.FC<ProductEditRowProps> = ({
               <h4 className="font-medium text-sm text-gray-900 truncate">
                 {producto.nombre}
               </h4>
-              {hasDetails && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="h-6 mt-1 px-2 text-xs text-gray-500 hover:text-gray-700"
-                >
-                  {isExpanded ? (
-                    <>
-                      <ChevronUp className="w-3 h-3 mr-1" />
-                      Ocultar detalles
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="w-3 h-3 mr-1" />
-                      Ver detalles
-                    </>
-                  )}
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="h-6 mt-1 px-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                {isExpanded ? (
+                  <>
+                    <ChevronUp className="w-3 h-3 mr-1" />
+                    Ocultar detalles
+                  </>
+                ) : (
+                  <>
+                    <Edit3 className="w-3 h-3 mr-1" />
+                    Editar detalles
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </TableCell>
@@ -161,47 +157,44 @@ const ProductEditRow: React.FC<ProductEditRowProps> = ({
         </TableCell>
       </TableRow>
 
-      {/* Expandable details row */}
-      {isExpanded && hasDetails && (
+      {/* Expandable details row - always side by side layout */}
+      {isExpanded && (
         <TableRow className="bg-gray-50/30">
           <TableCell colSpan={6} className="py-4 px-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
-              {producto.descripcion && (
-                <div>
-                  <label className="text-xs font-medium text-gray-600 mb-2 block">
-                    Descripción
-                  </label>
-                  <Textarea
-                    value={producto.descripcion.replace(/<[^>]*>/g, '')} // Strip HTML tags for textarea
-                    onChange={(e) => onActualizarProducto(
-                      producto.id, 
-                      'descripcion', 
-                      e.target.value
-                    )}
-                    placeholder="Descripción del producto..."
-                    className="min-h-[80px] text-sm border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 resize-none"
-                    rows={3}
-                  />
-                </div>
-              )}
-              {producto.comentarios && (
-                <div>
-                  <label className="text-xs font-medium text-gray-600 mb-2 block">
-                    Comentarios
-                  </label>
-                  <Textarea
-                    value={producto.comentarios.replace(/<[^>]*>/g, '')} // Strip HTML tags for textarea
-                    onChange={(e) => onActualizarProducto(
-                      producto.id, 
-                      'comentarios', 
-                      e.target.value
-                    )}
-                    placeholder="Comentarios adicionales..."
-                    className="min-h-[80px] text-sm border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 resize-none"
-                    rows={3}
-                  />
-                </div>
-              )}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-6xl">
+              {/* Description field */}
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-2 block">
+                  Descripción del producto
+                </label>
+                <RichTextEditor
+                  value={producto.descripcion || ''}
+                  onChange={(value) => onActualizarProducto(
+                    producto.id, 
+                    'descripcion', 
+                    value
+                  )}
+                  placeholder="Describe las características del producto..."
+                  compact={true}
+                />
+              </div>
+              
+              {/* Comments field */}
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-2 block">
+                  Comentarios adicionales
+                </label>
+                <RichTextEditor
+                  value={producto.comentarios || ''}
+                  onChange={(value) => onActualizarProducto(
+                    producto.id, 
+                    'comentarios', 
+                    value
+                  )}
+                  placeholder="Notas internas, observaciones especiales..."
+                  compact={true}
+                />
+              </div>
             </div>
           </TableCell>
         </TableRow>
