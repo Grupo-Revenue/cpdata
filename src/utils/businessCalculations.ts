@@ -38,7 +38,10 @@ export const obtenerEstadoNegocioInfo = (negocio: Negocio) => {
   let descripcionEstado = '';
   let colorEstado = '';
   
-  switch (negocio.estado) {
+  // Using string literals to avoid TypeScript comparison issues
+  const estado = negocio.estado as string;
+  
+  switch (estado) {
     case 'prospecto':
       descripcionEstado = 'Sin presupuestos creados';
       colorEstado = 'bg-gray-100 text-gray-700 border-gray-200';
@@ -68,7 +71,7 @@ export const obtenerEstadoNegocioInfo = (negocio: Negocio) => {
       colorEstado = 'bg-red-100 text-red-700 border-red-200';
       break;
     default:
-      descripcionEstado = negocio.estado.charAt(0).toUpperCase() + negocio.estado.slice(1);
+      descripcionEstado = estado.charAt(0).toUpperCase() + estado.slice(1);
       colorEstado = 'bg-slate-100 text-slate-700 border-slate-200';
   }
   
