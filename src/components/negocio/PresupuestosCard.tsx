@@ -1,25 +1,12 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, FileText, Loader2, Send, Check, X, Calendar, DollarSign, TrendingUp } from 'lucide-react';
-import { Presupuesto, Negocio } from '@/types';
-import { formatearPrecio } from '@/utils/formatters';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Card, CardContent } from '@/components/ui/card';
+import { Negocio } from '@/types';
+import PresupuestosCardHeader from './presupuestos/PresupuestosCardHeader';
+import EmptyPresupuestosState from './presupuestos/EmptyPresupuestosState';
+import PresupuestoItem from './presupuestos/PresupuestoItem';
+import PresupuestoEstadoDialog from './presupuestos/PresupuestoEstadoDialog';
 import PresupuestosResumen from './PresupuestosResumen';
-import { calcularValorNegocio, obtenerInfoPresupuestos } from '@/utils/businessCalculations';
 
 interface PresupuestosCardProps {
   negocio: Negocio;
@@ -45,28 +32,6 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
   const [procesandoEstado, setProcesandoEstado] = useState<string | null>(null);
 
   const presupuestos = negocio.presupuestos;
-  const valorNegocio = calcularValorNegocio(negocio);
-  const infoPresupuestos = obtenerInfoPresupuestos(negocio);
-
-  const formatearFecha = (fecha: string) => {
-    try {
-      return format(new Date(fecha), 'dd/MM/yyyy', { locale: es });
-    } catch {
-      return fecha;
-    }
-  };
-
-  const obtenerBadgeEstadoPresupuesto = (estado: string) => {
-    const colores = {
-      borrador: 'bg-gray-100 text-gray-800 border-gray-200',
-      enviado: 'bg-blue-100 text-blue-800 border-blue-200',
-      aprobado: 'bg-green-100 text-green-800 border-green-200',
-      rechazado: 'bg-red-100 text-red-800 border-red-200',
-      vencido: 'bg-orange-100 text-orange-800 border-orange-200',
-      cancelado: 'bg-gray-100 text-gray-800 border-gray-200'
-    };
-    return colores[estado as keyof typeof colores] || 'bg-gray-100 text-gray-800 border-gray-200';
-  };
 
   const handleEliminarPresupuesto = async (presupuestoId: string) => {
     if (confirm('¿Está seguro de que desea eliminar este presupuesto?')) {
@@ -119,167 +84,17 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
     }
   };
 
-  const obtenerAccionesPresupuesto = (presupuesto: Presupuesto) => {
-    const acciones = [];
-
-    switch (presupuesto.estado) {
-      case 'borrador':
-        acciones.push(
-          <Button
-            key="enviar"
-            variant="outline"
-            size="sm"
-            onClick={() => handleEnviarPresupuesto(presupuesto.id)}
-            className="text-blue-600 hover:text-blue-700"
-            disabled={procesandoEstado === presupuesto.id}
-          >
-            {procesandoEstado === presupuesto.id ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </Button>
-        );
-        break;
-
-      case 'enviado':
-        acciones.push(
-          <Button
-            key="aprobar"
-            variant="outline"
-            size="sm"
-            onClick={() => handleCambiarEstado(presupuesto.id, 'aprobado')}
-            className="text-green-600 hover:text-green-700"
-            disabled={procesandoEstado === presupuesto.id}
-          >
-            {procesandoEstado === presupuesto.id ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Check className="w-4 h-4" />
-            )}
-          </Button>,
-          <Button
-            key="rechazar"
-            variant="outline"
-            size="sm"
-            onClick={() => handleCambiarEstado(presupuesto.id, 'rechazado')}
-            className="text-red-600 hover:text-red-700"
-            disabled={procesandoEstado === presupuesto.id}
-          >
-            {procesandoEstado === presupuesto.id ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <X className="w-4 h-4" />
-            )}
-          </Button>
-        );
-        break;
-    }
-
-    return acciones;
-  };
-
   return (
     <>
       <Card className="overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-4">
-                <CardTitle className="text-xl">Presupuestos del Negocio</CardTitle>
-                <Button 
-                  onClick={onCrearPresupuesto} 
-                  variant="secondary"
-                  className="bg-white text-indigo-600 hover:bg-gray-100"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nuevo Presupuesto
-                </Button>
-              </div>
-              
-              {/* Valor del negocio integrado */}
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-white/20 rounded-lg">
-                      <DollarSign className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-white/80 font-medium">Valor Total del Negocio</p>
-                      <div className="flex items-baseline space-x-2">
-                        <span className="text-2xl font-bold text-white">
-                          {formatearPrecio(valorNegocio)}
-                        </span>
-                        {valorNegocio > 0 && (
-                          <div className="flex items-center space-x-1 text-green-200">
-                            <TrendingUp className="w-3 h-3" />
-                            <span className="text-xs font-medium">Activo</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Status indicators */}
-                  {infoPresupuestos.totalPresupuestos > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {infoPresupuestos.presupuestosAprobados > 0 && (
-                        <div className="flex items-center space-x-1 bg-green-500/20 px-2 py-1 rounded text-xs">
-                          <div className="w-1.5 h-1.5 bg-green-300 rounded-full"></div>
-                          <span className="text-green-100 font-medium">
-                            {infoPresupuestos.presupuestosAprobados} aprobado{infoPresupuestos.presupuestosAprobados !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      )}
-                      {infoPresupuestos.presupuestosEnviados > 0 && (
-                        <div className="flex items-center space-x-1 bg-blue-500/20 px-2 py-1 rounded text-xs">
-                          <div className="w-1.5 h-1.5 bg-blue-300 rounded-full"></div>
-                          <span className="text-blue-100 font-medium">
-                            {infoPresupuestos.presupuestosEnviados} enviado{infoPresupuestos.presupuestosEnviados !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      )}
-                      {infoPresupuestos.presupuestosBorrador > 0 && (
-                        <div className="flex items-center space-x-1 bg-gray-500/20 px-2 py-1 rounded text-xs">
-                          <div className="w-1.5 h-1.5 bg-gray-300 rounded-full"></div>
-                          <span className="text-gray-100 font-medium">
-                            {infoPresupuestos.presupuestosBorrador} borrador{infoPresupuestos.presupuestosBorrador !== 1 ? 'es' : ''}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-                
-                {infoPresupuestos.totalPresupuestos > 0 ? (
-                  <p className="text-white/70 text-sm mt-2">
-                    Basado en {infoPresupuestos.totalPresupuestos} presupuesto{infoPresupuestos.totalPresupuestos !== 1 ? 's' : ''}
-                  </p>
-                ) : (
-                  <p className="text-white/60 text-sm mt-2">Sin presupuestos creados</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </CardHeader>
+        <PresupuestosCardHeader 
+          negocio={negocio} 
+          onCrearPresupuesto={onCrearPresupuesto} 
+        />
         
         <CardContent className="p-6">
           {presupuestos.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-10 h-10 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay presupuestos</h3>
-              <p className="text-gray-600 mb-6">Comienza creando el primer presupuesto para este negocio</p>
-              <Button 
-                onClick={onCrearPresupuesto} 
-                size="lg"
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Crear Primer Presupuesto
-              </Button>
-            </div>
+            <EmptyPresupuestosState onCrearPresupuesto={onCrearPresupuesto} />
           ) : (
             <>
               {/* Summary cards */}
@@ -288,124 +103,17 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
               {/* Presupuestos list */}
               <div className="space-y-4">
                 {presupuestos.map((presupuesto) => (
-                  <Card key={presupuesto.id} className="hover:shadow-md transition-shadow border-l-4 border-l-indigo-500">
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-3">
-                            <h3 className="text-xl font-bold text-gray-900">{presupuesto.nombre}</h3>
-                            <Badge className={`${obtenerBadgeEstadoPresupuesto(presupuesto.estado)} border`}>
-                              {presupuesto.estado.charAt(0).toUpperCase() + presupuesto.estado.slice(1)}
-                            </Badge>
-                          </div>
-                          
-                          <div className="flex items-center space-x-6 mb-4">
-                            <div>
-                              <p className="text-sm text-gray-600">Valor Total</p>
-                              <p className="text-2xl font-bold text-indigo-600">
-                                {formatearPrecio(presupuesto.total)}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-600">Productos</p>
-                              <p className="text-lg font-semibold text-gray-900">
-                                {presupuesto.productos.length} ítem{presupuesto.productos.length !== 1 ? 's' : ''}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          {/* Fechas importantes */}
-                          <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                            <div className="flex items-center">
-                              <Calendar className="w-4 h-4 mr-2" />
-                              <span>Creado: {formatearFecha(presupuesto.fechaCreacion)}</span>
-                            </div>
-                            {presupuesto.fechaEnvio && (
-                              <div className="flex items-center text-blue-600">
-                                <Send className="w-4 h-4 mr-2" />
-                                <span>Enviado: {formatearFecha(presupuesto.fechaEnvio)}</span>
-                              </div>
-                            )}
-                            {presupuesto.fechaVencimiento && (
-                              <div className="flex items-center text-orange-600">
-                                <Calendar className="w-4 h-4 mr-2" />
-                                <span>Vence: {formatearFecha(presupuesto.fechaVencimiento)}</span>
-                              </div>
-                            )}
-                            {presupuesto.fechaAprobacion && (
-                              <div className="flex items-center text-green-600">
-                                <Check className="w-4 h-4 mr-2" />
-                                <span>Aprobado: {formatearFecha(presupuesto.fechaAprobacion)}</span>
-                              </div>
-                            )}
-                            {presupuesto.fechaRechazo && (
-                              <div className="flex items-center text-red-600">
-                                <X className="w-4 h-4 mr-2" />
-                                <span>Rechazado: {formatearFecha(presupuesto.fechaRechazo)}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-col space-y-2 ml-6">
-                          {/* Botones de acción del estado */}
-                          {onCambiarEstado && (
-                            <div className="flex space-x-2">
-                              {obtenerAccionesPresupuesto(presupuesto)}
-                            </div>
-                          )}
-                          
-                          {/* Botones básicos */}
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => onVerPDF(presupuesto.id)}
-                              className="text-blue-600 hover:text-blue-700 border-blue-200 hover:bg-blue-50"
-                            >
-                              <FileText className="w-4 h-4" />
-                            </Button>
-                            {(presupuesto.estado === 'borrador' || presupuesto.estado === 'enviado') && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => onEditarPresupuesto(presupuesto.id)}
-                                className="text-indigo-600 hover:text-indigo-700 border-indigo-200 hover:bg-indigo-50"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEliminarPresupuesto(presupuesto.id)}
-                              className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
-                              disabled={eliminandoPresupuesto === presupuesto.id}
-                            >
-                              {eliminandoPresupuesto === presupuesto.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="w-4 h-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Lista de productos */}
-                      <div className="mt-4 pt-4 border-t bg-gray-50 rounded-lg p-4">
-                        <h4 className="text-sm font-medium text-gray-900 mb-3">Productos incluidos:</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {presupuesto.productos.map((producto) => (
-                            <div key={producto.id} className="flex justify-between items-center text-sm bg-white rounded px-3 py-2">
-                              <span className="text-gray-700">{producto.nombre} (x{producto.cantidad})</span>
-                              <span className="font-medium text-gray-900">{formatearPrecio(producto.total)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <PresupuestoItem
+                    key={presupuesto.id}
+                    presupuesto={presupuesto}
+                    onEditarPresupuesto={onEditarPresupuesto}
+                    onEliminarPresupuesto={handleEliminarPresupuesto}
+                    onVerPDF={onVerPDF}
+                    onEnviarPresupuesto={handleEnviarPresupuesto}
+                    onCambiarEstado={handleCambiarEstado}
+                    eliminandoPresupuesto={eliminandoPresupuesto}
+                    procesandoEstado={procesandoEstado}
+                  />
                 ))}
               </div>
             </>
@@ -414,47 +122,14 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
       </Card>
 
       {/* Diálogo para enviar presupuesto */}
-      <Dialog open={mostrarDialogoEnvio} onOpenChange={setMostrarDialogoEnvio}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Enviar Presupuesto</DialogTitle>
-            <DialogDescription>
-              Establezca la fecha de vencimiento para este presupuesto. Después de esta fecha, 
-              el presupuesto será marcado automáticamente como vencido.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="fechaVencimiento">Fecha de Vencimiento</Label>
-              <Input
-                id="fechaVencimiento"
-                type="date"
-                value={fechaVencimiento}
-                onChange={(e) => setFechaVencimiento(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setMostrarDialogoEnvio(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              onClick={confirmarEnvio}
-              disabled={!fechaVencimiento || procesandoEstado !== null}
-            >
-              {procesandoEstado ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Enviando...
-                </>
-              ) : (
-                'Enviar Presupuesto'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PresupuestoEstadoDialog
+        open={mostrarDialogoEnvio}
+        onOpenChange={setMostrarDialogoEnvio}
+        fechaVencimiento={fechaVencimiento}
+        onFechaVencimientoChange={setFechaVencimiento}
+        onConfirmar={confirmarEnvio}
+        procesando={procesandoEstado !== null}
+      />
     </>
   );
 };
