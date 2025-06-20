@@ -1,15 +1,15 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Plus, DollarSign, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
 import { Negocio } from '@/types';
-import { formatearPrecio } from '@/utils/formatters';
 import { calcularValorNegocio, obtenerInfoPresupuestos } from '@/utils/businessCalculations';
 import CompactPresupuestosList from './presupuestos/CompactPresupuestosList';
 import PresupuestoEstadoDialog from './presupuestos/PresupuestoEstadoDialog';
 import DetalleNegocioSecondaryInfo from './DetalleNegocioSecondaryInfo';
+import BusinessValueSection from './sections/BusinessValueSection';
+import StatusIndicators from './sections/StatusIndicators';
+import QuickActionsSection from './sections/QuickActionsSection';
+import SecondaryInfoToggle from './sections/SecondaryInfoToggle';
 
 interface DetalleNegocioMainContentProps {
   negocio: Negocio;
@@ -72,53 +72,6 @@ const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
     }
   };
 
-  // Enhanced status indicators with new states
-  const getStatusBadges = () => {
-    const badges = [];
-    
-    if (infoPresupuestos.presupuestosAprobados > 0) {
-      badges.push(
-        <Badge key="aprobados" className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs">
-          {infoPresupuestos.presupuestosAprobados} aprobado{infoPresupuestos.presupuestosAprobados !== 1 ? 's' : ''}
-        </Badge>
-      );
-    }
-    
-    if (infoPresupuestos.presupuestosEnviados > 0) {
-      badges.push(
-        <Badge key="enviados" className="bg-blue-100 text-blue-700 border-blue-200 text-xs">
-          {infoPresupuestos.presupuestosEnviados} enviado{infoPresupuestos.presupuestosEnviados !== 1 ? 's' : ''}
-        </Badge>
-      );
-    }
-    
-    if (infoPresupuestos.presupuestosBorrador > 0) {
-      badges.push(
-        <Badge key="borrador" className="bg-slate-100 text-slate-700 border-slate-200 text-xs">
-          {infoPresupuestos.presupuestosBorrador} borrador{infoPresupuestos.presupuestosBorrador !== 1 ? 'es' : ''}
-        </Badge>
-      );
-    }
-    
-    if (infoPresupuestos.presupuestosRechazados > 0) {
-      badges.push(
-        <Badge key="rechazados" className="bg-red-100 text-red-700 border-red-200 text-xs">
-          {infoPresupuestos.presupuestosRechazados} rechazado{infoPresupuestos.presupuestosRechazados !== 1 ? 's' : ''}
-        </Badge>
-      );
-    }
-    
-    if (infoPresupuestos.presupuestosVencidos > 0) {
-      badges.push(
-        <Badge key="vencidos" className="bg-orange-100 text-orange-700 border-orange-200 text-xs">
-          {infoPresupuestos.presupuestosVencidos} vencido{infoPresupuestos.presupuestosVencidos !== 1 ? 's' : ''}
-        </Badge>
-      );
-    }
-
-    return badges;
-  };
-
   return (
     <>
       <Card className="border-slate-200 bg-white">
@@ -126,41 +79,19 @@ const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
           {/* Business value and quick actions */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-slate-100 rounded-lg">
-                  <DollarSign className="w-5 h-5 text-slate-700" />
-                </div>
-                <div>
-                  <p className="text-xs text-slate-600 font-medium">Valor Total</p>
-                  <div className="flex items-baseline space-x-2">
-                    <span className="text-2xl font-bold text-slate-900">
-                      {formatearPrecio(valorNegocio)}
-                    </span>
-                    {valorNegocio > 0 && (
-                      <div className="flex items-center space-x-1 text-emerald-600">
-                        <TrendingUp className="w-3 h-3" />
-                        <span className="text-xs font-medium">Activo</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <BusinessValueSection valorNegocio={valorNegocio} />
 
-              {/* Enhanced status indicators */}
-              {infoPresupuestos.totalPresupuestos > 0 && (
-                <div className="flex gap-2 flex-wrap">
-                  {getStatusBadges()}
-                </div>
-              )}
+              <StatusIndicators
+                presupuestosAprobados={infoPresupuestos.presupuestosAprobados}
+                presupuestosEnviados={infoPresupuestos.presupuestosEnviados}
+                presupuestosBorrador={infoPresupuestos.presupuestosBorrador}
+                presupuestosRechazados={infoPresupuestos.presupuestosRechazados}
+                presupuestosVencidos={infoPresupuestos.presupuestosVencidos}
+                totalPresupuestos={infoPresupuestos.totalPresupuestos}
+              />
             </div>
 
-            <Button 
-              onClick={onCrearPresupuesto} 
-              className="bg-slate-900 text-white hover:bg-slate-800"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo Presupuesto
-            </Button>
+            <QuickActionsSection onCrearPresupuesto={onCrearPresupuesto} />
           </div>
 
           {/* Compact budgets list */}
@@ -176,22 +107,11 @@ const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
           />
 
           {/* Secondary information toggle */}
-          <div className="mt-6 pt-4 border-t border-slate-200">
-            <Button
-              variant="ghost"
-              onClick={() => setMostrarInfoSecundaria(!mostrarInfoSecundaria)}
-              className="w-full justify-between text-slate-600 hover:text-slate-700 hover:bg-slate-50"
-            >
-              <span className="text-sm font-medium">
-                Información adicional ({negocio.contacto.nombre}, evento, empresas)
-              </span>
-              {mostrarInfoSecundaria ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
+          <SecondaryInfoToggle
+            mostrarInfoSecundaria={mostrarInfoSecundaria}
+            onToggle={() => setMostrarInfoSecundaria(!mostrarInfoSecundaria)}
+            nombreContacto={negocio.contacto.nombre}
+          />
         </CardContent>
       </Card>
 
