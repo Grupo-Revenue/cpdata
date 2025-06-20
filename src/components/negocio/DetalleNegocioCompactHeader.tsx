@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, Calendar, MapPin } from 'lucide-react';
 import { Negocio } from '@/types';
 import { format } from 'date-fns';
@@ -25,51 +26,53 @@ const DetalleNegocioCompactHeader: React.FC<DetalleNegocioCompactHeaderProps> = 
   const { descripcionEstado, colorEstado } = obtenerEstadoNegocioInfo(negocio);
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button 
-            variant="outline" 
-            onClick={onVolver}
-            size="sm"
-            className="border-slate-300 text-slate-600 hover:bg-slate-50"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Volver
-          </Button>
-          
-          <div className="flex items-center space-x-3">
-            <div>
-              <div className="flex items-center space-x-2 mb-1">
-                <h1 className="text-xl font-bold text-slate-900">Negocio #{negocio.numero}</h1>
-                <Badge 
-                  variant="outline"
-                  className={`text-xs px-2 py-0.5 border ${colorEstado}`}
-                  title={descripcionEstado}
-                >
-                  {negocio.estado.charAt(0).toUpperCase() + negocio.estado.slice(1).replace('_', ' ')}
-                </Badge>
+    <Card className="shadow-soft">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Button 
+              variant="outline" 
+              onClick={onVolver}
+              size="sm"
+              className="hover:bg-gray-50"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Volver
+            </Button>
+            
+            <div className="flex items-center space-x-3">
+              <div>
+                <div className="flex items-center space-x-2 mb-1">
+                  <h1 className="text-2xl font-semibold text-gray-900">Negocio #{negocio.numero}</h1>
+                  <Badge 
+                    variant="outline"
+                    className={`text-xs px-2 py-0.5 border ${colorEstado}`}
+                    title={descripcionEstado}
+                  >
+                    {negocio.estado.charAt(0).toUpperCase() + negocio.estado.slice(1).replace('_', ' ')}
+                  </Badge>
+                </div>
+                <p className="text-gray-600 font-medium">{negocio.evento.nombreEvento}</p>
               </div>
-              <p className="text-sm text-slate-600 font-medium">{negocio.evento.nombreEvento}</p>
             </div>
           </div>
-        </div>
 
-        {/* Key event info */}
-        <div className="flex items-center space-x-6 text-sm text-slate-600">
-          {negocio.evento.fechaEvento && (
+          {/* Key event info */}
+          <div className="flex items-center space-x-6 text-sm text-gray-600">
+            {negocio.evento.fechaEvento && (
+              <div className="flex items-center space-x-1">
+                <Calendar className="w-4 h-4" />
+                <span>{formatearFecha(negocio.evento.fechaEvento)}</span>
+              </div>
+            )}
             <div className="flex items-center space-x-1">
-              <Calendar className="w-4 h-4" />
-              <span>{formatearFecha(negocio.evento.fechaEvento)}</span>
+              <MapPin className="w-4 h-4" />
+              <span className="truncate max-w-48">{negocio.evento.locacion}</span>
             </div>
-          )}
-          <div className="flex items-center space-x-1">
-            <MapPin className="w-4 h-4" />
-            <span className="truncate max-w-48">{negocio.evento.locacion}</span>
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

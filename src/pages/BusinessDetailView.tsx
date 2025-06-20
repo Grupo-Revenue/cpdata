@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import DetalleNegocio from '@/components/DetalleNegocio';
 
@@ -12,12 +11,12 @@ interface BusinessDetailViewProps {
 const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({ negocioId, onVolver }) => {
   return (
     <DashboardLayout>
-      <div className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 max-w-7xl">
         <DetalleNegocio
           negocioId={negocioId}
           onVolver={onVolver}
         />
-      </div>
+      </main>
     </DashboardLayout>
   );
 };

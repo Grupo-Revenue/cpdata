@@ -25,8 +25,8 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-slate-400" />
-          <p className="text-slate-600">Cargando negocio...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-gray-600">Cargando negocio...</p>
         </div>
       </div>
     );
@@ -35,7 +35,7 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
   if (!negocio) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate-600 mb-4">Negocio no encontrado</p>
+        <p className="text-gray-600 mb-4">Negocio no encontrado</p>
         <Button onClick={onVolver} variant="outline">Volver</Button>
       </div>
     );
@@ -78,12 +78,14 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="max-w-6xl mx-auto px-4 py-4 space-y-4">
-        {/* Compact Header */}
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
         <DetalleNegocioCompactHeader negocio={negocio} onVolver={onVolver} />
+      </div>
 
-        {/* Main Content */}
+      {/* Main Content */}
+      <div>
         <DetalleNegocioMainContent
           negocio={negocio}
           onCrearPresupuesto={handleCrearPresupuesto}
