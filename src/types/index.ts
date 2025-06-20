@@ -31,6 +31,7 @@ export interface ProductoPresupuesto {
   id: string;
   nombre: string;
   descripcion: string;
+  comentarios: string;
   cantidad: number;
   precioUnitario: number;
   descuentoPorcentaje: number;
@@ -129,4 +130,3 @@ export const PRODUCTOS_BIBLIOTECA: ProductoBiblioteca[] = [
 
 // Constants for IVA calculation
 export const IVA_PERCENTAGE = 19;
-

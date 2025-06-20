@@ -20,6 +20,21 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
       }
     };
 
+    const stripHtmlTags = (html: string) => {
+      if (!html) return '';
+      return html.replace(/<[^>]*>/g, '');
+    };
+
+    const renderHtmlContent = (html: string) => {
+      if (!html) return null;
+      return (
+        <div 
+          className="text-sm text-gray-600 mt-1"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      );
+    };
+
     return (
       <div ref={ref} className="bg-white p-8 max-w-4xl mx-auto text-black" style={{ fontFamily: 'Arial, sans-serif' }}>
         {/* Header */}
@@ -126,8 +141,12 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
                 <tr key={producto.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                   <td className="border border-gray-300 p-3">
                     <div className="font-medium">{producto.nombre}</div>
-                    {producto.descripcion && (
-                      <div className="text-sm text-gray-600 mt-1">{producto.descripcion}</div>
+                    {producto.descripcion && renderHtmlContent(producto.descripcion)}
+                    {producto.comentarios && (
+                      <div className="mt-2 pt-2 border-t border-gray-200">
+                        <div className="text-xs font-semibold text-gray-700 mb-1">Comentarios:</div>
+                        {renderHtmlContent(producto.comentarios)}
+                      </div>
                     )}
                   </td>
                   <td className="border border-gray-300 p-3 text-center">{producto.cantidad}</td>

@@ -9,13 +9,15 @@ interface RichTextEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  showLists?: boolean;
 }
 
 const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
   onChange,
   placeholder = "Escribe aquí...",
-  className
+  className,
+  showLists = false
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -78,6 +80,37 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         >
           <Underline className="h-3 w-3" />
         </Button>
+        {showLists && (
+          <>
+            <div className="w-px h-4 bg-gray-300 mx-1" />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => executeCommand('insertOrderedList')}
+              className={cn(
+                "h-6 w-8 p-0 text-xs font-mono",
+                isCommandActive('insertOrderedList') && "bg-gray-200"
+              )}
+              title="Lista numerada"
+            >
+              1.
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => executeCommand('insertUnorderedList')}
+              className={cn(
+                "h-6 w-8 p-0 text-xs",
+                isCommandActive('insertUnorderedList') && "bg-gray-200"
+              )}
+              title="Lista con viñetas"
+            >
+              •
+            </Button>
+          </>
+        )}
       </div>
 
       {/* Editor compacto */}

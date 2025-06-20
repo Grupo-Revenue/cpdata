@@ -63,7 +63,7 @@ const ProductEditRow: React.FC<ProductEditRowProps> = ({
   return (
     <TableRow className="group">
       <TableCell className="p-3">
-        <div className="space-y-2">
+        <div className="space-y-3">
           <h4 className="font-medium text-sm">
             <span className="inline-flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full mr-2">
               {index + 1}
@@ -71,6 +71,7 @@ const ProductEditRow: React.FC<ProductEditRowProps> = ({
             {producto.nombre}
           </h4>
           <div className="w-full">
+            <label className="text-xs font-medium text-gray-700 mb-1 block">Descripción</label>
             <RichTextEditor
               value={producto.descripcion}
               onChange={(value) => onActualizarProducto(
@@ -80,6 +81,21 @@ const ProductEditRow: React.FC<ProductEditRowProps> = ({
               )}
               placeholder="Descripción del producto..."
               className="text-xs"
+              showLists={true}
+            />
+          </div>
+          <div className="w-full">
+            <label className="text-xs font-medium text-gray-700 mb-1 block">Comentarios</label>
+            <RichTextEditor
+              value={producto.comentarios || ''}
+              onChange={(value) => onActualizarProducto(
+                producto.id, 
+                'comentarios', 
+                value
+              )}
+              placeholder="Comentarios adicionales..."
+              className="text-xs"
+              showLists={true}
             />
           </div>
         </div>

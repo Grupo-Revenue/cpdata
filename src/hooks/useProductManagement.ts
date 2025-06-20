@@ -12,6 +12,7 @@ export const useProductManagement = (initialProducts: ProductoPresupuesto[] = []
       id: `producto-${Date.now()}-${productoBiblioteca.id}`,
       nombre: productoBiblioteca.nombre,
       descripcion: productoBiblioteca.descripcion || '',
+      comentarios: '',
       cantidad: 1,
       precioUnitario: productoBiblioteca.precio_base,
       descuentoPorcentaje: 0,
@@ -34,6 +35,7 @@ export const useProductManagement = (initialProducts: ProductoPresupuesto[] = []
     const nuevoProducto: ProductoPresupuesto = {
       id: `producto-${Date.now()}`,
       ...productoData,
+      comentarios: '',
       descuentoPorcentaje: 0,
       total: calcularTotalProducto(productoData.cantidad, productoData.precioUnitario, 0)
     };
@@ -77,7 +79,12 @@ export const useProductManagement = (initialProducts: ProductoPresupuesto[] = []
   };
 
   const setProductosFromExternal = (newProductos: ProductoPresupuesto[]) => {
-    setProductos(newProductos);
+    // Ensure backward compatibility by adding comentarios field if missing
+    const productosConComentarios = newProductos.map(producto => ({
+      ...producto,
+      comentarios: producto.comentarios || ''
+    }));
+    setProductos(productosConComentarios);
   };
 
   return {
