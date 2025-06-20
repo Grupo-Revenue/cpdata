@@ -36,7 +36,7 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
             variant="outline"
             size="sm"
             onClick={() => onEnviarPresupuesto(presupuesto.id)}
-            className="text-blue-600 hover:text-blue-700"
+            className="text-blue-600 hover:text-blue-700 border-blue-200 hover:bg-blue-50"
             disabled={procesandoEstado === presupuesto.id}
           >
             {procesandoEstado === presupuesto.id ? (
@@ -55,7 +55,7 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
             variant="outline"
             size="sm"
             onClick={() => onCambiarEstado(presupuesto.id, 'aprobado')}
-            className="text-green-600 hover:text-green-700"
+            className="text-emerald-600 hover:text-emerald-700 border-emerald-200 hover:bg-emerald-50"
             disabled={procesandoEstado === presupuesto.id}
           >
             {procesandoEstado === presupuesto.id ? (
@@ -69,7 +69,7 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
             variant="outline"
             size="sm"
             onClick={() => onCambiarEstado(presupuesto.id, 'rechazado')}
-            className="text-red-600 hover:text-red-700"
+            className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
             disabled={procesandoEstado === presupuesto.id}
           >
             {procesandoEstado === presupuesto.id ? (
@@ -86,13 +86,13 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
   };
 
   return (
-    <div className="flex flex-col space-y-2 ml-6">
-      {/* Botones de acción del estado */}
+    <div className="flex flex-col space-y-3 ml-6">
+      {/* State action buttons */}
       <div className="flex space-x-2">
         {obtenerAccionesEstado()}
       </div>
       
-      {/* Botones básicos */}
+      {/* Basic buttons */}
       <div className="flex space-x-2">
         <Button
           variant="outline"
@@ -107,7 +107,7 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
             variant="outline"
             size="sm"
             onClick={() => onEditarPresupuesto(presupuesto.id)}
-            className="text-indigo-600 hover:text-indigo-700 border-indigo-200 hover:bg-indigo-50"
+            className="text-slate-600 hover:text-slate-700 border-slate-200 hover:bg-slate-50"
           >
             <Edit className="w-4 h-4" />
           </Button>

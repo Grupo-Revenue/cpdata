@@ -86,13 +86,13 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
 
   return (
     <>
-      <Card className="overflow-hidden">
+      <Card className="border-slate-200 bg-white">
         <PresupuestosCardHeader 
           negocio={negocio} 
           onCrearPresupuesto={onCrearPresupuesto} 
         />
         
-        <CardContent className="p-6">
+        <CardContent className="p-6 pt-0">
           {presupuestos.length === 0 ? (
             <EmptyPresupuestosState onCrearPresupuesto={onCrearPresupuesto} />
           ) : (

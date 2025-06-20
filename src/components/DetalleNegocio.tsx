@@ -5,8 +5,7 @@ import { Loader2 } from 'lucide-react';
 import CrearPresupuesto from './CrearPresupuesto';
 import { useNavigate } from 'react-router-dom';
 import DetalleNegocioHeader from './negocio/DetalleNegocioHeader';
-import ContactoEmpresasCard from './negocio/ContactoEmpresasCard';
-import EventoCard from './negocio/EventoCard';
+import InformacionGeneralCard from './negocio/InformacionGeneralCard';
 import PresupuestosCard from './negocio/PresupuestosCard';
 import { Button } from '@/components/ui/button';
 
@@ -27,8 +26,8 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Cargando negocio...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-slate-400" />
+          <p className="text-slate-600">Cargando negocio...</p>
         </div>
       </div>
     );
@@ -36,9 +35,9 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
 
   if (!negocio) {
     return (
-      <div className="text-center py-8">
-        <p>Negocio no encontrado</p>
-        <Button onClick={onVolver} className="mt-4">Volver</Button>
+      <div className="text-center py-12">
+        <p className="text-slate-600 mb-4">Negocio no encontrado</p>
+        <Button onClick={onVolver} variant="outline">Volver</Button>
       </div>
     );
   }
@@ -80,36 +79,29 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
   }
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <DetalleNegocioHeader negocio={negocio} onVolver={onVolver} />
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        {/* Header */}
+        <DetalleNegocioHeader negocio={negocio} onVolver={onVolver} />
 
-      {/* Two column layout for main info */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* Left column - Contacto y Empresas */}
-        <div className="xl:col-span-1">
-          <ContactoEmpresasCard 
-            contacto={negocio.contacto} 
-            productora={negocio.productora} 
-            clienteFinal={negocio.clienteFinal} 
-          />
-        </div>
+        {/* General Information */}
+        <InformacionGeneralCard 
+          contacto={negocio.contacto} 
+          productora={negocio.productora} 
+          clienteFinal={negocio.clienteFinal}
+          evento={negocio.evento}
+        />
 
-        {/* Right column - Event info */}
-        <div className="xl:col-span-2">
-          <EventoCard evento={negocio.evento} />
-        </div>
+        {/* Budgets */}
+        <PresupuestosCard
+          negocio={negocio}
+          onCrearPresupuesto={handleCrearPresupuesto}
+          onEditarPresupuesto={handleEditarPresupuesto}
+          onEliminarPresupuesto={handleEliminarPresupuesto}
+          onVerPDF={handleVerPDF}
+          onCambiarEstado={handleCambiarEstadoPresupuesto}
+        />
       </div>
-
-      {/* Presupuestos - Full width, now includes valor del negocio */}
-      <PresupuestosCard
-        negocio={negocio}
-        onCrearPresupuesto={handleCrearPresupuesto}
-        onEditarPresupuesto={handleEditarPresupuesto}
-        onEliminarPresupuesto={handleEliminarPresupuesto}
-        onVerPDF={handleVerPDF}
-        onCambiarEstado={handleCambiarEstadoPresupuesto}
-      />
     </div>
   );
 };
