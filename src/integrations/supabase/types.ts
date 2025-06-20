@@ -447,6 +447,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      actualizar_presupuestos_vencidos: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      calcular_estado_negocio: {
+        Args: { negocio_id_param: string }
+        Returns: Database["public"]["Enums"]["estado_negocio"]
+      }
       check_is_admin: {
         Args: { _user_id: string }
         Returns: boolean

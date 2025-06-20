@@ -18,7 +18,7 @@ interface DetalleNegocioProps {
 }
 
 const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) => {
-  const { obtenerNegocio, eliminarPresupuesto, loading } = useNegocio();
+  const { obtenerNegocio, eliminarPresupuesto, cambiarEstadoPresupuesto, loading } = useNegocio();
   const navigate = useNavigate();
   const [mostrarCrearPresupuesto, setMostrarCrearPresupuesto] = useState(false);
   const [presupuestoEditando, setPresupuestoEditando] = useState<string | null>(null);
@@ -67,6 +67,10 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
     setPresupuestoEditando(null);
   };
 
+  const handleCambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string) => {
+    await cambiarEstadoPresupuesto(negocioId, presupuestoId, nuevoEstado, fechaVencimiento);
+  };
+
   if (mostrarCrearPresupuesto) {
     return (
       <CrearPresupuesto
@@ -97,6 +101,7 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
         onEditarPresupuesto={handleEditarPresupuesto}
         onEliminarPresupuesto={handleEliminarPresupuesto}
         onVerPDF={handleVerPDF}
+        onCambiarEstado={handleCambiarEstadoPresupuesto}
       />
     </div>
   );

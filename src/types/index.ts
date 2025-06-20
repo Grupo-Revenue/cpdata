@@ -42,7 +42,11 @@ export interface Presupuesto {
   productos: ProductoPresupuesto[];
   total: number;
   fechaCreacion: string;
-  estado: 'borrador' | 'enviado' | 'aprobado' | 'rechazado';
+  estado: 'borrador' | 'enviado' | 'aprobado' | 'rechazado' | 'vencido' | 'cancelado';
+  fechaVencimiento?: string;
+  fechaEnvio?: string;
+  fechaAprobacion?: string;
+  fechaRechazo?: string;
 }
 
 export interface Negocio {
@@ -54,7 +58,7 @@ export interface Negocio {
   evento: Evento;
   presupuestos: Presupuesto[];
   fechaCreacion: string;
-  estado: 'activo' | 'cerrado' | 'cancelado';
+  estado: 'activo' | 'cerrado' | 'cancelado' | 'prospecto' | 'perdido' | 'ganado';
 }
 
 export interface ProductoBiblioteca {

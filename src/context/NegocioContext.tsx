@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Negocio, Presupuesto, ProductoPresupuesto } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +13,7 @@ interface NegocioContextType {
   crearPresupuesto: (negocioId: string, productos: ProductoPresupuesto[]) => Promise<string>;
   actualizarPresupuesto: (negocioId: string, presupuestoId: string, productos: ProductoPresupuesto[]) => Promise<void>;
   eliminarPresupuesto: (negocioId: string, presupuestoId: string) => Promise<void>;
+  cambiarEstadoPresupuesto: (negocioId: string, presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string) => Promise<void>;
   cargarNegocios: () => Promise<void>;
 }
 
@@ -108,10 +108,14 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
           })) || [],
           total: parseFloat(presupuesto.total),
           fechaCreacion: presupuesto.created_at,
-          estado: presupuesto.estado as 'borrador' | 'enviado' | 'aprobado' | 'rechazado'
+          estado: presupuesto.estado as 'borrador' | 'enviado' | 'aprobado' | 'rechazado' | 'vencido' | 'cancelado',
+          fechaVencimiento: presupuesto.fecha_vencimiento || undefined,
+          fechaEnvio: presupuesto.fecha_envio || undefined,
+          fechaAprobacion: presupuesto.fecha_aprobacion || undefined,
+          fechaRechazo: presupuesto.fecha_rechazo || undefined
         })) || [],
         fechaCreacion: negocio.created_at,
-        estado: negocio.estado as 'activo' | 'cerrado' | 'cancelado'
+        estado: negocio.estado as 'activo' | 'cerrado' | 'cancelado' | 'prospecto' | 'perdido' | 'ganado'
       })) || [];
 
       setNegocios(negociosFormateados);
@@ -309,6 +313,17 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
     if (!user) throw new Error('Usuario no autenticado');
 
     try {
+      // Calcular nuevo total
+      const total = productos.reduce((sum, producto) => sum + producto.total, 0);
+
+      // Actualizar el presupuesto con el nuevo total
+      const { error: updatePresupuestoError } = await supabase
+        .from('presupuestos')
+        .update({ total })
+        .eq('id', presupuestoId);
+
+      if (updatePresupuestoError) throw updatePresupuestoError;
+
       // Eliminar productos existentes
       const { error: deleteError } = await supabase
         .from('productos_presupuesto')
@@ -370,6 +385,41 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
     }
   };
 
+  const cambiarEstadoPresupuesto = async (negocioId: string, presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string): Promise<void> => {
+    if (!user) throw new Error('Usuario no autenticado');
+
+    try {
+      const updateData: any = { estado: nuevoEstado };
+      
+      // Agregar fecha de vencimiento si se está enviando el presupuesto
+      if (nuevoEstado === 'enviado' && fechaVencimiento) {
+        updateData.fecha_vencimiento = fechaVencimiento;
+      }
+
+      const { error } = await supabase
+        .from('presupuestos')
+        .update(updateData)
+        .eq('id', presupuestoId);
+
+      if (error) throw error;
+
+      await cargarNegocios();
+
+      toast({
+        title: "Estado actualizado",
+        description: `El presupuesto ha sido marcado como ${nuevoEstado}`,
+      });
+    } catch (error) {
+      console.error('Error cambiando estado del presupuesto:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo cambiar el estado del presupuesto",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
   // Cargar datos cuando el usuario cambie
   useEffect(() => {
     if (user) {
@@ -390,6 +440,7 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
       crearPresupuesto,
       actualizarPresupuesto,
       eliminarPresupuesto,
+      cambiarEstadoPresupuesto,
       cargarNegocios
     }}>
       {children}
