@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
+import RichTextEditor from '@/components/ui/rich-text-editor';
 import { ProductoPresupuesto } from '@/types';
 
 interface ProductExpandedDetailsProps {
@@ -13,14 +13,14 @@ const ProductExpandedDetails: React.FC<ProductExpandedDetailsProps> = ({
   producto,
   onActualizarProducto
 }) => {
-  const handleDescripcionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    console.log('Description change', { productId: producto.id, value: e.target.value });
-    onActualizarProducto(producto.id, 'descripcion', e.target.value);
+  const handleDescripcionChange = (value: string) => {
+    console.log('Description change', { productId: producto.id, value });
+    onActualizarProducto(producto.id, 'descripcion', value);
   };
 
-  const handleComentariosChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    console.log('Comments change', { productId: producto.id, value: e.target.value });
-    onActualizarProducto(producto.id, 'comentarios', e.target.value);
+  const handleComentariosChange = (value: string) => {
+    console.log('Comments change', { productId: producto.id, value });
+    onActualizarProducto(producto.id, 'comentarios', value);
   };
 
   return (
@@ -32,12 +32,12 @@ const ProductExpandedDetails: React.FC<ProductExpandedDetailsProps> = ({
             <label className="text-xs font-medium text-gray-600 mb-2 block">
               Descripción del producto
             </label>
-            <Textarea
+            <RichTextEditor
               value={producto.descripcion || ''}
               onChange={handleDescripcionChange}
               placeholder="Describe las características del producto..."
-              className="min-h-[100px] resize-none"
-              rows={4}
+              className="min-h-[100px]"
+              compact={true}
             />
           </div>
           
@@ -46,12 +46,12 @@ const ProductExpandedDetails: React.FC<ProductExpandedDetailsProps> = ({
             <label className="text-xs font-medium text-gray-600 mb-2 block">
               Comentarios adicionales
             </label>
-            <Textarea
+            <RichTextEditor
               value={producto.comentarios || ''}
               onChange={handleComentariosChange}
               placeholder="Notas internas, observaciones especiales..."
-              className="min-h-[100px] resize-none"
-              rows={4}
+              className="min-h-[100px]"
+              compact={true}
             />
           </div>
         </div>
