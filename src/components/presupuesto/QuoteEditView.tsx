@@ -30,7 +30,7 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
   const handlePrecioChange = (id: string, value: string) => {
     // Si el campo está vacío, mantenerlo vacío hasta que el usuario escriba algo
     if (value === '') {
-      onActualizarProducto(id, 'precioUnitario', '');
+      onActualizarProducto(id, 'precioUnitario', 0);
       return;
     }
     
@@ -114,7 +114,7 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
                       type="number"
                       step="1"
                       min="0"
-                      value={producto.precioUnitario === '' ? '' : producto.precioUnitario}
+                      value={producto.precioUnitario === 0 ? '' : producto.precioUnitario}
                       onChange={(e) => handlePrecioChange(producto.id, e.target.value)}
                       className="mt-1"
                       placeholder="0"

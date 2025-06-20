@@ -98,10 +98,8 @@ const CrearPresupuesto: React.FC<CrearPresupuestoProps> = ({ negocioId, presupue
           const cantidad = typeof valor === 'number' ? valor : parseInt(valor) || 1;
           productoActualizado.cantidad = cantidad;
           const precio = typeof productoActualizado.precioUnitario === 'number' ? 
-            productoActualizado.precioUnitario : parseFloat(productoActualizado.precioUnitario) || 0;
+            productoActualizado.precioUnitario : parseFloat(String(productoActualizado.precioUnitario)) || 0;
           productoActualizado.total = cantidad * precio;
-        } else if (campo === 'cantidad' || campo === 'precioUnitario') {
-          productoActualizado.total = productoActualizado.cantidad * productoActualizado.precioUnitario;
         }
         
         return productoActualizado;
