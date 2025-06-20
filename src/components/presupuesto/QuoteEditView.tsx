@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -165,8 +164,9 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
                             step="0.1"
                             value={producto.descuentoPorcentaje}
                             onChange={(e) => handleDescuentoChange(producto.id, e.target.value)}
-                            className="w-20 h-8 text-center text-sm pr-6"
+                            className="w-20 h-8 text-center text-sm pr-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             placeholder="0"
+                            style={{ MozAppearance: 'textfield' }}
                           />
                         </div>
                       </TableCell>
@@ -264,4 +264,3 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
 };
 
 export default QuoteEditView;
-
