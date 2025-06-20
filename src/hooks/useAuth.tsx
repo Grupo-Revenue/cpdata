@@ -34,13 +34,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkAdminStatus = async () => {
     if (!user) {
+      console.log('No user found, setting isAdmin to false');
       setIsAdmin(false);
       return;
     }
 
     try {
-      // Use the is_admin() function instead of querying user_roles directly
-      const { data, error } = await supabase.rpc('is_admin');
+      console.log('Checking admin status for user:', user.id);
+      
+      // Use the new check_is_admin function directly
+      const { data, error } = await supabase.rpc('check_is_admin', {
+        _user_id: user.id
+      });
 
       if (error) {
         console.error('Error checking admin status:', error);
@@ -48,6 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
+      console.log('Admin check result:', data);
       setIsAdmin(!!data);
     } catch (error) {
       console.error('Error in checkAdminStatus:', error);
@@ -56,18 +62,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    console.log('Setting up auth state listener...');
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
         
         // Check admin status when user changes
         if (session?.user) {
+          // Use setTimeout to defer the admin check and avoid any potential conflicts
           setTimeout(() => {
             checkAdminStatus();
-          }, 0);
+          }, 100);
         } else {
           setIsAdmin(false);
         }
@@ -76,6 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -83,12 +94,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         setTimeout(() => {
           checkAdminStatus();
-        }, 0);
+        }, 100);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('Cleaning up auth subscription');
+      subscription.unsubscribe();
+    };
   }, []);
+
+  // Re-check admin status when user changes
+  useEffect(() => {
+    if (user) {
+      checkAdminStatus();
+    }
+  }, [user?.id]);
 
   const signUp = async (email: string, password: string, userData?: any) => {
     const redirectUrl = `${window.location.origin}/`;
@@ -130,6 +151,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: error.message,
         variant: "destructive"
       });
+    } else {
+      toast({
+        title: "Inicio de sesión exitoso",
+        description: "Bienvenido de vuelta!"
+      });
     }
 
     return { error };
@@ -142,6 +168,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: "Error",
         description: "No se pudo cerrar la sesión",
         variant: "destructive"
+      });
+    } else {
+      setIsAdmin(false);
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión exitosamente"
       });
     }
   };
