@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import RichTextEditor from '@/components/ui/rich-text-editor';
 import { Plus, Package } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -86,11 +87,11 @@ const CustomProductForm: React.FC<CustomProductFormProps> = ({ onAgregarProducto
         
         <div>
           <Label htmlFor="descripcion">Descripción</Label>
-          <Input
-            id="descripcion"
+          <RichTextEditor
             value={producto.descripcion}
-            onChange={(e) => setProducto({ ...producto, descripcion: e.target.value })}
+            onChange={(value) => setProducto({ ...producto, descripcion: value })}
             placeholder="Descripción del producto"
+            className="mt-1"
           />
         </div>
         

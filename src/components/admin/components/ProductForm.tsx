@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import RichTextEditor from '@/components/ui/rich-text-editor';
 import { 
   Select,
   SelectContent,
@@ -43,10 +43,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
       </div>
       <div>
         <Label htmlFor="descripcion">Descripción</Label>
-        <Textarea
-          id="descripcion"
+        <RichTextEditor
           value={formData.descripcion}
-          onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
+          onChange={(value) => setFormData({...formData, descripcion: value})}
+          placeholder="Descripción del producto"
+          className="mt-1"
         />
       </div>
       <div>

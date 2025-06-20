@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
+import RichTextEditor from '@/components/ui/rich-text-editor';
 import { ShoppingCart, Trash2, ArrowLeft } from 'lucide-react';
 import { ProductoPresupuesto } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
@@ -71,15 +71,15 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
                     <h4 className="font-medium text-lg mb-2">{producto.nombre}</h4>
                     <div>
                       <Label className="text-sm font-medium">Descripción</Label>
-                      <Textarea
+                      <RichTextEditor
                         value={producto.descripcion}
-                        onChange={(e) => onActualizarProducto(
+                        onChange={(value) => onActualizarProducto(
                           producto.id, 
                           'descripcion', 
-                          e.target.value
+                          value
                         )}
                         placeholder="Descripción del producto..."
-                        className="mt-1 min-h-[80px]"
+                        className="mt-1"
                       />
                     </div>
                   </div>
