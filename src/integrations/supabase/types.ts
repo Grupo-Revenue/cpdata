@@ -9,6 +9,254 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      contactos: {
+        Row: {
+          apellido: string
+          cargo: string | null
+          created_at: string
+          email: string
+          id: string
+          nombre: string
+          telefono: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          apellido: string
+          cargo?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          nombre: string
+          telefono: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          apellido?: string
+          cargo?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          nombre?: string
+          telefono?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      contadores_usuario: {
+        Row: {
+          contador_negocio: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contador_negocio?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contador_negocio?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      empresas: {
+        Row: {
+          created_at: string
+          direccion: string | null
+          id: string
+          nombre: string
+          rut: string | null
+          sitio_web: string | null
+          tipo: Database["public"]["Enums"]["tipo_empresa"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          direccion?: string | null
+          id?: string
+          nombre: string
+          rut?: string | null
+          sitio_web?: string | null
+          tipo: Database["public"]["Enums"]["tipo_empresa"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          direccion?: string | null
+          id?: string
+          nombre?: string
+          rut?: string | null
+          sitio_web?: string | null
+          tipo?: Database["public"]["Enums"]["tipo_empresa"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      negocios: {
+        Row: {
+          cantidad_asistentes: number | null
+          cantidad_invitados: number | null
+          cliente_final_id: string | null
+          contacto_id: string
+          created_at: string
+          estado: Database["public"]["Enums"]["estado_negocio"]
+          fecha_evento: string | null
+          horas_acreditacion: string
+          id: string
+          locacion: string
+          nombre_evento: string
+          numero: number
+          productora_id: string | null
+          tipo_evento: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cantidad_asistentes?: number | null
+          cantidad_invitados?: number | null
+          cliente_final_id?: string | null
+          contacto_id: string
+          created_at?: string
+          estado?: Database["public"]["Enums"]["estado_negocio"]
+          fecha_evento?: string | null
+          horas_acreditacion: string
+          id?: string
+          locacion: string
+          nombre_evento: string
+          numero: number
+          productora_id?: string | null
+          tipo_evento: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cantidad_asistentes?: number | null
+          cantidad_invitados?: number | null
+          cliente_final_id?: string | null
+          contacto_id?: string
+          created_at?: string
+          estado?: Database["public"]["Enums"]["estado_negocio"]
+          fecha_evento?: string | null
+          horas_acreditacion?: string
+          id?: string
+          locacion?: string
+          nombre_evento?: string
+          numero?: number
+          productora_id?: string | null
+          tipo_evento?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "negocios_cliente_final_id_fkey"
+            columns: ["cliente_final_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "negocios_contacto_id_fkey"
+            columns: ["contacto_id"]
+            isOneToOne: false
+            referencedRelation: "contactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "negocios_productora_id_fkey"
+            columns: ["productora_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presupuestos: {
+        Row: {
+          created_at: string
+          estado: Database["public"]["Enums"]["estado_presupuesto"]
+          id: string
+          negocio_id: string
+          nombre: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          estado?: Database["public"]["Enums"]["estado_presupuesto"]
+          id?: string
+          negocio_id: string
+          nombre: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          estado?: Database["public"]["Enums"]["estado_presupuesto"]
+          id?: string
+          negocio_id?: string
+          nombre?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presupuestos_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      productos_presupuesto: {
+        Row: {
+          cantidad: number
+          created_at: string
+          descripcion: string | null
+          id: string
+          nombre: string
+          precio_unitario: number
+          presupuesto_id: string
+          total: number
+        }
+        Insert: {
+          cantidad?: number
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          precio_unitario: number
+          presupuesto_id: string
+          total: number
+        }
+        Update: {
+          cantidad?: number
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          precio_unitario?: number
+          presupuesto_id?: string
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "productos_presupuesto_presupuesto_id_fkey"
+            columns: ["presupuesto_id"]
+            isOneToOne: false
+            referencedRelation: "presupuestos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           apellido: string | null
@@ -50,7 +298,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      estado_negocio: "activo" | "cerrado" | "cancelado"
+      estado_presupuesto: "borrador" | "enviado" | "aprobado" | "rechazado"
+      tipo_empresa: "productora" | "cliente_final"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -165,6 +415,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      estado_negocio: ["activo", "cerrado", "cancelado"],
+      estado_presupuesto: ["borrador", "enviado", "aprobado", "rechazado"],
+      tipo_empresa: ["productora", "cliente_final"],
+    },
   },
 } as const

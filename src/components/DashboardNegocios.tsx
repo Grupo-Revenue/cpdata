@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useNegocio } from '@/context/NegocioContext';
-import { Plus, Building2, Calendar, Users, MapPin, FileText } from 'lucide-react';
+import { Plus, Building2, Calendar, Users, MapPin, FileText, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -14,7 +14,7 @@ interface DashboardProps {
 }
 
 const DashboardNegocios: React.FC<DashboardProps> = ({ onCrearNegocio, onVerNegocio }) => {
-  const { negocios } = useNegocio();
+  const { negocios, loading } = useNegocio();
 
   const formatearFecha = (fecha: string) => {
     try {
@@ -32,6 +32,17 @@ const DashboardNegocios: React.FC<DashboardProps> = ({ onCrearNegocio, onVerNego
     };
     return colores[estado as keyof typeof colores] || 'bg-gray-100 text-gray-800';
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Cargando negocios...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

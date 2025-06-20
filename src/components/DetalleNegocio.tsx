@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useNegocio } from '@/context/NegocioContext';
-import { ArrowLeft, Plus, Edit, Trash2, Building2, User, Calendar, MapPin, Mail, Phone } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Building2, User, Calendar, MapPin, Mail, Phone, Loader2 } from 'lucide-react';
 import CrearPresupuesto from './CrearPresupuesto';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -15,11 +15,23 @@ interface DetalleNegocioProps {
 }
 
 const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) => {
-  const { obtenerNegocio, eliminarPresupuesto } = useNegocio();
+  const { obtenerNegocio, eliminarPresupuesto, loading } = useNegocio();
   const [mostrarCrearPresupuesto, setMostrarCrearPresupuesto] = useState(false);
   const [presupuestoEditando, setPresupuestoEditando] = useState<string | null>(null);
+  const [eliminandoPresupuesto, setEliminandoPresupuesto] = useState<string | null>(null);
 
   const negocio = obtenerNegocio(negocioId);
+
+  if (loading && !negocio) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Cargando negocio...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!negocio) {
     return (
@@ -55,9 +67,16 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
     return colores[estado as keyof typeof colores] || 'bg-gray-100 text-gray-800';
   };
 
-  const handleEliminarPresupuesto = (presupuestoId: string) => {
+  const handleEliminarPresupuesto = async (presupuestoId: string) => {
     if (confirm('¿Está seguro de que desea eliminar este presupuesto?')) {
-      eliminarPresupuesto(negocioId, presupuestoId);
+      setEliminandoPresupuesto(presupuestoId);
+      try {
+        await eliminarPresupuesto(negocioId, presupuestoId);
+      } catch (error) {
+        console.error('Error eliminando presupuesto:', error);
+      } finally {
+        setEliminandoPresupuesto(null);
+      }
     }
   };
 
@@ -161,7 +180,7 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600">Fecha</p>
-              <p>{formatearFecha(negocio.evento.fechaEvento)}</p>
+              <p>{negocio.evento.fechaEvento ? formatearFecha(negocio.evento.fechaEvento) : 'Por definir'}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600">Horas de Acreditación</p>
@@ -244,8 +263,13 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
                         size="sm"
                         onClick={() => handleEliminarPresupuesto(presupuesto.id)}
                         className="text-red-600 hover:text-red-700"
+                        disabled={eliminandoPresupuesto === presupuesto.id}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        {eliminandoPresupuesto === presupuesto.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
                       </Button>
                     </div>
                   </div>

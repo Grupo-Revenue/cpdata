@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useNegocio } from '@/context/NegocioContext';
 import { TIPOS_EVENTO } from '@/types';
-import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface WizardProps {
@@ -19,6 +18,7 @@ interface WizardProps {
 const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => {
   const { crearNegocio } = useNegocio();
   const [paso, setPaso] = useState(1);
+  const [creando, setCreando] = useState(false);
   
   // Paso 1: Información de Contacto
   const [contacto, setContacto] = useState({
@@ -103,7 +103,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
     setPaso(paso - 1);
   };
 
-  const finalizarWizard = () => {
+  const finalizarWizard = async () => {
     if (!validarPaso3()) {
       toast({
         title: "Campos requeridos",
@@ -113,32 +113,44 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
       return;
     }
 
-    const negocioData = {
-      contacto: {
-        id: `contacto-${Date.now()}`,
-        ...contacto
-      },
-      productora: tipoCliente === 'productora' ? {
-        id: `productora-${Date.now()}`,
-        ...productora,
-        tipo: 'productora' as const
-      } : undefined,
-      clienteFinal: (tipoCliente === 'cliente_final' || tieneClienteFinal) ? {
-        id: `cliente-${Date.now()}`,
-        ...clienteFinal,
-        tipo: 'cliente_final' as const
-      } : undefined,
-      evento
-    };
+    setCreando(true);
+    try {
+      const negocioData = {
+        contacto: {
+          id: `contacto-${Date.now()}`,
+          ...contacto
+        },
+        productora: tipoCliente === 'productora' ? {
+          id: `productora-${Date.now()}`,
+          ...productora,
+          tipo: 'productora' as const
+        } : undefined,
+        clienteFinal: (tipoCliente === 'cliente_final' || tieneClienteFinal) ? {
+          id: `cliente-${Date.now()}`,
+          ...clienteFinal,
+          tipo: 'cliente_final' as const
+        } : undefined,
+        evento
+      };
 
-    const negocioId = crearNegocio(negocioData);
-    
-    toast({
-      title: "Negocio creado exitosamente",
-      description: "El negocio ha sido creado. Ahora puede agregar presupuestos.",
-    });
+      const negocioId = await crearNegocio(negocioData);
+      
+      toast({
+        title: "Negocio creado exitosamente",
+        description: "El negocio ha sido creado. Ahora puede agregar presupuestos.",
+      });
 
-    onComplete(negocioId);
+      onComplete(negocioId);
+    } catch (error) {
+      console.error('Error creando negocio:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo crear el negocio. Intente nuevamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setCreando(false);
+    }
   };
 
   return (
@@ -176,6 +188,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          
           {paso === 1 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -422,25 +435,34 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
       <div className="flex justify-between mt-6">
         <div>
           {paso > 1 && (
-            <Button variant="outline" onClick={anteriorPaso}>
+            <Button variant="outline" onClick={anteriorPaso} disabled={creando}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Anterior
             </Button>
           )}
         </div>
         <div className="space-x-2">
-          <Button variant="outline" onClick={onCancel}>
+          <Button variant="outline" onClick={onCancel} disabled={creando}>
             Cancelar
           </Button>
           {paso < 3 ? (
-            <Button onClick={siguientePaso}>
+            <Button onClick={siguientePaso} disabled={creando}>
               Siguiente
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           ) : (
-            <Button onClick={finalizarWizard} className="bg-green-600 hover:bg-green-700">
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Crear Negocio
+            <Button onClick={finalizarWizard} className="bg-green-600 hover:bg-green-700" disabled={creando}>
+              {creando ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Crear Negocio
+                </>
+              )}
             </Button>
           )}
         </div>
