@@ -110,11 +110,16 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {productos.map((producto) => (
+                  {productos.map((producto, index) => (
                     <TableRow key={producto.id} className="group">
                       <TableCell className="p-3">
                         <div className="space-y-2">
-                          <h4 className="font-medium text-sm">{producto.nombre}</h4>
+                          <h4 className="font-medium text-sm">
+                            <span className="inline-flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full mr-2">
+                              {index + 1}
+                            </span>
+                            {producto.nombre}
+                          </h4>
                           <div className="w-full">
                             <RichTextEditor
                               value={producto.descripcion}
