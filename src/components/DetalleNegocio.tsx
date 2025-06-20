@@ -5,7 +5,6 @@ import { Loader2 } from 'lucide-react';
 import CrearPresupuesto from './CrearPresupuesto';
 import { useNavigate } from 'react-router-dom';
 import DetalleNegocioHeader from './negocio/DetalleNegocioHeader';
-import ValorNegocioCard from './negocio/ValorNegocioCard';
 import ContactoEmpresasCard from './negocio/ContactoEmpresasCard';
 import EventoCard from './negocio/EventoCard';
 import PresupuestosCard from './negocio/PresupuestosCard';
@@ -85,9 +84,6 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
       {/* Header */}
       <DetalleNegocioHeader negocio={negocio} onVolver={onVolver} />
 
-      {/* Valor del Negocio - Full width, prominent */}
-      <ValorNegocioCard negocio={negocio} onCrearPresupuesto={handleCrearPresupuesto} />
-
       {/* Two column layout for main info */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Left column - Contacto y Empresas */}
@@ -105,9 +101,9 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
         </div>
       </div>
 
-      {/* Presupuestos - Full width */}
+      {/* Presupuestos - Full width, now includes valor del negocio */}
       <PresupuestosCard
-        presupuestos={negocio.presupuestos}
+        negocio={negocio}
         onCrearPresupuesto={handleCrearPresupuesto}
         onEditarPresupuesto={handleEditarPresupuesto}
         onEliminarPresupuesto={handleEliminarPresupuesto}
