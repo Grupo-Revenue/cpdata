@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -121,13 +120,7 @@ const BusinessesTable: React.FC<BusinessesTableProps> = ({ onCrearNegocio, onVer
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-          <CardTitle className="text-xl font-semibold">Negocios</CardTitle>
-          <Button onClick={onCrearNegocio} className="bg-primary hover:bg-primary/90">
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Negocio
-          </Button>
-        </div>
+        <CardTitle className="text-xl font-semibold">Negocios</CardTitle>
         
         {/* Filtros y búsqueda */}
         <div className="flex flex-col lg:flex-row gap-4 mt-4">
