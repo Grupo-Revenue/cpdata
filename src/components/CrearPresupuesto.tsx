@@ -79,7 +79,6 @@ const CrearPresupuesto: React.FC<CrearPresupuestoProps> = ({ negocioId, presupue
           productos={productos}
           onActualizarProducto={actualizarProducto}
           onEliminarProducto={eliminarProducto}
-          onAgregarProductoPersonalizado={agregarProductoPersonalizado}
           onVolver={() => setStep('selection')}
           onConfirmar={guardarPresupuesto}
           total={calcularTotal()}

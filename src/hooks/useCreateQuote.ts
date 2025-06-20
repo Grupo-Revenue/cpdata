@@ -54,7 +54,7 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
     precioUnitario: number;
   }) => {
     const nuevoProducto: ProductoPresupuesto = {
-      id: `producto-custom-${Date.now()}`,
+      id: `producto-${Date.now()}`,
       ...productoData,
       total: productoData.cantidad * productoData.precioUnitario
     };
