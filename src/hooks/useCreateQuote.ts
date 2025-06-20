@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useProductosBiblioteca } from '@/hooks/useProductosBiblioteca';
 import { calcularTotalesPresupuesto } from '@/utils/quoteCalculations';
 import { useProductManagement } from '@/hooks/useProductManagement';
@@ -38,25 +38,30 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
     guardarPresupuesto: baseSaveQuote
   } = useQuotePersistence({ negocioId, presupuestoId, onCerrar });
 
-  // Load existing quote data
+  // Load existing quote data with proper memoization
   useEffect(() => {
-    if (presupuestoExistente) {
+    console.log('useCreateQuote: checking presupuestoExistente', { presupuestoExistente, presupuestoId });
+    
+    if (presupuestoExistente && presupuestoExistente.productos) {
+      console.log('useCreateQuote: loading existing productos', presupuestoExistente.productos);
+      
       // Asegurar que todos los productos tengan el campo descuentoPorcentaje
       const productosConDescuento = presupuestoExistente.productos.map(producto => ({
         ...producto,
         descuentoPorcentaje: producto.descuentoPorcentaje || 0
       }));
+      
       setProductosFromExternal(productosConDescuento);
       setStep('editing');
     }
-  }, [presupuestoExistente, setProductosFromExternal, setStep]);
+  }, [presupuestoExistente?.id, setProductosFromExternal, setStep]); // Only depend on the ID to avoid infinite loops
 
-  const calcularTotal = () => {
+  const calcularTotal = useCallback(() => {
     const totales = calcularTotalesPresupuesto(productos);
     return totales.total;
-  };
+  }, [productos]);
 
-  const proceedToEdit = () => {
+  const proceedToEdit = useCallback(() => {
     if (productos.length === 0) {
       toast({
         title: "Sin productos",
@@ -66,11 +71,11 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
       return;
     }
     baseProccedToEdit();
-  };
+  }, [productos.length, baseProccedToEdit]);
 
-  const guardarPresupuesto = () => {
+  const guardarPresupuesto = useCallback(() => {
     baseSaveQuote(productos);
-  };
+  }, [baseSaveQuote, productos]);
 
   return {
     negocio,

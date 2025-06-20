@@ -27,7 +27,13 @@ const ProductMainRow: React.FC<ProductMainRowProps> = ({
 }) => {
   const handleDescuentoChange = (value: number) => {
     const descuentoLimitado = Math.max(0, Math.min(100, value));
+    console.log('Discount change', { productId: producto.id, value: descuentoLimitado });
     onActualizarProducto(producto.id, 'descuentoPorcentaje', descuentoLimitado);
+  };
+
+  const handleToggleExpanded = () => {
+    console.log('Toggle expanded', { productId: producto.id, currentState: isExpanded });
+    onToggleExpanded();
   };
 
   return (
@@ -44,7 +50,7 @@ const ProductMainRow: React.FC<ProductMainRowProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={onToggleExpanded}
+              onClick={handleToggleExpanded}
               className="h-6 mt-1 px-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
             >
               {isExpanded ? (
@@ -66,7 +72,10 @@ const ProductMainRow: React.FC<ProductMainRowProps> = ({
       <TableCell className="text-center align-middle py-3">
         <ProductNumberInput
           value={producto.cantidad}
-          onChange={(value) => onActualizarProducto(producto.id, 'cantidad', value)}
+          onChange={(value) => {
+            console.log('Quantity change', { productId: producto.id, value });
+            onActualizarProducto(producto.id, 'cantidad', value);
+          }}
           min={1}
         />
       </TableCell>
@@ -74,7 +83,10 @@ const ProductMainRow: React.FC<ProductMainRowProps> = ({
       <TableCell className="text-center align-middle py-3">
         <ProductPriceInput
           value={producto.precioUnitario}
-          onChange={(value) => onActualizarProducto(producto.id, 'precioUnitario', value)}
+          onChange={(value) => {
+            console.log('Price change', { productId: producto.id, value });
+            onActualizarProducto(producto.id, 'precioUnitario', value);
+          }}
         />
       </TableCell>
       
@@ -102,7 +114,10 @@ const ProductMainRow: React.FC<ProductMainRowProps> = ({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onEliminarProducto(producto.id)}
+          onClick={() => {
+            console.log('Delete product', { productId: producto.id });
+            onEliminarProducto(producto.id);
+          }}
           className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all duration-200"
         >
           <Trash2 className="w-4 h-4" />

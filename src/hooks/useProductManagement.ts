@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { ProductoPresupuesto } from '@/types';
 import { ProductoBiblioteca } from '@/hooks/useProductosBiblioteca';
 import { calcularTotalProducto } from '@/utils/quoteCalculations';
@@ -7,7 +7,7 @@ import { calcularTotalProducto } from '@/utils/quoteCalculations';
 export const useProductManagement = (initialProducts: ProductoPresupuesto[] = []) => {
   const [productos, setProductos] = useState<ProductoPresupuesto[]>(initialProducts);
 
-  const agregarProductoBiblioteca = (productoBiblioteca: ProductoBiblioteca) => {
+  const agregarProductoBiblioteca = useCallback((productoBiblioteca: ProductoBiblioteca) => {
     const nuevoProducto: ProductoPresupuesto = {
       id: `producto-${Date.now()}-${productoBiblioteca.id}`,
       nombre: productoBiblioteca.nombre,
@@ -20,13 +20,13 @@ export const useProductManagement = (initialProducts: ProductoPresupuesto[] = []
     };
 
     setProductos(prev => [...prev, nuevoProducto]);
-  };
+  }, []);
 
-  const eliminarProducto = (id: string) => {
+  const eliminarProducto = useCallback((id: string) => {
     setProductos(prev => prev.filter(p => p.id !== id));
-  };
+  }, []);
 
-  const agregarProductoPersonalizado = (productoData: {
+  const agregarProductoPersonalizado = useCallback((productoData: {
     nombre: string;
     descripcion: string;
     cantidad: number;
@@ -41,9 +41,11 @@ export const useProductManagement = (initialProducts: ProductoPresupuesto[] = []
     };
 
     setProductos(prev => [...prev, nuevoProducto]);
-  };
+  }, []);
 
-  const actualizarProducto = (id: string, campo: keyof ProductoPresupuesto, valor: any) => {
+  const actualizarProducto = useCallback((id: string, campo: keyof ProductoPresupuesto, valor: any) => {
+    console.log('actualizarProducto called', { id, campo, valor });
+    
     setProductos(prev => prev.map(producto => {
       if (producto.id === id) {
         const productoActualizado = { ...producto, [campo]: valor };
@@ -68,24 +70,28 @@ export const useProductManagement = (initialProducts: ProductoPresupuesto[] = []
           );
         }
         
+        console.log('Product updated', { original: producto, updated: productoActualizado });
         return productoActualizado;
       }
       return producto;
     }));
-  };
+  }, []);
 
-  const resetProductos = () => {
+  const resetProductos = useCallback(() => {
     setProductos([]);
-  };
+  }, []);
 
-  const setProductosFromExternal = (newProductos: ProductoPresupuesto[]) => {
+  const setProductosFromExternal = useCallback((newProductos: ProductoPresupuesto[]) => {
+    console.log('setProductosFromExternal called with', newProductos);
+    
     // Ensure backward compatibility by adding comentarios field if missing
     const productosConComentarios = newProductos.map(producto => ({
       ...producto,
       comentarios: producto.comentarios || ''
     }));
+    
     setProductos(productosConComentarios);
-  };
+  }, []);
 
   return {
     productos,
