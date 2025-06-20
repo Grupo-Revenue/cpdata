@@ -12,23 +12,25 @@ import { Palette, Save, Loader2 } from 'lucide-react';
 interface ConfiguracionMarca {
   id?: string;
   nombre_empresa: string;
-  eslogan?: string;
+  telefono?: string;
+  email?: string;
+  sitio_web?: string;
+  direccion?: string;
   color_primario: string;
   color_secundario: string;
-  color_acento: string;
-  tipografia_principal: string;
-  tipografia_secundaria: string;
+  logo_url?: string;
 }
 
 const AdminMarca: React.FC = () => {
   const [configuracion, setConfiguracion] = useState<ConfiguracionMarca>({
     nombre_empresa: '',
-    eslogan: '',
-    color_primario: '#000000',
-    color_secundario: '#666666',
-    color_acento: '#0066cc',
-    tipografia_principal: 'Arial',
-    tipografia_secundaria: 'Helvetica'
+    telefono: '',
+    email: '',
+    sitio_web: '',
+    direccion: '',
+    color_primario: '#3B82F6',
+    color_secundario: '#1E40AF',
+    logo_url: ''
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -149,20 +151,45 @@ const AdminMarca: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="eslogan">Eslogan</Label>
+                  <Label htmlFor="telefono">Teléfono</Label>
                   <Input
-                    id="eslogan"
-                    value={configuracion.eslogan || ''}
-                    onChange={(e) => handleChange('eslogan', e.target.value)}
+                    id="telefono"
+                    value={configuracion.telefono || ''}
+                    onChange={(e) => handleChange('telefono', e.target.value)}
                   />
                 </div>
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={configuracion.email || ''}
+                    onChange={(e) => handleChange('email', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="sitio_web">Sitio Web</Label>
+                  <Input
+                    id="sitio_web"
+                    value={configuracion.sitio_web || ''}
+                    onChange={(e) => handleChange('sitio_web', e.target.value)}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="direccion">Dirección</Label>
+                <Textarea
+                  id="direccion"
+                  value={configuracion.direccion || ''}
+                  onChange={(e) => handleChange('direccion', e.target.value)}
+                />
               </div>
             </div>
 
             {/* Colores */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Colores de Marca</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="color_primario">Color Primario</Label>
                   <div className="flex items-center space-x-2">
@@ -176,7 +203,7 @@ const AdminMarca: React.FC = () => {
                     <Input
                       value={configuracion.color_primario}
                       onChange={(e) => handleChange('color_primario', e.target.value)}
-                      placeholder="#000000"
+                      placeholder="#3B82F6"
                     />
                   </div>
                 </div>
@@ -193,64 +220,21 @@ const AdminMarca: React.FC = () => {
                     <Input
                       value={configuracion.color_secundario}
                       onChange={(e) => handleChange('color_secundario', e.target.value)}
-                      placeholder="#666666"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="color_acento">Color de Acento</Label>
-                  <div className="flex items-center space-x-2">
-                    <Input
-                      id="color_acento"
-                      type="color"
-                      value={configuracion.color_acento}
-                      onChange={(e) => handleChange('color_acento', e.target.value)}
-                      className="w-16 h-10 p-1"
-                    />
-                    <Input
-                      value={configuracion.color_acento}
-                      onChange={(e) => handleChange('color_acento', e.target.value)}
-                      placeholder="#0066cc"
+                      placeholder="#1E40AF"
                     />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Tipografía */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Tipografía</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="tipografia_principal">Tipografía Principal</Label>
-                  <Input
-                    id="tipografia_principal"
-                    value={configuracion.tipografia_principal}
-                    onChange={(e) => handleChange('tipografia_principal', e.target.value)}
-                    placeholder="Arial, sans-serif"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="tipografia_secundaria">Tipografía Secundaria</Label>
-                  <Input
-                    id="tipografia_secundaria"
-                    value={configuracion.tipografia_secundaria}
-                    onChange={(e) => handleChange('tipografia_secundaria', e.target.value)}
-                    placeholder="Helvetica, sans-serif"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Preview */}
+            {/* Vista Previa */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Vista Previa</h3>
               <div 
                 className="p-6 rounded-lg border-2"
                 style={{
                   backgroundColor: configuracion.color_primario + '10',
-                  borderColor: configuracion.color_acento,
-                  fontFamily: configuracion.tipografia_principal
+                  borderColor: configuracion.color_secundario
                 }}
               >
                 <h4 
@@ -259,15 +243,28 @@ const AdminMarca: React.FC = () => {
                 >
                   {configuracion.nombre_empresa || 'Nombre de la Empresa'}
                 </h4>
-                {configuracion.eslogan && (
+                {configuracion.email && (
                   <p 
-                    className="text-lg"
-                    style={{ 
-                      color: configuracion.color_secundario,
-                      fontFamily: configuracion.tipografia_secundaria
-                    }}
+                    className="text-lg mb-1"
+                    style={{ color: configuracion.color_secundario }}
                   >
-                    {configuracion.eslogan}
+                    {configuracion.email}
+                  </p>
+                )}
+                {configuracion.telefono && (
+                  <p 
+                    className="text-lg mb-1"
+                    style={{ color: configuracion.color_secundario }}
+                  >
+                    {configuracion.telefono}
+                  </p>
+                )}
+                {configuracion.direccion && (
+                  <p 
+                    className="text-sm"
+                    style={{ color: configuracion.color_secundario }}
+                  >
+                    {configuracion.direccion}
                   </p>
                 )}
                 <div className="mt-4 flex space-x-2">
@@ -278,10 +275,6 @@ const AdminMarca: React.FC = () => {
                   <div 
                     className="w-8 h-8 rounded"
                     style={{ backgroundColor: configuracion.color_secundario }}
-                  ></div>
-                  <div 
-                    className="w-8 h-8 rounded"
-                    style={{ backgroundColor: configuracion.color_acento }}
                   ></div>
                 </div>
               </div>
