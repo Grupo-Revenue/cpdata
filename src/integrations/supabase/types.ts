@@ -141,6 +141,36 @@ export type Database = {
         }
         Relationships: []
       }
+      lineas_producto: {
+        Row: {
+          activo: boolean
+          created_at: string
+          descripcion: string | null
+          id: string
+          nombre: string
+          orden: number | null
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          orden?: number | null
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          orden?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       negocios: {
         Row: {
           cantidad_asistentes: number | null
@@ -265,6 +295,7 @@ export type Database = {
           created_at: string
           descripcion: string | null
           id: string
+          linea_producto_id: string | null
           nombre: string
           precio_base: number
           updated_at: string
@@ -275,6 +306,7 @@ export type Database = {
           created_at?: string
           descripcion?: string | null
           id?: string
+          linea_producto_id?: string | null
           nombre: string
           precio_base?: number
           updated_at?: string
@@ -285,11 +317,20 @@ export type Database = {
           created_at?: string
           descripcion?: string | null
           id?: string
+          linea_producto_id?: string | null
           nombre?: string
           precio_base?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "productos_biblioteca_linea_producto_id_fkey"
+            columns: ["linea_producto_id"]
+            isOneToOne: false
+            referencedRelation: "lineas_producto"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       productos_presupuesto: {
         Row: {

@@ -15,90 +15,46 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Package, Plus, Edit, Loader2 } from 'lucide-react';
-import { formatearPrecio } from '@/utils/formatters';
+import { Package, Plus, Edit, ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
 
 interface LineaProducto {
   id: string;
   nombre: string;
   descripcion?: string;
   activo: boolean;
-}
-
-interface Producto {
-  id: string;
-  nombre: string;
-  descripcion?: string;
-  precio_base: number;
-  categoria?: string;
-  activo: boolean;
+  orden: number;
   created_at: string;
-  linea_producto_id?: string;
-  linea_producto?: LineaProducto;
 }
 
-const AdminProductos: React.FC = () => {
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [lineasProducto, setLineasProducto] = useState<LineaProducto[]>([]);
+const AdminLineasProducto: React.FC = () => {
+  const [lineas, setLineas] = useState<LineaProducto[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Producto | null>(null);
+  const [editingLinea, setEditingLinea] = useState<LineaProducto | null>(null);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
     nombre: '',
-    descripcion: '',
-    precio_base: '',
-    linea_producto_id: ''
+    descripcion: ''
   });
 
-  const cargarLineasProducto = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('lineas_producto')
-        .select('*')
-        .eq('activo', true)
-        .order('orden', { ascending: true });
-
-      if (error) throw error;
-      setLineasProducto(data || []);
-    } catch (error) {
-      console.error('Error cargando líneas de producto:', error);
-    }
-  };
-
-  const cargarProductos = async () => {
+  const cargarLineas = async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('productos_biblioteca')
-        .select(`
-          *,
-          linea_producto:lineas_producto (
-            id,
-            nombre,
-            descripcion,
-            activo
-          )
-        `)
-        .order('created_at', { ascending: false });
+        .from('lineas_producto')
+        .select('*')
+        .order('orden', { ascending: true });
 
       if (error) throw error;
-      setProductos(data || []);
+      setLineas(data || []);
     } catch (error) {
-      console.error('Error cargando productos:', error);
+      console.error('Error cargando líneas de producto:', error);
       toast({
         title: "Error",
-        description: "No se pudieron cargar los productos",
+        description: "No se pudieron cargar las líneas de producto",
         variant: "destructive"
       });
     } finally {
@@ -109,76 +65,81 @@ const AdminProductos: React.FC = () => {
   const resetForm = () => {
     setFormData({
       nombre: '',
-      descripcion: '',
-      precio_base: '',
-      linea_producto_id: ''
+      descripcion: ''
     });
-    setEditingProduct(null);
+    setEditingLinea(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.nombre || !formData.precio_base) {
+    if (!formData.nombre) {
       toast({
         title: "Error",
-        description: "Nombre y precio son requeridos",
+        description: "El nombre es requerido",
         variant: "destructive"
       });
       return;
     }
 
     try {
-      const productoData = {
+      const lineaData = {
         nombre: formData.nombre,
         descripcion: formData.descripcion || null,
-        precio_base: parseFloat(formData.precio_base),
-        linea_producto_id: formData.linea_producto_id || null,
         activo: true
       };
 
-      if (editingProduct) {
+      if (editingLinea) {
         const { error } = await supabase
-          .from('productos_biblioteca')
-          .update(productoData)
-          .eq('id', editingProduct.id);
+          .from('lineas_producto')
+          .update(lineaData)
+          .eq('id', editingLinea.id);
 
         if (error) throw error;
 
         toast({
-          title: "Producto actualizado",
-          description: "El producto se actualizó correctamente"
+          title: "Línea actualizada",
+          description: "La línea de producto se actualizó correctamente"
         });
       } else {
+        // Obtener el próximo orden
+        const { data: maxOrden } = await supabase
+          .from('lineas_producto')
+          .select('orden')
+          .order('orden', { ascending: false })
+          .limit(1);
+
+        const nuevoOrden = maxOrden && maxOrden.length > 0 ? maxOrden[0].orden + 1 : 1;
+
         const { error } = await supabase
-          .from('productos_biblioteca')
-          .insert([productoData]);
+          .from('lineas_producto')
+          .insert([{ ...lineaData, orden: nuevoOrden }]);
 
         if (error) throw error;
 
         toast({
-          title: "Producto creado",
-          description: "El producto se creó correctamente"
+          title: "Línea creada",
+          description: "La línea de producto se creó correctamente"
         });
       }
 
       setDialogOpen(false);
       resetForm();
-      cargarProductos();
+      cargarLineas();
     } catch (error) {
-      console.error('Error guardando producto:', error);
+      console.error('Error guardando línea:', error);
       toast({
         title: "Error",
-        description: "No se pudo guardar el producto",
+        description: "No se pudo guardar la línea de producto",
         variant: "destructive"
       });
     }
   };
 
-  const toggleActivoProducto = async (id: string, activo: boolean) => {
+  const toggleActivoLinea = async (id: string, activo: boolean) => {
     try {
       const { error } = await supabase
-        .from('productos_biblioteca')
+        .from('lineas_producto')
         .update({ activo: !activo })
         .eq('id', id);
 
@@ -186,34 +147,83 @@ const AdminProductos: React.FC = () => {
 
       toast({
         title: "Estado actualizado",
-        description: `Producto ${!activo ? 'activado' : 'desactivado'} correctamente`
+        description: `Línea ${!activo ? 'activada' : 'desactivada'} correctamente`
       });
       
-      cargarProductos();
+      cargarLineas();
     } catch (error) {
       console.error('Error actualizando estado:', error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar el estado del producto",
+        description: "No se pudo actualizar el estado de la línea",
         variant: "destructive"
       });
     }
   };
 
-  const editarProducto = (producto: Producto) => {
-    setEditingProduct(producto);
+  const cambiarOrden = async (id: string, direccion: 'up' | 'down') => {
+    try {
+      const lineaActual = lineas.find(l => l.id === id);
+      if (!lineaActual) return;
+
+      const nuevasLineas = [...lineas];
+      const indiceActual = nuevasLineas.findIndex(l => l.id === id);
+      
+      let indiceDestino;
+      if (direccion === 'up' && indiceActual > 0) {
+        indiceDestino = indiceActual - 1;
+      } else if (direccion === 'down' && indiceActual < nuevasLineas.length - 1) {
+        indiceDestino = indiceActual + 1;
+      } else {
+        return;
+      }
+
+      // Intercambiar órdenes
+      const ordenActual = nuevasLineas[indiceActual].orden;
+      const ordenDestino = nuevasLineas[indiceDestino].orden;
+
+      const { error } = await supabase.rpc('intercambiar_orden_lineas', {
+        id1: nuevasLineas[indiceActual].id,
+        id2: nuevasLineas[indiceDestino].id,
+        orden1: ordenDestino,
+        orden2: ordenActual
+      });
+
+      if (error) {
+        // Si la función RPC no existe, hacer manualmente
+        await supabase
+          .from('lineas_producto')
+          .update({ orden: ordenDestino })
+          .eq('id', nuevasLineas[indiceActual].id);
+
+        await supabase
+          .from('lineas_producto')
+          .update({ orden: ordenActual })
+          .eq('id', nuevasLineas[indiceDestino].id);
+      }
+
+      cargarLineas();
+    } catch (error) {
+      console.error('Error cambiando orden:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo cambiar el orden",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const editarLinea = (linea: LineaProducto) => {
+    setEditingLinea(linea);
     setFormData({
-      nombre: producto.nombre,
-      descripcion: producto.descripcion || '',
-      precio_base: producto.precio_base.toString(),
-      linea_producto_id: producto.linea_producto_id || ''
+      nombre: linea.nombre,
+      descripcion: linea.descripcion || ''
     });
     setDialogOpen(true);
   };
 
   useEffect(() => {
-    cargarLineasProducto();
-    cargarProductos();
+    cargarLineas();
   }, []);
 
   if (loading) {
@@ -221,7 +231,7 @@ const AdminProductos: React.FC = () => {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Cargando productos...</p>
+          <p className="text-gray-600">Cargando líneas de producto...</p>
         </div>
       </div>
     );
@@ -234,19 +244,19 @@ const AdminProductos: React.FC = () => {
           <div className="flex justify-between items-center">
             <CardTitle className="flex items-center">
               <Package className="w-5 h-5 mr-2" />
-              Biblioteca de Productos
+              Líneas de Producto
             </CardTitle>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button onClick={resetForm}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Nuevo Producto
+                  Nueva Línea
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>
-                    {editingProduct ? 'Editar Producto' : 'Nuevo Producto'}
+                    {editingLinea ? 'Editar Línea de Producto' : 'Nueva Línea de Producto'}
                   </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -265,45 +275,15 @@ const AdminProductos: React.FC = () => {
                       id="descripcion"
                       value={formData.descripcion}
                       onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
+                      placeholder="Descripción de la línea de producto"
                     />
-                  </div>
-                  <div>
-                    <Label htmlFor="precio_base">Precio Base (CLP) *</Label>
-                    <Input
-                      id="precio_base"
-                      type="number"
-                      step="1"
-                      value={formData.precio_base}
-                      onChange={(e) => setFormData({...formData, precio_base: e.target.value})}
-                      placeholder="Ej: 15000"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="linea_producto">Línea de Producto</Label>
-                    <Select
-                      value={formData.linea_producto_id}
-                      onValueChange={(value) => setFormData({...formData, linea_producto_id: value})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar línea de producto" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">Sin línea específica</SelectItem>
-                        {lineasProducto.map((linea) => (
-                          <SelectItem key={linea.id} value={linea.id}>
-                            {linea.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                   </div>
                   <div className="flex justify-end space-x-2">
                     <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                       Cancelar
                     </Button>
                     <Button type="submit">
-                      {editingProduct ? 'Actualizar' : 'Crear'}
+                      {editingLinea ? 'Actualizar' : 'Crear'}
                     </Button>
                   </div>
                 </form>
@@ -312,49 +292,62 @@ const AdminProductos: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {productos.length === 0 ? (
+          {lineas.length === 0 ? (
             <div className="text-center py-8">
               <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No hay productos</h3>
-              <p className="text-gray-600">Crea tu primer producto para comenzar</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No hay líneas de producto</h3>
+              <p className="text-gray-600">Crea tu primera línea de producto para organizar tus productos</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Orden</TableHead>
                   <TableHead>Nombre</TableHead>
-                  <TableHead>Línea de Producto</TableHead>
-                  <TableHead>Precio Base</TableHead>
+                  <TableHead>Descripción</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {productos.map((producto) => (
-                  <TableRow key={producto.id}>
+                {lineas.map((linea, index) => (
+                  <TableRow key={linea.id}>
                     <TableCell>
-                      <div>
-                        <div className="font-medium">{producto.nombre}</div>
-                        {producto.descripcion && (
-                          <div className="text-sm text-gray-500">{producto.descripcion}</div>
-                        )}
+                      <div className="flex items-center space-x-1">
+                        <span className="text-sm text-gray-500">{linea.orden}</span>
+                        <div className="flex flex-col space-y-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => cambiarOrden(linea.id, 'up')}
+                            disabled={index === 0}
+                            className="h-6 w-6 p-0"
+                          >
+                            <ArrowUp className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => cambiarOrden(linea.id, 'down')}
+                            disabled={index === lineas.length - 1}
+                            className="h-6 w-6 p-0"
+                          >
+                            <ArrowDown className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      {producto.linea_producto ? (
-                        <Badge variant="outline">
-                          {producto.linea_producto.nombre}
-                        </Badge>
-                      ) : (
-                        <span className="text-gray-400">Sin asignar</span>
-                      )}
+                      <div className="font-medium">{linea.nombre}</div>
                     </TableCell>
                     <TableCell>
-                      {formatearPrecio(producto.precio_base)}
+                      <div className="text-sm text-gray-500 max-w-xs truncate">
+                        {linea.descripcion || '-'}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={producto.activo ? "default" : "secondary"}>
-                        {producto.activo ? 'Activo' : 'Inactivo'}
+                      <Badge variant={linea.activo ? "default" : "secondary"}>
+                        {linea.activo ? 'Activa' : 'Inactiva'}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -362,16 +355,16 @@ const AdminProductos: React.FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => editarProducto(producto)}
+                          onClick={() => editarLinea(linea)}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button
-                          variant={producto.activo ? "destructive" : "default"}
+                          variant={linea.activo ? "destructive" : "default"}
                           size="sm"
-                          onClick={() => toggleActivoProducto(producto.id, producto.activo)}
+                          onClick={() => toggleActivoLinea(linea.id, linea.activo)}
                         >
-                          {producto.activo ? 'Desactivar' : 'Activar'}
+                          {linea.activo ? 'Desactivar' : 'Activar'}
                         </Button>
                       </div>
                     </TableCell>
@@ -386,4 +379,4 @@ const AdminProductos: React.FC = () => {
   );
 };
 
-export default AdminProductos;
+export default AdminLineasProducto;

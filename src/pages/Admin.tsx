@@ -14,10 +14,12 @@ import {
   ArrowLeft,
   Building2,
   FileText,
-  Calendar
+  Calendar,
+  Layers
 } from 'lucide-react';
 import AdminUsuarios from '@/components/admin/AdminUsuarios';
 import AdminProductos from '@/components/admin/AdminProductos';
+import AdminLineasProducto from '@/components/admin/AdminLineasProducto';
 import AdminMarca from '@/components/admin/AdminMarca';
 
 interface AdminProps {
@@ -120,10 +122,14 @@ const Admin: React.FC<AdminProps> = ({ onVolver }) => {
 
       {/* Pestañas de Administración */}
       <Tabs value={tabActiva} onValueChange={setTabActiva} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="usuarios" className="flex items-center space-x-2">
             <Users className="w-4 h-4" />
             <span>Usuarios</span>
+          </TabsTrigger>
+          <TabsTrigger value="lineas" className="flex items-center space-x-2">
+            <Layers className="w-4 h-4" />
+            <span>Líneas</span>
           </TabsTrigger>
           <TabsTrigger value="productos" className="flex items-center space-x-2">
             <Package className="w-4 h-4" />
@@ -137,6 +143,10 @@ const Admin: React.FC<AdminProps> = ({ onVolver }) => {
 
         <TabsContent value="usuarios">
           <AdminUsuarios />
+        </TabsContent>
+
+        <TabsContent value="lineas">
+          <AdminLineasProducto />
         </TabsContent>
 
         <TabsContent value="productos">
