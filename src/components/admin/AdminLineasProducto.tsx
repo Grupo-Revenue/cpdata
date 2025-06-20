@@ -178,29 +178,20 @@ const AdminLineasProducto: React.FC = () => {
         return;
       }
 
-      // Intercambiar órdenes
+      // Intercambiar órdenes manualmente
       const ordenActual = nuevasLineas[indiceActual].orden;
       const ordenDestino = nuevasLineas[indiceDestino].orden;
 
-      const { error } = await supabase.rpc('intercambiar_orden_lineas', {
-        id1: nuevasLineas[indiceActual].id,
-        id2: nuevasLineas[indiceDestino].id,
-        orden1: ordenDestino,
-        orden2: ordenActual
-      });
+      // Actualizar ambas líneas
+      await supabase
+        .from('lineas_producto')
+        .update({ orden: ordenDestino })
+        .eq('id', nuevasLineas[indiceActual].id);
 
-      if (error) {
-        // Si la función RPC no existe, hacer manualmente
-        await supabase
-          .from('lineas_producto')
-          .update({ orden: ordenDestino })
-          .eq('id', nuevasLineas[indiceActual].id);
-
-        await supabase
-          .from('lineas_producto')
-          .update({ orden: ordenActual })
-          .eq('id', nuevasLineas[indiceDestino].id);
-      }
+      await supabase
+        .from('lineas_producto')
+        .update({ orden: ordenActual })
+        .eq('id', nuevasLineas[indiceDestino].id);
 
       cargarLineas();
     } catch (error) {
