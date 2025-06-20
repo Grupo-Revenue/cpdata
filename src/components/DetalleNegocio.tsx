@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +7,7 @@ import { ArrowLeft, Plus, Edit, Trash2, Building2, User, Calendar, MapPin, Mail,
 import CrearPresupuesto from './CrearPresupuesto';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatearPrecio } from '@/utils/formatters';
 
 interface DetalleNegocioProps {
   negocioId: string;
@@ -48,13 +48,6 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
     } catch {
       return fecha;
     }
-  };
-
-  const formatearPrecio = (precio: number) => {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP'
-    }).format(precio);
   };
 
   const obtenerBadgeEstadoPresupuesto = (estado: string) => {

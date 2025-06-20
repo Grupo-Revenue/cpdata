@@ -10,6 +10,7 @@ import { useNegocio } from '@/context/NegocioContext';
 import { PRODUCTOS_BIBLIOTECA, ProductoPresupuesto } from '@/types';
 import { ArrowLeft, Plus, Trash2, ShoppingCart, Package } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { formatearPrecio } from '@/utils/formatters';
 
 interface CrearPresupuestoProps {
   negocioId: string;
@@ -108,13 +109,6 @@ const CrearPresupuesto: React.FC<CrearPresupuestoProps> = ({ negocioId, presupue
 
   const calcularTotal = () => {
     return productos.reduce((total, producto) => total + producto.total, 0);
-  };
-
-  const formatearPrecio = (precio: number) => {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP'
-    }).format(precio);
   };
 
   const guardarPresupuesto = () => {
@@ -232,16 +226,17 @@ const CrearPresupuesto: React.FC<CrearPresupuestoProps> = ({ negocioId, presupue
                       />
                     </div>
                     <div>
-                      <Label htmlFor="precioPersonalizado">Precio Unitario</Label>
+                      <Label htmlFor="precioPersonalizado">Precio Unitario (CLP)</Label>
                       <Input
                         id="precioPersonalizado"
                         type="number"
+                        step="1"
                         value={productoPersonalizado.precioUnitario}
                         onChange={(e) => setProductoPersonalizado({
                           ...productoPersonalizado, 
                           precioUnitario: parseFloat(e.target.value) || 0
                         })}
-                        placeholder="0"
+                        placeholder="Ej: 15000"
                       />
                     </div>
                   </div>
@@ -333,6 +328,7 @@ const CrearPresupuesto: React.FC<CrearPresupuestoProps> = ({ negocioId, presupue
                           <Label className="text-xs">Precio Unit.</Label>
                           <Input
                             type="number"
+                            step="1"
                             value={producto.precioUnitario}
                             onChange={(e) => actualizarProducto(
                               producto.id, 

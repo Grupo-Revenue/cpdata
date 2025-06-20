@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Package, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
+import { formatearPrecio } from '@/utils/formatters';
 
 interface Producto {
   id: string;
@@ -226,13 +226,14 @@ const AdminProductos: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="precio_base">Precio Base *</Label>
+                    <Label htmlFor="precio_base">Precio Base (CLP) *</Label>
                     <Input
                       id="precio_base"
                       type="number"
-                      step="0.01"
+                      step="1"
                       value={formData.precio_base}
                       onChange={(e) => setFormData({...formData, precio_base: e.target.value})}
+                      placeholder="Ej: 15000"
                       required
                     />
                   </div>
@@ -290,7 +291,7 @@ const AdminProductos: React.FC = () => {
                       {producto.categoria || '-'}
                     </TableCell>
                     <TableCell>
-                      ${producto.precio_base.toLocaleString()}
+                      {formatearPrecio(producto.precio_base)}
                     </TableCell>
                     <TableCell>
                       <Badge variant={producto.activo ? "default" : "secondary"}>
