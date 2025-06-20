@@ -1,10 +1,10 @@
 
 import React from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import StatsCards from '@/components/dashboard/StatsCards';
-import BusinessSection from '@/components/dashboard/BusinessSection';
-import QuickActions from '@/components/dashboard/QuickActions';
+import CompactDashboardHeader from '@/components/dashboard/CompactDashboardHeader';
+import MetricsWidget from '@/components/dashboard/MetricsWidget';
+import RecentBusinesses from '@/components/dashboard/RecentBusinesses';
+import QuickActionsToolbar from '@/components/dashboard/QuickActionsToolbar';
 
 interface DashboardViewProps {
   onCrearNegocio: () => void;
@@ -14,23 +14,28 @@ interface DashboardViewProps {
 const DashboardView: React.FC<DashboardViewProps> = ({ onCrearNegocio, onVerNegocio }) => {
   return (
     <DashboardLayout>
-      <main className="container mx-auto px-4 py-8 space-y-8">
-        <DashboardHeader onCrearNegocio={onCrearNegocio} />
-        <StatsCards />
-        
-        <div className="grid gap-8 lg:grid-cols-4">
-          <div className="lg:col-span-3">
-            <BusinessSection 
-              onCrearNegocio={onCrearNegocio}
-              onVerNegocio={onVerNegocio}
-            />
+      <main className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Header with quick actions toolbar */}
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-4 lg:space-y-0 mb-8">
+          <div className="flex-1">
+            <CompactDashboardHeader onCrearNegocio={onCrearNegocio} />
           </div>
+          <div className="lg:ml-6">
+            <QuickActionsToolbar />
+          </div>
+        </div>
 
-          <div className="lg:col-span-1">
-            <div className="animate-fade-in-scale" style={{ animationDelay: '0.1s' }}>
-              <QuickActions onCrearNegocio={onCrearNegocio} />
-            </div>
-          </div>
+        {/* Metrics Widget */}
+        <div className="mb-8">
+          <MetricsWidget />
+        </div>
+
+        {/* Recent Businesses */}
+        <div>
+          <RecentBusinesses 
+            onCrearNegocio={onCrearNegocio}
+            onVerNegocio={onVerNegocio}
+          />
         </div>
       </main>
     </DashboardLayout>
