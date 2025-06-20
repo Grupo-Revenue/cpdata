@@ -262,7 +262,7 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
                 className="w-full"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Continuar Agregando
+                Agregar más productos
               </Button>
             </div>
           </CardContent>
