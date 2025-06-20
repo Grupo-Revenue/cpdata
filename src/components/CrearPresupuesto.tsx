@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNegocio } from '@/context/NegocioContext';
-import { PRODUCTOS_BIBLIOTECA, ProductoPresupuesto } from '@/types';
-import { ArrowLeft, Plus, Trash2, ShoppingCart, Package } from 'lucide-react';
+import { ProductoPresupuesto } from '@/types';
+import { ArrowLeft, Plus, Trash2, ShoppingCart, Package, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { formatearPrecio } from '@/utils/formatters';
+import { useProductosBiblioteca, ProductoBiblioteca } from '@/hooks/useProductosBiblioteca';
 
 interface CrearPresupuestoProps {
   negocioId: string;
@@ -20,6 +21,7 @@ interface CrearPresupuestoProps {
 
 const CrearPresupuesto: React.FC<CrearPresupuestoProps> = ({ negocioId, presupuestoId, onCerrar }) => {
   const { obtenerNegocio, crearPresupuesto, actualizarPresupuesto } = useNegocio();
+  const { productos: productosBiblioteca, loading: loadingProductos } = useProductosBiblioteca();
   const [productos, setProductos] = useState<ProductoPresupuesto[]>([]);
   const [productoPersonalizado, setProductoPersonalizado] = useState({
     nombre: '',
@@ -42,14 +44,14 @@ const CrearPresupuesto: React.FC<CrearPresupuestoProps> = ({ negocioId, presupue
     return <div>Negocio no encontrado</div>;
   }
 
-  const agregarProductoBiblioteca = (productoBiblioteca: typeof PRODUCTOS_BIBLIOTECA[0]) => {
+  const agregarProductoBiblioteca = (productoBiblioteca: ProductoBiblioteca) => {
     const nuevoProducto: ProductoPresupuesto = {
       id: `producto-${Date.now()}`,
       nombre: productoBiblioteca.nombre,
-      descripcion: productoBiblioteca.descripcion,
+      descripcion: productoBiblioteca.descripcion || '',
       cantidad: 1,
-      precioUnitario: productoBiblioteca.precioBase,
-      total: productoBiblioteca.precioBase
+      precioUnitario: productoBiblioteca.precio_base,
+      total: productoBiblioteca.precio_base
     };
 
     setProductos(prev => [...prev, nuevoProducto]);
@@ -138,7 +140,17 @@ const CrearPresupuesto: React.FC<CrearPresupuestoProps> = ({ negocioId, presupue
     onCerrar();
   };
 
-  const categorias = [...new Set(PRODUCTOS_BIBLIOTECA.map(p => p.categoria))];
+  // Agrupar productos por línea de producto o categoría
+  const productosAgrupados = productosBiblioteca.reduce((acc, producto) => {
+    const categoria = producto.linea_producto?.nombre || producto.categoria || 'Sin categoría';
+    if (!acc[categoria]) {
+      acc[categoria] = [];
+    }
+    acc[categoria].push(producto);
+    return acc;
+  }, {} as Record<string, ProductoBiblioteca[]>);
+
+  const categorias = Object.keys(productosAgrupados);
 
   return (
     <div className="space-y-6">
@@ -171,20 +183,34 @@ const CrearPresupuesto: React.FC<CrearPresupuestoProps> = ({ negocioId, presupue
             </TabsList>
             
             <TabsContent value="biblioteca" className="space-y-4">
-              {categorias.map(categoria => (
-                <Card key={categoria}>
-                  <CardHeader>
-                    <CardTitle className="text-lg">{categoria}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {PRODUCTOS_BIBLIOTECA
-                        .filter(p => p.categoria === categoria)
-                        .map(producto => (
+              {loadingProductos ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                    <p className="text-gray-600">Cargando productos...</p>
+                  </div>
+                </div>
+              ) : categorias.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No hay productos disponibles</h3>
+                    <p className="text-gray-600">Los productos deben ser creados desde la sección de administración</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                categorias.map(categoria => (
+                  <Card key={categoria}>
+                    <CardHeader>
+                      <CardTitle className="text-lg">{categoria}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {productosAgrupados[categoria].map(producto => (
                           <div key={producto.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                             <div className="flex justify-between items-start mb-2">
                               <h4 className="font-medium">{producto.nombre}</h4>
-                              <Badge variant="outline">{formatearPrecio(producto.precioBase)}</Badge>
+                              <Badge variant="outline">{formatearPrecio(producto.precio_base)}</Badge>
                             </div>
                             <p className="text-sm text-gray-600 mb-3">{producto.descripcion}</p>
                             <Button 
@@ -197,10 +223,11 @@ const CrearPresupuesto: React.FC<CrearPresupuestoProps> = ({ negocioId, presupue
                             </Button>
                           </div>
                         ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </TabsContent>
 
             <TabsContent value="personalizado">
@@ -325,7 +352,7 @@ const CrearPresupuesto: React.FC<CrearPresupuestoProps> = ({ negocioId, presupue
                           />
                         </div>
                         <div>
-                          <Label className="text-xs">Precio Unit.</Label>
+                          <Label className="text-xs">Precio Unit. (CLP)</Label>
                           <Input
                             type="number"
                             step="1"
