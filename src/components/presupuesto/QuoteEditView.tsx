@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import RichTextEditor from '@/components/ui/rich-text-editor';
-import { ShoppingCart, Trash2 } from 'lucide-react';
+import { ShoppingCart, Trash2, DollarSign } from 'lucide-react';
 import { ProductoPresupuesto } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
 
@@ -28,15 +28,35 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
   onConfirmar,
   total
 }) => {
+  const formatearNumeroConSeparadores = (numero: number): string => {
+    return new Intl.NumberFormat('es-CL').format(numero);
+  };
+
+  const parsearNumeroConSeparadores = (valor: string): number => {
+    // Remover puntos separadores de miles y convertir a número
+    const numeroLimpio = valor.replace(/\./g, '');
+    return parseInt(numeroLimpio) || 0;
+  };
+
   const handlePrecioChange = (id: string, value: string) => {
-    if (value === '') {
+    // Solo permitir números y puntos
+    const valorLimpio = value.replace(/[^\d.]/g, '');
+    
+    if (valorLimpio === '') {
       onActualizarProducto(id, 'precioUnitario', 0);
       return;
     }
     
-    const numeroValue = parseFloat(value);
+    const numeroValue = parsearNumeroConSeparadores(valorLimpio);
     if (!isNaN(numeroValue)) {
       onActualizarProducto(id, 'precioUnitario', numeroValue);
+    }
+  };
+
+  const handlePrecioKeyPress = (e: React.KeyboardEvent) => {
+    // Prevenir letras y símbolos excepto números y puntos
+    if (!/[\d.]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      e.preventDefault();
     }
   };
 
@@ -111,15 +131,18 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
                         />
                       </TableCell>
                       <TableCell className="p-3 text-center">
-                        <Input
-                          type="number"
-                          step="1"
-                          min="0"
-                          value={producto.precioUnitario === 0 ? '' : producto.precioUnitario}
-                          onChange={(e) => handlePrecioChange(producto.id, e.target.value)}
-                          className="w-24 h-8 text-center text-sm"
-                          placeholder="0"
-                        />
+                        <div className="relative">
+                          <DollarSign className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-500" />
+                          <Input
+                            type="text"
+                            value={producto.precioUnitario === 0 ? '' : formatearNumeroConSeparadores(producto.precioUnitario)}
+                            onChange={(e) => handlePrecioChange(producto.id, e.target.value)}
+                            onKeyDown={handlePrecioKeyPress}
+                            className="w-28 h-8 text-center text-sm pl-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            placeholder="0"
+                            style={{ MozAppearance: 'textfield' }}
+                          />
+                        </div>
                       </TableCell>
                       <TableCell className="p-3 text-center">
                         <span className="font-medium text-green-600 text-sm">
