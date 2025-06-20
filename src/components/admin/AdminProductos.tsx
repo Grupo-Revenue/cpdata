@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,7 +57,7 @@ const AdminProductos: React.FC = () => {
     nombre: '',
     descripcion: '',
     precio_base: '',
-    linea_producto_id: ''
+    linea_producto_id: 'none'
   });
 
   const cargarLineasProducto = async () => {
@@ -111,7 +110,7 @@ const AdminProductos: React.FC = () => {
       nombre: '',
       descripcion: '',
       precio_base: '',
-      linea_producto_id: ''
+      linea_producto_id: 'none'
     });
     setEditingProduct(null);
   };
@@ -133,7 +132,7 @@ const AdminProductos: React.FC = () => {
         nombre: formData.nombre,
         descripcion: formData.descripcion || null,
         precio_base: parseFloat(formData.precio_base),
-        linea_producto_id: formData.linea_producto_id || null,
+        linea_producto_id: formData.linea_producto_id === 'none' ? null : formData.linea_producto_id,
         activo: true
       };
 
@@ -206,7 +205,7 @@ const AdminProductos: React.FC = () => {
       nombre: producto.nombre,
       descripcion: producto.descripcion || '',
       precio_base: producto.precio_base.toString(),
-      linea_producto_id: producto.linea_producto_id || ''
+      linea_producto_id: producto.linea_producto_id || 'none'
     });
     setDialogOpen(true);
   };
@@ -289,7 +288,7 @@ const AdminProductos: React.FC = () => {
                         <SelectValue placeholder="Seleccionar línea de producto" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Sin línea específica</SelectItem>
+                        <SelectItem value="none">Sin línea específica</SelectItem>
                         {lineasProducto.map((linea) => (
                           <SelectItem key={linea.id} value={linea.id}>
                             {linea.nombre}
