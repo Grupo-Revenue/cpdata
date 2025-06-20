@@ -80,3 +80,30 @@ export const obtenerEstadoNegocioInfo = (negocio: Negocio) => {
     colorEstado
   };
 };
+
+/**
+ * Obtiene estadísticas agregadas para el dashboard
+ */
+export const obtenerEstadisticasDashboard = (negocios: Negocio[]) => {
+  const totalNegocios = negocios.length;
+  const valorTotalCartera = negocios.reduce((total, negocio) => total + calcularValorNegocio(negocio), 0);
+  
+  const estadisticasPorEstado = {
+    prospecto: negocios.filter(n => n.estado === 'prospecto').length,
+    activo: negocios.filter(n => n.estado === 'activo').length,
+    revision_pendiente: negocios.filter(n => n.estado === 'revision_pendiente').length,
+    en_negociacion: negocios.filter(n => n.estado === 'en_negociacion').length,
+    parcialmente_ganado: negocios.filter(n => n.estado === 'parcialmente_ganado').length,
+    ganado: negocios.filter(n => n.estado === 'ganado').length,
+    perdido: negocios.filter(n => n.estado === 'perdido').length
+  };
+
+  const totalPresupuestos = negocios.reduce((total, negocio) => total + negocio.presupuestos.length, 0);
+  
+  return {
+    totalNegocios,
+    valorTotalCartera,
+    estadisticasPorEstado,
+    totalPresupuestos
+  };
+};

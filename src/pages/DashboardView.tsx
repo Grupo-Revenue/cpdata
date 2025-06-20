@@ -3,7 +3,7 @@ import React from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import CompactDashboardHeader from '@/components/dashboard/CompactDashboardHeader';
 import MetricsWidget from '@/components/dashboard/MetricsWidget';
-import RecentBusinesses from '@/components/dashboard/RecentBusinesses';
+import BusinessesTable from '@/components/dashboard/BusinessesTable';
 import QuickActionsToolbar from '@/components/dashboard/QuickActionsToolbar';
 
 interface DashboardViewProps {
@@ -14,7 +14,7 @@ interface DashboardViewProps {
 const DashboardView: React.FC<DashboardViewProps> = ({ onCrearNegocio, onVerNegocio }) => {
   return (
     <DashboardLayout>
-      <main className="container mx-auto px-4 py-8 max-w-6xl">
+      <main className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header with quick actions toolbar */}
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-4 lg:space-y-0 mb-8">
           <div className="flex-1">
@@ -30,9 +30,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onCrearNegocio, onVerNego
           <MetricsWidget />
         </div>
 
-        {/* Recent Businesses */}
+        {/* Businesses Table */}
         <div>
-          <RecentBusinesses 
+          <BusinessesTable 
             onCrearNegocio={onCrearNegocio}
             onVerNegocio={onVerNegocio}
           />
