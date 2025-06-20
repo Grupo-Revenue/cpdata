@@ -62,6 +62,7 @@ const CrearPresupuesto: React.FC<CrearPresupuestoProps> = ({ negocioId, presupue
         productosCount={productos.length}
         total={calcularTotal()}
         onProceedToEdit={proceedToEdit}
+        onVolverASeleccion={() => setStep('selection')}
       />
 
       {step === 'selection' ? (
