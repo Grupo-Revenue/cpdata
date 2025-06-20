@@ -1,12 +1,11 @@
 
-import { useState, useEffect } from 'react';
-import { useNegocio } from '@/context/NegocioContext';
-import { ProductoPresupuesto } from '@/types';
+import { useEffect } from 'react';
+import { useProductosBiblioteca } from '@/hooks/useProductosBiblioteca';
+import { calcularTotalesPresupuesto } from '@/utils/quoteCalculations';
+import { useProductManagement } from '@/hooks/useProductManagement';
+import { useQuoteFormState } from '@/hooks/useQuoteFormState';
+import { useQuotePersistence } from '@/hooks/useQuotePersistence';
 import { toast } from '@/hooks/use-toast';
-import { useProductosBiblioteca, ProductoBiblioteca } from '@/hooks/useProductosBiblioteca';
-import { calcularTotalProducto, calcularTotalesPresupuesto } from '@/utils/quoteCalculations';
-
-type Step = 'selection' | 'editing';
 
 interface UseCreateQuoteProps {
   negocioId: string;
@@ -15,15 +14,31 @@ interface UseCreateQuoteProps {
 }
 
 export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreateQuoteProps) => {
-  const { obtenerNegocio, crearPresupuesto, actualizarPresupuesto } = useNegocio();
   const { productos: productosBiblioteca, loading: loadingProductos } = useProductosBiblioteca();
-  const [step, setStep] = useState<Step>('selection');
-  const [productos, setProductos] = useState<ProductoPresupuesto[]>([]);
+  
+  const {
+    productos,
+    agregarProductoBiblioteca,
+    eliminarProducto,
+    agregarProductoPersonalizado,
+    actualizarProducto,
+    setProductosFromExternal
+  } = useProductManagement();
 
-  const negocio = obtenerNegocio(negocioId);
-  const presupuestoExistente = presupuestoId ? 
-    negocio?.presupuestos.find(p => p.id === presupuestoId) : null;
+  const {
+    step,
+    setStep,
+    proceedToEdit: baseProccedToEdit,
+    backToSelection
+  } = useQuoteFormState();
 
+  const {
+    negocio,
+    presupuestoExistente,
+    guardarPresupuesto: baseSaveQuote
+  } = useQuotePersistence({ negocioId, presupuestoId, onCerrar });
+
+  // Load existing quote data
   useEffect(() => {
     if (presupuestoExistente) {
       // Asegurar que todos los productos tengan el campo descuentoPorcentaje
@@ -31,75 +46,10 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
         ...producto,
         descuentoPorcentaje: producto.descuentoPorcentaje || 0
       }));
-      setProductos(productosConDescuento);
+      setProductosFromExternal(productosConDescuento);
       setStep('editing');
     }
-  }, [presupuestoExistente]);
-
-  const agregarProductoBiblioteca = (productoBiblioteca: ProductoBiblioteca) => {
-    const nuevoProducto: ProductoPresupuesto = {
-      id: `producto-${Date.now()}-${productoBiblioteca.id}`,
-      nombre: productoBiblioteca.nombre,
-      descripcion: productoBiblioteca.descripcion || '',
-      cantidad: 1,
-      precioUnitario: productoBiblioteca.precio_base,
-      descuentoPorcentaje: 0,
-      total: productoBiblioteca.precio_base
-    };
-
-    setProductos(prev => [...prev, nuevoProducto]);
-  };
-
-  const eliminarProducto = (id: string) => {
-    setProductos(prev => prev.filter(p => p.id !== id));
-  };
-
-  const agregarProductoPersonalizado = (productoData: {
-    nombre: string;
-    descripcion: string;
-    cantidad: number;
-    precioUnitario: number;
-  }) => {
-    const nuevoProducto: ProductoPresupuesto = {
-      id: `producto-${Date.now()}`,
-      ...productoData,
-      descuentoPorcentaje: 0,
-      total: calcularTotalProducto(productoData.cantidad, productoData.precioUnitario, 0)
-    };
-
-    setProductos(prev => [...prev, nuevoProducto]);
-  };
-
-  const actualizarProducto = (id: string, campo: keyof ProductoPresupuesto, valor: any) => {
-    setProductos(prev => prev.map(producto => {
-      if (producto.id === id) {
-        const productoActualizado = { ...producto, [campo]: valor };
-        
-        // Recalcular total cuando cambie precio, cantidad o descuento
-        if (campo === 'precioUnitario' || campo === 'cantidad' || campo === 'descuentoPorcentaje') {
-          if (campo === 'precioUnitario') {
-            const precio = typeof valor === 'number' ? valor : parseFloat(valor) || 0;
-            productoActualizado.precioUnitario = precio;
-          } else if (campo === 'cantidad') {
-            const cantidad = typeof valor === 'number' ? valor : parseInt(valor) || 1;
-            productoActualizado.cantidad = cantidad;
-          } else if (campo === 'descuentoPorcentaje') {
-            const descuento = typeof valor === 'number' ? valor : parseFloat(valor) || 0;
-            productoActualizado.descuentoPorcentaje = Math.max(0, Math.min(100, descuento));
-          }
-          
-          productoActualizado.total = calcularTotalProducto(
-            productoActualizado.cantidad,
-            productoActualizado.precioUnitario,
-            productoActualizado.descuentoPorcentaje
-          );
-        }
-        
-        return productoActualizado;
-      }
-      return producto;
-    }));
-  };
+  }, [presupuestoExistente, setProductosFromExternal, setStep]);
 
   const calcularTotal = () => {
     const totales = calcularTotalesPresupuesto(productos);
@@ -115,34 +65,11 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
       });
       return;
     }
-    setStep('editing');
+    baseProccedToEdit();
   };
 
   const guardarPresupuesto = () => {
-    if (productos.length === 0) {
-      toast({
-        title: "Sin productos",
-        description: "Debe agregar al menos un producto al presupuesto",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (presupuestoId) {
-      actualizarPresupuesto(negocioId, presupuestoId, productos);
-      toast({
-        title: "Presupuesto actualizado",
-        description: "El presupuesto ha sido actualizado exitosamente",
-      });
-    } else {
-      crearPresupuesto(negocioId, productos);
-      toast({
-        title: "Presupuesto creado",
-        description: "El presupuesto ha sido creado exitosamente",
-      });
-    }
-
-    onCerrar();
+    baseSaveQuote(productos);
   };
 
   return {
@@ -162,4 +89,3 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
     guardarPresupuesto
   };
 };
-
