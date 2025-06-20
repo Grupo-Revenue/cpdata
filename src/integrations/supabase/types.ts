@@ -254,6 +254,10 @@ export type Database = {
         Row: {
           created_at: string
           estado: Database["public"]["Enums"]["estado_presupuesto"]
+          fecha_aprobacion: string | null
+          fecha_envio: string | null
+          fecha_rechazo: string | null
+          fecha_vencimiento: string | null
           id: string
           negocio_id: string
           nombre: string
@@ -263,6 +267,10 @@ export type Database = {
         Insert: {
           created_at?: string
           estado?: Database["public"]["Enums"]["estado_presupuesto"]
+          fecha_aprobacion?: string | null
+          fecha_envio?: string | null
+          fecha_rechazo?: string | null
+          fecha_vencimiento?: string | null
           id?: string
           negocio_id: string
           nombre: string
@@ -272,6 +280,10 @@ export type Database = {
         Update: {
           created_at?: string
           estado?: Database["public"]["Enums"]["estado_presupuesto"]
+          fecha_aprobacion?: string | null
+          fecha_envio?: string | null
+          fecha_rechazo?: string | null
+          fecha_vencimiento?: string | null
           id?: string
           negocio_id?: string
           nombre?: string
@@ -453,8 +465,20 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
-      estado_negocio: "activo" | "cerrado" | "cancelado"
-      estado_presupuesto: "borrador" | "enviado" | "aprobado" | "rechazado"
+      estado_negocio:
+        | "activo"
+        | "cerrado"
+        | "cancelado"
+        | "prospecto"
+        | "perdido"
+        | "ganado"
+      estado_presupuesto:
+        | "borrador"
+        | "enviado"
+        | "aprobado"
+        | "rechazado"
+        | "vencido"
+        | "cancelado"
       tipo_empresa: "productora" | "cliente_final"
     }
     CompositeTypes: {
@@ -572,8 +596,22 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
-      estado_negocio: ["activo", "cerrado", "cancelado"],
-      estado_presupuesto: ["borrador", "enviado", "aprobado", "rechazado"],
+      estado_negocio: [
+        "activo",
+        "cerrado",
+        "cancelado",
+        "prospecto",
+        "perdido",
+        "ganado",
+      ],
+      estado_presupuesto: [
+        "borrador",
+        "enviado",
+        "aprobado",
+        "rechazado",
+        "vencido",
+        "cancelado",
+      ],
       tipo_empresa: ["productora", "cliente_final"],
     },
   },
