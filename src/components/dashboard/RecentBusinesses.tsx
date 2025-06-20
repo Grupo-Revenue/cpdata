@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNegocio } from '@/context/NegocioContext';
-import { Building2, Plus, Calendar, MapPin, DollarSign } from 'lucide-react';
+import { Building2, Plus, Calendar, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { calcularValorNegocio } from '@/utils/businessCalculations';
@@ -84,11 +84,8 @@ const RecentBusinesses: React.FC<RecentBusinessesProps> = ({ onCrearNegocio, onV
                       </div>
                       <div className="flex items-center space-x-3">
                         <div className="text-right">
-                          <div className="flex items-center space-x-1 text-green-600">
-                            <DollarSign className="h-4 w-4" />
-                            <span className="text-lg font-bold">
-                              {valorNegocio > 0 ? formatearPrecio(valorNegocio) : '$0'}
-                            </span>
+                          <div className="text-lg font-bold text-green-600">
+                            {valorNegocio > 0 ? formatearPrecio(valorNegocio) : '$0'}
                           </div>
                           {valorNegocio === 0 && (
                             <span className="text-xs text-gray-500">Sin presupuestos</span>
