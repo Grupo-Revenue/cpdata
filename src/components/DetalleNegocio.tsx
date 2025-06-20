@@ -6,8 +6,7 @@ import CrearPresupuesto from './CrearPresupuesto';
 import { useNavigate } from 'react-router-dom';
 import DetalleNegocioHeader from './negocio/DetalleNegocioHeader';
 import ValorNegocioCard from './negocio/ValorNegocioCard';
-import ContactoCard from './negocio/ContactoCard';
-import EmpresasCard from './negocio/EmpresasCard';
+import ContactoEmpresasCard from './negocio/ContactoEmpresasCard';
 import EventoCard from './negocio/EventoCard';
 import PresupuestosCard from './negocio/PresupuestosCard';
 import { Button } from '@/components/ui/button';
@@ -82,19 +81,31 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-7xl mx-auto">
+      {/* Header */}
       <DetalleNegocioHeader negocio={negocio} onVolver={onVolver} />
 
+      {/* Valor del Negocio - Full width, prominent */}
       <ValorNegocioCard negocio={negocio} onCrearPresupuesto={handleCrearPresupuesto} />
 
-      {/* Información General */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ContactoCard contacto={negocio.contacto} />
-        <EmpresasCard productora={negocio.productora} clienteFinal={negocio.clienteFinal} />
+      {/* Two column layout for main info */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        {/* Left column - Contacto y Empresas */}
+        <div className="xl:col-span-1">
+          <ContactoEmpresasCard 
+            contacto={negocio.contacto} 
+            productora={negocio.productora} 
+            clienteFinal={negocio.clienteFinal} 
+          />
+        </div>
+
+        {/* Right column - Event info */}
+        <div className="xl:col-span-2">
+          <EventoCard evento={negocio.evento} />
+        </div>
       </div>
 
-      <EventoCard evento={negocio.evento} />
-
+      {/* Presupuestos - Full width */}
       <PresupuestosCard
         presupuestos={negocio.presupuestos}
         onCrearPresupuesto={handleCrearPresupuesto}
