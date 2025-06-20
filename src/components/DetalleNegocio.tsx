@@ -1,13 +1,15 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useNegocio } from '@/context/NegocioContext';
-import { ArrowLeft, Plus, Edit, Trash2, Building2, User, Calendar, MapPin, Mail, Phone, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Building2, User, Calendar, MapPin, Mail, Phone, Loader2, FileText, Download } from 'lucide-react';
 import CrearPresupuesto from './CrearPresupuesto';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { formatearPrecio } from '@/utils/formatters';
+import { useNavigate } from 'react-router-dom';
 
 interface DetalleNegocioProps {
   negocioId: string;
@@ -16,6 +18,7 @@ interface DetalleNegocioProps {
 
 const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) => {
   const { obtenerNegocio, eliminarPresupuesto, loading } = useNegocio();
+  const navigate = useNavigate();
   const [mostrarCrearPresupuesto, setMostrarCrearPresupuesto] = useState(false);
   const [presupuestoEditando, setPresupuestoEditando] = useState<string | null>(null);
   const [eliminandoPresupuesto, setEliminandoPresupuesto] = useState<string | null>(null);
@@ -71,6 +74,10 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
         setEliminandoPresupuesto(null);
       }
     }
+  };
+
+  const handleVerPDF = (presupuestoId: string) => {
+    navigate(`/presupuesto/${negocioId}/${presupuestoId}/pdf`);
   };
 
   if (mostrarCrearPresupuesto) {
@@ -241,6 +248,14 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
                       </p>
                     </div>
                     <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleVerPDF(presupuesto.id)}
+                        className="text-blue-600 hover:text-blue-700"
+                      >
+                        <FileText className="w-4 h-4" />
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"

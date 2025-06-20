@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
+import PresupuestoPDFView from "./pages/PresupuestoPDFView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,11 @@ const App = () => (
               <Route path="/admin" element={
                 <ProtectedRoute>
                   <Admin onVolver={() => window.location.href = '/'} />
+                </ProtectedRoute>
+              } />
+              <Route path="/presupuesto/:negocioId/:presupuestoId/pdf" element={
+                <ProtectedRoute>
+                  <PresupuestoPDFView />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
