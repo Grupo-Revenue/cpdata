@@ -84,7 +84,11 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       <div
         ref={editorRef}
         contentEditable
-        className="min-h-[80px] p-3 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        className={cn(
+          "min-h-[80px] p-3 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+          "prose prose-sm max-w-none",
+          "[&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-gray-400 [&:empty]:before:pointer-events-none"
+        )}
         dangerouslySetInnerHTML={{ __html: value }}
         onInput={handleInput}
         data-placeholder={placeholder}
@@ -94,14 +98,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         }}
         suppressContentEditableWarning={true}
       />
-
-      <style jsx>{`
-        [contenteditable]:empty:before {
-          content: attr(data-placeholder);
-          color: #9ca3af;
-          pointer-events: none;
-        }
-      `}</style>
     </div>
   );
 };
