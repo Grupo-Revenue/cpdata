@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, User, Settings, Shield } from 'lucide-react';
+import { LogOut, User, Settings, Shield, Building2 } from 'lucide-react';
 
 const Navigation = () => {
   const { user, signOut, isAdmin } = useAuth();
@@ -44,57 +44,95 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <h1 className="text-xl font-semibold text-gray-900">
-              Sistema de Gestión de Negocios
-            </h1>
+    <nav className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+      <div className="container mx-auto px-4">
+        <div className="flex h-16 items-center justify-between">
+          {/* Logo y título */}
+          <div className="flex items-center space-x-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
+              <Building2 className="h-6 w-6 text-white" />
+            </div>
+            <div className="hidden sm:block">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                BusinessFlow
+              </h1>
+              <p className="text-xs text-muted-foreground">Sistema de Gestión</p>
+            </div>
           </div>
           
-          <div className="flex items-center space-x-4">
+          {/* Botones de acción y perfil */}
+          <div className="flex items-center space-x-3">
+            {/* Indicador de estado premium */}
+            <div className="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20">
+              <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+              <span className="text-xs font-medium text-accent">Pro Plan</span>
+            </div>
+
+            {/* Menú de usuario */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center space-x-2 hover:bg-gray-100">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground">
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full border-2 border-transparent hover:border-primary/20 transition-all duration-200">
+                  <Avatar className="h-9 w-9 ring-2 ring-primary/10">
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-semibold">
                       {getUserInitials()}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm text-gray-700">
-                    {getUserDisplayName()}
-                  </span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{getUserDisplayName()}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {user.email}
-                    </p>
+              <DropdownMenuContent className="w-64 p-2" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal p-3">
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-xs">
+                          {getUserInitials()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <p className="text-sm font-medium leading-none">{getUserDisplayName()}</p>
+                        <p className="text-xs leading-none text-muted-foreground mt-1">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Perfil</span>
+                
+                <DropdownMenuItem className="cursor-pointer p-3 rounded-lg hover:bg-accent/10 transition-colors">
+                  <User className="mr-3 h-4 w-4 text-muted-foreground" />
+                  <div className="flex flex-col">
+                    <span className="text-sm">Mi Perfil</span>
+                    <span className="text-xs text-muted-foreground">Gestionar información personal</span>
+                  </div>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer" onClick={navigateToSettings}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Configuración Personal</span>
+                
+                <DropdownMenuItem className="cursor-pointer p-3 rounded-lg hover:bg-accent/10 transition-colors" onClick={navigateToSettings}>
+                  <Settings className="mr-3 h-4 w-4 text-muted-foreground" />
+                  <div className="flex flex-col">
+                    <span className="text-sm">Configuración</span>
+                    <span className="text-xs text-muted-foreground">Preferencias y ajustes</span>
+                  </div>
                 </DropdownMenuItem>
+                
                 {isAdmin && (
-                  <DropdownMenuItem className="cursor-pointer" onClick={navigateToAdmin}>
-                    <Shield className="mr-2 h-4 w-4" />
-                    <span>Panel de Administración</span>
+                  <DropdownMenuItem className="cursor-pointer p-3 rounded-lg hover:bg-accent/10 transition-colors" onClick={navigateToAdmin}>
+                    <Shield className="mr-3 h-4 w-4 text-accent" />
+                    <div className="flex flex-col">
+                      <span className="text-sm">Administración</span>
+                      <span className="text-xs text-muted-foreground">Panel de control</span>
+                    </div>
                   </DropdownMenuItem>
                 )}
+                
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer" onClick={signOut}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Cerrar Sesión</span>
+                
+                <DropdownMenuItem className="cursor-pointer p-3 rounded-lg hover:bg-destructive/10 transition-colors text-destructive focus:text-destructive" onClick={signOut}>
+                  <LogOut className="mr-3 h-4 w-4" />
+                  <div className="flex flex-col">
+                    <span className="text-sm">Cerrar Sesión</span>
+                    <span className="text-xs text-muted-foreground">Salir de la aplicación</span>
+                  </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
