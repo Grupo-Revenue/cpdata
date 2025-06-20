@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import RichTextEditor from '@/components/ui/rich-text-editor';
-import { ShoppingCart, Trash2, DollarSign, Percent } from 'lucide-react';
+import { ShoppingCart, Trash2, DollarSign, Percent, ArrowLeft } from 'lucide-react';
 import { ProductoPresupuesto } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
 import { calcularTotalesPresupuesto } from '@/utils/quoteCalculations';
@@ -78,7 +79,8 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
             <h3 className="text-lg font-medium text-gray-900 mb-2">No hay productos seleccionados</h3>
             <p className="text-gray-600 mb-4">Vuelve a la selección para agregar productos</p>
             <Button onClick={onVolver} variant="outline">
-              Ir a Selección
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Volver a Selección
             </Button>
           </CardContent>
         </Card>
@@ -200,18 +202,13 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center text-base">
               <ShoppingCart className="w-4 h-4 mr-2" />
-              Resumen
+              Resumen del Presupuesto
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Productos:</span>
               <Badge variant="outline" className="text-xs">{productos.length}</Badge>
-            </div>
-            
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Cantidad total:</span>
-              <span className="font-medium">{productos.reduce((sum, p) => sum + p.cantidad, 0)}</span>
             </div>
             
             <hr className="my-3" />
@@ -243,19 +240,31 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
             <hr className="my-3" />
             
             <div className="flex justify-between items-center">
-              <span className="font-medium">Total:</span>
-              <span className="font-bold text-lg text-green-600">
+              <span className="font-semibold text-base">Total Final:</span>
+              <span className="font-bold text-xl text-green-600">
                 {formatearPrecio(totales.total)}
               </span>
             </div>
             
-            <Button 
-              onClick={onConfirmar} 
-              className="w-full bg-green-600 hover:bg-green-700 mt-4"
-              disabled={productos.length === 0}
-            >
-              Confirmar Presupuesto
-            </Button>
+            <div className="space-y-2 mt-6">
+              <Button 
+                onClick={onConfirmar} 
+                className="w-full bg-green-600 hover:bg-green-700"
+                disabled={productos.length === 0}
+                size="lg"
+              >
+                Guardar Presupuesto
+              </Button>
+              
+              <Button 
+                onClick={onVolver}
+                variant="outline" 
+                className="w-full"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Continuar Agregando
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

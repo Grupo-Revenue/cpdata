@@ -31,7 +31,7 @@ const CreateQuoteHeader: React.FC<CreateQuoteHeaderProps> = ({
       <div className="flex items-center space-x-4">
         <Button variant="outline" onClick={onCerrar}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Volver
+          Cerrar
         </Button>
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
@@ -44,7 +44,7 @@ const CreateQuoteHeader: React.FC<CreateQuoteHeaderProps> = ({
         </div>
       </div>
       
-      {step === 'selection' ? (
+      {step === 'selection' && (
         <div className="flex items-center space-x-4">
           <div className="text-right">
             <p className="text-sm text-gray-600">Productos seleccionados: {productosCount}</p>
@@ -57,19 +57,6 @@ const CreateQuoteHeader: React.FC<CreateQuoteHeaderProps> = ({
           >
             Continuar con Edición
           </Button>
-        </div>
-      ) : (
-        <div className="flex items-center space-x-4">
-          {onVolverASeleccion && (
-            <Button variant="outline" onClick={onVolverASeleccion}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Volver a Selección
-            </Button>
-          )}
-          <div className="text-right">
-            <p className="text-sm text-gray-600">Total del Presupuesto</p>
-            <p className="text-3xl font-bold text-green-600">{formatearPrecio(total)}</p>
-          </div>
         </div>
       )}
     </div>
