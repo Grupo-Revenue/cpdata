@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Presupuesto, Negocio } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
@@ -59,9 +58,8 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
               )}
               <div>
                 <h1 className="text-3xl font-bold text-blue-600 mb-2">
-                  {brandConfig?.nombre_empresa || 'CP DATA'}
+                  {brandConfig?.nombre_empresa || 'Empresa'}
                 </h1>
-                <p className="text-gray-600">Soluciones en Acreditación Digital</p>
                 <div className="mt-2 text-sm text-gray-500">
                   <p>Fecha de Emisión: {fechaActual}</p>
                 </div>
@@ -215,9 +213,9 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
             <div>
               <h4 className="font-bold text-gray-800 mb-3">INFORMACIÓN DE CONTACTO</h4>
               <div className="text-sm space-y-1">
-                <p className="font-semibold">{brandConfig?.nombre_empresa || 'CP Data'} - Soluciones en Acreditación Digital</p>
+                <p className="font-semibold">{brandConfig?.nombre_empresa || 'Empresa'}</p>
                 {brandConfig?.direccion && <p>Dirección: {brandConfig.direccion}</p>}
-                <p>Email: {brandConfig?.email || 'contacto@cpdata.cl'}</p>
+                <p>Email: {brandConfig?.email || 'contacto@empresa.cl'}</p>
                 <p>Teléfono: {brandConfig?.telefono || '+56 9 1234 5678'}</p>
                 {brandConfig?.sitio_web && <p>Web: {brandConfig.sitio_web}</p>}
               </div>
