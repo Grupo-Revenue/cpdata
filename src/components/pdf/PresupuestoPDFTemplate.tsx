@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Presupuesto, Negocio } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
@@ -45,12 +46,25 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
 
     return (
       <div ref={ref} className="bg-white p-8 max-w-4xl mx-auto text-black" style={{ fontFamily: 'Arial, sans-serif' }}>
-        {/* Header without logo and company info */}
+        {/* Header with logo and company info */}
         <div className="border-b-2 border-blue-600 pb-6 mb-8">
           <div className="flex justify-between items-start">
-            <div>
-              <div className="mt-2 text-sm text-gray-500">
-                <p>Fecha de Emisión: {fechaActual}</p>
+            <div className="flex items-center space-x-4">
+              {brandConfig?.logo_url && (
+                <img 
+                  src={brandConfig.logo_url} 
+                  alt={`${brandConfig.nombre_empresa} Logo`}
+                  className="h-16 w-auto object-contain"
+                />
+              )}
+              <div>
+                <h1 className="text-3xl font-bold text-blue-600 mb-2">
+                  {brandConfig?.nombre_empresa || 'CP DATA'}
+                </h1>
+                <p className="text-gray-600">Soluciones en Acreditación Digital</p>
+                <div className="mt-2 text-sm text-gray-500">
+                  <p>Fecha de Emisión: {fechaActual}</p>
+                </div>
               </div>
             </div>
             <div className="text-right">
@@ -201,9 +215,9 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
             <div>
               <h4 className="font-bold text-gray-800 mb-3">INFORMACIÓN DE CONTACTO</h4>
               <div className="text-sm space-y-1">
-                <p className="font-semibold">{brandConfig?.nombre_empresa || 'Empresa'}</p>
+                <p className="font-semibold">{brandConfig?.nombre_empresa || 'CP Data'} - Soluciones en Acreditación Digital</p>
                 {brandConfig?.direccion && <p>Dirección: {brandConfig.direccion}</p>}
-                <p>Email: {brandConfig?.email || 'contacto@empresa.cl'}</p>
+                <p>Email: {brandConfig?.email || 'contacto@cpdata.cl'}</p>
                 <p>Teléfono: {brandConfig?.telefono || '+56 9 1234 5678'}</p>
                 {brandConfig?.sitio_web && <p>Web: {brandConfig.sitio_web}</p>}
               </div>
