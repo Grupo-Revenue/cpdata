@@ -45,24 +45,12 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
 
     return (
       <div ref={ref} className="bg-white p-8 max-w-4xl mx-auto text-black" style={{ fontFamily: 'Arial, sans-serif' }}>
-        {/* Header with logo and company info */}
+        {/* Header without logo and company info */}
         <div className="border-b-2 border-blue-600 pb-6 mb-8">
           <div className="flex justify-between items-start">
-            <div className="flex items-center space-x-4">
-              {brandConfig?.logo_url && (
-                <img 
-                  src={brandConfig.logo_url} 
-                  alt={`${brandConfig.nombre_empresa} Logo`}
-                  className="h-16 w-auto object-contain"
-                />
-              )}
-              <div>
-                <h1 className="text-3xl font-bold text-blue-600 mb-2">
-                  {brandConfig?.nombre_empresa || 'Empresa'}
-                </h1>
-                <div className="mt-2 text-sm text-gray-500">
-                  <p>Fecha de Emisión: {fechaActual}</p>
-                </div>
+            <div>
+              <div className="mt-2 text-sm text-gray-500">
+                <p>Fecha de Emisión: {fechaActual}</p>
               </div>
             </div>
             <div className="text-right">
