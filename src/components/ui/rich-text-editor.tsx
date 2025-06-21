@@ -1,4 +1,5 @@
-import React, { useRef, useCallback, useState } from 'react';
+
+import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Bold, Italic, Underline, MoreHorizontal, List, ListOrdered } from 'lucide-react';
@@ -12,6 +13,57 @@ interface RichTextEditorProps {
   compact?: boolean;
 }
 
+// Helper functions for cursor position management
+const saveCursorPosition = (element: HTMLElement) => {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+  
+  const range = selection.getRangeAt(0);
+  const preCaretRange = range.cloneRange();
+  preCaretRange.selectNodeContents(element);
+  preCaretRange.setEnd(range.endContainer, range.endOffset);
+  
+  return preCaretRange.toString().length;
+};
+
+const restoreCursorPosition = (element: HTMLElement, position: number) => {
+  const selection = window.getSelection();
+  if (!selection) return;
+  
+  let charIndex = 0;
+  const walker = document.createTreeWalker(
+    element,
+    NodeFilter.SHOW_TEXT,
+    null
+  );
+  
+  let node;
+  let found = false;
+  
+  while ((node = walker.nextNode())) {
+    const nodeLength = node.textContent?.length || 0;
+    if (charIndex + nodeLength >= position) {
+      const range = document.createRange();
+      range.setStart(node, position - charIndex);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      found = true;
+      break;
+    }
+    charIndex += nodeLength;
+  }
+  
+  // If position not found, place cursor at the end
+  if (!found) {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+};
+
 const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
   onChange,
@@ -21,21 +73,71 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const [isToolbarVisible, setIsToolbarVisible] = useState(false);
+  const [lastValue, setLastValue] = useState(value);
+  const isUpdatingRef = useRef(false);
+
+  // Update content when value prop changes (from external source)
+  useEffect(() => {
+    if (editorRef.current && value !== lastValue && !isUpdatingRef.current) {
+      const cursorPosition = saveCursorPosition(editorRef.current);
+      editorRef.current.innerHTML = value;
+      setLastValue(value);
+      
+      // Restore cursor position after a brief delay to ensure DOM is updated
+      setTimeout(() => {
+        if (editorRef.current && cursorPosition !== null) {
+          restoreCursorPosition(editorRef.current, cursorPosition);
+        }
+      }, 0);
+    }
+  }, [value, lastValue]);
 
   const executeCommand = useCallback((command: string, value?: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    
+    const cursorPosition = saveCursorPosition(editor);
     document.execCommand(command, false, value);
-    if (editorRef.current) {
-      const html = editorRef.current.innerHTML;
-      onChange(html);
-    }
+    
+    // Get updated content and notify parent
+    const html = editor.innerHTML;
+    isUpdatingRef.current = true;
+    onChange(html);
+    setLastValue(html);
+    
+    // Restore cursor position
+    setTimeout(() => {
+      if (cursorPosition !== null) {
+        restoreCursorPosition(editor, cursorPosition);
+      }
+      isUpdatingRef.current = false;
+    }, 0);
   }, [onChange]);
 
-  const handleInput = useCallback(() => {
-    if (editorRef.current) {
-      const html = editorRef.current.innerHTML;
+  const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
+    const editor = e.currentTarget;
+    const html = editor.innerHTML;
+    
+    // Only update if content actually changed
+    if (html !== lastValue) {
+      isUpdatingRef.current = true;
       onChange(html);
+      setLastValue(html);
+      
+      setTimeout(() => {
+        isUpdatingRef.current = false;
+      }, 0);
     }
-  }, [onChange]);
+  }, [onChange, lastValue]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Handle Enter key specifically to prevent cursor jumping
+    if (e.key === 'Enter') {
+      // Let the browser handle the Enter key naturally
+      // We'll capture the change in handleInput
+      return;
+    }
+  }, []);
 
   const handleFocus = useCallback(() => {
     setIsToolbarVisible(true);
@@ -149,8 +251,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           "[&_li]:my-1",
           compact && "min-h-[50px] max-h-[100px] p-2.5"
         )}
-        dangerouslySetInnerHTML={{ __html: value }}
         onInput={handleInput}
+        onKeyDown={handleKeyDown}
         data-placeholder={placeholder}
         style={{
           wordWrap: 'break-word',
