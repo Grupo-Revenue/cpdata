@@ -1,7 +1,7 @@
 
 import { useEffect, useCallback } from 'react';
 import { useProductosBiblioteca } from '@/hooks/useProductosBiblioteca';
-import { calcularTotalesPresupuesto } from '@/utils/quoteCalculations';
+import { calcularTotalesPresupuesto, QuoteTotals } from '@/utils/quoteCalculations';
 import { useProductManagement } from '@/hooks/useProductManagement';
 import { useQuoteFormState } from '@/hooks/useQuoteFormState';
 import { useQuotePersistence } from '@/hooks/useQuotePersistence';
@@ -56,9 +56,13 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
     }
   }, [presupuestoExistente?.id, setProductosFromExternal, setStep]); // Only depend on the ID to avoid infinite loops
 
-  const calcularTotal = useCallback(() => {
+  const calcularTotal = useCallback((): number => {
     const totales = calcularTotalesPresupuesto(productos);
     return totales.total;
+  }, [productos]);
+
+  const calcularTotales = useCallback((): QuoteTotals => {
+    return calcularTotalesPresupuesto(productos);
   }, [productos]);
 
   const proceedToEdit = useCallback(() => {
@@ -90,6 +94,7 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
     agregarProductoPersonalizado,
     actualizarProducto,
     calcularTotal,
+    calcularTotales,
     proceedToEdit,
     guardarPresupuesto
   };

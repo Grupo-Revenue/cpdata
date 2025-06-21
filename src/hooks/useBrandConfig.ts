@@ -39,8 +39,13 @@ export const useBrandConfig = () => {
         // Configuración por defecto si no existe
         setConfig({
           nombre_empresa: 'CP Data',
+          telefono: '+56 9 1234 5678',
+          email: 'contacto@cpdata.cl',
+          sitio_web: 'www.cpdata.cl',
+          direccion: 'Santiago, Chile',
           color_primario: '#3B82F6',
-          color_secundario: '#1E40AF'
+          color_secundario: '#1E40AF',
+          logo_url: 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=200&h=80&fit=crop'
         });
       }
     } catch (err) {

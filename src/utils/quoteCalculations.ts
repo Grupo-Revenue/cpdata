@@ -39,3 +39,5 @@ export const calcularTotalesPresupuesto = (productos: ProductoPresupuesto[]): Qu
   };
 };
 
+// Export IVA_PERCENTAGE for use in templates
+export { IVA_PERCENTAGE } from '@/types';
