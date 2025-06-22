@@ -51,7 +51,7 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
               {brandConfig?.logo_url && <img src={brandConfig.logo_url} alt={`${brandConfig.nombre_empresa} Logo`} className="h-16 w-auto object-contain" />}
               <div>
                 
-                <p className="text-gray-600">Soluciones en Acreditación Digital</p>
+                
                 <div className="mt-2 text-sm text-gray-500">
                   <p>Fecha de Emisión: {fechaActual}</p>
                 </div>
