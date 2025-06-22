@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Presupuesto, Negocio } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
@@ -6,61 +5,52 @@ import { calcularTotalesPresupuesto, IVA_PERCENTAGE } from '@/utils/quoteCalcula
 import { useBrandConfig } from '@/hooks/useBrandConfig';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-
 interface PresupuestoPDFTemplateProps {
   presupuesto: Presupuesto;
   negocio: Negocio;
 }
+const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTemplateProps>(({
+  presupuesto,
+  negocio
+}, ref) => {
+  const {
+    config: brandConfig
+  } = useBrandConfig();
+  const formatearFecha = (fecha: string) => {
+    try {
+      return format(new Date(fecha), 'dd/MM/yyyy', {
+        locale: es
+      });
+    } catch {
+      return fecha;
+    }
+  };
+  const fechaActual = format(new Date(), 'dd/MM/yyyy', {
+    locale: es
+  });
+  const stripHtmlTags = (html: string) => {
+    if (!html) return '';
+    return html.replace(/<[^>]*>/g, '');
+  };
+  const renderHtmlContent = (html: string) => {
+    if (!html) return null;
+    return <div className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{
+      __html: html
+    }} />;
+  };
 
-const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTemplateProps>(
-  ({ presupuesto, negocio }, ref) => {
-    const { config: brandConfig } = useBrandConfig();
-    
-    const formatearFecha = (fecha: string) => {
-      try {
-        return format(new Date(fecha), 'dd/MM/yyyy', { locale: es });
-      } catch {
-        return fecha;
-      }
-    };
-
-    const fechaActual = format(new Date(), 'dd/MM/yyyy', { locale: es });
-
-    const stripHtmlTags = (html: string) => {
-      if (!html) return '';
-      return html.replace(/<[^>]*>/g, '');
-    };
-
-    const renderHtmlContent = (html: string) => {
-      if (!html) return null;
-      return (
-        <div 
-          className="text-sm text-gray-600 mt-1"
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
-      );
-    };
-
-    // Calculate totals with IVA breakdown
-    const totales = calcularTotalesPresupuesto(presupuesto.productos);
-
-    return (
-      <div ref={ref} className="bg-white p-8 max-w-4xl mx-auto text-black" style={{ fontFamily: 'Arial, sans-serif' }}>
+  // Calculate totals with IVA breakdown
+  const totales = calcularTotalesPresupuesto(presupuesto.productos);
+  return <div ref={ref} className="bg-white p-8 max-w-4xl mx-auto text-black" style={{
+    fontFamily: 'Arial, sans-serif'
+  }}>
         {/* Header with logo and company info */}
         <div className="border-b-2 border-blue-600 pb-6 mb-8">
           <div className="flex justify-between items-start">
             <div className="flex items-center space-x-4">
-              {brandConfig?.logo_url && (
-                <img 
-                  src={brandConfig.logo_url} 
-                  alt={`${brandConfig.nombre_empresa} Logo`}
-                  className="h-16 w-auto object-contain"
-                />
-              )}
+              {brandConfig?.logo_url && <img src={brandConfig.logo_url} alt={`${brandConfig.nombre_empresa} Logo`} className="h-16 w-auto object-contain" />}
               <div>
-                <h1 className="text-3xl font-bold text-blue-600 mb-2">
-                  {brandConfig?.nombre_empresa || 'CP DATA'}
-                </h1>
+                
                 <p className="text-gray-600">Soluciones en Acreditación Digital</p>
                 <div className="mt-2 text-sm text-gray-500">
                   <p>Fecha de Emisión: {fechaActual}</p>
@@ -97,18 +87,14 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
                 <span className="font-semibold">Teléfono: </span>
                 {negocio.contacto.telefono}
               </div>
-              {negocio.productora && (
-                <div>
+              {negocio.productora && <div>
                   <span className="font-semibold">Productora: </span>
                   {negocio.productora.nombre}
-                </div>
-              )}
-              {negocio.clienteFinal && (
-                <div>
+                </div>}
+              {negocio.clienteFinal && <div>
                   <span className="font-semibold">Cliente Final: </span>
                   {negocio.clienteFinal.nombre}
-                </div>
-              )}
+                </div>}
             </div>
           </div>
 
@@ -164,23 +150,19 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
               </tr>
             </thead>
             <tbody>
-              {presupuesto.productos.map((producto, index) => (
-                <tr key={producto.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+              {presupuesto.productos.map((producto, index) => <tr key={producto.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                   <td className="border border-gray-300 p-3">
                     <div className="font-medium">{producto.nombre}</div>
                     {producto.descripcion && renderHtmlContent(producto.descripcion)}
-                    {producto.comentarios && (
-                      <div className="mt-2 pt-2 border-t border-gray-200">
+                    {producto.comentarios && <div className="mt-2 pt-2 border-t border-gray-200">
                         <div className="text-xs font-semibold text-gray-700 mb-1">Comentarios:</div>
                         {renderHtmlContent(producto.comentarios)}
-                      </div>
-                    )}
+                      </div>}
                   </td>
                   <td className="border border-gray-300 p-3 text-center">{producto.cantidad}</td>
                   <td className="border border-gray-300 p-3 text-right">{formatearPrecio(producto.precioUnitario)}</td>
                   <td className="border border-gray-300 p-3 text-right font-medium">{formatearPrecio(producto.total)}</td>
-                </tr>
-              ))}
+                </tr>)}
             </tbody>
           </table>
         </div>
@@ -265,11 +247,7 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
             </div>
           </div>
         </div>
-      </div>
-    );
-  }
-);
-
+      </div>;
+});
 PresupuestoPDFTemplate.displayName = 'PresupuestoPDFTemplate';
-
 export default PresupuestoPDFTemplate;
