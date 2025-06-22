@@ -102,8 +102,10 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
             id: producto.id,
             nombre: producto.nombre,
             descripcion: producto.descripcion || '',
+            comentarios: '', // Add comentarios field for backward compatibility
             cantidad: producto.cantidad,
             precioUnitario: parseFloat(producto.precio_unitario),
+            descuentoPorcentaje: 0, // Add descuentoPorcentaje field to fix NaN calculations
             total: parseFloat(producto.total)
           })) || [],
           total: parseFloat(presupuesto.total),

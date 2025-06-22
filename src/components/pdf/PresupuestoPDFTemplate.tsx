@@ -3,6 +3,7 @@ import React from 'react';
 import { Presupuesto, Negocio } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
 import { calcularTotalesPresupuesto, IVA_PERCENTAGE } from '@/utils/quoteCalculations';
+import { useBrandConfig } from '@/hooks/useBrandConfig';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -15,6 +16,8 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
   presupuesto,
   negocio
 }, ref) => {
+  const { config: brandConfig } = useBrandConfig();
+
   const formatearFecha = (fecha: string) => {
     try {
       return format(new Date(fecha), 'dd/MM/yyyy', {
@@ -46,9 +49,21 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
       {/* Header */}
       <div className="border-b-2 border-blue-600 pb-6 mb-8">
         <div className="flex justify-between items-start">
-          <div>
-            <div className="mt-2 text-sm text-gray-500">
-              <p>Fecha de Emisión: {fechaActual}</p>
+          <div className="flex items-center space-x-4">
+            {brandConfig?.logo_url && (
+              <img 
+                src={brandConfig.logo_url} 
+                alt="Logo" 
+                className="h-16 w-auto object-contain"
+              />
+            )}
+            <div>
+              <h1 className="text-2xl font-bold" style={{ color: brandConfig?.color_primario || '#3B82F6' }}>
+                {brandConfig?.nombre_empresa || 'CP Data'}
+              </h1>
+              <div className="mt-2 text-sm text-gray-500">
+                <p>Fecha de Emisión: {fechaActual}</p>
+              </div>
             </div>
           </div>
           <div className="text-right">
@@ -193,17 +208,17 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
         </div>
       </div>
 
-      {/* Updated Footer with Specific Company Information */}
+      {/* Updated Footer with Brand Configuration */}
       <div className="border-t-2 border-blue-600 pt-6 mt-8">
         <div className="grid grid-cols-2 gap-8 mb-6">
           <div>
             <h4 className="font-bold text-gray-800 mb-3">INFORMACIÓN DE CONTACTO</h4>
             <div className="text-sm space-y-1">
-              <p className="font-semibold">CP Data - Soluciones en Acreditación Digital</p>
-              <p>Dirección: Providencia 2133, Oficina 1012, Providencia, Santiago</p>
-              <p>Email: contacto@cpdata.cl</p>
-              <p>Teléfono: +56 9 8765 4321</p>
-              <p>Web: www.cpdata.cl</p>
+              <p className="font-semibold">{brandConfig?.nombre_empresa || 'CP Data'}</p>
+              {brandConfig?.direccion && <p>Dirección: {brandConfig.direccion}</p>}
+              {brandConfig?.email && <p>Email: {brandConfig.email}</p>}
+              {brandConfig?.telefono && <p>Teléfono: {brandConfig.telefono}</p>}
+              {brandConfig?.sitio_web && <p>Web: {brandConfig.sitio_web}</p>}
             </div>
           </div>
           <div className="text-right">
@@ -240,7 +255,7 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
             </div>
             <div className="text-center mt-4 pt-3 border-t border-gray-200">
               <p className="font-semibold">
-                CP Data SpA - RUT: 76.543.210-9 - Giro: Servicios de Tecnología e Innovación
+                {brandConfig?.nombre_empresa || 'CP Data'} - Soluciones en Acreditación Digital
               </p>
               <p>
                 Certificada en normas ISO 9001:2015 | Empresa registrada en ChileCompra
