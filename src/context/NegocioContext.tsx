@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { useHubSpotConfig } from '@/hooks/useHubSpotConfig';
-import { calcularValorNegocio } from '@/utils/businessCalculations';
+import { calcularValorNegocio, mapLegacyBusinessState } from '@/utils/businessCalculations';
 
 interface NegocioContextType {
   negocios: Negocio[];
@@ -62,68 +62,73 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
 
       if (error) throw error;
 
-      const negociosFormateados: Negocio[] = negociosData?.map(negocio => ({
-        id: negocio.id,
-        numero: negocio.numero,
-        contacto: {
-          id: negocio.contacto.id,
-          nombre: negocio.contacto.nombre,
-          apellido: negocio.contacto.apellido,
-          email: negocio.contacto.email,
-          telefono: negocio.contacto.telefono,
-          cargo: negocio.contacto.cargo || ''
-        },
-        productora: negocio.productora ? {
-          id: negocio.productora.id,
-          nombre: negocio.productora.nombre,
-          rut: negocio.productora.rut || '',
-          sitioWeb: negocio.productora.sitio_web || '',
-          direccion: negocio.productora.direccion || '',
-          tipo: 'productora' as const
-        } : undefined,
-        clienteFinal: negocio.cliente_final ? {
-          id: negocio.cliente_final.id,
-          nombre: negocio.cliente_final.nombre,
-          rut: negocio.cliente_final.rut || '',
-          sitioWeb: negocio.cliente_final.sitio_web || '',
-          direccion: negocio.cliente_final.direccion || '',
-          tipo: 'cliente_final' as const
-        } : undefined,
-        evento: {
-          tipoEvento: negocio.tipo_evento,
-          nombreEvento: negocio.nombre_evento,
-          fechaEvento: negocio.fecha_evento || '',
-          horasAcreditacion: negocio.horas_acreditacion,
-          cantidadAsistentes: negocio.cantidad_asistentes || 0,
-          cantidadInvitados: negocio.cantidad_invitados || 0,
-          locacion: negocio.locacion
-        },
-        presupuestos: negocio.presupuestos?.map((presupuesto: any) => ({
-          id: presupuesto.id,
-          nombre: presupuesto.nombre,
-          productos: presupuesto.productos?.map((producto: any) => ({
-            id: producto.id,
-            nombre: producto.nombre,
-            descripcion: producto.descripcion || '',
-            comentarios: '',
-            cantidad: producto.cantidad,
-            precioUnitario: parseFloat(producto.precio_unitario),
-            descuentoPorcentaje: 0,
-            total: parseFloat(producto.total)
+      const negociosFormateados: Negocio[] = negociosData?.map(negocio => {
+        // Apply state normalization to ensure legacy states are mapped to new states
+        const estadoNormalizado = mapLegacyBusinessState(negocio.estado);
+        
+        return {
+          id: negocio.id,
+          numero: negocio.numero,
+          contacto: {
+            id: negocio.contacto.id,
+            nombre: negocio.contacto.nombre,
+            apellido: negocio.contacto.apellido,
+            email: negocio.contacto.email,
+            telefono: negocio.contacto.telefono,
+            cargo: negocio.contacto.cargo || ''
+          },
+          productora: negocio.productora ? {
+            id: negocio.productora.id,
+            nombre: negocio.productora.nombre,
+            rut: negocio.productora.rut || '',
+            sitioWeb: negocio.productora.sitio_web || '',
+            direccion: negocio.productora.direccion || '',
+            tipo: 'productora' as const
+          } : undefined,
+          clienteFinal: negocio.cliente_final ? {
+            id: negocio.cliente_final.id,
+            nombre: negocio.cliente_final.nombre,
+            rut: negocio.cliente_final.rut || '',
+            sitioWeb: negocio.cliente_final.sitio_web || '',
+            direccion: negocio.cliente_final.direccion || '',
+            tipo: 'cliente_final' as const
+          } : undefined,
+          evento: {
+            tipoEvento: negocio.tipo_evento,
+            nombreEvento: negocio.nombre_evento,
+            fechaEvento: negocio.fecha_evento || '',
+            horasAcreditacion: negocio.horas_acreditacion,
+            cantidadAsistentes: negocio.cantidad_asistentes || 0,
+            cantidadInvitados: negocio.cantidad_invitados || 0,
+            locacion: negocio.locacion
+          },
+          presupuestos: negocio.presupuestos?.map((presupuesto: any) => ({
+            id: presupuesto.id,
+            nombre: presupuesto.nombre,
+            productos: presupuesto.productos?.map((producto: any) => ({
+              id: producto.id,
+              nombre: producto.nombre,
+              descripcion: producto.descripcion || '',
+              comentarios: '',
+              cantidad: producto.cantidad,
+              precioUnitario: parseFloat(producto.precio_unitario),
+              descuentoPorcentaje: 0,
+              total: parseFloat(producto.total)
+            })) || [],
+            total: parseFloat(presupuesto.total),
+            fechaCreacion: presupuesto.created_at,
+            estado: presupuesto.estado as 'borrador' | 'enviado' | 'aprobado' | 'rechazado' | 'vencido' | 'cancelado',
+            fechaVencimiento: presupuesto.fecha_vencimiento || undefined,
+            fechaEnvio: presupuesto.fecha_envio || undefined,
+            fechaAprobacion: presupuesto.fecha_aprobacion || undefined,
+            fechaRechazo: presupuesto.fecha_rechazo || undefined,
+            fechaFacturacion: presupuesto.fecha_facturacion || undefined,
+            facturado: presupuesto.facturado || false
           })) || [],
-          total: parseFloat(presupuesto.total),
-          fechaCreacion: presupuesto.created_at,
-          estado: presupuesto.estado as 'borrador' | 'enviado' | 'aprobado' | 'rechazado' | 'vencido' | 'cancelado',
-          fechaVencimiento: presupuesto.fecha_vencimiento || undefined,
-          fechaEnvio: presupuesto.fecha_envio || undefined,
-          fechaAprobacion: presupuesto.fecha_aprobacion || undefined,
-          fechaRechazo: presupuesto.fecha_rechazo || undefined,
-          fechaFacturacion: presupuesto.fecha_facturacion || undefined,
-          facturado: presupuesto.facturado || false
-        })) || [],
-        fechaCreacion: negocio.created_at,
-        estado: negocio.estado as Negocio['estado']
-      })) || [];
+          fechaCreacion: negocio.created_at,
+          estado: estadoNormalizado as Negocio['estado'] // Use the normalized state
+        };
+      }) || [];
 
       setNegocios(negociosFormateados);
 
