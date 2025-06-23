@@ -141,6 +141,80 @@ export type Database = {
         }
         Relationships: []
       }
+      hubspot_config: {
+        Row: {
+          api_key_set: boolean
+          auto_sync: boolean
+          created_at: string
+          default_deal_stage: string | null
+          default_pipeline_id: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_key_set?: boolean
+          auto_sync?: boolean
+          created_at?: string
+          default_deal_stage?: string | null
+          default_pipeline_id?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_key_set?: boolean
+          auto_sync?: boolean
+          created_at?: string
+          default_deal_stage?: string | null
+          default_pipeline_id?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      hubspot_sync: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          hubspot_deal_id: string | null
+          id: string
+          last_sync_at: string | null
+          negocio_id: string
+          sync_status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          hubspot_deal_id?: string | null
+          id?: string
+          last_sync_at?: string | null
+          negocio_id: string
+          sync_status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          hubspot_deal_id?: string | null
+          id?: string
+          last_sync_at?: string | null
+          negocio_id?: string
+          sync_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hubspot_sync_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: true
+            referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lineas_producto: {
         Row: {
           activo: boolean

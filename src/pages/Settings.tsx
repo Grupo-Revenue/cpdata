@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { User, Save, Loader2, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
+import HubSpotSettings from '@/components/settings/HubSpotSettings';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -161,6 +162,9 @@ const Settings = () => {
               </form>
             </CardContent>
           </Card>
+
+          {/* HubSpot Integration Settings */}
+          <HubSpotSettings />
 
           <Card>
             <CardHeader>

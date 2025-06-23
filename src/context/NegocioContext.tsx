@@ -1,8 +1,11 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Negocio, Presupuesto, ProductoPresupuesto } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { useHubSpotConfig } from '@/hooks/useHubSpotConfig';
+import { calcularValorNegocio } from '@/utils/businessCalculations';
 
 interface NegocioContextType {
   negocios: Negocio[];
@@ -33,6 +36,7 @@ interface NegocioProviderProps {
 
 export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) => {
   const { user } = useAuth();
+  const { syncNegocio } = useHubSpotConfig();
   const [negocios, setNegocios] = useState<Negocio[]>([]);
   const [contadorNegocio, setContadorNegocio] = useState(17658);
   const [loading, setLoading] = useState(false);
@@ -374,6 +378,30 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
       console.log('Reloading businesses...');
       await cargarNegocios();
 
+      // Sync with HubSpot
+      console.log('Syncing with HubSpot...');
+      try {
+        const negocioCompleto = obtenerNegocio(negocio.id);
+        if (negocioCompleto) {
+          const valorTotal = calcularValorNegocio(negocioCompleto);
+          const hubspotData = {
+            id: negocio.id,
+            numero: negocio.numero,
+            contacto: negocioData.contacto,
+            evento: negocioData.evento,
+            valorTotal: valorTotal
+          };
+          
+          const syncResult = await syncNegocio(hubspotData, 'create');
+          if (syncResult.success && !syncResult.skipped) {
+            console.log('Business synced with HubSpot successfully');
+          }
+        }
+      } catch (syncError) {
+        console.warn('HubSpot sync failed (non-critical):', syncError);
+        // Don't throw error here as the business was created successfully
+      }
+
       console.log('=== Business creation completed successfully ===');
       return negocio.id;
     } catch (error) {
@@ -471,6 +499,26 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
       }
 
       await cargarNegocios();
+
+      // Sync updated business value with HubSpot
+      try {
+        const negocioActualizado = obtenerNegocio(negocioId);
+        if (negocioActualizado) {
+          const valorTotal = calcularValorNegocio(negocioActualizado);
+          const hubspotData = {
+            id: negocioActualizado.id,
+            numero: negocioActualizado.numero,
+            contacto: negocioActualizado.contacto,
+            evento: negocioActualizado.evento,
+            valorTotal: valorTotal
+          };
+          
+          await syncNegocio(hubspotData, 'update');
+        }
+      } catch (syncError) {
+        console.warn('HubSpot sync failed (non-critical):', syncError);
+      }
+
       return presupuesto.id;
     } catch (error) {
       console.error('Error creando presupuesto:', error);
@@ -525,6 +573,25 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
       }
 
       await cargarNegocios();
+
+      // Sync updated business value with HubSpot
+      try {
+        const negocioActualizado = obtenerNegocio(negocioId);
+        if (negocioActualizado) {
+          const valorTotal = calcularValorNegocio(negocioActualizado);
+          const hubspotData = {
+            id: negocioActualizado.id,
+            numero: negocioActualizado.numero,
+            contacto: negocioActualizado.contacto,
+            evento: negocioActualizado.evento,
+            valorTotal: valorTotal
+          };
+          
+          await syncNegocio(hubspotData, 'update');
+        }
+      } catch (syncError) {
+        console.warn('HubSpot sync failed (non-critical):', syncError);
+      }
     } catch (error) {
       console.error('Error actualizando presupuesto:', error);
       toast({
