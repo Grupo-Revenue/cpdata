@@ -141,6 +141,30 @@ export type Database = {
         }
         Relationships: []
       }
+      hubspot_api_keys: {
+        Row: {
+          api_key: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       hubspot_config: {
         Row: {
           api_key_set: boolean
@@ -532,6 +556,10 @@ export type Database = {
       check_is_admin: {
         Args: { _user_id: string }
         Returns: boolean
+      }
+      create_hubspot_keys_table_if_not_exists: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       has_role: {
         Args: {

@@ -83,13 +83,7 @@ serve(async (req) => {
       try {
         console.log('Saving API key for user:', user.id);
         
-        // Create a table to store encrypted API keys if it doesn't exist
-        const { error: tableError } = await supabase.rpc('create_hubspot_keys_table_if_not_exists');
-        if (tableError) {
-          console.log('Table creation info:', tableError.message);
-        }
-
-        // Store the API key in our custom table
+        // Store the API key in our database table
         const { error: insertError } = await supabase
           .from('hubspot_api_keys')
           .upsert({
