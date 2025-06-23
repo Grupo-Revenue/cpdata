@@ -63,7 +63,10 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { action, negocioData } = await req.json();
+    const requestBody = await req.json();
+    const { action, negocioData, pipelineId } = requestBody;
+
+    console.log('HubSpot Sync Action:', action);
 
     // Get user's HubSpot configuration
     const { data: hubspotConfig, error: configError } = await supabase
@@ -86,15 +89,17 @@ serve(async (req) => {
     if (!hubspotApiKey) {
       console.log('HubSpot API key not found for user');
       
-      // Update sync status as error
-      await supabase
-        .from('hubspot_sync')
-        .upsert({
-          negocio_id: negocioData.id,
-          sync_status: 'error',
-          error_message: 'HubSpot API key not configured',
-          last_sync_at: new Date().toISOString()
-        });
+      // Only update sync status for negocio-related actions
+      if (negocioData?.id) {
+        await supabase
+          .from('hubspot_sync')
+          .upsert({
+            negocio_id: negocioData.id,
+            sync_status: 'error',
+            error_message: 'HubSpot API key not configured',
+            last_sync_at: new Date().toISOString()
+          });
+      }
 
       return new Response(JSON.stringify({ 
         success: false, 
@@ -106,6 +111,8 @@ serve(async (req) => {
 
     // Handle different actions
     if (action === 'fetch_pipelines') {
+      console.log('Fetching HubSpot pipelines');
+      
       const pipelinesResponse = await fetch('https://api.hubapi.com/crm/v3/pipelines/deals', {
         method: 'GET',
         headers: {
@@ -127,6 +134,8 @@ serve(async (req) => {
       }
 
       const pipelinesData = await pipelinesResponse.json();
+      console.log('Successfully fetched pipelines:', pipelinesData.results?.length || 0);
+      
       return new Response(JSON.stringify({ 
         success: true, 
         data: pipelinesData.results || [] 
@@ -136,7 +145,17 @@ serve(async (req) => {
     }
 
     if (action === 'fetch_deal_stages') {
-      const { pipelineId } = await req.json();
+      if (!pipelineId) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Pipeline ID is required for fetching deal stages' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log('Fetching HubSpot deal stages for pipeline:', pipelineId);
       
       const stagesResponse = await fetch(`https://api.hubapi.com/crm/v3/pipelines/deals/${pipelineId}/stages`, {
         method: 'GET',
@@ -159,6 +178,8 @@ serve(async (req) => {
       }
 
       const stagesData = await stagesResponse.json();
+      console.log('Successfully fetched deal stages:', stagesData.results?.length || 0);
+      
       return new Response(JSON.stringify({ 
         success: true, 
         data: stagesData.results || [] 
@@ -167,10 +188,23 @@ serve(async (req) => {
       });
     }
 
-    let hubspotResponse;
-    let hubspotDealId;
-
+    // Handle create and update actions (require negocioData)
     if (action === 'create' || action === 'update') {
+      if (!negocioData) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Negocio data is required for create/update actions' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      console.log(`${action}ing deal for negocio:`, negocioData.id);
+
+      let hubspotResponse;
+      let hubspotDealId;
+
       // Prepare deal data
       const dealData: HubSpotDeal = {
         properties: {
@@ -212,6 +246,7 @@ serve(async (req) => {
           }
         );
         hubspotDealId = existingSync.hubspot_deal_id;
+        console.log('Updated existing deal:', hubspotDealId);
       } else {
         // Create new deal
         hubspotResponse = await fetch('https://api.hubapi.com/crm/v3/objects/deals', {
@@ -226,6 +261,7 @@ serve(async (req) => {
         if (hubspotResponse.ok) {
           const hubspotData = await hubspotResponse.json();
           hubspotDealId = hubspotData.id;
+          console.log('Created new deal:', hubspotDealId);
         }
       }
 
@@ -264,13 +300,22 @@ serve(async (req) => {
         });
 
       console.log(`Successfully ${action}d deal in HubSpot:`, hubspotDealId);
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        hubspot_deal_id: hubspotDealId,
+        action: action 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
+    // Invalid action
     return new Response(JSON.stringify({ 
-      success: true, 
-      hubspot_deal_id: hubspotDealId,
-      action: action 
+      success: false, 
+      error: `Invalid action: ${action}` 
     }), {
+      status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

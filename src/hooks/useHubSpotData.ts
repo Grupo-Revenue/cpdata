@@ -31,14 +31,21 @@ export const useHubSpotData = () => {
 
     setLoadingPipelines(true);
     try {
+      console.log('Fetching HubSpot pipelines...');
       const { data, error } = await supabase.functions.invoke('hubspot-sync', {
         body: { action: 'fetch_pipelines' }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      console.log('Pipeline fetch response:', data);
 
       if (data.success) {
         setPipelines(data.data || []);
+        console.log('Successfully loaded pipelines:', data.data?.length || 0);
       } else {
         throw new Error(data.error || 'Error fetching pipelines');
       }
@@ -59,6 +66,7 @@ export const useHubSpotData = () => {
 
     setLoadingStages(true);
     try {
+      console.log('Fetching deal stages for pipeline:', pipelineId);
       const { data, error } = await supabase.functions.invoke('hubspot-sync', {
         body: { 
           action: 'fetch_deal_stages',
@@ -66,10 +74,16 @@ export const useHubSpotData = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      console.log('Deal stages fetch response:', data);
 
       if (data.success) {
         setDealStages(data.data || []);
+        console.log('Successfully loaded deal stages:', data.data?.length || 0);
       } else {
         throw new Error(data.error || 'Error fetching deal stages');
       }
