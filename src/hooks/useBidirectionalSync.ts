@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -220,7 +219,18 @@ export const useBidirectionalSync = () => {
 
   // Poll HubSpot for changes
   const pollHubSpotChanges = async () => {
-    if (!user || isPolling || !config?.bidirectional_sync) return;
+    if (!user || isPolling) return;
+
+    // Check if bidirectional sync is enabled
+    if (!config?.bidirectional_sync) {
+      console.log('Bidirectional sync is disabled');
+      toast({
+        title: "Sincronización deshabilitada",
+        description: "La sincronización bidireccional no está habilitada",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setIsPolling(true);
     try {
@@ -235,13 +245,18 @@ export const useBidirectionalSync = () => {
       if (error) throw error;
 
       if (data.success) {
-        const changedCount = data.results.filter((r: any) => r.success && r.changed).length;
-        const failedSyncs = data.results.filter((r: any) => !r.success);
+        const changedCount = data.results?.filter((r: any) => r.success && r.changed).length || 0;
+        const failedSyncs = data.results?.filter((r: any) => !r.success) || [];
         
         if (changedCount > 0) {
           toast({
             title: "Sincronización completada",
             description: `${changedCount} negocios actualizados desde HubSpot`
+          });
+        } else {
+          toast({
+            title: "Sincronización completada",
+            description: "No se encontraron cambios en HubSpot"
           });
         }
         
@@ -253,15 +268,20 @@ export const useBidirectionalSync = () => {
             variant: "destructive"
           });
         }
+        
         await loadSyncLogs();
+        return true;
+      } else {
+        throw new Error(data.error || 'Error en la sincronización');
       }
     } catch (error) {
       console.error('Error polling HubSpot changes:', error);
       toast({
         title: "Error de sincronización",
-        description: "No se pudo verificar cambios en HubSpot",
+        description: error.message || "No se pudo verificar cambios en HubSpot",
         variant: "destructive"
       });
+      return false;
     } finally {
       setIsPolling(false);
     }
@@ -305,19 +325,26 @@ export const useBidirectionalSync = () => {
     return false;
   };
 
-  // Auto-polling setup with more frequent intervals
+  // Auto-polling setup with configurable intervals
   useEffect(() => {
     if (!user || !config?.bidirectional_sync) return;
 
-    const intervalMinutes = config?.polling_interval_minutes || 1; // Default to 1 minute for testing
+    const intervalMinutes = config?.polling_interval_minutes || 30;
+    console.log(`Setting up auto-polling with ${intervalMinutes} minute intervals`);
+    
     const interval = setInterval(() => {
       pollHubSpotChanges();
     }, intervalMinutes * 60 * 1000);
 
-    // Initial poll
-    pollHubSpotChanges();
+    // Initial poll after 10 seconds to allow for setup
+    const initialPollTimeout = setTimeout(() => {
+      pollHubSpotChanges();
+    }, 10000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(initialPollTimeout);
+    };
   }, [user, config?.bidirectional_sync, config?.polling_interval_minutes]);
 
   // Load initial data

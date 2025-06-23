@@ -10,13 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Eye, EyeOff, ExternalLink, Settings, Zap, ArrowLeftRight } from 'lucide-react';
+import { Eye, EyeOff, ExternalLink, Settings, Zap, ArrowLeftRight, Wand2 } from 'lucide-react';
 import { useHubSpotConfig } from '@/hooks/useHubSpotConfig';
 import { useHubSpotData } from '@/hooks/useHubSpotData';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import BidirectionalSyncSettings from './BidirectionalSyncSettings';
+import BidirectionalSyncWizard from './BidirectionalSyncWizard';
 
 const HubSpotSettings: React.FC = () => {
   const { user } = useAuth();
@@ -163,9 +164,10 @@ const HubSpotSettings: React.FC = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="basic">Configuración Básica</TabsTrigger>
-              <TabsTrigger value="bidirectional">Sincronización Bidireccional</TabsTrigger>
+              <TabsTrigger value="wizard">Configuración Guiada</TabsTrigger>
+              <TabsTrigger value="advanced">Configuración Avanzada</TabsTrigger>
             </TabsList>
 
             <TabsContent value="basic" className="space-y-6">
@@ -313,7 +315,26 @@ const HubSpotSettings: React.FC = () => {
               )}
             </TabsContent>
 
-            <TabsContent value="bidirectional">
+            <TabsContent value="wizard">
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2 mb-6">
+                  <Wand2 className="h-5 w-5 text-blue-600" />
+                  <h3 className="text-lg font-medium">Configuración Guiada de Sincronización Bidireccional</h3>
+                </div>
+                
+                {!config?.api_key_set ? (
+                  <Alert>
+                    <AlertDescription>
+                      Primero debes configurar tu API key de HubSpot en la pestaña "Configuración Básica" antes de continuar con la configuración guiada.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <BidirectionalSyncWizard />
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="advanced">
               <BidirectionalSyncSettings />
             </TabsContent>
           </Tabs>
