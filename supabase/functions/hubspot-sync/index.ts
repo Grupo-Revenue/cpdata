@@ -68,7 +68,7 @@ serve(async (req) => {
 
     console.log('HubSpot Sync Action:', action);
 
-    // Handle saving API key as secret
+    // Handle saving API key
     if (action === 'save_api_key') {
       if (!apiKey) {
         return new Response(JSON.stringify({ 
@@ -81,32 +81,29 @@ serve(async (req) => {
       }
 
       try {
-        console.log('Saving API key as secret for user:', user.id);
+        console.log('Saving API key for user:', user.id);
         
-        // Store the API key in Supabase secrets using the management API
-        const secretName = `HUBSPOT_API_KEY_${user.id}`;
-        
-        // Use the service role key to call the management API
-        const secretResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/secrets`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-            'Content-Type': 'application/json',
-            'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-          },
-          body: JSON.stringify({
-            name: secretName,
-            value: apiKey
-          })
-        });
-
-        if (!secretResponse.ok) {
-          console.error('Failed to save secret, trying alternative approach');
-          // Fallback: Set as environment variable for this session
-          Deno.env.set(secretName, apiKey);
+        // Create a table to store encrypted API keys if it doesn't exist
+        const { error: tableError } = await supabase.rpc('create_hubspot_keys_table_if_not_exists');
+        if (tableError) {
+          console.log('Table creation info:', tableError.message);
         }
 
-        console.log('API key saved successfully');
+        // Store the API key in our custom table
+        const { error: insertError } = await supabase
+          .from('hubspot_api_keys')
+          .upsert({
+            user_id: user.id,
+            api_key: apiKey,
+            updated_at: new Date().toISOString()
+          });
+
+        if (insertError) {
+          console.error('Error storing API key:', insertError);
+          throw new Error(`Failed to store API key: ${insertError.message}`);
+        }
+
+        console.log('API key saved successfully to database');
         
         return new Response(JSON.stringify({ 
           success: true,
@@ -126,19 +123,41 @@ serve(async (req) => {
       }
     }
 
-    // Handle test connection
-    if (action === 'test_connection') {
-      const hubspotApiKey = Deno.env.get(`HUBSPOT_API_KEY_${user.id}`);
-      if (!hubspotApiKey) {
-        return new Response(JSON.stringify({ 
-          success: false, 
-          error: 'HubSpot API key not found. Please reconfigure your API key.' 
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+    // Get the user's API key from our table
+    const { data: apiKeyData, error: keyError } = await supabase
+      .from('hubspot_api_keys')
+      .select('api_key')
+      .eq('user_id', user.id)
+      .single();
+
+    if (keyError || !apiKeyData?.api_key) {
+      console.log('HubSpot API key not found for user:', user.id);
+      
+      // Only update sync status for negocio-related actions
+      if (negocioData?.id) {
+        await supabase
+          .from('hubspot_sync')
+          .upsert({
+            negocio_id: negocioData.id,
+            sync_status: 'error',
+            error_message: 'HubSpot API key not configured',
+            last_sync_at: new Date().toISOString()
+          });
       }
 
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'HubSpot API key not configured. Please configure your API key in settings.' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const hubspotApiKey = apiKeyData.api_key;
+    console.log('Found API key for user:', user.id);
+
+    // Handle test connection
+    if (action === 'test_connection') {
       try {
         console.log('Testing HubSpot connection...');
         const testResponse = await fetch('https://api.hubapi.com/crm/v3/pipelines/deals', {
@@ -192,30 +211,6 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         success: true, 
         message: 'HubSpot not configured, sync skipped' 
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const hubspotApiKey = Deno.env.get(`HUBSPOT_API_KEY_${user.id}`);
-    if (!hubspotApiKey) {
-      console.log('HubSpot API key not found for user');
-      
-      // Only update sync status for negocio-related actions
-      if (negocioData?.id) {
-        await supabase
-          .from('hubspot_sync')
-          .upsert({
-            negocio_id: negocioData.id,
-            sync_status: 'error',
-            error_message: 'HubSpot API key not configured',
-            last_sync_at: new Date().toISOString()
-          });
-      }
-
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'HubSpot API key not configured. Please reconfigure your API key in settings.' 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
