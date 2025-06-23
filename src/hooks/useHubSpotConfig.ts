@@ -11,6 +11,10 @@ interface HubSpotConfig {
   auto_sync: boolean;
   default_pipeline_id?: string;
   default_deal_stage?: string;
+  bidirectional_sync: boolean;
+  webhook_enabled: boolean;
+  conflict_resolution_strategy: string;
+  polling_interval_minutes: number;
 }
 
 export const useHubSpotConfig = () => {
@@ -42,6 +46,10 @@ export const useHubSpotConfig = () => {
           user_id: user.id,
           api_key_set: false,
           auto_sync: true,
+          bidirectional_sync: false,
+          webhook_enabled: false,
+          conflict_resolution_strategy: 'manual',
+          polling_interval_minutes: 30,
         };
 
         const { data: newConfig, error: createError } = await supabase
