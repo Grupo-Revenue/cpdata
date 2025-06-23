@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Select,
@@ -37,7 +36,7 @@ const BusinessStateSelect: React.FC<BusinessStateSelectProps> = ({
   size = 'default'
 }) => {
   const { colorEstado } = obtenerEstadoNegocioInfo(negocio);
-  const { syncNegocio } = useHubSpotSync();
+  const { manualSyncNegocio } = useHubSpotSync();
   const { syncToHubSpot } = useBidirectionalSync();
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [lastSyncError, setLastSyncError] = useState<string | null>(null);
@@ -69,14 +68,10 @@ const BusinessStateSelect: React.FC<BusinessStateSelectProps> = ({
             valorTotal: valorTotal
           };
           
-          const syncResult = await syncNegocio(hubspotData, 'update');
+          const syncResult = await manualSyncNegocio(negocio.id);
           
-          if (syncResult.success) {
-            setSyncStatus('success');
-            console.log('Regular sync successful for negocio:', negocio.id);
-          } else {
-            throw new Error(syncResult.error || 'Sync failed');
-          }
+          setSyncStatus('success');
+          console.log('Regular sync successful for negocio:', negocio.id);
         }
         
         // Clear success status after 3 seconds
