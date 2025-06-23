@@ -2,11 +2,11 @@
 import React from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Badge } from '@/components/ui/badge';
 import BusinessStateSelect from '@/components/business/BusinessStateSelect';
+import HubSpotSyncButton from '@/components/hubspot/HubSpotSyncButton';
 import { Negocio } from '@/types';
 import { calcularValorNegocio } from '@/utils/businessCalculations';
 import { useNegocio } from '@/context/NegocioContext';
@@ -82,10 +82,12 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({
         {negocio.evento.fechaEvento ? formatearFecha(negocio.evento.fechaEvento) : 'Por definir'}
       </TableCell>
       <TableCell>
-        <Badge variant="outline" className="text-xs">
-          <ExternalLink className="w-3 h-3 mr-1" />
-          HubSpot
-        </Badge>
+        <HubSpotSyncButton
+          negocio={negocio}
+          variant="outline"
+          size="sm"
+          showText={false}
+        />
       </TableCell>
       <TableCell>
         <Button
