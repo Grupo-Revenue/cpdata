@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { 
   CheckCircle, 
   AlertCircle, 
@@ -16,7 +17,10 @@ import {
   RefreshCw,
   Play,
   Target,
-  Zap
+  Zap,
+  Plus,
+  Trash2,
+  Edit3
 } from 'lucide-react';
 import { useHubSpotConfig } from '@/hooks/useHubSpotConfig';
 import { useHubSpotData } from '@/hooks/useHubSpotData';
@@ -39,6 +43,7 @@ const BidirectionalSyncWizard: React.FC = () => {
   const {
     stateMappings,
     saveStateMapping,
+    deleteStateMapping,
     pollHubSpotChanges,
     isPolling,
     loadStateMappings
@@ -53,6 +58,7 @@ const BidirectionalSyncWizard: React.FC = () => {
   });
   const [selectedPipeline, setSelectedPipeline] = useState('');
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
+  const [editingMapping, setEditingMapping] = useState<string | null>(null);
 
   useEffect(() => {
     // Check completed steps
@@ -102,6 +108,17 @@ const BidirectionalSyncWizard: React.FC = () => {
       return;
     }
 
+    // Check for duplicates
+    const existingMapping = stateMappings.find(m => m.business_state === newMapping.business_state);
+    if (existingMapping) {
+      toast({
+        title: "Estado ya mapeado",
+        description: "Este estado del negocio ya tiene un mapeo configurado",
+        variant: "destructive"
+      });
+      return;
+    }
+
     await saveStateMapping(newMapping);
     setNewMapping({ business_state: '', hubspot_pipeline_id: '', hubspot_stage_id: '' });
     setSelectedPipeline('');
@@ -110,6 +127,14 @@ const BidirectionalSyncWizard: React.FC = () => {
     toast({
       title: "Mapeo agregado",
       description: "El mapeo de estados se ha configurado correctamente"
+    });
+  };
+
+  const handleDeleteMapping = async (mappingId: string) => {
+    await deleteStateMapping(mappingId);
+    toast({
+      title: "Mapeo eliminado",
+      description: "El mapeo de estados se ha eliminado correctamente"
     });
   };
 
@@ -169,6 +194,23 @@ const BidirectionalSyncWizard: React.FC = () => {
     return <div className="h-5 w-5 bg-gray-300 rounded-full" />;
   };
 
+  const getBusinessStateLabel = (state: string) => {
+    return BUSINESS_STATES.find(s => s.value === state)?.label || state;
+  };
+
+  const getPipelineLabel = (pipelineId: string) => {
+    return pipelines.find(p => p.id === pipelineId)?.label || 'Pipeline';
+  };
+
+  const getStageLabel = (stageId: string) => {
+    return dealStages.find(s => s.id === stageId)?.label || 'Etapa';
+  };
+
+  const getAvailableBusinessStates = () => {
+    const mappedStates = stateMappings.map(m => m.business_state);
+    return BUSINESS_STATES.filter(state => !mappedStates.includes(state.value));
+  };
+
   const progress = (completedSteps.length / 5) * 100;
 
   return (
@@ -189,163 +231,280 @@ const BidirectionalSyncWizard: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-8">
+            {/* Step Navigation */}
+            <div className="flex justify-center space-x-4 mb-8">
+              {[1, 2, 3, 4, 5].map((num) => (
+                <Button
+                  key={num}
+                  variant={currentStep === num ? "default" : completedSteps.includes(num) ? "outline" : "ghost"}
+                  size="sm"
+                  onClick={() => setCurrentStep(num)}
+                  className="flex items-center space-x-2"
+                >
+                  {getStepIcon(num)}
+                  <span className="hidden md:inline">Paso {num}</span>
+                </Button>
+              ))}
+            </div>
+
             {/* Step 1: Configure State Mappings */}
-            <div className={`border-l-4 pl-6 ${getStepStatus(1) === 'completed' ? 'border-green-500' : getStepStatus(1) === 'current' ? 'border-blue-500' : 'border-gray-300'}`}>
-              <div className="flex items-center space-x-3 mb-4">
-                {getStepIcon(1)}
-                <h3 className="text-lg font-medium">Paso 1: Configurar Mapeos de Estados</h3>
-                {getStepStatus(1) === 'completed' && (
-                  <Badge variant="outline" className="text-green-600 border-green-600">
-                    Completado
-                  </Badge>
-                )}
-              </div>
-              
-              {getStepStatus(1) !== 'completed' && (
-                <div className="space-y-4">
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Mapea los estados de tus negocios con las etapas de HubSpot para que la sincronización funcione correctamente.
-                    </AlertDescription>
-                  </Alert>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Select 
-                      value={newMapping.business_state}
-                      onValueChange={(value) => setNewMapping(prev => ({ ...prev, business_state: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Estado del negocio" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {BUSINESS_STATES.map(state => (
-                          <SelectItem key={state.value} value={state.value}>
-                            {state.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Select value={selectedPipeline} onValueChange={handlePipelineChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pipeline HubSpot" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {pipelines.map(pipeline => (
-                          <SelectItem key={pipeline.id} value={pipeline.id}>
-                            {pipeline.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Select 
-                      value={newMapping.hubspot_stage_id}
-                      onValueChange={(value) => setNewMapping(prev => ({ ...prev, hubspot_stage_id: value }))}
-                      disabled={!selectedPipeline}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Etapa HubSpot" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {dealStages.map(stage => (
-                          <SelectItem key={stage.id} value={stage.id}>
-                            {stage.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <Button onClick={handleAddMapping} className="w-full md:w-auto">
-                    Agregar Mapeo
-                  </Button>
+            {currentStep === 1 && (
+              <div className="space-y-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  {getStepIcon(1)}
+                  <h3 className="text-lg font-medium">Paso 1: Configurar Mapeos de Estados</h3>
+                  {getStepStatus(1) === 'completed' && (
+                    <Badge variant="outline" className="text-green-600 border-green-600">
+                      Completado
+                    </Badge>
+                  )}
                 </div>
-              )}
 
-              {stateMappings.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="font-medium mb-2">Mapeos configurados:</h4>
-                  <div className="space-y-2">
-                    {stateMappings.map((mapping) => (
-                      <div key={mapping.id} className="flex items-center space-x-2 text-sm">
-                        <Badge variant="outline">
-                          {BUSINESS_STATES.find(s => s.value === mapping.business_state)?.label}
-                        </Badge>
-                        <ArrowRight className="h-3 w-3" />
-                        <span>HubSpot Stage</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Step 2: Enable Bidirectional Sync */}
-            <div className={`border-l-4 pl-6 ${getStepStatus(2) === 'completed' ? 'border-green-500' : getStepStatus(2) === 'current' ? 'border-blue-500' : 'border-gray-300'}`}>
-              <div className="flex items-center space-x-3 mb-4">
-                {getStepIcon(2)}
-                <h3 className="text-lg font-medium">Paso 2: Habilitar Sincronización Bidireccional</h3>
-                {getStepStatus(2) === 'completed' && (
-                  <Badge variant="outline" className="text-green-600 border-green-600">
-                    Completado
-                  </Badge>
-                )}
-              </div>
-              
-              {getStepStatus(2) !== 'completed' && (
-                <div className="space-y-4">
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Activa la sincronización bidireccional para que los cambios en HubSpot se reflejen automáticamente en tu aplicación.
-                    </AlertDescription>
-                  </Alert>
-                  
-                  <Button onClick={enableBidirectionalSync} disabled={!completedSteps.includes(1)}>
-                    <Zap className="h-4 w-4 mr-2" />
-                    Habilitar Sincronización Bidireccional
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {/* Step 3: Verify Configuration */}
-            <div className={`border-l-4 pl-6 ${getStepStatus(3) === 'completed' ? 'border-green-500' : getStepStatus(3) === 'current' ? 'border-blue-500' : 'border-gray-300'}`}>
-              <div className="flex items-center space-x-3 mb-4">
-                {getStepIcon(3)}
-                <h3 className="text-lg font-medium">Paso 3: Verificar Configuración</h3>
-                {getStepStatus(3) === 'completed' && (
-                  <Badge variant="outline" className="text-green-600 border-green-600">
-                    Completado
-                  </Badge>
-                )}
-              </div>
-              
-              {getStepStatus(3) === 'completed' && (
-                <Alert className="border-green-200 bg-green-50">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <AlertDescription className="text-green-800">
-                    ✅ Configuración verificada: {stateMappings.length} mapeos configurados y sincronización bidireccional habilitada.
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Mapea los estados de tus negocios con las etapas de HubSpot para que la sincronización funcione correctamente.
                   </AlertDescription>
                 </Alert>
-              )}
-            </div>
 
-            {/* Step 4: Test Sync */}
-            <div className={`border-l-4 pl-6 ${getStepStatus(4) === 'completed' ? 'border-green-500' : getStepStatus(4) === 'current' ? 'border-blue-500' : 'border-gray-300'}`}>
-              <div className="flex items-center space-x-3 mb-4">
-                {getStepIcon(4)}
-                <h3 className="text-lg font-medium">Paso 4: Probar Sincronización</h3>
-                {testResult === 'success' && (
-                  <Badge variant="outline" className="text-green-600 border-green-600">
-                    Probado
-                  </Badge>
+                {/* Add New Mapping Form */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center space-x-2">
+                      <Plus className="h-4 w-4" />
+                      <span>Agregar Nuevo Mapeo</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Select 
+                        value={newMapping.business_state}
+                        onValueChange={(value) => setNewMapping(prev => ({ ...prev, business_state: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Estado del negocio" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getAvailableBusinessStates().map(state => (
+                            <SelectItem key={state.value} value={state.value}>
+                              {state.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={selectedPipeline} onValueChange={handlePipelineChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pipeline HubSpot" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pipelines.map(pipeline => (
+                            <SelectItem key={pipeline.id} value={pipeline.id}>
+                              {pipeline.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select 
+                        value={newMapping.hubspot_stage_id}
+                        onValueChange={(value) => setNewMapping(prev => ({ ...prev, hubspot_stage_id: value }))}
+                        disabled={!selectedPipeline}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Etapa HubSpot" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {dealStages.map(stage => (
+                            <SelectItem key={stage.id} value={stage.id}>
+                              {stage.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Button onClick={handleAddMapping} className="w-full md:w-auto">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agregar Mapeo
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Existing Mappings */}
+                {stateMappings.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Mapeos Configurados ({stateMappings.length})</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Estado del Negocio</TableHead>
+                            <TableHead>Pipeline HubSpot</TableHead>
+                            <TableHead>Etapa HubSpot</TableHead>
+                            <TableHead>Acciones</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {stateMappings.map((mapping) => (
+                            <TableRow key={mapping.id}>
+                              <TableCell>
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                  {getBusinessStateLabel(mapping.business_state)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {getPipelineLabel(mapping.hubspot_pipeline_id)}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                  {getStageLabel(mapping.hubspot_stage_id)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center space-x-2">
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>¿Eliminar mapeo?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Esta acción eliminará permanentemente el mapeo de estado "{getBusinessStateLabel(mapping.business_state)}". 
+                                          Esta acción no se puede deshacer.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction 
+                                          onClick={() => handleDeleteMapping(mapping.id)}
+                                          className="bg-red-600 hover:bg-red-700"
+                                        >
+                                          Eliminar
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {stateMappings.length === 0 && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      No hay mapeos configurados. Agrega al menos un mapeo para continuar con la configuración.
+                    </AlertDescription>
+                  </Alert>
                 )}
               </div>
-              
-              <div className="space-y-4">
+            )}
+
+            {/* Step 2: Enable Bidirectional Sync */}
+            {currentStep === 2 && (
+              <div className="space-y-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  {getStepIcon(2)}
+                  <h3 className="text-lg font-medium">Paso 2: Habilitar Sincronización Bidireccional</h3>
+                  {getStepStatus(2) === 'completed' && (
+                    <Badge variant="outline" className="text-green-600 border-green-600">
+                      Completado
+                    </Badge>
+                  )}
+                </div>
+                
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Activa la sincronización bidireccional para que los cambios en HubSpot se reflejen automáticamente en tu aplicación.
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="flex flex-col space-y-4">
+                  {!completedSteps.includes(1) && (
+                    <Alert className="border-yellow-200 bg-yellow-50">
+                      <AlertCircle className="h-4 w-4 text-yellow-600" />
+                      <AlertDescription className="text-yellow-800">
+                        Primero debes configurar al menos un mapeo de estados en el Paso 1.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  <Button 
+                    onClick={enableBidirectionalSync} 
+                    disabled={!completedSteps.includes(1) || config?.bidirectional_sync}
+                    className="w-full md:w-auto"
+                  >
+                    <Zap className="h-4 w-4 mr-2" />
+                    {config?.bidirectional_sync ? 'Sincronización Habilitada' : 'Habilitar Sincronización Bidireccional'}
+                  </Button>
+
+                  {config?.bidirectional_sync && (
+                    <Alert className="border-green-200 bg-green-50">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <AlertDescription className="text-green-800">
+                        ✅ La sincronización bidireccional está habilitada y funcionando.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Steps 3, 4, 5 remain the same structure */}
+            {currentStep === 3 && (
+              <div className="space-y-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  {getStepIcon(3)}
+                  <h3 className="text-lg font-medium">Paso 3: Verificar Configuración</h3>
+                  {getStepStatus(3) === 'completed' && (
+                    <Badge variant="outline" className="text-green-600 border-green-600">
+                      Completado
+                    </Badge>
+                  )}
+                </div>
+                
+                {getStepStatus(3) === 'completed' ? (
+                  <Alert className="border-green-200 bg-green-50">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-800">
+                      ✅ Configuración verificada: {stateMappings.length} mapeos configurados y sincronización bidireccional habilitada.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Complete los pasos anteriores para verificar la configuración.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
+
+            {currentStep === 4 && (
+              <div className="space-y-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  {getStepIcon(4)}
+                  <h3 className="text-lg font-medium">Paso 4: Probar Sincronización</h3>
+                  {testResult === 'success' && (
+                    <Badge variant="outline" className="text-green-600 border-green-600">
+                      Probado
+                    </Badge>
+                  )}
+                </div>
+                
                 <Alert>
                   <Play className="h-4 w-4" />
                   <AlertDescription>
@@ -357,6 +516,7 @@ const BidirectionalSyncWizard: React.FC = () => {
                   onClick={testSync} 
                   disabled={!completedSteps.includes(3) || isPolling}
                   variant={testResult === 'success' ? 'outline' : 'default'}
+                  className="w-full md:w-auto"
                 >
                   {isPolling ? (
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -384,16 +544,15 @@ const BidirectionalSyncWizard: React.FC = () => {
                   </Alert>
                 )}
               </div>
-            </div>
+            )}
 
-            {/* Step 5: Optimize Configuration */}
-            <div className={`border-l-4 pl-6 ${getStepStatus(5) === 'completed' ? 'border-green-500' : getStepStatus(5) === 'current' ? 'border-blue-500' : 'border-gray-300'}`}>
-              <div className="flex items-center space-x-3 mb-4">
-                {getStepIcon(5)}
-                <h3 className="text-lg font-medium">Paso 5: Optimizar Configuración</h3>
-              </div>
-              
-              <div className="space-y-4">
+            {currentStep === 5 && (
+              <div className="space-y-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  {getStepIcon(5)}
+                  <h3 className="text-lg font-medium">Paso 5: Optimizar Configuración</h3>
+                </div>
+                
                 <Alert>
                   <Target className="h-4 w-4" />
                   <AlertDescription>
@@ -415,12 +574,13 @@ const BidirectionalSyncWizard: React.FC = () => {
                 <Button 
                   onClick={optimizeSettings} 
                   disabled={testResult !== 'success'}
+                  className="w-full md:w-auto"
                 >
                   <Target className="h-4 w-4 mr-2" />
                   Optimizar para Producción
                 </Button>
               </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
