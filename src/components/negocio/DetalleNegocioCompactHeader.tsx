@@ -27,6 +27,9 @@ const DetalleNegocioCompactHeader: React.FC<DetalleNegocioCompactHeaderProps> = 
     }
   };
 
+  // Determine which company to display (productora takes priority, then cliente final)
+  const empresaDisplay = negocio.productora?.nombre || negocio.clienteFinal?.nombre || 'N/A';
+
   return (
     <Card className="border-slate-200 bg-white">
       <CardContent className="p-6">
@@ -44,7 +47,7 @@ const DetalleNegocioCompactHeader: React.FC<DetalleNegocioCompactHeaderProps> = 
               <h1 className="text-2xl font-bold text-slate-900">
                 Negocio #{negocio.numero}
               </h1>
-              <p className="text-slate-600">{negocio.nombre_evento}</p>
+              <p className="text-slate-600">{negocio.evento.nombreEvento}</p>
             </div>
           </div>
           
@@ -71,17 +74,17 @@ const DetalleNegocioCompactHeader: React.FC<DetalleNegocioCompactHeaderProps> = 
           </div>
           <div className="flex items-center space-x-2">
             <Building className="w-4 h-4 text-slate-500" />
-            <span className="text-slate-700">{negocio.contacto.empresa}</span>
+            <span className="text-slate-700">{empresaDisplay}</span>
           </div>
           <div className="flex items-center space-x-2">
             <Calendar className="w-4 h-4 text-slate-500" />
             <span className="text-slate-700">
-              {new Date(negocio.fecha_evento).toLocaleDateString()}
+              {negocio.evento.fechaEvento ? new Date(negocio.evento.fechaEvento).toLocaleDateString() : 'No definida'}
             </span>
           </div>
           <div className="flex items-center space-x-2">
             <MapPin className="w-4 h-4 text-slate-500" />
-            <span className="text-slate-700">{negocio.ubicacion}</span>
+            <span className="text-slate-700">{negocio.evento.locacion}</span>
           </div>
         </div>
       </CardContent>
