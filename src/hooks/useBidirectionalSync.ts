@@ -1,9 +1,11 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Negocio } from '@/types';
 import { useHubSpotConfig } from './useHubSpotConfig';
+import { calcularValorNegocio } from '@/utils/businessCalculations';
 
 interface StateMapping {
   id: string;
@@ -16,6 +18,9 @@ interface SyncConflict {
   negocio_id: string;
   app_state: string;
   hubspot_state: string;
+  app_amount?: number;
+  hubspot_amount?: number;
+  conflict_type: 'state' | 'amount' | 'both';
   timestamp: string;
 }
 
@@ -25,6 +30,8 @@ interface SyncLog {
   operation_type: string;
   old_state: string;
   new_state: string;
+  old_amount?: number;
+  new_amount?: number;
   success: boolean;
   error_message: string;
   created_at: string;
@@ -135,18 +142,19 @@ export const useBidirectionalSync = () => {
     }
   };
 
-  // Sync business to HubSpot
-  const syncToHubSpot = async (negocioId: string) => {
-    if (!user) return;
+  // Sync business to HubSpot with enhanced amount handling
+  const syncToHubSpot = async (negocioId: string, forceAmountSync: boolean = false) => {
+    if (!user) return false;
 
     setLoading(true);
     try {
-      console.log('Syncing business to HubSpot:', negocioId);
+      console.log('Syncing business to HubSpot:', negocioId, 'Force amount sync:', forceAmountSync);
       const { data, error } = await supabase.functions.invoke('hubspot-bidirectional-sync', {
         body: {
           action: 'sync_to_hubspot',
           negocioId,
-          userId: user.id
+          userId: user.id,
+          forceAmountSync
         }
       });
 
@@ -155,7 +163,9 @@ export const useBidirectionalSync = () => {
       if (data.success) {
         toast({
           title: "Sincronización exitosa",
-          description: "El negocio se ha sincronizado con HubSpot"
+          description: data.amountUpdated ? 
+            "El negocio y monto se han sincronizado con HubSpot" :
+            "El negocio se ha sincronizado con HubSpot"
         });
         await loadSyncLogs();
         return true;
@@ -175,9 +185,9 @@ export const useBidirectionalSync = () => {
     }
   };
 
-  // Sync from HubSpot
+  // Sync from HubSpot with enhanced amount handling
   const syncFromHubSpot = async (negocioId: string) => {
-    if (!user) return;
+    if (!user) return null;
 
     setLoading(true);
     try {
@@ -185,7 +195,7 @@ export const useBidirectionalSync = () => {
       const { data, error } = await supabase.functions.invoke('hubspot-bidirectional-sync', {
         body: {
           action: 'sync_from_hubspot',
-          hubspotDealId: negocioId, // This can be either negocio ID or HubSpot deal ID
+          hubspotDealId: negocioId,
           userId: user.id
         }
       });
@@ -194,9 +204,13 @@ export const useBidirectionalSync = () => {
 
       if (data.success) {
         if (data.changed) {
+          const changeMessages = [];
+          if (data.stateChanged) changeMessages.push(`Estado: ${data.newState}`);
+          if (data.amountChanged) changeMessages.push(`Monto: ${data.newAmount}`);
+          
           toast({
             title: "Sincronización exitosa",
-            description: `Estado actualizado a: ${data.newState}`
+            description: `Actualizado: ${changeMessages.join(', ')}`
           });
         }
         await loadSyncLogs();
@@ -217,9 +231,49 @@ export const useBidirectionalSync = () => {
     }
   };
 
-  // Poll HubSpot for changes
+  // Mass sync all amounts to HubSpot
+  const syncAllAmountsToHubSpot = async () => {
+    if (!user) return false;
+
+    setLoading(true);
+    try {
+      console.log('Starting mass amount sync to HubSpot...');
+      const { data, error } = await supabase.functions.invoke('hubspot-bidirectional-sync', {
+        body: {
+          action: 'mass_sync_amounts',
+          userId: user.id
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        const { updated, failed, skipped } = data.results;
+        toast({
+          title: "Sincronización masiva completada",
+          description: `Actualizados: ${updated}, Omitidos: ${skipped}, Fallos: ${failed}`
+        });
+        await loadSyncLogs();
+        return true;
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error) {
+      console.error('Error in mass amount sync:', error);
+      toast({
+        title: "Error de sincronización masiva",
+        description: error.message || "No se pudo completar la sincronización masiva",
+        variant: "destructive"
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Poll HubSpot for changes with enhanced amount checking
   const pollHubSpotChanges = async () => {
-    if (!user || isPolling) return;
+    if (!user || isPolling) return false;
 
     // Check if bidirectional sync is enabled
     if (!config?.bidirectional_sync) {
@@ -229,7 +283,7 @@ export const useBidirectionalSync = () => {
         description: "La sincronización bidireccional no está habilitada",
         variant: "destructive"
       });
-      return;
+      return false;
     }
 
     setIsPolling(true);
@@ -238,20 +292,26 @@ export const useBidirectionalSync = () => {
       const { data, error } = await supabase.functions.invoke('hubspot-bidirectional-sync', {
         body: {
           action: 'poll_changes',
-          userId: user.id
+          userId: user.id,
+          checkAmounts: true
         }
       });
 
       if (error) throw error;
 
       if (data.success) {
-        const changedCount = data.results?.filter((r: any) => r.success && r.changed).length || 0;
+        const stateChanges = data.results?.filter((r: any) => r.success && r.stateChanged).length || 0;
+        const amountChanges = data.results?.filter((r: any) => r.success && r.amountChanged).length || 0;
         const failedSyncs = data.results?.filter((r: any) => !r.success) || [];
         
-        if (changedCount > 0) {
+        if (stateChanges > 0 || amountChanges > 0) {
+          const messages = [];
+          if (stateChanges > 0) messages.push(`${stateChanges} estados`);
+          if (amountChanges > 0) messages.push(`${amountChanges} montos`);
+          
           toast({
             title: "Sincronización completada",
-            description: `${changedCount} negocios actualizados desde HubSpot`
+            description: `Actualizados: ${messages.join(' y ')}`
           });
         } else {
           toast({
@@ -287,9 +347,20 @@ export const useBidirectionalSync = () => {
     }
   };
 
+  // Auto-sync when budget is updated
+  const syncOnBudgetUpdate = async (negocioId: string) => {
+    if (!config?.auto_sync || !config?.api_key_set) {
+      console.log('Auto-sync disabled or HubSpot not configured');
+      return false;
+    }
+
+    console.log('Auto-syncing business after budget update:', negocioId);
+    return await syncToHubSpot(negocioId, true); // Force amount sync
+  };
+
   // Resolve conflict
-  const resolveConflict = async (negocioId: string, resolvedState: string) => {
-    if (!user) return;
+  const resolveConflict = async (negocioId: string, resolvedState: string, resolvedAmount?: number) => {
+    if (!user) return false;
 
     try {
       const { data, error } = await supabase.functions.invoke('hubspot-bidirectional-sync', {
@@ -297,7 +368,8 @@ export const useBidirectionalSync = () => {
           action: 'resolve_conflict',
           negocioId,
           userId: user.id,
-          resolvedState
+          resolvedState,
+          resolvedAmount
         }
       });
 
@@ -365,6 +437,8 @@ export const useBidirectionalSync = () => {
     deleteStateMapping,
     syncToHubSpot,
     syncFromHubSpot,
+    syncAllAmountsToHubSpot,
+    syncOnBudgetUpdate,
     pollHubSpotChanges,
     resolveConflict,
     loadStateMappings,

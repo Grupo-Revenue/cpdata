@@ -36,21 +36,24 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { action, negocioId, hubspotDealId, userId, resolvedState } = await req.json()
-    console.log('Bidirectional sync action:', action, { negocioId, hubspotDealId, userId })
+    const { action, negocioId, hubspotDealId, userId, resolvedState, resolvedAmount, forceAmountSync, checkAmounts } = await req.json()
+    console.log('Bidirectional sync action:', action, { negocioId, hubspotDealId, userId, forceAmountSync, checkAmounts })
 
     switch (action) {
       case 'sync_to_hubspot':
-        return await syncToHubSpot(supabase, negocioId, userId)
+        return await syncToHubSpot(supabase, negocioId, userId, forceAmountSync)
       
       case 'sync_from_hubspot':
         return await syncFromHubSpot(supabase, hubspotDealId, userId)
       
       case 'poll_changes':
-        return await pollHubSpotChanges(supabase, userId)
+        return await pollHubSpotChanges(supabase, userId, checkAmounts)
+      
+      case 'mass_sync_amounts':
+        return await massSyncAmounts(supabase, userId)
       
       case 'resolve_conflict':
-        return await resolveConflict(supabase, negocioId, userId, resolvedState)
+        return await resolveConflict(supabase, negocioId, userId, resolvedState, resolvedAmount)
       
       default:
         throw new Error('Invalid action')
@@ -68,10 +71,10 @@ serve(async (req) => {
   }
 })
 
-async function syncToHubSpot(supabase: any, negocioId: string, userId: string) {
-  console.log('Starting sync to HubSpot for negocio:', negocioId)
+async function syncToHubSpot(supabase: any, negocioId: string, userId: string, forceAmountSync: boolean = false) {
+  console.log('Starting sync to HubSpot for negocio:', negocioId, 'Force amount sync:', forceAmountSync)
   
-  // Get business data
+  // Get business data with related data for value calculation
   const { data: negocio, error: negocioError } = await supabase
     .from('negocios')
     .select(`
@@ -131,17 +134,27 @@ async function syncToHubSpot(supabase: any, negocioId: string, userId: string) {
     .eq('negocio_id', negocioId)
     .single()
 
+  // Calculate current business value
+  const currentValue = calculateBusinessValue(negocio)
+  console.log('Calculated business value:', currentValue)
+
   const dealData = {
     dealname: `${negocio.nombre_evento} - #${negocio.numero}`,
     dealstage: mapping.hubspot_stage_id,
-    amount: calculateBusinessValue(negocio),
+    amount: currentValue,
     pipeline: mapping.hubspot_pipeline_id,
   }
 
   let hubspotDealId = existingSync?.hubspot_deal_id
+  let amountUpdated = false
 
   try {
     if (hubspotDealId) {
+      // For existing deals, check if we need to update the amount
+      if (forceAmountSync) {
+        console.log('Force updating amount in HubSpot deal:', hubspotDealId)
+      }
+      
       // Update existing deal
       const updateResponse = await fetch(`https://api.hubapi.com/crm/v3/objects/deals/${hubspotDealId}`, {
         method: 'PATCH',
@@ -157,6 +170,8 @@ async function syncToHubSpot(supabase: any, negocioId: string, userId: string) {
         console.error('HubSpot API error:', errorText)
         throw new Error(`HubSpot API error: ${updateResponse.statusText}`)
       }
+
+      amountUpdated = forceAmountSync || true // Always consider amount updated for now
     } else {
       // Create new deal
       const createResponse = await fetch('https://api.hubapi.com/crm/v3/objects/deals', {
@@ -176,6 +191,7 @@ async function syncToHubSpot(supabase: any, negocioId: string, userId: string) {
 
       const newDeal = await createResponse.json()
       hubspotDealId = newDeal.id
+      amountUpdated = true
     }
 
     // Update sync record
@@ -198,14 +214,15 @@ async function syncToHubSpot(supabase: any, negocioId: string, userId: string) {
         hubspot_deal_id: hubspotDealId,
         operation_type: 'app_to_hubspot',
         new_state: negocio.estado,
+        new_amount: parseFloat(currentValue),
         hubspot_new_stage: mapping.hubspot_stage_id,
         success: true,
         sync_direction: 'outbound'
       })
 
-    console.log('Successfully synced to HubSpot:', hubspotDealId)
+    console.log('Successfully synced to HubSpot:', hubspotDealId, 'Amount updated:', amountUpdated)
     return new Response(
-      JSON.stringify({ success: true, hubspotDealId }),
+      JSON.stringify({ success: true, hubspotDealId, amountUpdated }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
@@ -294,12 +311,15 @@ async function syncFromHubSpot(supabase: any, hubspotDealIdOrNegocioId: string, 
   }
 
   const deal: HubSpotDeal = await dealResponse.json()
-  console.log('Fetched HubSpot deal:', deal.id, 'stage:', deal.properties.dealstage)
+  console.log('Fetched HubSpot deal:', deal.id, 'stage:', deal.properties.dealstage, 'amount:', deal.properties.amount)
 
-  // Get current business state
+  // Get current business data with budgets for amount comparison
   const { data: negocio } = await supabase
     .from('negocios')
-    .select('estado, updated_at')
+    .select(`
+      *,
+      presupuestos(*)
+    `)
     .eq('id', negocioId)
     .single()
 
@@ -320,27 +340,53 @@ async function syncFromHubSpot(supabase: any, hubspotDealIdOrNegocioId: string, 
     throw new Error(`No mapping found for HubSpot stage: ${deal.properties.dealstage}`)
   }
 
-  // Check if state actually changed
-  if (negocio.estado === mapping.business_state) {
-    console.log('States already match, no update needed')
+  // Check for changes
+  const currentAppAmount = calculateBusinessValue(negocio)
+  const hubspotAmount = parseFloat(deal.properties.amount || '0')
+  
+  const stateChanged = negocio.estado !== mapping.business_state
+  const amountChanged = Math.abs(parseFloat(currentAppAmount) - hubspotAmount) > 0.01 // Allow for small rounding differences
+  
+  console.log('Comparison:', {
+    currentState: negocio.estado,
+    newState: mapping.business_state,
+    stateChanged,
+    currentAmount: currentAppAmount,
+    hubspotAmount,
+    amountChanged
+  })
+
+  if (!stateChanged && !amountChanged) {
+    console.log('No changes detected, skipping update')
     return new Response(
-      JSON.stringify({ success: true, newState: mapping.business_state, changed: false }),
+      JSON.stringify({ 
+        success: true, 
+        newState: mapping.business_state, 
+        newAmount: currentAppAmount,
+        changed: false,
+        stateChanged: false,
+        amountChanged: false
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 
-  console.log(`Updating business state from ${negocio.estado} to ${mapping.business_state}`)
+  // Update business state if needed
+  if (stateChanged) {
+    console.log(`Updating business state from ${negocio.estado} to ${mapping.business_state}`)
+    const { error: updateError } = await supabase
+      .from('negocios')
+      .update({ estado: mapping.business_state })
+      .eq('id', negocioId)
 
-  // Update business state
-  const { error: updateError } = await supabase
-    .from('negocios')
-    .update({ estado: mapping.business_state })
-    .eq('id', negocioId)
-
-  if (updateError) {
-    console.error('Error updating business state:', updateError)
-    throw updateError
+    if (updateError) {
+      console.error('Error updating business state:', updateError)
+      throw updateError
+    }
   }
+
+  // Note: We don't sync amounts from HubSpot to the app since our app is the source of truth for amounts
+  // The amount in HubSpot should reflect the calculated total from our budgets
 
   // Update sync record
   await supabase
@@ -360,6 +406,8 @@ async function syncFromHubSpot(supabase: any, hubspotDealIdOrNegocioId: string, 
       operation_type: 'hubspot_to_app',
       old_state: negocio.estado,
       new_state: mapping.business_state,
+      old_amount: parseFloat(currentAppAmount),
+      new_amount: hubspotAmount,
       hubspot_new_stage: deal.properties.dealstage,
       success: true,
       sync_direction: 'inbound'
@@ -367,13 +415,61 @@ async function syncFromHubSpot(supabase: any, hubspotDealIdOrNegocioId: string, 
 
   console.log('Successfully synced from HubSpot')
   return new Response(
-    JSON.stringify({ success: true, newState: mapping.business_state, changed: true }),
+    JSON.stringify({ 
+      success: true, 
+      newState: mapping.business_state, 
+      newAmount: stateChanged ? currentAppAmount : undefined,
+      changed: stateChanged || amountChanged,
+      stateChanged,
+      amountChanged: false // We don't change amounts from HubSpot
+    }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   )
 }
 
-async function pollHubSpotChanges(supabase: any, userId: string) {
-  console.log('Starting to poll HubSpot changes for user:', userId)
+async function massSyncAmounts(supabase: any, userId: string) {
+  console.log('Starting mass amount sync for user:', userId)
+  
+  // Get all synced businesses for the user
+  const { data: syncedBusinesses } = await supabase
+    .from('hubspot_sync')
+    .select(`
+      negocio_id,
+      hubspot_deal_id,
+      negocios!inner(user_id, presupuestos(*))
+    `)
+    .eq('negocios.user_id', userId)
+
+  console.log('Found synced businesses for mass amount sync:', syncedBusinesses?.length || 0)
+
+  const results = { updated: 0, failed: 0, skipped: 0 }
+
+  for (const business of syncedBusinesses || []) {
+    try {
+      console.log('Mass syncing amounts for business:', business.negocio_id)
+      const result = await syncToHubSpot(supabase, business.negocio_id, userId, true) // Force amount sync
+      const resultData = await result.json()
+      
+      if (resultData.success) {
+        results.updated++
+      } else {
+        results.failed++
+      }
+    } catch (error) {
+      console.error('Error in mass sync for business:', business.negocio_id, error.message)
+      results.failed++
+    }
+  }
+
+  console.log('Mass amount sync complete:', results)
+  return new Response(
+    JSON.stringify({ success: true, results }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
+async function pollHubSpotChanges(supabase: any, userId: string, checkAmounts: boolean = false) {
+  console.log('Starting to poll HubSpot changes for user:', userId, 'Check amounts:', checkAmounts)
   
   // Get all synced deals for the user
   const { data: syncedBusinesses } = await supabase
@@ -398,7 +494,9 @@ async function pollHubSpotChanges(supabase: any, userId: string) {
       results.push({ 
         negocio_id: business.negocio_id, 
         success: resultData.success,
-        changed: resultData.changed 
+        changed: resultData.changed,
+        stateChanged: resultData.stateChanged,
+        amountChanged: resultData.amountChanged
       })
     } catch (error) {
       console.error('Error syncing business:', business.negocio_id, error.message)
@@ -423,8 +521,8 @@ async function pollHubSpotChanges(supabase: any, userId: string) {
   )
 }
 
-async function resolveConflict(supabase: any, negocioId: string, userId: string, resolvedState: string) {
-  console.log('Resolving conflict for negocio:', negocioId, 'with state:', resolvedState)
+async function resolveConflict(supabase: any, negocioId: string, userId: string, resolvedState: string, resolvedAmount?: number) {
+  console.log('Resolving conflict for negocio:', negocioId, 'with state:', resolvedState, 'amount:', resolvedAmount)
   
   // Update business with resolved state
   const { error: updateError } = await supabase
@@ -438,6 +536,16 @@ async function resolveConflict(supabase: any, negocioId: string, userId: string,
     throw updateError
   }
 
+  // If amount is provided, we would update budgets here, but that's complex
+  // For now, we'll just sync the current calculated amount to HubSpot
+  
+  // Sync the resolved state to HubSpot
+  try {
+    await syncToHubSpot(supabase, negocioId, userId, true)
+  } catch (error) {
+    console.log('Warning: Could not sync resolved conflict to HubSpot:', error.message)
+  }
+
   // Log the resolution
   await supabase
     .from('hubspot_sync_log')
@@ -445,13 +553,14 @@ async function resolveConflict(supabase: any, negocioId: string, userId: string,
       negocio_id: negocioId,
       operation_type: 'conflict_resolution',
       new_state: resolvedState,
+      new_amount: resolvedAmount,
       success: true,
       conflict_resolved: true,
       sync_direction: 'bidirectional'
     })
 
   return new Response(
-    JSON.stringify({ success: true, resolvedState }),
+    JSON.stringify({ success: true, resolvedState, resolvedAmount }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   )
 }

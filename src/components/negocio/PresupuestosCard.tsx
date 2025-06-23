@@ -7,6 +7,7 @@ import EmptyPresupuestosState from './presupuestos/EmptyPresupuestosState';
 import PresupuestoItem from './presupuestos/PresupuestoItem';
 import PresupuestoEstadoDialog from './presupuestos/PresupuestoEstadoDialog';
 import PresupuestosResumen from './PresupuestosResumen';
+import { useBidirectionalSync } from '@/hooks/useBidirectionalSync';
 
 interface PresupuestosCardProps {
   negocio: Negocio;
@@ -25,6 +26,7 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
   onVerPDF,
   onCambiarEstado
 }) => {
+  const { syncOnBudgetUpdate } = useBidirectionalSync();
   const [eliminandoPresupuesto, setEliminandoPresupuesto] = useState<string | null>(null);
   const [mostrarDialogoEnvio, setMostrarDialogoEnvio] = useState(false);
   const [presupuestoSeleccionado, setPresupuestoSeleccionado] = useState<string | null>(null);
@@ -38,6 +40,8 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
       setEliminandoPresupuesto(presupuestoId);
       try {
         await onEliminarPresupuesto(presupuestoId);
+        // Auto-sync amount after budget deletion
+        await syncOnBudgetUpdate(negocio.id);
       } catch (error) {
         console.error('Error eliminando presupuesto:', error);
       } finally {
@@ -61,6 +65,8 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
     setProcesandoEstado(presupuestoSeleccionado);
     try {
       await onCambiarEstado(presupuestoSeleccionado, 'enviado', fechaVencimiento);
+      // Auto-sync amount after state change (may affect business calculations)
+      await syncOnBudgetUpdate(negocio.id);
       setMostrarDialogoEnvio(false);
       setPresupuestoSeleccionado(null);
       setFechaVencimiento('');
@@ -77,6 +83,8 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
     setProcesandoEstado(presupuestoId);
     try {
       await onCambiarEstado(presupuestoId, nuevoEstado);
+      // Auto-sync amount after state change (may affect business calculations)
+      await syncOnBudgetUpdate(negocio.id);
     } catch (error) {
       console.error('Error cambiando estado:', error);
     } finally {
