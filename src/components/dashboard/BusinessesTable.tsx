@@ -81,6 +81,7 @@ const BusinessesTable: React.FC<BusinessesTableProps> = ({ onCrearNegocio, onVer
                   <TableHead>Estado</TableHead>
                   <TableHead>Valor Total</TableHead>
                   <TableHead>Fecha Evento</TableHead>
+                  <TableHead>HubSpot</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>

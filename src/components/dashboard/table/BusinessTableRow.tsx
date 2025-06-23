@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Eye } from 'lucide-react';
 import { Negocio } from '@/types';
+import HubSpotSyncButton from '@/components/hubspot/HubSpotSyncButton';
 
 interface BusinessTableRowProps {
   negocio: Negocio;
@@ -86,6 +87,13 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegoc
           ? formatearFecha(negocio.evento.fechaEvento)
           : 'Por definir'
         }
+      </TableCell>
+      <TableCell>
+        <HubSpotSyncButton 
+          negocio={negocio} 
+          showText={false}
+          variant="ghost"
+        />
       </TableCell>
       <TableCell>
         <Button 

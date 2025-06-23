@@ -8,6 +8,7 @@ import { Negocio } from '@/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { obtenerEstadoNegocioInfo } from '@/utils/businessCalculations';
+import HubSpotSyncButton from '@/components/hubspot/HubSpotSyncButton';
 
 interface DetalleNegocioCompactHeaderProps {
   negocio: Negocio;
@@ -57,17 +58,22 @@ const DetalleNegocioCompactHeader: React.FC<DetalleNegocioCompactHeaderProps> = 
             </div>
           </div>
 
-          {/* Key event info */}
-          <div className="flex items-center space-x-6 text-sm text-gray-600">
-            {negocio.evento.fechaEvento && (
+          <div className="flex items-center space-x-4">
+            {/* HubSpot Sync Button */}
+            <HubSpotSyncButton negocio={negocio} />
+
+            {/* Key event info */}
+            <div className="flex items-center space-x-6 text-sm text-gray-600">
+              {negocio.evento.fechaEvento && (
+                <div className="flex items-center space-x-1">
+                  <Calendar className="w-4 h-4" />
+                  <span>{formatearFecha(negocio.evento.fechaEvento)}</span>
+                </div>
+              )}
               <div className="flex items-center space-x-1">
-                <Calendar className="w-4 h-4" />
-                <span>{formatearFecha(negocio.evento.fechaEvento)}</span>
+                <MapPin className="w-4 h-4" />
+                <span className="truncate max-w-48">{negocio.evento.locacion}</span>
               </div>
-            )}
-            <div className="flex items-center space-x-1">
-              <MapPin className="w-4 h-4" />
-              <span className="truncate max-w-48">{negocio.evento.locacion}</span>
             </div>
           </div>
         </div>
