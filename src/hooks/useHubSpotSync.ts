@@ -19,7 +19,7 @@ export const useHubSpotSync = () => {
       const { data, error } = await supabase
         .from('hubspot_sync')
         .select('negocio_id')
-        .eq('sync_status', 'completed');
+        .eq('sync_status', 'success');
 
       if (error) throw error;
 
