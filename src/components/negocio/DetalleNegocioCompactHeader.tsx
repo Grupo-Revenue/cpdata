@@ -1,121 +1,87 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Calendar, MapPin, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, User, Building } from 'lucide-react';
 import { Negocio } from '@/types';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { obtenerEstadoNegocioInfo, formatBusinessStateForDisplay, calcularValorNegocio } from '@/utils/businessCalculations';
-import HubSpotSyncButton from '@/components/hubspot/HubSpotSyncButton';
+import { formatearPrecio } from '@/utils/formatters';
+import { calcularValorNegocio } from '@/utils/businessCalculations';
 import BusinessStateSelect from '@/components/business/BusinessStateSelect';
-import { useNegocio } from '@/context/NegocioContext';
-import { useBidirectionalSync } from '@/hooks/useBidirectionalSync';
 
 interface DetalleNegocioCompactHeaderProps {
   negocio: Negocio;
   onVolver: () => void;
+  onCambiarEstado?: (negocioId: string, nuevoEstado: string) => void;
 }
 
-const DetalleNegocioCompactHeader: React.FC<DetalleNegocioCompactHeaderProps> = ({ negocio, onVolver }) => {
-  const { cambiarEstadoNegocio } = useNegocio();
-  const { syncConflicts } = useBidirectionalSync();
+const DetalleNegocioCompactHeader: React.FC<DetalleNegocioCompactHeaderProps> = ({ 
+  negocio, 
+  onVolver,
+  onCambiarEstado 
+}) => {
+  const valorTotal = calcularValorNegocio(negocio);
 
-  const formatearFecha = (fecha: string) => {
-    try {
-      return format(new Date(fecha), 'dd/MM/yyyy', { locale: es });
-    } catch {
-      return fecha;
+  const handleStateChange = (negocioId: string, nuevoEstado: string) => {
+    if (onCambiarEstado) {
+      onCambiarEstado(negocioId, nuevoEstado);
     }
   };
 
-  const formatearPrecio = (precio: number) => {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(precio);
-  };
-
-  const valorTotal = calcularValorNegocio(negocio);
-
-  const handleEstadoChange = async (negocioId: string, nuevoEstado: string) => {
-    await cambiarEstadoNegocio(negocioId, nuevoEstado);
-  };
-
-  // Check if this business has sync conflicts
-  const hasConflict = syncConflicts.some(conflict => conflict.negocio_id === negocio.id);
-
   return (
-    <Card className="border-slate-200">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
+    <Card className="border-slate-200 bg-white">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <Button 
-              variant="outline" 
-              onClick={onVolver}
+            <Button
+              variant="ghost"
               size="sm"
-              className="text-slate-600 hover:bg-slate-50"
+              onClick={onVolver}
+              className="h-8 w-8 p-0"
             >
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              Volver
+              <ArrowLeft className="h-4 w-4" />
             </Button>
-            
-            <div className="flex items-center space-x-3">
-              <div>
-                <h1 className="text-xl font-semibold text-slate-900">
-                  Negocio #{negocio.numero}
-                </h1>
-                <p className="text-sm text-slate-600">{negocio.evento.nombreEvento}</p>
-              </div>
-              
-              {/* Conflict indicator */}
-              {hasConflict && (
-                <div className="flex items-center space-x-1 bg-amber-100 px-2 py-1 rounded-md">
-                  <AlertTriangle className="w-4 h-4 text-amber-600" />
-                  <span className="text-xs font-medium text-amber-700">Sync Conflict</span>
-                </div>
-              )}
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">
+                Negocio #{negocio.numero}
+              </h1>
+              <p className="text-slate-600">{negocio.nombre_evento}</p>
             </div>
           </div>
-
-          <div className="flex items-center space-x-6">
-            {/* Business State */}
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-slate-600">Estado:</span>
-              <BusinessStateSelect
-                negocio={negocio}
-                onStateChange={handleEstadoChange}
-                size="sm"
-              />
-            </div>
-
-            {/* Total Value */}
+          
+          <div className="flex items-center space-x-4">
             <div className="text-right">
-              <p className="text-xs text-slate-600">Valor Total</p>
-              <p className="text-lg font-semibold text-green-600">
+              <div className="text-2xl font-bold text-green-600">
                 {formatearPrecio(valorTotal)}
-              </p>
-            </div>
-
-            {/* Key event info */}
-            <div className="flex items-center space-x-4 text-sm text-slate-600">
-              {negocio.evento.fechaEvento && (
-                <div className="flex items-center space-x-1">
-                  <Calendar className="w-4 h-4" />
-                  <span>{formatearFecha(negocio.evento.fechaEvento)}</span>
-                </div>
-              )}
-              <div className="flex items-center space-x-1">
-                <MapPin className="w-4 h-4" />
-                <span className="truncate max-w-32">{negocio.evento.locacion}</span>
               </div>
+              <div className="text-sm text-slate-500">Valor Total</div>
             </div>
+            <BusinessStateSelect
+              negocio={negocio}
+              onStateChange={handleStateChange}
+              size="default"
+            />
+          </div>
+        </div>
 
-            {/* HubSpot Sync Button */}
-            <HubSpotSyncButton negocio={negocio} variant="outline" size="sm" />
+        {/* Quick info */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="flex items-center space-x-2">
+            <User className="w-4 h-4 text-slate-500" />
+            <span className="text-slate-700">{negocio.contacto.nombre}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Building className="w-4 h-4 text-slate-500" />
+            <span className="text-slate-700">{negocio.contacto.empresa}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Calendar className="w-4 h-4 text-slate-500" />
+            <span className="text-slate-700">
+              {new Date(negocio.fecha_evento).toLocaleDateString()}
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <MapPin className="w-4 h-4 text-slate-500" />
+            <span className="text-slate-700">{negocio.ubicacion}</span>
           </div>
         </div>
       </CardContent>

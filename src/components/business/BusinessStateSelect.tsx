@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Select,
@@ -59,17 +60,7 @@ const BusinessStateSelect: React.FC<BusinessStateSelectProps> = ({
           console.log('Bidirectional sync successful for negocio:', negocio.id);
         } else {
           // Fallback to regular sync
-          const valorTotal = negocio.presupuestos.reduce((sum, p) => sum + p.total, 0);
-          const hubspotData = {
-            id: negocio.id,
-            numero: negocio.numero,
-            contacto: negocio.contacto,
-            evento: negocio.evento,
-            valorTotal: valorTotal
-          };
-          
-          const syncResult = await manualSyncNegocio(negocio.id);
-          
+          await manualSyncNegocio(negocio.id);
           setSyncStatus('success');
           console.log('Regular sync successful for negocio:', negocio.id);
         }

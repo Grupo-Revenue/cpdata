@@ -30,7 +30,7 @@ const BusinessSyncStatus: React.FC<BusinessSyncStatusProps> = ({ negocio }) => {
       <div className="flex items-center space-x-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
         <AlertTriangle className="w-4 h-4 text-amber-600" />
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-amber-800">Sync Conflict</p>
+          <p className="text-xs font-medium text-amber-800">Conflicto de Sincronización</p>
           <p className="text-xs text-amber-600 truncate">
             App: {conflict.app_state} | HubSpot: {conflict.hubspot_state}
           </p>
@@ -43,7 +43,7 @@ const BusinessSyncStatus: React.FC<BusinessSyncStatusProps> = ({ negocio }) => {
             disabled={loading}
             className="text-xs h-6"
           >
-            Use App
+            Usar App
           </Button>
           <Button
             size="sm"
@@ -52,7 +52,7 @@ const BusinessSyncStatus: React.FC<BusinessSyncStatusProps> = ({ negocio }) => {
             disabled={loading}
             className="text-xs h-6"
           >
-            Use HubSpot
+            Usar HubSpot
           </Button>
         </div>
       </div>
@@ -67,9 +67,13 @@ const BusinessSyncStatus: React.FC<BusinessSyncStatusProps> = ({ negocio }) => {
         onClick={handleSyncToHubSpot}
         disabled={loading}
         className="text-xs h-6 px-2"
-        title="Sync to HubSpot"
+        title="Sincronizar a HubSpot"
       >
-        <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+        {loading ? (
+          <Clock className="w-3 h-3 animate-spin" />
+        ) : (
+          <RefreshCw className="w-3 h-3" />
+        )}
       </Button>
       <Button
         size="sm"
@@ -77,7 +81,7 @@ const BusinessSyncStatus: React.FC<BusinessSyncStatusProps> = ({ negocio }) => {
         onClick={handleSyncFromHubSpot}
         disabled={loading}
         className="text-xs h-6 px-2"
-        title="Sync from HubSpot"
+        title="Sincronizar desde HubSpot"
       >
         <ExternalLink className="w-3 h-3" />
       </Button>

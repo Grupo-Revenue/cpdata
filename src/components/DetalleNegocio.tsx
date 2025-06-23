@@ -16,7 +16,7 @@ interface DetalleNegocioProps {
 }
 
 const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) => {
-  const { obtenerNegocio, eliminarPresupuesto, cambiarEstadoPresupuesto, loading } = useNegocio();
+  const { obtenerNegocio, eliminarPresupuesto, cambiarEstadoPresupuesto, cambiarEstadoNegocio, loading } = useNegocio();
   const { syncConflicts, resolveConflict } = useBidirectionalSync();
   const navigate = useNavigate();
   const [mostrarCrearPresupuesto, setMostrarCrearPresupuesto] = useState(false);
@@ -83,9 +83,14 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
     await cambiarEstadoPresupuesto(negocioId, presupuestoId, nuevoEstado, fechaVencimiento);
   };
 
+  const handleCambiarEstadoNegocio = async (negocioId: string, nuevoEstado: string) => {
+    await cambiarEstadoNegocio(negocioId, nuevoEstado);
+  };
+
   const handleResolveConflict = async (negocioId: string, resolvedState: string) => {
     await resolveConflict(negocioId, resolvedState);
     setCurrentConflict(null);
+    setConflictDialogOpen(false);
   };
 
   if (mostrarCrearPresupuesto) {
@@ -102,7 +107,11 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <DetalleNegocioCompactHeader negocio={negocio} onVolver={onVolver} />
+        <DetalleNegocioCompactHeader 
+          negocio={negocio} 
+          onVolver={onVolver}
+          onCambiarEstado={handleCambiarEstadoNegocio}
+        />
       </div>
 
       {/* Main Content */}
