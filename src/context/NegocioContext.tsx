@@ -16,6 +16,7 @@ interface NegocioContextType {
   actualizarPresupuesto: (negocioId: string, presupuestoId: string, productos: ProductoPresupuesto[]) => Promise<void>;
   eliminarPresupuesto: (negocioId: string, presupuestoId: string) => Promise<void>;
   cambiarEstadoPresupuesto: (negocioId: string, presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string) => Promise<void>;
+  cambiarEstadoNegocio: (negocioId: string, nuevoEstado: string) => Promise<void>;
   cargarNegocios: () => Promise<void>;
 }
 
@@ -691,6 +692,54 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
     }
   };
 
+  const cambiarEstadoNegocio = async (negocioId: string, nuevoEstado: string): Promise<void> => {
+    if (!user) throw new Error('Usuario no autenticado');
+
+    try {
+      const { error } = await supabase
+        .from('negocios')
+        .update({ estado: nuevoEstado })
+        .eq('id', negocioId);
+
+      if (error) throw error;
+
+      // Reload businesses FIRST, then sync with HubSpot
+      await cargarNegocios();
+
+      // Sync updated business state with HubSpot AFTER reloading
+      try {
+        const negocioActualizado = obtenerNegocio(negocioId);
+        if (negocioActualizado) {
+          const valorTotal = calcularValorNegocio(negocioActualizado);
+          const hubspotData = {
+            id: negocioActualizado.id,
+            numero: negocioActualizado.numero,
+            contacto: negocioActualizado.contacto,
+            evento: negocioActualizado.evento,
+            valorTotal: valorTotal
+          };
+          
+          await syncNegocio(hubspotData, 'update');
+        }
+      } catch (syncError) {
+        console.warn('HubSpot sync failed (non-critical):', syncError);
+      }
+
+      toast({
+        title: "Estado actualizado",
+        description: "El estado del negocio ha sido actualizado correctamente",
+      });
+    } catch (error) {
+      console.error('Error cambiando estado del negocio:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo cambiar el estado del negocio",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
   // Cargar datos cuando el usuario cambie
   useEffect(() => {
     if (user) {
@@ -712,6 +761,7 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
       actualizarPresupuesto,
       eliminarPresupuesto,
       cambiarEstadoPresupuesto,
+      cambiarEstadoNegocio,
       cargarNegocios
     }}>
       {children}

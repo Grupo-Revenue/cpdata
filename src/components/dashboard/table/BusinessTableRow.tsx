@@ -1,18 +1,19 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { 
   TableCell, 
   TableRow 
 } from '@/components/ui/table';
-import { calcularValorNegocio, obtenerEstadoNegocioInfo, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
+import { calcularValorNegocio } from '@/utils/businessCalculations';
 import { formatearPrecio } from '@/utils/formatters';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Eye } from 'lucide-react';
 import { Negocio } from '@/types';
+import { useNegocio } from '@/context/NegocioContext';
 import HubSpotSyncButton from '@/components/hubspot/HubSpotSyncButton';
+import BusinessStateSelect from '@/components/business/BusinessStateSelect';
 
 interface BusinessTableRowProps {
   negocio: Negocio;
@@ -20,6 +21,8 @@ interface BusinessTableRowProps {
 }
 
 const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegocio }) => {
+  const { cambiarEstadoNegocio } = useNegocio();
+
   const formatearFecha = (fecha: string) => {
     try {
       return format(new Date(fecha), 'dd/MM/yyyy', { locale: es });
@@ -38,7 +41,6 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegoc
     return 'Sin empresa asignada';
   };
 
-  const { colorEstado } = obtenerEstadoNegocioInfo(negocio);
   const valorTotal = calcularValorNegocio(negocio);
 
   return (
@@ -75,9 +77,11 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegoc
         </div>
       </TableCell>
       <TableCell>
-        <Badge className={`${colorEstado} border`}>
-          {formatBusinessStateForDisplay(negocio.estado)}
-        </Badge>
+        <BusinessStateSelect
+          negocio={negocio}
+          onStateChange={cambiarEstadoNegocio}
+          size="sm"
+        />
       </TableCell>
       <TableCell className="font-medium">
         {valorTotal > 0 ? formatearPrecio(valorTotal) : 'Sin presupuestos'}

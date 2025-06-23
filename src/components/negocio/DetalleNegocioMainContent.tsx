@@ -1,23 +1,20 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import ContactoEmpresasCard from './ContactoEmpresasCard';
+import EventoCard from './EventoCard';
+import PresupuestosCard from './PresupuestosCard';
+import BusinessStatusCard from './BusinessStatusCard';
 import { Negocio } from '@/types';
-import { calcularValorNegocio, obtenerInfoPresupuestos } from '@/utils/businessCalculations';
-import CompactPresupuestosList from './presupuestos/CompactPresupuestosList';
-import PresupuestoEstadoDialog from './presupuestos/PresupuestoEstadoDialog';
-import DetalleNegocioSecondaryInfo from './DetalleNegocioSecondaryInfo';
-import BusinessValueSection from './sections/BusinessValueSection';
-import StatusIndicators from './sections/StatusIndicators';
-import QuickActionsSection from './sections/QuickActionsSection';
-import SecondaryInfoToggle from './sections/SecondaryInfoToggle';
 
 interface DetalleNegocioMainContentProps {
   negocio: Negocio;
   onCrearPresupuesto: () => void;
   onEditarPresupuesto: (presupuestoId: string) => void;
-  onEliminarPresupuesto: (presupuestoId: string) => Promise<void>;
+  onEliminarPresupuesto: (presupuestoId: string) => void;
   onVerPDF: (presupuestoId: string) => void;
-  onCambiarEstado: (presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string) => Promise<void>;
+  onCambiarEstado: (presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string) => void;
 }
 
 const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
@@ -28,113 +25,48 @@ const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
   onVerPDF,
   onCambiarEstado
 }) => {
-  const [mostrarInfoSecundaria, setMostrarInfoSecundaria] = useState(false);
-  const [mostrarDialogoEnvio, setMostrarDialogoEnvio] = useState(false);
-  const [presupuestoSeleccionado, setPresupuestoSeleccionado] = useState<string | null>(null);
-  const [fechaVencimiento, setFechaVencimiento] = useState('');
-  const [procesandoEstado, setProcesandoEstado] = useState<string | null>(null);
-
-  const valorNegocio = calcularValorNegocio(negocio);
-  const infoPresupuestos = obtenerInfoPresupuestos(negocio);
-
-  const handleEnviarPresupuesto = (presupuestoId: string) => {
-    setPresupuestoSeleccionado(presupuestoId);
-    setMostrarDialogoEnvio(true);
-    const fechaDefault = new Date();
-    fechaDefault.setDate(fechaDefault.getDate() + 30);
-    setFechaVencimiento(fechaDefault.toISOString().split('T')[0]);
-  };
-
-  const confirmarEnvio = async () => {
-    if (!presupuestoSeleccionado) return;
-
-    setProcesandoEstado(presupuestoSeleccionado);
-    try {
-      await onCambiarEstado(presupuestoSeleccionado, 'enviado', fechaVencimiento);
-      setMostrarDialogoEnvio(false);
-      setPresupuestoSeleccionado(null);
-      setFechaVencimiento('');
-    } catch (error) {
-      console.error('Error enviando presupuesto:', error);
-    } finally {
-      setProcesandoEstado(null);
-    }
-  };
-
-  const handleCambiarEstado = async (presupuestoId: string, nuevoEstado: string) => {
-    setProcesandoEstado(presupuestoId);
-    try {
-      await onCambiarEstado(presupuestoId, nuevoEstado);
-    } catch (error) {
-      console.error('Error cambiando estado:', error);
-    } finally {
-      setProcesandoEstado(null);
-    }
-  };
-
   return (
-    <>
-      <Card className="border-slate-200 bg-white">
-        <CardContent className="p-6">
-          {/* Business value and quick actions */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-6">
-              <BusinessValueSection valorNegocio={valorNegocio} />
-
-              <StatusIndicators
-                presupuestosAprobados={infoPresupuestos.presupuestosAprobados}
-                presupuestosEnviados={infoPresupuestos.presupuestosEnviados}
-                presupuestosBorrador={infoPresupuestos.presupuestosBorrador}
-                presupuestosRechazados={infoPresupuestos.presupuestosRechazados}
-                presupuestosVencidos={infoPresupuestos.presupuestosVencidos}
-                totalPresupuestos={infoPresupuestos.totalPresupuestos}
-              />
-            </div>
-
-            <QuickActionsSection onCrearPresupuesto={onCrearPresupuesto} />
-          </div>
-
-          {/* Compact budgets list */}
-          <CompactPresupuestosList
-            presupuestos={negocio.presupuestos}
-            onCrearPresupuesto={onCrearPresupuesto}
-            onEditarPresupuesto={onEditarPresupuesto}
-            onEliminarPresupuesto={onEliminarPresupuesto}
-            onVerPDF={onVerPDF}
-            onEnviarPresupuesto={handleEnviarPresupuesto}
-            onCambiarEstado={handleCambiarEstado}
-            procesandoEstado={procesandoEstado}
-          />
-
-          {/* Secondary information toggle */}
-          <SecondaryInfoToggle
-            mostrarInfoSecundaria={mostrarInfoSecundaria}
-            onToggle={() => setMostrarInfoSecundaria(!mostrarInfoSecundaria)}
-            nombreContacto={negocio.contacto.nombre}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Secondary information (collapsible) */}
-      {mostrarInfoSecundaria && (
-        <DetalleNegocioSecondaryInfo
-          contacto={negocio.contacto}
-          productora={negocio.productora}
-          clienteFinal={negocio.clienteFinal}
-          evento={negocio.evento}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Left Column - Main Info */}
+      <div className="lg:col-span-2 space-y-6">
+        {/* Contact and Companies */}
+        <ContactoEmpresasCard negocio={negocio} />
+        
+        {/* Event Details */}
+        <EventoCard negocio={negocio} />
+        
+        {/* Budgets */}
+        <PresupuestosCard
+          negocio={negocio}
+          onCrearPresupuesto={onCrearPresupuesto}
+          onEditarPresupuesto={onEditarPresupuesto}
+          onEliminarPresupuesto={onEliminarPresupuesto}
+          onVerPDF={onVerPDF}
+          onCambiarEstado={onCambiarEstado}
         />
-      )}
-
-      {/* Dialog for sending budget */}
-      <PresupuestoEstadoDialog
-        open={mostrarDialogoEnvio}
-        onOpenChange={setMostrarDialogoEnvio}
-        fechaVencimiento={fechaVencimiento}
-        onFechaVencimientoChange={setFechaVencimiento}
-        onConfirmar={confirmarEnvio}
-        procesando={procesandoEstado !== null}
-      />
-    </>
+      </div>
+      
+      {/* Right Column - Status and Actions */}
+      <div className="space-y-6">
+        {/* Business Status */}
+        <BusinessStatusCard negocio={negocio} />
+        
+        {/* Quick Actions */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h3 className="font-semibold text-gray-900 mb-3">Acciones Rápidas</h3>
+          <div className="space-y-2">
+            <Button 
+              onClick={onCrearPresupuesto}
+              className="w-full justify-start"
+              variant="outline"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Crear Presupuesto
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

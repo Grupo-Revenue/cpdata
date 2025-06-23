@@ -5,7 +5,7 @@ import { calcularValorNegocio } from '@/utils/businessCalculations';
 import { Negocio } from '@/types';
 
 export const useBusinessTableLogic = () => {
-  const { negocios, loading } = useNegocio();
+  const { negocios, loading, cambiarEstadoNegocio } = useNegocio();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
   const [sortBy, setSortBy] = useState<'numero' | 'fecha' | 'valor'>('numero');
@@ -71,6 +71,7 @@ export const useBusinessTableLogic = () => {
     sortBy,
     sortOrder,
     handleSortChange,
-    filteredAndSortedNegocios
+    filteredAndSortedNegocios,
+    cambiarEstadoNegocio
   };
 };
