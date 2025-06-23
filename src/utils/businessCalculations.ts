@@ -18,6 +18,8 @@ export const obtenerInfoPresupuestos = (negocio: Negocio) => {
   const presupuestosBorrador = negocio.presupuestos.filter(p => p.estado === 'borrador').length;
   const presupuestosRechazados = negocio.presupuestos.filter(p => p.estado === 'rechazado').length;
   const presupuestosVencidos = negocio.presupuestos.filter(p => p.estado === 'vencido').length;
+  const presupuestosFacturados = negocio.presupuestos.filter(p => p.estado === 'aprobado' && p.facturado === true).length;
+  const presupuestosPendientes = negocio.presupuestos.filter(p => ['enviado', 'borrador'].includes(p.estado)).length;
   
   return {
     totalPresupuestos,
@@ -25,12 +27,33 @@ export const obtenerInfoPresupuestos = (negocio: Negocio) => {
     presupuestosEnviados,
     presupuestosBorrador,
     presupuestosRechazados,
-    presupuestosVencidos
+    presupuestosVencidos,
+    presupuestosFacturados,
+    presupuestosPendientes
   };
 };
 
 /**
- * Obtiene información de estado del negocio basado en los presupuestos
+ * Maps old business states to new business states for display compatibility
+ */
+export const mapLegacyBusinessState = (estado: string): string => {
+  const stateMapping: { [key: string]: string } = {
+    'prospecto': 'oportunidad_creada',
+    'activo': 'presupuesto_enviado',
+    'revision_pendiente': 'presupuesto_enviado',
+    'en_negociacion': 'presupuesto_enviado',
+    'parcialmente_ganado': 'parcialmente_aceptado',
+    'ganado': 'negocio_aceptado',
+    'perdido': 'negocio_perdido',
+    'cerrado': 'negocio_cerrado',
+    'cancelado': 'negocio_perdido'
+  };
+  
+  return stateMapping[estado] || estado;
+};
+
+/**
+ * Obtiene información de estado del negocio con las nuevas reglas de negocio
  */
 export const obtenerEstadoNegocioInfo = (negocio: Negocio) => {
   const info = obtenerInfoPresupuestos(negocio);
@@ -38,14 +61,35 @@ export const obtenerEstadoNegocioInfo = (negocio: Negocio) => {
   let descripcionEstado = '';
   let colorEstado = '';
   
-  // Using string literals to avoid TypeScript comparison issues
-  const estado = negocio.estado as string;
+  // Map legacy states to new states for consistency
+  const estadoActual = mapLegacyBusinessState(negocio.estado);
   
-  switch (estado) {
-    case 'prospecto':
-      descripcionEstado = 'Sin presupuestos creados';
-      colorEstado = 'bg-gray-100 text-gray-700 border-gray-200';
+  switch (estadoActual) {
+    case 'oportunidad_creada':
+      descripcionEstado = 'Oportunidad identificada, sin presupuestos creados';
+      colorEstado = 'bg-slate-100 text-slate-700 border-slate-200';
       break;
+    case 'presupuesto_enviado':
+      descripcionEstado = `${info.presupuestosEnviados} presupuesto(s) enviado(s) esperando respuesta`;
+      colorEstado = 'bg-blue-100 text-blue-700 border-blue-200';
+      break;
+    case 'parcialmente_aceptado':
+      descripcionEstado = `${info.presupuestosAprobados} de ${info.totalPresupuestos} presupuestos aprobados`;
+      colorEstado = 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      break;
+    case 'negocio_aceptado':
+      descripcionEstado = 'Todos los presupuestos aprobados, pendiente facturación';
+      colorEstado = 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      break;
+    case 'negocio_cerrado':
+      descripcionEstado = 'Negocio completado y facturado';
+      colorEstado = 'bg-green-100 text-green-700 border-green-200';
+      break;
+    case 'negocio_perdido':
+      descripcionEstado = 'Presupuestos rechazados, vencidos o cancelados';
+      colorEstado = 'bg-red-100 text-red-700 border-red-200';
+      break;
+    // Legacy states fallback (for existing data)
     case 'activo':
       descripcionEstado = 'Con presupuestos en desarrollo';
       colorEstado = 'bg-blue-100 text-blue-700 border-blue-200';
@@ -58,44 +102,64 @@ export const obtenerEstadoNegocioInfo = (negocio: Negocio) => {
       descripcionEstado = 'Múltiples propuestas en curso';
       colorEstado = 'bg-orange-100 text-orange-700 border-orange-200';
       break;
-    case 'parcialmente_ganado':
-      descripcionEstado = `${info.presupuestosAprobados} de ${info.totalPresupuestos} presupuestos aprobados`;
-      colorEstado = 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      break;
-    case 'ganado':
-      descripcionEstado = 'Todos los presupuestos aprobados';
-      colorEstado = 'bg-green-100 text-green-700 border-green-200';
-      break;
-    case 'perdido':
-      descripcionEstado = 'Presupuestos rechazados o vencidos';
-      colorEstado = 'bg-red-100 text-red-700 border-red-200';
-      break;
     default:
-      descripcionEstado = estado.charAt(0).toUpperCase() + estado.slice(1);
+      descripcionEstado = estadoActual.charAt(0).toUpperCase() + estadoActual.slice(1).replace('_', ' ');
       colorEstado = 'bg-slate-100 text-slate-700 border-slate-200';
   }
   
   return {
     descripcionEstado,
-    colorEstado
+    colorEstado,
+    estadoNormalizado: estadoActual
   };
 };
 
 /**
- * Obtiene estadísticas agregadas para el dashboard
+ * Formats business state for display
+ */
+export const formatBusinessStateForDisplay = (estado: string): string => {
+  const displayNames: { [key: string]: string } = {
+    'oportunidad_creada': 'Oportunidad',
+    'presupuesto_enviado': 'Presupuesto Enviado',
+    'parcialmente_aceptado': 'Parcialmente Aceptado',
+    'negocio_aceptado': 'Aceptado',
+    'negocio_cerrado': 'Cerrado',
+    'negocio_perdido': 'Perdido',
+    // Legacy states
+    'prospecto': 'Prospecto',
+    'activo': 'Activo',
+    'revision_pendiente': 'En Revisión',
+    'en_negociacion': 'En Negociación',
+    'parcialmente_ganado': 'Parcialmente Ganado',
+    'ganado': 'Ganado',
+    'perdido': 'Perdido',
+    'cerrado': 'Cerrado',
+    'cancelado': 'Cancelado'
+  };
+  
+  return displayNames[estado] || estado.charAt(0).toUpperCase() + estado.slice(1).replace('_', ' ');
+};
+
+/**
+ * Obtiene estadísticas agregadas para el dashboard con nuevos estados
  */
 export const obtenerEstadisticasDashboard = (negocios: Negocio[]) => {
   const totalNegocios = negocios.length;
   const valorTotalCartera = negocios.reduce((total, negocio) => total + calcularValorNegocio(negocio), 0);
   
+  // Map legacy states to new states for statistics
+  const negociosConEstadoNormalizado = negocios.map(negocio => ({
+    ...negocio,
+    estadoNormalizado: mapLegacyBusinessState(negocio.estado)
+  }));
+  
   const estadisticasPorEstado = {
-    prospecto: negocios.filter(n => n.estado === 'prospecto').length,
-    activo: negocios.filter(n => n.estado === 'activo').length,
-    revision_pendiente: negocios.filter(n => n.estado === 'revision_pendiente').length,
-    en_negociacion: negocios.filter(n => n.estado === 'en_negociacion').length,
-    parcialmente_ganado: negocios.filter(n => n.estado === 'parcialmente_ganado').length,
-    ganado: negocios.filter(n => n.estado === 'ganado').length,
-    perdido: negocios.filter(n => n.estado === 'perdido').length
+    oportunidad_creada: negociosConEstadoNormalizado.filter(n => n.estadoNormalizado === 'oportunidad_creada').length,
+    presupuesto_enviado: negociosConEstadoNormalizado.filter(n => n.estadoNormalizado === 'presupuesto_enviado').length,
+    parcialmente_aceptado: negociosConEstadoNormalizado.filter(n => n.estadoNormalizado === 'parcialmente_aceptado').length,
+    negocio_aceptado: negociosConEstadoNormalizado.filter(n => n.estadoNormalizado === 'negocio_aceptado').length,
+    negocio_cerrado: negociosConEstadoNormalizado.filter(n => n.estadoNormalizado === 'negocio_cerrado').length,
+    negocio_perdido: negociosConEstadoNormalizado.filter(n => n.estadoNormalizado === 'negocio_perdido').length
   };
 
   const totalPresupuestos = negocios.reduce((total, negocio) => total + negocio.presupuestos.length, 0);

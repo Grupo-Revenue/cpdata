@@ -1,24 +1,26 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Building2, FileText, TrendingUp, Target, CheckCircle } from 'lucide-react';
+import { Building2, FileText, TrendingUp, Target, CheckCircle, Clock } from 'lucide-react';
 import { useNegocio } from '@/context/NegocioContext';
-import { calcularValorNegocio } from '@/utils/businessCalculations';
+import { calcularValorNegocio, mapLegacyBusinessState } from '@/utils/businessCalculations';
 import { formatearPrecio } from '@/utils/formatters';
 
 const MetricsWidget: React.FC = () => {
   const { negocios } = useNegocio();
 
-  // Calculate enhanced metrics with new states
-  const negociosActivos = negocios.filter(n => 
-    ['activo', 'revision_pendiente', 'en_negociacion'].includes(n.estado)
+  // Calculate enhanced metrics with new business states
+  const negociosConEstadoNormalizado = negocios.map(negocio => ({
+    ...negocio,
+    estadoNormalizado: mapLegacyBusinessState(negocio.estado)
+  }));
+
+  const oportunidades = negociosConEstadoNormalizado.filter(n => n.estadoNormalizado === 'oportunidad_creada').length;
+  const presupuestosEnviados = negociosConEstadoNormalizado.filter(n => n.estadoNormalizado === 'presupuesto_enviado').length;
+  const negociosAceptados = negociosConEstadoNormalizado.filter(n => 
+    ['negocio_aceptado', 'parcialmente_aceptado'].includes(n.estadoNormalizado)
   ).length;
-  
-  const negociosGanados = negocios.filter(n => 
-    ['ganado', 'parcialmente_ganado'].includes(n.estado)
-  ).length;
-  
-  const negociosProspecto = negocios.filter(n => n.estado === 'prospecto').length;
+  const negociosCerrados = negociosConEstadoNormalizado.filter(n => n.estadoNormalizado === 'negocio_cerrado').length;
 
   // Calculate total value of all businesses
   const valorTotal = negocios.reduce((total, negocio) => total + calcularValorNegocio(negocio), 0);
@@ -37,22 +39,28 @@ const MetricsWidget: React.FC = () => {
       color: 'text-green-600'
     },
     {
-      label: 'En Proceso',
-      value: negociosActivos,
-      icon: TrendingUp,
-      color: 'text-purple-600'
+      label: 'Oportunidades',
+      value: oportunidades,
+      icon: Target,
+      color: 'text-slate-600'
     },
     {
-      label: 'Ganados',
-      value: negociosGanados,
+      label: 'En Proceso',
+      value: presupuestosEnviados,
+      icon: Clock,
+      color: 'text-blue-600'
+    },
+    {
+      label: 'Aceptados',
+      value: negociosAceptados,
       icon: CheckCircle,
       color: 'text-emerald-600'
     },
     {
-      label: 'Prospectos',
-      value: negociosProspecto,
-      icon: Target,
-      color: 'text-orange-600'
+      label: 'Cerrados',
+      value: negociosCerrados,
+      icon: TrendingUp,
+      color: 'text-green-600'
     }
   ];
 
@@ -82,7 +90,7 @@ const MetricsWidget: React.FC = () => {
       })}
       
       {/* Valor total en una card separada más ancha */}
-      <Card className="md:col-span-2 lg:col-span-1">
+      <Card className="md:col-span-3 lg:col-span-6">
         <CardContent className="p-4">
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0">
@@ -93,7 +101,7 @@ const MetricsWidget: React.FC = () => {
                 {valorTotal > 0 ? formatearPrecio(valorTotal) : '$0'}
               </div>
               <div className="text-xs text-gray-600 truncate">
-                Valor Total
+                Valor Total de Cartera
               </div>
             </div>
           </div>

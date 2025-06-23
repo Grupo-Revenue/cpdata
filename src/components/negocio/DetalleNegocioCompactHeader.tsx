@@ -7,7 +7,7 @@ import { ArrowLeft, Calendar, MapPin } from 'lucide-react';
 import { Negocio } from '@/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { obtenerEstadoNegocioInfo } from '@/utils/businessCalculations';
+import { obtenerEstadoNegocioInfo, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
 import HubSpotSyncButton from '@/components/hubspot/HubSpotSyncButton';
 
 interface DetalleNegocioCompactHeaderProps {
@@ -50,7 +50,7 @@ const DetalleNegocioCompactHeader: React.FC<DetalleNegocioCompactHeaderProps> = 
                     className={`text-xs px-2 py-0.5 border ${colorEstado}`}
                     title={descripcionEstado}
                   >
-                    {negocio.estado.charAt(0).toUpperCase() + negocio.estado.slice(1).replace('_', ' ')}
+                    {formatBusinessStateForDisplay(negocio.estado)}
                   </Badge>
                 </div>
                 <p className="text-gray-600 font-medium">{negocio.evento.nombreEvento}</p>

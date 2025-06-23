@@ -6,7 +6,7 @@ import {
   TableCell, 
   TableRow 
 } from '@/components/ui/table';
-import { calcularValorNegocio, obtenerEstadoNegocioInfo } from '@/utils/businessCalculations';
+import { calcularValorNegocio, obtenerEstadoNegocioInfo, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
 import { formatearPrecio } from '@/utils/formatters';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -76,7 +76,7 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegoc
       </TableCell>
       <TableCell>
         <Badge className={`${colorEstado} border`}>
-          {negocio.estado.replace('_', ' ').toUpperCase()}
+          {formatBusinessStateForDisplay(negocio.estado)}
         </Badge>
       </TableCell>
       <TableCell className="font-medium">

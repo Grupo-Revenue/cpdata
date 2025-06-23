@@ -585,6 +585,12 @@ export type Database = {
         | "parcialmente_ganado"
         | "en_negociacion"
         | "revision_pendiente"
+        | "oportunidad_creada"
+        | "presupuesto_enviado"
+        | "parcialmente_aceptado"
+        | "negocio_aceptado"
+        | "negocio_cerrado"
+        | "negocio_perdido"
       estado_presupuesto:
         | "borrador"
         | "enviado"
@@ -719,6 +725,12 @@ export const Constants = {
         "parcialmente_ganado",
         "en_negociacion",
         "revision_pendiente",
+        "oportunidad_creada",
+        "presupuesto_enviado",
+        "parcialmente_aceptado",
+        "negocio_aceptado",
+        "negocio_cerrado",
+        "negocio_perdido",
       ],
       estado_presupuesto: [
         "borrador",

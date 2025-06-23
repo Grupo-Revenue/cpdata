@@ -105,8 +105,10 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
             id: producto.id,
             nombre: producto.nombre,
             descripcion: producto.descripcion || '',
+            comentarios: '',
             cantidad: producto.cantidad,
             precioUnitario: parseFloat(producto.precio_unitario),
+            descuentoPorcentaje: 0,
             total: parseFloat(producto.total)
           })) || [],
           total: parseFloat(presupuesto.total),
@@ -115,10 +117,12 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
           fechaVencimiento: presupuesto.fecha_vencimiento || undefined,
           fechaEnvio: presupuesto.fecha_envio || undefined,
           fechaAprobacion: presupuesto.fecha_aprobacion || undefined,
-          fechaRechazo: presupuesto.fecha_rechazo || undefined
+          fechaRechazo: presupuesto.fecha_rechazo || undefined,
+          fechaFacturacion: presupuesto.fecha_facturacion || undefined,
+          facturado: presupuesto.facturado || false
         })) || [],
         fechaCreacion: negocio.created_at,
-        estado: negocio.estado as 'activo' | 'cerrado' | 'cancelado' | 'prospecto' | 'perdido' | 'ganado'
+        estado: negocio.estado as Negocio['estado']
       })) || [];
 
       setNegocios(negociosFormateados);
@@ -145,7 +149,6 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
     }
   };
 
-  // Improved helper function to find or create a company with better error handling
   const findOrCreateEmpresa = async (empresaData: any, tipo: 'productora' | 'cliente_final') => {
     if (!empresaData || !empresaData.nombre || empresaData.nombre.trim() === '') {
       console.log(`No ${tipo} data provided or empty name, skipping creation`);
@@ -326,7 +329,7 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
         console.log('Cliente final processed, ID:', clienteFinalId);
       }
 
-      // Create business
+      // Create business with new state 'oportunidad_creada'
       console.log('Creating business...');
       const negocioToInsert = {
         user_id: user.id,
@@ -340,7 +343,8 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
         horas_acreditacion: negocioData.evento.horasAcreditacion.trim(),
         cantidad_asistentes: negocioData.evento.cantidadAsistentes || 0,
         cantidad_invitados: negocioData.evento.cantidadInvitados || 0,
-        locacion: negocioData.evento.locacion.trim()
+        locacion: negocioData.evento.locacion.trim(),
+        estado: 'oportunidad_creada' // New businesses start as opportunities
       };
 
       console.log('Inserting business data:', negocioToInsert);
