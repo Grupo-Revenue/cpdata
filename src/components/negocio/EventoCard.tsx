@@ -19,93 +19,77 @@ const EventoCard: React.FC<EventoCardProps> = ({ evento }) => {
     }
   };
 
-  const formatearFechaCompleta = (fecha: string) => {
-    try {
-      return format(new Date(fecha), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: es });
-    } catch {
-      return fecha;
-    }
-  };
-
   return (
-    <Card className="relative overflow-hidden">
-      {/* Header with gradient */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center text-xl">
-            <Calendar className="w-6 h-6 mr-3" />
-            Información del Evento
-          </CardTitle>
-        </CardHeader>
-      </div>
+    <Card className="border-slate-200">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg text-slate-900 flex items-center">
+          <Calendar className="w-5 h-5 mr-2 text-slate-600" />
+          Información del Evento
+        </CardTitle>
+      </CardHeader>
       
-      <CardContent className="p-6">
+      <CardContent>
         {/* Event name and type */}
-        <div className="mb-6">
+        <div className="mb-4">
           <div className="flex items-start justify-between mb-2">
-            <h3 className="text-2xl font-bold text-gray-900">{evento.nombreEvento}</h3>
-            <div className="flex items-center bg-purple-100 px-3 py-1 rounded-full">
-              <Star className="w-4 h-4 mr-2 text-purple-600" />
-              <span className="text-sm font-medium text-purple-700">{evento.tipoEvento}</span>
+            <h3 className="text-xl font-semibold text-slate-900">{evento.nombreEvento}</h3>
+            <div className="flex items-center bg-slate-100 px-2 py-1 rounded-full">
+              <Star className="w-3 h-3 mr-1 text-slate-600" />
+              <span className="text-xs font-medium text-slate-700">{evento.tipoEvento}</span>
             </div>
           </div>
         </div>
 
         {/* Main event details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           {/* Fecha */}
-          <div className="bg-blue-50 rounded-lg p-4">
-            <div className="flex items-center mb-2">
-              <Calendar className="w-5 h-5 text-blue-600 mr-2" />
-              <span className="text-sm font-medium text-blue-800">Fecha del Evento</span>
+          <div className="bg-slate-50 rounded-lg p-3">
+            <div className="flex items-center mb-1">
+              <Calendar className="w-4 h-4 text-slate-600 mr-1" />
+              <span className="text-xs font-medium text-slate-700">Fecha</span>
             </div>
             {evento.fechaEvento ? (
-              <div>
-                <p className="font-semibold text-gray-900">{formatearFecha(evento.fechaEvento)}</p>
-                <p className="text-xs text-gray-600 mt-1">{formatearFechaCompleta(evento.fechaEvento)}</p>
-              </div>
+              <p className="font-semibold text-slate-900 text-sm">{formatearFecha(evento.fechaEvento)}</p>
             ) : (
-              <p className="text-gray-500 italic">Por definir</p>
+              <p className="text-slate-500 italic text-sm">Por definir</p>
             )}
           </div>
 
           {/* Horas de acreditación */}
-          <div className="bg-green-50 rounded-lg p-4">
-            <div className="flex items-center mb-2">
-              <Clock className="w-5 h-5 text-green-600 mr-2" />
-              <span className="text-sm font-medium text-green-800">Acreditación</span>
+          <div className="bg-slate-50 rounded-lg p-3">
+            <div className="flex items-center mb-1">
+              <Clock className="w-4 h-4 text-slate-600 mr-1" />
+              <span className="text-xs font-medium text-slate-700">Acreditación</span>
             </div>
-            <p className="font-semibold text-gray-900">{evento.horasAcreditacion}</p>
+            <p className="font-semibold text-slate-900 text-sm">{evento.horasAcreditacion}</p>
           </div>
 
           {/* Asistentes */}
-          <div className="bg-orange-50 rounded-lg p-4">
-            <div className="flex items-center mb-2">
-              <Users className="w-5 h-5 text-orange-600 mr-2" />
-              <span className="text-sm font-medium text-orange-800">Asistentes</span>
+          <div className="bg-slate-50 rounded-lg p-3">
+            <div className="flex items-center mb-1">
+              <Users className="w-4 h-4 text-slate-600 mr-1" />
+              <span className="text-xs font-medium text-slate-700">Asistentes</span>
             </div>
-            <p className="font-semibold text-gray-900">{evento.cantidadAsistentes.toLocaleString()}</p>
-            <p className="text-xs text-gray-600">personas esperadas</p>
+            <p className="font-semibold text-slate-900 text-sm">{evento.cantidadAsistentes.toLocaleString()}</p>
           </div>
 
           {/* Invitados */}
-          <div className="bg-purple-50 rounded-lg p-4">
-            <div className="flex items-center mb-2">
-              <Users className="w-5 h-5 text-purple-600 mr-2" />
-              <span className="text-sm font-medium text-purple-800">Invitados</span>
+          <div className="bg-slate-50 rounded-lg p-3">
+            <div className="flex items-center mb-1">
+              <Users className="w-4 h-4 text-slate-600 mr-1" />
+              <span className="text-xs font-medium text-slate-700">Invitados</span>
             </div>
-            <p className="font-semibold text-gray-900">{evento.cantidadInvitados.toLocaleString()}</p>
-            <p className="text-xs text-gray-600">invitaciones especiales</p>
+            <p className="font-semibold text-slate-900 text-sm">{evento.cantidadInvitados.toLocaleString()}</p>
           </div>
         </div>
 
         {/* Location */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="flex items-center mb-2">
-            <MapPin className="w-5 h-5 text-red-500 mr-2" />
-            <span className="text-sm font-medium text-gray-800">Ubicación del Evento</span>
+        <div className="bg-slate-50 rounded-lg p-3">
+          <div className="flex items-center mb-1">
+            <MapPin className="w-4 h-4 text-red-500 mr-1" />
+            <span className="text-xs font-medium text-slate-700">Ubicación</span>
           </div>
-          <p className="font-semibold text-gray-900">{evento.locacion}</p>
+          <p className="font-semibold text-slate-900 text-sm">{evento.locacion}</p>
         </div>
       </CardContent>
     </Card>

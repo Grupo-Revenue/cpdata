@@ -1,18 +1,15 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import BusinessStateSelect from '@/components/business/BusinessStateSelect';
+import { TrendingUp, FileText } from 'lucide-react';
 import { Negocio } from '@/types';
-import { useNegocio } from '@/context/NegocioContext';
-import { calcularValorNegocio, obtenerEstadoNegocioInfo } from '@/utils/businessCalculations';
+import { calcularValorNegocio } from '@/utils/businessCalculations';
 
 interface BusinessStatusCardProps {
   negocio: Negocio;
 }
 
 const BusinessStatusCard: React.FC<BusinessStatusCardProps> = ({ negocio }) => {
-  const { cambiarEstadoNegocio } = useNegocio();
   const valorTotal = calcularValorNegocio(negocio);
 
   const formatearPrecio = (precio: number) => {
@@ -24,40 +21,28 @@ const BusinessStatusCard: React.FC<BusinessStatusCardProps> = ({ negocio }) => {
     }).format(precio);
   };
 
-  const handleEstadoChange = async (negocioId: string, nuevoEstado: string) => {
-    await cambiarEstadoNegocio(negocioId, nuevoEstado);
-  };
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Estado del Negocio</CardTitle>
+    <Card className="border-slate-200">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg text-slate-900">Resumen del Negocio</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div>
-          <label className="text-sm font-medium text-gray-600 block mb-2">
-            Estado Actual
-          </label>
-          <BusinessStateSelect
-            negocio={negocio}
-            onStateChange={handleEstadoChange}
-          />
-        </div>
-        
-        <div>
-          <label className="text-sm font-medium text-gray-600 block mb-2">
-            Valor Total
-          </label>
-          <div className="text-2xl font-bold text-green-600">
+        <div className="bg-green-50 rounded-lg p-4">
+          <div className="flex items-center mb-2">
+            <TrendingUp className="w-5 h-5 text-green-600 mr-2" />
+            <span className="text-sm font-medium text-green-800">Valor Total</span>
+          </div>
+          <div className="text-2xl font-bold text-green-700">
             {formatearPrecio(valorTotal)}
           </div>
         </div>
         
-        <div>
-          <label className="text-sm font-medium text-gray-600 block mb-2">
-            Presupuestos
-          </label>
-          <div className="text-lg font-semibold">
+        <div className="bg-slate-50 rounded-lg p-4">
+          <div className="flex items-center mb-2">
+            <FileText className="w-5 h-5 text-slate-600 mr-2" />
+            <span className="text-sm font-medium text-slate-700">Presupuestos</span>
+          </div>
+          <div className="text-lg font-semibold text-slate-900">
             {negocio.presupuestos.length} presupuesto{negocio.presupuestos.length !== 1 ? 's' : ''}
           </div>
         </div>

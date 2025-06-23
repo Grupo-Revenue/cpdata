@@ -26,16 +26,9 @@ const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
   onCambiarEstado
 }) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       {/* Left Column - Main Info */}
-      <div className="lg:col-span-2 space-y-6">
-        {/* Contact and Companies */}
-        <ContactoEmpresasCard 
-          contacto={negocio.contacto}
-          productora={negocio.productora}
-          clienteFinal={negocio.clienteFinal}
-        />
-        
+      <div className="lg:col-span-3 space-y-6">
         {/* Event Details */}
         <EventoCard evento={negocio.evento} />
         
@@ -50,19 +43,27 @@ const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
         />
       </div>
       
-      {/* Right Column - Status and Actions */}
+      {/* Right Column - Secondary Info */}
       <div className="space-y-6">
-        {/* Business Status */}
+        {/* Business Summary */}
         <BusinessStatusCard negocio={negocio} />
         
+        {/* Contact and Companies */}
+        <ContactoEmpresasCard 
+          contacto={negocio.contacto}
+          productora={negocio.productora}
+          clienteFinal={negocio.clienteFinal}
+        />
+        
         {/* Quick Actions */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h3 className="font-semibold text-gray-900 mb-3">Acciones Rápidas</h3>
+        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+          <h3 className="font-semibold text-slate-900 mb-3 text-sm">Acciones Rápidas</h3>
           <div className="space-y-2">
             <Button 
               onClick={onCrearPresupuesto}
-              className="w-full justify-start"
+              className="w-full justify-start text-sm"
               variant="outline"
+              size="sm"
             >
               <Plus className="h-4 w-4 mr-2" />
               Crear Presupuesto
