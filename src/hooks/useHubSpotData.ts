@@ -22,14 +22,16 @@ export const useHubSpotData = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [pipelines, setPipelines] = useState<HubSpotPipeline[]>([]);
-  const [dealStages, setDealStages] = useState<HubSpotDealStage[]>([]);
+  const [dealStages, setDealSt agges] = useState<HubSpotDealStage[]>([]);
   const [loadingPipelines, setLoadingPipelines] = useState(false);
   const [loadingStages, setLoadingStages] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchPipelines = async () => {
     if (!user) return;
 
     setLoadingPipelines(true);
+    setError(null);
     try {
       console.log('Fetching HubSpot pipelines...');
       const { data, error } = await supabase.functions.invoke('hubspot-sync', {
@@ -47,15 +49,23 @@ export const useHubSpotData = () => {
         setPipelines(data.data || []);
         console.log('Successfully loaded pipelines:', data.data?.length || 0);
       } else {
-        throw new Error(data.error || 'Error fetching pipelines');
+        const errorMessage = data.error || 'Error fetching pipelines';
+        setError(errorMessage);
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error('Error fetching HubSpot pipelines:', error);
+      const errorMessage = error.message || 'Error desconocido';
+      setError(errorMessage);
+      
       toast({
         title: "Error",
-        description: "No se pudieron cargar los pipelines de HubSpot",
+        description: `No se pudieron cargar los pipelines de HubSpot: ${errorMessage}`,
         variant: "destructive"
       });
+      
+      // Clear pipelines on error
+      setPipelines([]);
     } finally {
       setLoadingPipelines(false);
     }
@@ -65,6 +75,7 @@ export const useHubSpotData = () => {
     if (!user || !pipelineId) return;
 
     setLoadingStages(true);
+    setError(null);
     try {
       console.log('Fetching deal stages for pipeline:', pipelineId);
       const { data, error } = await supabase.functions.invoke('hubspot-sync', {
@@ -85,15 +96,23 @@ export const useHubSpotData = () => {
         setDealStages(data.data || []);
         console.log('Successfully loaded deal stages:', data.data?.length || 0);
       } else {
-        throw new Error(data.error || 'Error fetching deal stages');
+        const errorMessage = data.error || 'Error fetching deal stages';
+        setError(errorMessage);
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error('Error fetching HubSpot deal stages:', error);
+      const errorMessage = error.message || 'Error desconocido';
+      setError(errorMessage);
+      
       toast({
         title: "Error",
-        description: "No se pudieron cargar las etapas del pipeline",
+        description: `No se pudieron cargar las etapas del pipeline: ${errorMessage}`,
         variant: "destructive"
       });
+      
+      // Clear stages on error
+      setDealStages([]);
     } finally {
       setLoadingStages(false);
     }
@@ -101,6 +120,11 @@ export const useHubSpotData = () => {
 
   const clearStages = () => {
     setDealStages([]);
+    setError(null);
+  };
+
+  const clearError = () => {
+    setError(null);
   };
 
   return {
@@ -108,8 +132,10 @@ export const useHubSpotData = () => {
     dealStages,
     loadingPipelines,
     loadingStages,
+    error,
     fetchPipelines,
     fetchDealStages,
-    clearStages
+    clearStages,
+    clearError
   };
 };

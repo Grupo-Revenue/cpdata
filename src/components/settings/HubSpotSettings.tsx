@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useHubSpotConfig } from '@/hooks/useHubSpotConfig';
 import { useHubSpotData } from '@/hooks/useHubSpotData';
-import { Loader2, ExternalLink, Settings, RefreshCw } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Loader2, ExternalLink, Settings, RefreshCw, AlertCircle } from 'lucide-react';
 
 const HubSpotSettings = () => {
   const { config, loading, updateConfig } = useHubSpotConfig();
@@ -19,6 +20,7 @@ const HubSpotSettings = () => {
   const [apiKey, setApiKey] = useState('');
   const [selectedPipelineId, setSelectedPipelineId] = useState(config?.default_pipeline_id || '');
   const [selectedDealStage, setSelectedDealStage] = useState(config?.default_deal_stage || '');
+  const [testingConnection, setTestingConnection] = useState(false);
 
   useEffect(() => {
     if (config?.api_key_set) {
@@ -51,6 +53,28 @@ const HubSpotSettings = () => {
 
     setSaving(true);
     try {
+      console.log('Saving HubSpot API key as secret...');
+      
+      // Save API key as a Supabase secret through edge function
+      const { data, error } = await supabase.functions.invoke('hubspot-sync', {
+        body: { 
+          action: 'save_api_key',
+          apiKey: apiKey.trim()
+        }
+      });
+
+      if (error) {
+        console.error('Error saving API key:', error);
+        throw error;
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Error saving API key');
+      }
+
+      console.log('API key saved successfully');
+
+      // Update config to mark API key as set
       await updateConfig({
         api_key_set: true,
         default_pipeline_id: selectedPipelineId || undefined,
@@ -62,10 +86,66 @@ const HubSpotSettings = () => {
         title: "Configuración guardada",
         description: "La API key de HubSpot ha sido configurada correctamente"
       });
+
+      // Fetch pipelines after successful save
+      setTimeout(() => {
+        fetchPipelines();
+      }, 1000);
+
     } catch (error) {
       console.error('Error saving HubSpot config:', error);
+      toast({
+        title: "Error",
+        description: `No se pudo guardar la configuración: ${error.message}`,
+        variant: "destructive"
+      });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    if (!config?.api_key_set) {
+      toast({
+        title: "Error",
+        description: "Primero configure la API key de HubSpot",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setTestingConnection(true);
+    try {
+      console.log('Testing HubSpot connection...');
+      
+      const { data, error } = await supabase.functions.invoke('hubspot-sync', {
+        body: { action: 'test_connection' }
+      });
+
+      if (error) {
+        console.error('Connection test error:', error);
+        throw error;
+      }
+
+      if (data.success) {
+        toast({
+          title: "Conexión exitosa",
+          description: "La conexión con HubSpot funciona correctamente"
+        });
+        // Refresh pipelines after successful test
+        fetchPipelines();
+      } else {
+        throw new Error(data.error || 'Error testing connection');
+      }
+    } catch (error) {
+      console.error('Error testing HubSpot connection:', error);
+      toast({
+        title: "Error de conexión",
+        description: `No se pudo conectar con HubSpot: ${error.message}`,
+        variant: "destructive"
+      });
+    } finally {
+      setTestingConnection(false);
     }
   };
 
@@ -125,6 +205,20 @@ const HubSpotSettings = () => {
               <span className="text-sm">
                 {config?.api_key_set ? 'Conectado' : 'No conectado'}
               </span>
+              {config?.api_key_set && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTestConnection}
+                  disabled={testingConnection}
+                >
+                  {testingConnection ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Probar Conexión'
+                  )}
+                </Button>
+              )}
             </div>
           </div>
 
@@ -189,6 +283,13 @@ const HubSpotSettings = () => {
               <p className="text-sm text-green-700">
                 Los negocios se sincronizarán automáticamente con HubSpot cuando se creen o actualicen.
               </p>
+
+              {pipelines.length === 0 && !loadingPipelines && (
+                <div className="flex items-center space-x-2 text-amber-600">
+                  <AlertCircle className="w-4 h-4" />
+                  <span className="text-sm">No se pudieron cargar los pipelines. Verifique su API key.</span>
+                </div>
+              )}
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -196,10 +297,16 @@ const HubSpotSettings = () => {
                   <Select
                     value={selectedPipelineId}
                     onValueChange={handlePipelineChange}
-                    disabled={loadingPipelines}
+                    disabled={loadingPipelines || pipelines.length === 0}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={loadingPipelines ? "Cargando..." : "Seleccionar pipeline"} />
+                      <SelectValue placeholder={
+                        loadingPipelines 
+                          ? "Cargando..." 
+                          : pipelines.length === 0 
+                          ? "No hay pipelines disponibles" 
+                          : "Seleccionar pipeline"
+                      } />
                     </SelectTrigger>
                     <SelectContent>
                       {pipelines.map((pipeline) => (
@@ -216,7 +323,7 @@ const HubSpotSettings = () => {
                   <Select
                     value={selectedDealStage}
                     onValueChange={setSelectedDealStage}
-                    disabled={!selectedPipelineId || loadingStages}
+                    disabled={!selectedPipelineId || loadingStages || dealStages.length === 0}
                   >
                     <SelectTrigger>
                       <SelectValue 
@@ -225,6 +332,8 @@ const HubSpotSettings = () => {
                             ? "Seleccione primero un pipeline" 
                             : loadingStages 
                             ? "Cargando..." 
+                            : dealStages.length === 0
+                            ? "No hay etapas disponibles"
                             : "Seleccionar etapa"
                         } 
                       />

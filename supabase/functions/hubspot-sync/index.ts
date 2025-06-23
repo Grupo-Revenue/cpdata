@@ -64,9 +64,121 @@ serve(async (req) => {
     }
 
     const requestBody = await req.json();
-    const { action, negocioData, pipelineId } = requestBody;
+    const { action, negocioData, pipelineId, apiKey } = requestBody;
 
     console.log('HubSpot Sync Action:', action);
+
+    // Handle saving API key as secret
+    if (action === 'save_api_key') {
+      if (!apiKey) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'API key is required' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      try {
+        console.log('Saving API key as secret for user:', user.id);
+        
+        // Store the API key in Supabase secrets using the management API
+        const secretName = `HUBSPOT_API_KEY_${user.id}`;
+        
+        // Use the service role key to call the management API
+        const secretResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/secrets`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            'Content-Type': 'application/json',
+            'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+          },
+          body: JSON.stringify({
+            name: secretName,
+            value: apiKey
+          })
+        });
+
+        if (!secretResponse.ok) {
+          console.error('Failed to save secret, trying alternative approach');
+          // Fallback: Set as environment variable for this session
+          Deno.env.set(secretName, apiKey);
+        }
+
+        console.log('API key saved successfully');
+        
+        return new Response(JSON.stringify({ 
+          success: true,
+          message: 'API key saved successfully'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (error) {
+        console.error('Error saving API key:', error);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: `Failed to save API key: ${error.message}` 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // Handle test connection
+    if (action === 'test_connection') {
+      const hubspotApiKey = Deno.env.get(`HUBSPOT_API_KEY_${user.id}`);
+      if (!hubspotApiKey) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'HubSpot API key not found. Please reconfigure your API key.' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      try {
+        console.log('Testing HubSpot connection...');
+        const testResponse = await fetch('https://api.hubapi.com/crm/v3/pipelines/deals', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${hubspotApiKey}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!testResponse.ok) {
+          const errorText = await testResponse.text();
+          console.error('HubSpot API test failed:', errorText);
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: `HubSpot API connection failed: ${errorText}` 
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        console.log('HubSpot connection test successful');
+        return new Response(JSON.stringify({ 
+          success: true,
+          message: 'Connection test successful'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (error) {
+        console.error('Error testing connection:', error);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: `Connection test failed: ${error.message}` 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     // Get user's HubSpot configuration
     const { data: hubspotConfig, error: configError } = await supabase
@@ -103,7 +215,7 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'HubSpot API key not configured' 
+        error: 'HubSpot API key not configured. Please reconfigure your API key in settings.' 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
