@@ -18,7 +18,7 @@ interface BusinessStateSelectProps {
   size?: 'sm' | 'default';
 }
 
-const MAIN_BUSINESS_STATES = [
+const MAIN_BUSINESS_STATES: Negocio['estado'][] = [
   'oportunidad_creada',
   'presupuesto_enviado',
   'parcialmente_aceptado',
@@ -54,7 +54,8 @@ const BusinessStateSelect: React.FC<BusinessStateSelectProps> = ({
       </SelectTrigger>
       <SelectContent>
         {MAIN_BUSINESS_STATES.map((estado) => {
-          const { colorEstado: itemColor } = obtenerEstadoNegocioInfo({ ...negocio, estado });
+          const mockNegocio: Negocio = { ...negocio, estado: estado };
+          const { colorEstado: itemColor } = obtenerEstadoNegocioInfo(mockNegocio);
           return (
             <SelectItem key={estado} value={estado}>
               <Badge className={`${itemColor} border`}>

@@ -12,9 +12,9 @@ interface DetalleNegocioMainContentProps {
   negocio: Negocio;
   onCrearPresupuesto: () => void;
   onEditarPresupuesto: (presupuestoId: string) => void;
-  onEliminarPresupuesto: (presupuestoId: string) => void;
+  onEliminarPresupuesto: (presupuestoId: string) => Promise<void>;
   onVerPDF: (presupuestoId: string) => void;
-  onCambiarEstado: (presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string) => void;
+  onCambiarEstado: (presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string) => Promise<void>;
 }
 
 const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({

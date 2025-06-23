@@ -41,7 +41,7 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
     );
   }
 
-  const handleEliminarPresupuesto = async (presupuestoId: string) => {
+  const handleEliminarPresupuesto = async (presupuestoId: string): Promise<void> => {
     await eliminarPresupuesto(negocioId, presupuestoId);
   };
 
@@ -63,7 +63,7 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
     setPresupuestoEditando(null);
   };
 
-  const handleCambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string) => {
+  const handleCambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string): Promise<void> => {
     await cambiarEstadoPresupuesto(negocioId, presupuestoId, nuevoEstado, fechaVencimiento);
   };
 
