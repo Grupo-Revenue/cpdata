@@ -344,7 +344,7 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
         cantidad_asistentes: negocioData.evento.cantidadAsistentes || 0,
         cantidad_invitados: negocioData.evento.cantidadInvitados || 0,
         locacion: negocioData.evento.locacion.trim(),
-        estado: 'oportunidad_creada' // New businesses start as opportunities
+        estado: 'oportunidad_creada' as const // Explicitly cast to literal type
       };
 
       console.log('Inserting business data:', negocioToInsert);
