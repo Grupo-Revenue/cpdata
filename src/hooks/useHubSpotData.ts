@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -22,7 +21,7 @@ export const useHubSpotData = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [pipelines, setPipelines] = useState<HubSpotPipeline[]>([]);
-  const [dealStages, setDealSt agges] = useState<HubSpotDealStage[]>([]);
+  const [dealStages, setDealStages] = useState<HubSpotDealStage[]>([]);
   const [loadingPipelines, setLoadingPipelines] = useState(false);
   const [loadingStages, setLoadingStages] = useState(false);
   const [error, setError] = useState<string | null>(null);
