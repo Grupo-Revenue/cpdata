@@ -142,11 +142,65 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
     }
   };
 
+  // Helper function to find or create a company
+  const findOrCreateEmpresa = async (empresaData: any, tipo: 'productora' | 'cliente_final') => {
+    if (!empresaData || !empresaData.nombre) return null;
+
+    try {
+      // First, try to find existing company
+      const { data: existingEmpresa, error: searchError } = await supabase
+        .from('empresas')
+        .select('id')
+        .eq('user_id', user!.id)
+        .eq('nombre', empresaData.nombre)
+        .eq('tipo', tipo)
+        .maybeSingle();
+
+      if (searchError) {
+        console.error('Error searching for existing company:', searchError);
+        throw searchError;
+      }
+
+      // If company exists, return its ID
+      if (existingEmpresa) {
+        console.log(`Found existing ${tipo}:`, existingEmpresa.id);
+        return existingEmpresa.id;
+      }
+
+      // If company doesn't exist, create new one
+      const { data: nuevaEmpresa, error: createError } = await supabase
+        .from('empresas')
+        .insert({
+          user_id: user!.id,
+          nombre: empresaData.nombre,
+          rut: empresaData.rut || null,
+          sitio_web: empresaData.sitioWeb || null,
+          direccion: empresaData.direccion || null,
+          tipo: tipo
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        console.error(`Error creating ${tipo}:`, createError);
+        throw createError;
+      }
+
+      console.log(`Created new ${tipo}:`, nuevaEmpresa.id);
+      return nuevaEmpresa.id;
+    } catch (error) {
+      console.error(`Error in findOrCreateEmpresa for ${tipo}:`, error);
+      throw error;
+    }
+  };
+
   const crearNegocio = async (negocioData: Omit<Negocio, 'id' | 'numero' | 'presupuestos' | 'fechaCreacion' | 'estado'>): Promise<string> => {
     if (!user) throw new Error('Usuario no autenticado');
 
     try {
-      // Crear contacto
+      console.log('Starting business creation process...');
+      
+      // Create contact
       const { data: contactoData, error: contactoError } = await supabase
         .from('contactos')
         .insert({
@@ -155,54 +209,31 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
           apellido: negocioData.contacto.apellido,
           email: negocioData.contacto.email,
           telefono: negocioData.contacto.telefono,
-          cargo: negocioData.contacto.cargo
+          cargo: negocioData.contacto.cargo || null
         })
         .select()
         .single();
 
-      if (contactoError) throw contactoError;
+      if (contactoError) {
+        console.error('Error creating contact:', contactoError);
+        throw contactoError;
+      }
 
-      // Crear productora si existe
+      console.log('Contact created successfully:', contactoData.id);
+
+      // Handle productora (find or create)
       let productoraId = null;
       if (negocioData.productora) {
-        const { data: productoraData, error: productoraError } = await supabase
-          .from('empresas')
-          .insert({
-            user_id: user.id,
-            nombre: negocioData.productora.nombre,
-            rut: negocioData.productora.rut,
-            sitio_web: negocioData.productora.sitioWeb,
-            direccion: negocioData.productora.direccion,
-            tipo: 'productora'
-          })
-          .select()
-          .single();
-
-        if (productoraError) throw productoraError;
-        productoraId = productoraData.id;
+        productoraId = await findOrCreateEmpresa(negocioData.productora, 'productora');
       }
 
-      // Crear cliente final si existe
+      // Handle cliente final (find or create)
       let clienteFinalId = null;
       if (negocioData.clienteFinal) {
-        const { data: clienteData, error: clienteError } = await supabase
-          .from('empresas')
-          .insert({
-            user_id: user.id,
-            nombre: negocioData.clienteFinal.nombre,
-            rut: negocioData.clienteFinal.rut,
-            sitio_web: negocioData.clienteFinal.sitioWeb,
-            direccion: negocioData.clienteFinal.direccion,
-            tipo: 'cliente_final'
-          })
-          .select()
-          .single();
-
-        if (clienteError) throw clienteError;
-        clienteFinalId = clienteData.id;
+        clienteFinalId = await findOrCreateEmpresa(negocioData.clienteFinal, 'cliente_final');
       }
 
-      // Crear negocio
+      // Create business
       const { data: negocio, error: negocioError } = await supabase
         .from('negocios')
         .insert({
@@ -215,16 +246,21 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
           nombre_evento: negocioData.evento.nombreEvento,
           fecha_evento: negocioData.evento.fechaEvento || null,
           horas_acreditacion: negocioData.evento.horasAcreditacion,
-          cantidad_asistentes: negocioData.evento.cantidadAsistentes,
-          cantidad_invitados: negocioData.evento.cantidadInvitados,
+          cantidad_asistentes: negocioData.evento.cantidadAsistentes || 0,
+          cantidad_invitados: negocioData.evento.cantidadInvitados || 0,
           locacion: negocioData.evento.locacion
         })
         .select()
         .single();
 
-      if (negocioError) throw negocioError;
+      if (negocioError) {
+        console.error('Error creating business:', negocioError);
+        throw negocioError;
+      }
 
-      // Actualizar contador
+      console.log('Business created successfully:', negocio.id);
+
+      // Update counter
       await supabase
         .from('contadores_usuario')
         .upsert({
@@ -237,12 +273,31 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
 
       return negocio.id;
     } catch (error) {
-      console.error('Error creando negocio:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo crear el negocio",
-        variant: "destructive"
-      });
+      console.error('Error creating business:', error);
+      
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('unique constraint') || error.message.includes('duplicate key')) {
+          toast({
+            title: "Error de duplicación",
+            description: "Ya existe una empresa con ese nombre. Intente con un nombre diferente.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: `Error al crear el negocio: ${error.message}`,
+            variant: "destructive"
+          });
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo crear el negocio. Intente nuevamente.",
+          variant: "destructive"
+        });
+      }
+      
       throw error;
     }
   };
