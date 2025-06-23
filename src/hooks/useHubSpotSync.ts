@@ -1,16 +1,38 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useHubSpotConfig } from './useHubSpotConfig';
 import { useNegocio } from '@/context/NegocioContext';
 import { useToast } from './use-toast';
 import { calcularValorNegocio } from '@/utils/businessCalculations';
 import { Negocio } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useHubSpotSync = () => {
   const { syncNegocio } = useHubSpotConfig();
   const { obtenerNegocio } = useNegocio();
   const { toast } = useToast();
   const [syncingNegocios, setSyncingNegocios] = useState<Set<string>>(new Set());
+  const [syncedNegocios, setSyncedNegocios] = useState<Set<string>>(new Set());
+
+  const loadSyncedNegocios = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('hubspot_sync')
+        .select('negocio_id')
+        .eq('sync_status', 'completed');
+
+      if (error) throw error;
+
+      const syncedIds = new Set(data?.map(record => record.negocio_id) || []);
+      setSyncedNegocios(syncedIds);
+    } catch (error) {
+      console.error('Error loading synced negocios:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadSyncedNegocios();
+  }, []);
 
   const isSyncing = (negocioId: string) => syncingNegocios.has(negocioId);
 
@@ -40,6 +62,9 @@ export const useHubSpotSync = () => {
       const result = await syncNegocio(hubspotData, 'update');
       
       if (result.success && !result.skipped) {
+        // Add to synced negocios
+        setSyncedNegocios(prev => new Set(prev).add(negocioId));
+        
         toast({
           title: "Sincronización exitosa",
           description: "El negocio se ha sincronizado con HubSpot correctamente"
@@ -68,9 +93,7 @@ export const useHubSpotSync = () => {
   };
 
   const isBusinessSynced = (negocio: Negocio) => {
-    // For now, we'll consider a business synced if it has been created recently
-    // In a real implementation, you might want to track sync status in the database
-    return false; // Placeholder - always show as not synced for now
+    return syncedNegocios.has(negocio.id);
   };
 
   return {

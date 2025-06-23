@@ -37,7 +37,7 @@ const HubSpotSyncButton: React.FC<HubSpotSyncButtonProps> = ({
         disabled
         className="text-green-600 border-green-300 bg-green-50 hover:bg-green-50"
       >
-        <Check className="h-4 w-4" />
+        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
         {showText && <span className="ml-2">Sincronizado</span>}
       </Button>
     );
