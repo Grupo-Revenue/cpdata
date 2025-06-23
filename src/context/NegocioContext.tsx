@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Negocio, Presupuesto, ProductoPresupuesto } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -374,15 +373,18 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
 
       setContadorNegocio(prev => prev + 1);
       
-      // Reload businesses
+      // Reload businesses FIRST, then sync with HubSpot
       console.log('Reloading businesses...');
       await cargarNegocios();
 
-      // Sync with HubSpot
+      // Sync with HubSpot AFTER reloading businesses
       console.log('Syncing with HubSpot...');
       try {
+        // Now that cargarNegocios has completed, obtenerNegocio should find the business
         const negocioCompleto = obtenerNegocio(negocio.id);
+        
         if (negocioCompleto) {
+          console.log('Found complete business for HubSpot sync:', negocioCompleto.id);
           const valorTotal = calcularValorNegocio(negocioCompleto);
           const hubspotData = {
             id: negocio.id,
@@ -395,6 +397,23 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
           const syncResult = await syncNegocio(hubspotData, 'create');
           if (syncResult.success && !syncResult.skipped) {
             console.log('Business synced with HubSpot successfully');
+          } else if (syncResult.skipped) {
+            console.log('HubSpot sync skipped (not configured or disabled)');
+          }
+        } else {
+          // Fallback: construct hubspotData from available data
+          console.log('Business not found in local state, using fallback data for HubSpot sync');
+          const hubspotData = {
+            id: negocio.id,
+            numero: negocio.numero,
+            contacto: negocioData.contacto,
+            evento: negocioData.evento,
+            valorTotal: 0 // No budget yet, so value is 0
+          };
+          
+          const syncResult = await syncNegocio(hubspotData, 'create');
+          if (syncResult.success && !syncResult.skipped) {
+            console.log('Business synced with HubSpot successfully (fallback data)');
           }
         }
       } catch (syncError) {
@@ -498,9 +517,10 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
         if (productosError) throw productosError;
       }
 
+      // Reload businesses FIRST, then sync with HubSpot
       await cargarNegocios();
 
-      // Sync updated business value with HubSpot
+      // Sync updated business value with HubSpot AFTER reloading
       try {
         const negocioActualizado = obtenerNegocio(negocioId);
         if (negocioActualizado) {
@@ -572,9 +592,10 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
         if (insertError) throw insertError;
       }
 
+      // Reload businesses FIRST, then sync with HubSpot
       await cargarNegocios();
 
-      // Sync updated business value with HubSpot
+      // Sync updated business value with HubSpot AFTER reloading
       try {
         const negocioActualizado = obtenerNegocio(negocioId);
         if (negocioActualizado) {
