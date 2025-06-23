@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, FileText } from 'lucide-react';
+import { TrendingUp, FileText, RefreshCw } from 'lucide-react';
 import { Negocio } from '@/types';
 import { calcularValorNegocio } from '@/utils/businessCalculations';
+import BusinessSyncStatus from '@/components/business/BusinessSyncStatus';
 
 interface BusinessStatusCardProps {
   negocio: Negocio;
@@ -45,6 +46,17 @@ const BusinessStatusCard: React.FC<BusinessStatusCardProps> = ({ negocio }) => {
           <div className="text-lg font-semibold text-slate-900">
             {negocio.presupuestos.length} presupuesto{negocio.presupuestos.length !== 1 ? 's' : ''}
           </div>
+        </div>
+
+        {/* HubSpot Sync Status */}
+        <div className="bg-blue-50 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center">
+              <RefreshCw className="w-5 h-5 text-blue-600 mr-2" />
+              <span className="text-sm font-medium text-blue-800">HubSpot Sync</span>
+            </div>
+          </div>
+          <BusinessSyncStatus negocio={negocio} />
         </div>
       </CardContent>
     </Card>

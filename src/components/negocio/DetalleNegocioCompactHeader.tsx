@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Calendar, MapPin } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, AlertTriangle } from 'lucide-react';
 import { Negocio } from '@/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -11,6 +11,7 @@ import { obtenerEstadoNegocioInfo, formatBusinessStateForDisplay, calcularValorN
 import HubSpotSyncButton from '@/components/hubspot/HubSpotSyncButton';
 import BusinessStateSelect from '@/components/business/BusinessStateSelect';
 import { useNegocio } from '@/context/NegocioContext';
+import { useBidirectionalSync } from '@/hooks/useBidirectionalSync';
 
 interface DetalleNegocioCompactHeaderProps {
   negocio: Negocio;
@@ -19,6 +20,7 @@ interface DetalleNegocioCompactHeaderProps {
 
 const DetalleNegocioCompactHeader: React.FC<DetalleNegocioCompactHeaderProps> = ({ negocio, onVolver }) => {
   const { cambiarEstadoNegocio } = useNegocio();
+  const { syncConflicts } = useBidirectionalSync();
 
   const formatearFecha = (fecha: string) => {
     try {
@@ -43,6 +45,9 @@ const DetalleNegocioCompactHeader: React.FC<DetalleNegocioCompactHeaderProps> = 
     await cambiarEstadoNegocio(negocioId, nuevoEstado);
   };
 
+  // Check if this business has sync conflicts
+  const hasConflict = syncConflicts.some(conflict => conflict.negocio_id === negocio.id);
+
   return (
     <Card className="border-slate-200">
       <CardContent className="p-4">
@@ -65,6 +70,14 @@ const DetalleNegocioCompactHeader: React.FC<DetalleNegocioCompactHeaderProps> = 
                 </h1>
                 <p className="text-sm text-slate-600">{negocio.evento.nombreEvento}</p>
               </div>
+              
+              {/* Conflict indicator */}
+              {hasConflict && (
+                <div className="flex items-center space-x-1 bg-amber-100 px-2 py-1 rounded-md">
+                  <AlertTriangle className="w-4 h-4 text-amber-600" />
+                  <span className="text-xs font-medium text-amber-700">Sync Conflict</span>
+                </div>
+              )}
             </div>
           </div>
 
