@@ -1,147 +1,120 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Eye, EyeOff, ExternalLink, Settings, Zap, ArrowLeftRight } from 'lucide-react';
 import { useHubSpotConfig } from '@/hooks/useHubSpotConfig';
 import { useHubSpotData } from '@/hooks/useHubSpotData';
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import BidirectionalSyncSettings from './BidirectionalSyncSettings';
 
-const HubSpotSettings = () => {
+const HubSpotSettings: React.FC = () => {
+  const { user } = useAuth();
   const { toast } = useToast();
-  const { config, loading, updateConfig } = useHubSpotConfig();
-  const { pipelines, dealStages, loadingPipelines, loadingStages, fetchPipelines, fetchDealStages, clearStages } = useHubSpotData();
-  
+  const { config, updateConfig, loading, reloadConfig } = useHubSpotConfig();
+  const { pipelines, dealStages, fetchPipelines, fetchDealStages, clearStages, loadingPipelines, loadingStages, error, clearError } = useHubSpotData();
+
   const [apiKey, setApiKey] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [selectedPipeline, setSelectedPipeline] = useState('');
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'success' | 'error' | null>(null);
+
+  useEffect(() => {
+    if (config?.default_pipeline_id) {
+      setSelectedPipeline(config.default_pipeline_id);
+      fetchDealStages(config.default_pipeline_id);
+    }
+  }, [config]);
+
+  useEffect(() => {
+    if (config?.api_key_set) {
+      fetchPipelines();
+    }
+  }, [config?.api_key_set]);
 
   const handleSaveApiKey = async () => {
     if (!apiKey.trim()) {
       toast({
         title: "Error",
-        description: "Por favor ingresa una API key válida",
+        description: "Por favor ingrese una API key",
         variant: "destructive"
       });
       return;
     }
 
-    setSaving(true);
     try {
-      console.log('Saving HubSpot API key...');
-      
-      const { data, error } = await supabase.functions.invoke('hubspot-sync', {
-        body: { 
-          action: 'save_api_key',
-          apiKey: apiKey.trim()
-        }
+      // Save API key
+      const { error } = await supabase
+        .from('hubspot_api_keys')
+        .upsert({
+          user_id: user?.id,
+          api_key: apiKey.trim()
+        });
+
+      if (error) throw error;
+
+      // Update config to reflect API key is set
+      await updateConfig({ api_key_set: true });
+
+      setApiKey('');
+      toast({
+        title: "API Key guardada",
+        description: "La API key de HubSpot se ha guardado correctamente"
       });
 
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
-      }
-
-      console.log('API key save response:', data);
-
-      if (data.success) {
-        await updateConfig({ 
-          api_key_set: true 
-        });
-        
-        setApiKey('');
-        setConnectionStatus('idle');
-        
-        toast({
-          title: "API Key guardada",
-          description: "La API key de HubSpot se ha guardado correctamente"
-        });
-      } else {
-        throw new Error(data.error || 'Error desconocido al guardar la API key');
-      }
+      // Fetch pipelines after saving API key
+      fetchPipelines();
     } catch (error) {
       console.error('Error saving API key:', error);
       toast({
         title: "Error",
-        description: `No se pudo guardar la API key: ${error.message}`,
+        description: "No se pudo guardar la API key",
         variant: "destructive"
       });
-    } finally {
-      setSaving(false);
     }
   };
 
   const handleTestConnection = async () => {
-    if (!config?.api_key_set) {
-      toast({
-        title: "Error",
-        description: "Primero debes configurar tu API key de HubSpot",
-        variant: "destructive"
-      });
-      return;
-    }
+    setIsTestingConnection(true);
+    setConnectionStatus(null);
+    clearError();
 
-    setTesting(true);
-    setConnectionStatus('idle');
-    
     try {
-      console.log('Testing HubSpot connection...');
-      
-      const { data, error } = await supabase.functions.invoke('hubspot-sync', {
-        body: { action: 'test_connection' }
-      });
-
+      await fetchPipelines();
       if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
-      }
-
-      console.log('Connection test response:', data);
-
-      if (data.success) {
+        setConnectionStatus('error');
+      } else {
         setConnectionStatus('success');
         toast({
           title: "Conexión exitosa",
-          description: "La conexión con HubSpot ha sido verificada correctamente"
+          description: "La conexión con HubSpot se estableció correctamente"
         });
-      } else {
-        setConnectionStatus('error');
-        throw new Error(data.error || 'Error en la prueba de conexión');
       }
-    } catch (error) {
-      console.error('Error testing connection:', error);
+    } catch (err) {
       setConnectionStatus('error');
       toast({
         title: "Error de conexión",
-        description: `No se pudo conectar con HubSpot: ${error.message}`,
+        description: "No se pudo conectar con HubSpot. Verifique su API key.",
         variant: "destructive"
       });
     } finally {
-      setTesting(false);
+      setIsTestingConnection(false);
     }
-  };
-
-  const handleLoadPipelines = async () => {
-    if (!config?.api_key_set) {
-      toast({
-        title: "Error",
-        description: "Primero debes configurar tu API key de HubSpot",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    await fetchPipelines();
   };
 
   const handlePipelineChange = async (pipelineId: string) => {
-    await updateConfig({ default_pipeline_id: pipelineId });
+    setSelectedPipeline(pipelineId);
     clearStages();
     
     if (pipelineId) {
@@ -149,186 +122,203 @@ const HubSpotSettings = () => {
     }
   };
 
-  const handleDealStageChange = async (stageId: string) => {
-    await updateConfig({ default_deal_stage: stageId });
+  const handleSaveConfiguration = async () => {
+    try {
+      await updateConfig({
+        default_pipeline_id: selectedPipeline || null,
+        default_deal_stage: config?.default_deal_stage || null
+      });
+
+      toast({
+        title: "Configuración guardada",
+        description: "La configuración se ha guardado correctamente"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la configuración",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleAutoSyncChange = async (enabled: boolean) => {
-    await updateConfig({ auto_sync: enabled });
+  const handleStageChange = async (stageId: string) => {
+    try {
+      await updateConfig({
+        default_deal_stage: stageId
+      });
+    } catch (error) {
+      console.error('Error updating stage:', error);
+    }
   };
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Configuración de HubSpot</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>API Key de HubSpot</CardTitle>
-          <CardDescription>
-            Configura tu API key de HubSpot para sincronizar tus negocios automáticamente
-          </CardDescription>
+          <CardTitle className="flex items-center space-x-2">
+            <Settings className="h-5 w-5" />
+            <span>Configuración de HubSpot</span>
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="apiKey">API Key</Label>
-            <div className="flex gap-2">
-              <Input
-                id="apiKey"
-                type="password"
-                placeholder={config?.api_key_set ? "API key configurada" : "Ingresa tu API key de HubSpot"}
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                disabled={saving}
-              />
-              <Button 
-                onClick={handleSaveApiKey}
-                disabled={saving || !apiKey.trim()}
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Guardando...
-                  </>
-                ) : (
-                  'Guardar'
-                )}
-              </Button>
-            </div>
-          </div>
+        <CardContent>
+          <Tabs defaultValue="basic" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="basic">Configuración Básica</TabsTrigger>
+              <TabsTrigger value="bidirectional">Sincronización Bidireccional</TabsTrigger>
+            </TabsList>
 
-          {config?.api_key_set && (
-            <div className="flex items-center gap-2 pt-2">
-              <Button 
-                variant="outline" 
-                onClick={handleTestConnection}
-                disabled={testing}
-              >
-                {testing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Probando...
-                  </>
-                ) : (
-                  'Probar Conexión'
+            <TabsContent value="basic" className="space-y-6">
+              {/* API Key Configuration */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">API Key</h3>
+                  {config?.api_key_set && (
+                    <Badge variant="outline" className="text-green-600 border-green-600">
+                      Configurada
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="md:col-span-2 space-y-2">
+                    <Label htmlFor="api-key">HubSpot API Key</Label>
+                    <div className="relative">
+                      <Input
+                        id="api-key"
+                        type={showApiKey ? "text" : "password"}
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        placeholder={config?.api_key_set ? "API Key configurada" : "Ingrese su API key"}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                      >
+                        {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2 flex items-end space-x-2">
+                    <Button onClick={handleSaveApiKey} disabled={!apiKey.trim()}>
+                      Guardar API Key
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleTestConnection}
+                      disabled={!config?.api_key_set || isTestingConnection}
+                    >
+                      {isTestingConnection ? "Probando..." : "Probar Conexión"}
+                    </Button>
+                  </div>
+                </div>
+
+                {connectionStatus && (
+                  <Alert className={connectionStatus === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+                    <AlertDescription className={connectionStatus === 'success' ? 'text-green-800' : 'text-red-800'}>
+                      {connectionStatus === 'success' 
+                        ? 'Conexión exitosa con HubSpot' 
+                        : error || 'Error al conectar con HubSpot'
+                      }
+                    </AlertDescription>
+                  </Alert>
                 )}
-              </Button>
-              
-              {connectionStatus === 'success' && (
-                <div className="flex items-center gap-1 text-green-600">
-                  <CheckCircle className="h-4 w-4" />
-                  <span className="text-sm">Conexión exitosa</span>
+
+                <div className="text-sm text-gray-600 space-y-1">
+                  <p>Para obtener tu API key de HubSpot:</p>
+                  <ol className="list-decimal list-inside space-y-1 ml-4">
+                    <li>Ve a tu cuenta de HubSpot</li>
+                    <li>Navega a Settings → Integrations → API key</li>
+                    <li>Crea una nueva API key o copia una existente</li>
+                    <li>Pégala en el campo de arriba</li>
+                  </ol>
+                  <a 
+                    href="https://knowledge.hubspot.com/integrations/how-do-i-get-my-hubspot-api-key"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-blue-600 hover:text-blue-800"
+                  >
+                    Más información <ExternalLink className="h-3 w-3 ml-1" />
+                  </a>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Pipeline Configuration */}
+              {config?.api_key_set && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Configuración de Pipeline</h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="pipeline">Pipeline por Defecto</Label>
+                      <Select 
+                        value={selectedPipeline} 
+                        onValueChange={handlePipelineChange}
+                        disabled={loadingPipelines}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={loadingPipelines ? "Cargando..." : "Seleccionar pipeline"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pipelines.map((pipeline) => (
+                            <SelectItem key={pipeline.id} value={pipeline.id}>
+                              {pipeline.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="stage">Etapa por Defecto</Label>
+                      <Select 
+                        value={config?.default_deal_stage || ''} 
+                        onValueChange={handleStageChange}
+                        disabled={!selectedPipeline || loadingStages}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={loadingStages ? "Cargando..." : "Seleccionar etapa"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {dealStages.map((stage) => (
+                            <SelectItem key={stage.id} value={stage.id}>
+                              {stage.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="auto-sync">Sincronización Automática</Label>
+                      <Switch
+                        id="auto-sync"
+                        checked={config?.auto_sync || false}
+                        onCheckedChange={(checked) => updateConfig({ auto_sync: checked })}
+                      />
+                    </div>
+                    <Button onClick={handleSaveConfiguration}>
+                      Guardar Configuración
+                    </Button>
+                  </div>
                 </div>
               )}
-              
-              {connectionStatus === 'error' && (
-                <div className="flex items-center gap-1 text-red-600">
-                  <AlertCircle className="h-4 w-4" />
-                  <span className="text-sm">Error de conexión</span>
-                </div>
-              )}
-            </div>
-          )}
+            </TabsContent>
+
+            <TabsContent value="bidirectional">
+              <BidirectionalSyncSettings />
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
-
-      {config?.api_key_set && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Configuración de Sincronización</CardTitle>
-            <CardDescription>
-              Configura cómo se sincronizan tus negocios con HubSpot
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="autoSync">Sincronización Automática</Label>
-                <p className="text-sm text-muted-foreground">
-                  Sincroniza automáticamente los negocios cuando se crean o actualizan
-                </p>
-              </div>
-              <Switch
-                id="autoSync"
-                checked={config?.auto_sync || false}
-                onCheckedChange={handleAutoSyncChange}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Pipeline por Defecto</Label>
-              <div className="flex gap-2">
-                <Select 
-                  value={config?.default_pipeline_id || ''} 
-                  onValueChange={handlePipelineChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un pipeline" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {pipelines.map((pipeline) => (
-                      <SelectItem key={pipeline.id} value={pipeline.id}>
-                        {pipeline.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button 
-                  variant="outline" 
-                  onClick={handleLoadPipelines}
-                  disabled={loadingPipelines}
-                >
-                  {loadingPipelines ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    'Cargar'
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            {config?.default_pipeline_id && (
-              <div className="space-y-2">
-                <Label>Etapa por Defecto</Label>
-                <Select 
-                  value={config?.default_deal_stage || ''} 
-                  onValueChange={handleDealStageChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona una etapa" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {loadingStages ? (
-                      <SelectItem value="loading" disabled>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Cargando etapas...
-                      </SelectItem>
-                    ) : (
-                      dealStages.map((stage) => (
-                        <SelectItem key={stage.id} value={stage.id}>
-                          {stage.label}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
