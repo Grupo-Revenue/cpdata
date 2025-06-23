@@ -350,7 +350,7 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
         cantidad_asistentes: negocioData.evento.cantidadAsistentes || 0,
         cantidad_invitados: negocioData.evento.cantidadInvitados || 0,
         locacion: negocioData.evento.locacion.trim(),
-        estado: 'oportunidad_creada'
+        estado: 'oportunidad_creada' as const
       };
 
       console.log('Inserting business data:', negocioToInsert);
@@ -471,300 +471,300 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
           title: "Error",
           description: "No se pudo crear el negocio. Verifique los datos e intente nuevamente.",
           variant: "destructive"
-          });
+        });
+      }
+      
+      throw error;
+    }
+  };
+
+  const obtenerNegocio = (id: string): Negocio | undefined => {
+    return negocios.find(negocio => negocio.id === id);
+  };
+
+  const generarNombrePresupuesto = (numero: number, cantidadPresupuestos: number): string => {
+    const letra = String.fromCharCode(65 + cantidadPresupuestos);
+    return `${numero}${letra}`;
+  };
+
+  const crearPresupuesto = async (negocioId: string, productos: ProductoPresupuesto[]): Promise<string> => {
+    if (!user) throw new Error('Usuario no autenticado');
+    
+    try {
+      const negocio = obtenerNegocio(negocioId);
+      if (!negocio) throw new Error('Negocio no encontrado');
+      
+      const nombrePresupuesto = generarNombrePresupuesto(negocio.numero, negocio.presupuestos.length);
+      const total = productos.reduce((sum, producto) => sum + producto.total, 0);
+      
+      const { data: presupuesto, error: presupuestoError } = await supabase
+        .from('presupuestos')
+        .insert({
+          negocio_id: negocioId,
+          nombre: nombrePresupuesto,
+          total: total
+        })
+        .select()
+        .single();
+      
+      if (presupuestoError) throw presupuestoError;
+      
+      // Crear productos del presupuesto
+      if (productos.length > 0) {
+        const productosInsert = productos.map(producto => ({
+          presupuesto_id: presupuesto.id,
+          nombre: producto.nombre,
+          descripcion: producto.descripcion,
+          cantidad: producto.cantidad,
+          precio_unitario: producto.precioUnitario,
+          total: producto.total
+        }));
+        
+        const { error: productosError } = await supabase
+          .from('productos_presupuesto')
+          .insert(productosInsert);
+        
+        if (productosError) throw productosError;
+      }
+      
+      // Reload businesses FIRST, then sync with HubSpot
+      await cargarNegocios();
+      
+      // Sync updated business value with HubSpot AFTER reloading
+      try {
+        const negocioActualizado = obtenerNegocio(negocioId);
+        if (negocioActualizado) {
+          const valorTotal = calcularValorNegocio(negocioActualizado);
+          const hubspotData = {
+            id: negocioActualizado.id,
+            numero: negocioActualizado.numero,
+            contacto: negocioActualizado.contacto,
+            evento: negocioActualizado.evento,
+            valorTotal: valorTotal
+          };
+          
+          await syncNegocio(hubspotData, 'update');
         }
+      } catch (syncError) {
+        console.warn('HubSpot sync failed (non-critical):', syncError);
+      }
+      
+      return presupuesto.id;
+    } catch (error) {
+      console.error('Error creando presupuesto:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo crear el presupuesto",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  const actualizarPresupuesto = async (negocioId: string, presupuestoId: string, productos: ProductoPresupuesto[]): Promise<void> => {
+    if (!user) throw new Error('Usuario no autenticado');
+    
+    try {
+      // Calcular nuevo total
+      const total = productos.reduce((sum, producto) => sum + producto.total, 0);
+      
+      // Actualizar el presupuesto con el nuevo total
+      const { error: updatePresupuestoError } = await supabase
+        .from('presupuestos')
+        .update({ total })
+        .eq('id', presupuestoId);
+      
+      if (updatePresupuestoError) throw updatePresupuestoError;
+      
+      // Eliminar productos existentes
+      const { error: deleteError } = await supabase
+        .from('productos_presupuesto')
+        .delete()
+        .eq('presupuesto_id', presupuestoId);
+      
+      if (deleteError) throw deleteError;
+      
+      // Crear nuevos productos
+      if (productos.length > 0) {
+        const productosInsert = productos.map(producto => ({
+          presupuesto_id: presupuestoId,
+          nombre: producto.nombre,
+          descripcion: producto.descripcion,
+          cantidad: producto.cantidad,
+          precio_unitario: producto.precioUnitario,
+          total: producto.total
+        }));
         
-        throw error;
+        const { error: insertError } = await supabase
+          .from('productos_presupuesto')
+          .insert(productosInsert);
+        
+        if (insertError) throw insertError;
+      }
+      
+      // Reload businesses FIRST, then sync with HubSpot
+      await cargarNegocios();
+      
+      // Sync updated business value with HubSpot AFTER reloading
+      try {
+        const negocioActualizado = obtenerNegocio(negocioId);
+        if (negocioActualizado) {
+          const valorTotal = calcularValorNegocio(negocioActualizado);
+          const hubspotData = {
+            id: negocioActualizado.id,
+            numero: negocioActualizado.numero,
+            contacto: negocioActualizado.contacto,
+            evento: negocioActualizado.evento,
+            valorTotal: valorTotal
+          };
+          
+          await syncNegocio(hubspotData, 'update');
         }
-        };
-        
-        const obtenerNegocio = (id: string): Negocio | undefined => {
-          return negocios.find(negocio => negocio.id === id);
-        };
-        
-        const generarNombrePresupuesto = (numero: number, cantidadPresupuestos: number): string => {
-          const letra = String.fromCharCode(65 + cantidadPresupuestos);
-          return `${numero}${letra}`;
-        };
-        
-        const crearPresupuesto = async (negocioId: string, productos: ProductoPresupuesto[]): Promise<string> => {
-          if (!user) throw new Error('Usuario no autenticado');
+      } catch (syncError) {
+        console.warn('HubSpot sync failed (non-critical):', syncError);
+      }
+    } catch (error) {
+      console.error('Error actualizando presupuesto:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el presupuesto",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  const eliminarPresupuesto = async (negocioId: string, presupuestoId: string): Promise<void> => {
+    if (!user) throw new Error('Usuario no autenticado');
+    
+    try {
+      const { error } = await supabase
+        .from('presupuestos')
+        .delete()
+        .eq('id', presupuestoId);
+      
+      if (error) throw error;
+      
+      await cargarNegocios();
+    } catch (error) {
+      console.error('Error eliminando presupuesto:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el presupuesto",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  const cambiarEstadoPresupuesto = async (negocioId: string, presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string): Promise<void> => {
+    if (!user) throw new Error('Usuario no autenticado');
+    
+    try {
+      const updateData: any = { estado: nuevoEstado };
+      
+      // Agregar fecha de vencimiento si se está enviando el presupuesto
+      if (nuevoEstado === 'enviado' && fechaVencimiento) {
+        updateData.fecha_vencimiento = fechaVencimiento;
+      }
+      
+      const { error } = await supabase
+        .from('presupuestos')
+        .update(updateData)
+        .eq('id', presupuestoId);
+      
+      if (error) throw error;
+      
+      await cargarNegocios();
+      
+      toast({
+        title: "Estado actualizado",
+        description: `El presupuesto ha sido marcado como ${nuevoEstado}`,
+      });
+    } catch (error) {
+      console.error('Error cambiando estado del presupuesto:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo cambiar el estado del presupuesto",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  const cambiarEstadoNegocio = async (negocioId: string, nuevoEstado: string): Promise<void> => {
+    if (!user) throw new Error('Usuario no autenticado');
+    
+    try {
+      const { error } = await supabase
+        .from('negocios')
+        .update({ estado: nuevoEstado as Negocio['estado'] })
+        .eq('id', negocioId);
+      
+      if (error) throw error;
+      
+      // Reload businesses FIRST, then sync with HubSpot
+      await cargarNegocios();
+      
+      // Sync updated business state with HubSpot AFTER reloading
+      try {
+        const negocioActualizado = obtenerNegocio(negocioId);
+        if (negocioActualizado) {
+          const valorTotal = calcularValorNegocio(negocioActualizado);
+          const hubspotData = {
+            id: negocioActualizado.id,
+            numero: negocioActualizado.numero,
+            contacto: negocioActualizado.contacto,
+            evento: negocioActualizado.evento,
+            valorTotal: valorTotal
+          };
           
-          try {
-            const negocio = obtenerNegocio(negocioId);
-            if (!negocio) throw new Error('Negocio no encontrado');
-            
-            const nombrePresupuesto = generarNombrePresupuesto(negocio.numero, negocio.presupuestos.length);
-            const total = productos.reduce((sum, producto) => sum + producto.total, 0);
-            
-            const { data: presupuesto, error: presupuestoError } = await supabase
-            .from('presupuestos')
-            .insert({
-              negocio_id: negocioId,
-              nombre: nombrePresupuesto,
-              total: total
-            })
-            .select()
-            .single();
-            
-            if (presupuestoError) throw presupuestoError;
-            
-            // Crear productos del presupuesto
-            if (productos.length > 0) {
-              const productosInsert = productos.map(producto => ({
-                presupuesto_id: presupuesto.id,
-                nombre: producto.nombre,
-                descripcion: producto.descripcion,
-                cantidad: producto.cantidad,
-                precio_unitario: producto.precioUnitario,
-                total: producto.total
-              }));
-              
-              const { error: productosError } = await supabase
-              .from('productos_presupuesto')
-              .insert(productosInsert);
-              
-              if (productosError) throw productosError;
-            }
-            
-            // Reload businesses FIRST, then sync with HubSpot
-            await cargarNegocios();
-            
-            // Sync updated business value with HubSpot AFTER reloading
-            try {
-              const negocioActualizado = obtenerNegocio(negocioId);
-              if (negocioActualizado) {
-                const valorTotal = calcularValorNegocio(negocioActualizado);
-                const hubspotData = {
-                  id: negocioActualizado.id,
-                  numero: negocioActualizado.numero,
-                  contacto: negocioActualizado.contacto,
-                  evento: negocioActualizado.evento,
-                  valorTotal: valorTotal
-                };
-                
-                await syncNegocio(hubspotData, 'update');
-              }
-            } catch (syncError) {
-              console.warn('HubSpot sync failed (non-critical):', syncError);
-            }
-            
-            return presupuesto.id;
-          } catch (error) {
-            console.error('Error creando presupuesto:', error);
-            toast({
-              title: "Error",
-              description: "No se pudo crear el presupuesto",
-              variant: "destructive"
-            });
-            throw error;
-          }
-        };
-        
-        const actualizarPresupuesto = async (negocioId: string, presupuestoId: string, productos: ProductoPresupuesto[]): Promise<void> => {
-          if (!user) throw new Error('Usuario no autenticado');
-          
-          try {
-            // Calcular nuevo total
-            const total = productos.reduce((sum, producto) => sum + producto.total, 0);
-            
-            // Actualizar el presupuesto con el nuevo total
-            const { error: updatePresupuestoError } = await supabase
-            .from('presupuestos')
-            .update({ total })
-            .eq('id', presupuestoId);
-            
-            if (updatePresupuestoError) throw updatePresupuestoError;
-            
-            // Eliminar productos existentes
-            const { error: deleteError } = await supabase
-            .from('productos_presupuesto')
-            .delete()
-            .eq('presupuesto_id', presupuestoId);
-            
-            if (deleteError) throw deleteError;
-            
-            // Crear nuevos productos
-            if (productos.length > 0) {
-              const productosInsert = productos.map(producto => ({
-                presupuesto_id: presupuestoId,
-                nombre: producto.nombre,
-                descripcion: producto.descripcion,
-                cantidad: producto.cantidad,
-                precio_unitario: producto.precioUnitario,
-                total: producto.total
-              }));
-              
-              const { error: insertError } = await supabase
-              .from('productos_presupuesto')
-              .insert(productosInsert);
-              
-              if (insertError) throw insertError;
-            }
-            
-            // Reload businesses FIRST, then sync with HubSpot
-            await cargarNegocios();
-            
-            // Sync updated business value with HubSpot AFTER reloading
-            try {
-              const negocioActualizado = obtenerNegocio(negocioId);
-              if (negocioActualizado) {
-                const valorTotal = calcularValorNegocio(negocioActualizado);
-                const hubspotData = {
-                  id: negocioActualizado.id,
-                  numero: negocioActualizado.numero,
-                  contacto: negocioActualizado.contacto,
-                  evento: negocioActualizado.evento,
-                  valorTotal: valorTotal
-                };
-                
-                await syncNegocio(hubspotData, 'update');
-              }
-            } catch (syncError) {
-              console.warn('HubSpot sync failed (non-critical):', syncError);
-            }
-          } catch (error) {
-            console.error('Error actualizando presupuesto:', error);
-            toast({
-              title: "Error",
-              description: "No se pudo actualizar el presupuesto",
-              variant: "destructive"
-            });
-            throw error;
-          }
-        };
-        
-        const eliminarPresupuesto = async (negocioId: string, presupuestoId: string): Promise<void> => {
-          if (!user) throw new Error('Usuario no autenticado');
-          
-          try {
-            const { error } = await supabase
-            .from('presupuestos')
-            .delete()
-            .eq('id', presupuestoId);
-            
-            if (error) throw error;
-            
-            await cargarNegocios();
-          } catch (error) {
-            console.error('Error eliminando presupuesto:', error);
-            toast({
-              title: "Error",
-              description: "No se pudo eliminar el presupuesto",
-              variant: "destructive"
-            });
-            throw error;
-          }
-        };
-        
-        const cambiarEstadoPresupuesto = async (negocioId: string, presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string): Promise<void> => {
-          if (!user) throw new Error('Usuario no autenticado');
-          
-          try {
-            const updateData: any = { estado: nuevoEstado };
-            
-            // Agregar fecha de vencimiento si se está enviando el presupuesto
-            if (nuevoEstado === 'enviado' && fechaVencimiento) {
-              updateData.fecha_vencimiento = fechaVencimiento;
-            }
-            
-            const { error } = await supabase
-            .from('presupuestos')
-            .update(updateData)
-            .eq('id', presupuestoId);
-            
-            if (error) throw error;
-            
-            await cargarNegocios();
-            
-            toast({
-              title: "Estado actualizado",
-              description: `El presupuesto ha sido marcado como ${nuevoEstado}`,
-            });
-          } catch (error) {
-            console.error('Error cambiando estado del presupuesto:', error);
-            toast({
-              title: "Error",
-              description: "No se pudo cambiar el estado del presupuesto",
-              variant: "destructive"
-            });
-            throw error;
-          }
-        };
-        
-        const cambiarEstadoNegocio = async (negocioId: string, nuevoEstado: string): Promise<void> => {
-          if (!user) throw new Error('Usuario no autenticado');
-          
-          try {
-            const { error } = await supabase
-            .from('negocios')
-            .update({ estado: nuevoEstado })
-            .eq('id', negocioId);
-            
-            if (error) throw error;
-            
-            // Reload businesses FIRST, then sync with HubSpot
-            await cargarNegocios();
-            
-            // Sync updated business state with HubSpot AFTER reloading
-            try {
-              const negocioActualizado = obtenerNegocio(negocioId);
-              if (negocioActualizado) {
-                const valorTotal = calcularValorNegocio(negocioActualizado);
-                const hubspotData = {
-                  id: negocioActualizado.id,
-                  numero: negocioActualizado.numero,
-                  contacto: negocioActualizado.contacto,
-                  evento: negocioActualizado.evento,
-                  valorTotal: valorTotal
-                };
-                
-                await syncNegocio(hubspotData, 'update');
-              }
-            } catch (syncError) {
-              console.warn('HubSpot sync failed (non-critical):', syncError);
-            }
-            
-            toast({
-              title: "Estado actualizado",
-              description: "El estado del negocio ha sido actualizado correctamente",
-            });
-          } catch (error) {
-            console.error('Error cambiando estado del negocio:', error);
-            toast({
-              title: "Error",
-              description: "No se pudo cambiar el estado del negocio",
-              variant: "destructive"
-            });
-            throw error;
-          }
-        };
-        
-        // Cargar datos cuando el usuario cambie
-        useEffect(() => {
-          if (user) {
-            cargarNegocios();
-          } else {
-            setNegocios([]);
-            setContadorNegocio(17658);
-          }
-        }, [user]);
-        
-        return (
-          <NegocioContext.Provider value={{
-            negocios,
-            contadorNegocio,
-            loading,
-            crearNegocio,
-            obtenerNegocio,
-            crearPresupuesto,
-            actualizarPresupuesto,
-            eliminarPresupuesto,
-            cambiarEstadoPresupuesto,
-            cambiarEstadoNegocio,
-            cargarNegocios
-          }}>
-          {children}
-          </NegocioContext.Provider>
-          );
-        };
+          await syncNegocio(hubspotData, 'update');
+        }
+      } catch (syncError) {
+        console.warn('HubSpot sync failed (non-critical):', syncError);
+      }
+      
+      toast({
+        title: "Estado actualizado",
+        description: "El estado del negocio ha sido actualizado correctamente",
+      });
+    } catch (error) {
+      console.error('Error cambiando estado del negocio:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo cambiar el estado del negocio",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  // Cargar datos cuando el usuario cambie
+  useEffect(() => {
+    if (user) {
+      cargarNegocios();
+    } else {
+      setNegocios([]);
+      setContadorNegocio(17658);
+    }
+  }, [user]);
+
+  return (
+    <NegocioContext.Provider value={{
+      negocios,
+      contadorNegocio,
+      loading,
+      crearNegocio,
+      obtenerNegocio,
+      crearPresupuesto,
+      actualizarPresupuesto,
+      eliminarPresupuesto,
+      cambiarEstadoPresupuesto,
+      cambiarEstadoNegocio,
+      cargarNegocios
+    }}>
+      {children}
+    </NegocioContext.Provider>
+  );
+};

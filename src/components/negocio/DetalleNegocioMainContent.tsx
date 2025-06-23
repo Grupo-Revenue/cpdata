@@ -30,10 +30,14 @@ const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
       {/* Left Column - Main Info */}
       <div className="lg:col-span-2 space-y-6">
         {/* Contact and Companies */}
-        <ContactoEmpresasCard negocio={negocio} />
+        <ContactoEmpresasCard 
+          contacto={negocio.contacto}
+          productora={negocio.productora}
+          clienteFinal={negocio.clienteFinal}
+        />
         
         {/* Event Details */}
-        <EventoCard negocio={negocio} />
+        <EventoCard evento={negocio.evento} />
         
         {/* Budgets */}
         <PresupuestosCard
