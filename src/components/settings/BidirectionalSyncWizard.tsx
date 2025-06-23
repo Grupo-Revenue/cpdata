@@ -79,8 +79,18 @@ const BidirectionalSyncWizard: React.FC = () => {
       completed.push(3);
     }
     
+    // Step 4: Test successful
+    if (testResult === 'success') {
+      completed.push(4);
+    }
+    
+    // Step 5: Configuration optimized (if Step 4 is complete)
+    if (completed.includes(4)) {
+      completed.push(5);
+    }
+    
     setCompletedSteps(completed);
-  }, [stateMappings, config]);
+  }, [stateMappings, config, testResult]);
 
   useEffect(() => {
     if (config?.api_key_set) {
