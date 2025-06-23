@@ -7,7 +7,7 @@ import { useNegocio } from '@/context/NegocioContext';
 import { Building2, Plus, Calendar, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { calcularValorNegocio } from '@/utils/businessCalculations';
+import { calcularValorNegocio, obtenerEstadoNegocioInfo, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
 import { formatearPrecio } from '@/utils/formatters';
 
 interface RecentBusinessesProps {
@@ -24,15 +24,6 @@ const RecentBusinesses: React.FC<RecentBusinessesProps> = ({ onCrearNegocio, onV
     } catch {
       return fecha;
     }
-  };
-
-  const obtenerBadgeEstado = (estado: string) => {
-    const colores = {
-      activo: 'bg-green-100 text-green-800',
-      cerrado: 'bg-gray-100 text-gray-800',
-      cancelado: 'bg-red-100 text-red-800'
-    };
-    return colores[estado as keyof typeof colores] || 'bg-gray-100 text-gray-800';
   };
 
   const negociosRecientes = negocios.slice(0, 6);
@@ -63,6 +54,7 @@ const RecentBusinesses: React.FC<RecentBusinessesProps> = ({ onCrearNegocio, onV
           <div className="space-y-3">
             {negociosRecientes.map((negocio) => {
               const valorNegocio = calcularValorNegocio(negocio);
+              const { colorEstado } = obtenerEstadoNegocioInfo(negocio);
               
               return (
                 <div 
@@ -91,8 +83,8 @@ const RecentBusinesses: React.FC<RecentBusinessesProps> = ({ onCrearNegocio, onV
                             <span className="text-xs text-gray-500">Sin presupuestos</span>
                           )}
                         </div>
-                        <Badge className={obtenerBadgeEstado(negocio.estado)}>
-                          {negocio.estado.charAt(0).toUpperCase() + negocio.estado.slice(1)}
+                        <Badge className={`${colorEstado} border`}>
+                          {formatBusinessStateForDisplay(negocio.estado)}
                         </Badge>
                       </div>
                     </div>
