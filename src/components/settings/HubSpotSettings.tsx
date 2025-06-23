@@ -1,21 +1,43 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useHubSpotConfig } from '@/hooks/useHubSpotConfig';
-import { Loader2, ExternalLink, Settings } from 'lucide-react';
+import { useHubSpotData } from '@/hooks/useHubSpotData';
+import { Loader2, ExternalLink, Settings, RefreshCw } from 'lucide-react';
 
 const HubSpotSettings = () => {
   const { config, loading, updateConfig } = useHubSpotConfig();
+  const { pipelines, dealStages, loadingPipelines, loadingStages, fetchPipelines, fetchDealStages, clearStages } = useHubSpotData();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [apiKey, setApiKey] = useState('');
-  const [pipelineId, setPipelineId] = useState(config?.default_pipeline_id || '');
-  const [dealStage, setDealStage] = useState(config?.default_deal_stage || '');
+  const [selectedPipelineId, setSelectedPipelineId] = useState(config?.default_pipeline_id || '');
+  const [selectedDealStage, setSelectedDealStage] = useState(config?.default_deal_stage || '');
+
+  useEffect(() => {
+    if (config?.api_key_set) {
+      fetchPipelines();
+    }
+  }, [config?.api_key_set]);
+
+  useEffect(() => {
+    setSelectedPipelineId(config?.default_pipeline_id || '');
+    setSelectedDealStage(config?.default_deal_stage || '');
+  }, [config]);
+
+  useEffect(() => {
+    if (selectedPipelineId && config?.api_key_set) {
+      fetchDealStages(selectedPipelineId);
+    } else {
+      clearStages();
+    }
+  }, [selectedPipelineId, config?.api_key_set]);
 
   const handleSaveApiKey = async () => {
     if (!apiKey.trim()) {
@@ -29,12 +51,10 @@ const HubSpotSettings = () => {
 
     setSaving(true);
     try {
-      // In a real implementation, you would securely store the API key
-      // For now, we'll just mark it as set
       await updateConfig({
         api_key_set: true,
-        default_pipeline_id: pipelineId || undefined,
-        default_deal_stage: dealStage || undefined
+        default_pipeline_id: selectedPipelineId || undefined,
+        default_deal_stage: selectedDealStage || undefined
       });
 
       setApiKey('');
@@ -51,6 +71,18 @@ const HubSpotSettings = () => {
 
   const handleToggleAutoSync = async (enabled: boolean) => {
     await updateConfig({ auto_sync: enabled });
+  };
+
+  const handlePipelineChange = (pipelineId: string) => {
+    setSelectedPipelineId(pipelineId);
+    setSelectedDealStage(''); // Reset deal stage when pipeline changes
+  };
+
+  const handleUpdateConfiguration = async () => {
+    await updateConfig({
+      default_pipeline_id: selectedPipelineId || undefined,
+      default_deal_stage: selectedDealStage || undefined
+    });
   };
 
   if (loading) {
@@ -123,28 +155,6 @@ const HubSpotSettings = () => {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="pipelineId">Pipeline ID (opcional)</Label>
-                  <Input
-                    id="pipelineId"
-                    value={pipelineId}
-                    onChange={(e) => setPipelineId(e.target.value)}
-                    placeholder="default"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="dealStage">Etapa del deal (opcional)</Label>
-                  <Input
-                    id="dealStage"
-                    value={dealStage}
-                    onChange={(e) => setDealStage(e.target.value)}
-                    placeholder="qualifiedtobuy"
-                  />
-                </div>
-              </div>
-
               <Button onClick={handleSaveApiKey} disabled={saving}>
                 {saving ? (
                   <>
@@ -160,39 +170,80 @@ const HubSpotSettings = () => {
 
           {config?.api_key_set && (
             <div className="space-y-4 p-4 bg-green-50 rounded-lg">
-              <h4 className="font-medium text-green-800">¡HubSpot conectado!</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-green-800">¡HubSpot conectado!</h4>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchPipelines}
+                  disabled={loadingPipelines}
+                >
+                  {loadingPipelines ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              
               <p className="text-sm text-green-700">
                 Los negocios se sincronizarán automáticamente con HubSpot cuando se creen o actualicen.
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="currentPipelineId">Pipeline ID actual</Label>
-                  <Input
-                    id="currentPipelineId"
-                    value={pipelineId}
-                    onChange={(e) => setPipelineId(e.target.value)}
-                    placeholder="default"
-                  />
+                  <Label htmlFor="pipelineSelect">Pipeline</Label>
+                  <Select
+                    value={selectedPipelineId}
+                    onValueChange={handlePipelineChange}
+                    disabled={loadingPipelines}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={loadingPipelines ? "Cargando..." : "Seleccionar pipeline"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pipelines.map((pipeline) => (
+                        <SelectItem key={pipeline.id} value={pipeline.id}>
+                          {pipeline.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="currentDealStage">Etapa del deal actual</Label>
-                  <Input
-                    id="currentDealStage"
-                    value={dealStage}
-                    onChange={(e) => setDealStage(e.target.value)}
-                    placeholder="qualifiedtobuy"
-                  />
+                  <Label htmlFor="stageSelect">Etapa del deal</Label>
+                  <Select
+                    value={selectedDealStage}
+                    onValueChange={setSelectedDealStage}
+                    disabled={!selectedPipelineId || loadingStages}
+                  >
+                    <SelectTrigger>
+                      <SelectValue 
+                        placeholder={
+                          !selectedPipelineId 
+                            ? "Seleccione primero un pipeline" 
+                            : loadingStages 
+                            ? "Cargando..." 
+                            : "Seleccionar etapa"
+                        } 
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dealStages.map((stage) => (
+                        <SelectItem key={stage.id} value={stage.id}>
+                          {stage.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
               <Button 
-                onClick={() => updateConfig({
-                  default_pipeline_id: pipelineId || undefined,
-                  default_deal_stage: dealStage || undefined
-                })}
+                onClick={handleUpdateConfiguration}
                 variant="outline"
+                disabled={!selectedPipelineId || !selectedDealStage}
               >
                 Actualizar Configuración
               </Button>

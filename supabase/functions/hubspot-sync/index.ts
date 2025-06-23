@@ -82,10 +82,6 @@ serve(async (req) => {
       });
     }
 
-    // Get HubSpot API key from user secrets (would be stored securely)
-    // For now, we'll return success but not actually sync
-    // In production, you'd retrieve the encrypted API key from a secure store
-
     const hubspotApiKey = Deno.env.get(`HUBSPOT_API_KEY_${user.id}`);
     if (!hubspotApiKey) {
       console.log('HubSpot API key not found for user');
@@ -103,6 +99,69 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         success: false, 
         error: 'HubSpot API key not configured' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Handle different actions
+    if (action === 'fetch_pipelines') {
+      const pipelinesResponse = await fetch('https://api.hubapi.com/crm/v3/pipelines/deals', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${hubspotApiKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!pipelinesResponse.ok) {
+        const errorText = await pipelinesResponse.text();
+        console.error('HubSpot pipelines API error:', errorText);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: `HubSpot API error: ${errorText}` 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const pipelinesData = await pipelinesResponse.json();
+      return new Response(JSON.stringify({ 
+        success: true, 
+        data: pipelinesData.results || [] 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'fetch_deal_stages') {
+      const { pipelineId } = await req.json();
+      
+      const stagesResponse = await fetch(`https://api.hubapi.com/crm/v3/pipelines/deals/${pipelineId}/stages`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${hubspotApiKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!stagesResponse.ok) {
+        const errorText = await stagesResponse.text();
+        console.error('HubSpot stages API error:', errorText);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: `HubSpot API error: ${errorText}` 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const stagesData = await stagesResponse.json();
+      return new Response(JSON.stringify({ 
+        success: true, 
+        data: stagesData.results || [] 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
