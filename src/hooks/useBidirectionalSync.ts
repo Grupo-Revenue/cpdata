@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Negocio } from '@/types';
+import { useHubSpotConfig } from './useHubSpotConfig';
 
 interface StateMapping {
   id: string;
@@ -33,6 +34,7 @@ interface SyncLog {
 export const useBidirectionalSync = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { config } = useHubSpotConfig();
   const [stateMappings, setStateMappings] = useState<StateMapping[]>([]);
   const [syncConflicts, setSyncConflicts] = useState<SyncConflict[]>([]);
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
@@ -140,6 +142,7 @@ export const useBidirectionalSync = () => {
 
     setLoading(true);
     try {
+      console.log('Syncing business to HubSpot:', negocioId);
       const { data, error } = await supabase.functions.invoke('hubspot-bidirectional-sync', {
         body: {
           action: 'sync_to_hubspot',
@@ -174,15 +177,16 @@ export const useBidirectionalSync = () => {
   };
 
   // Sync from HubSpot
-  const syncFromHubSpot = async (hubspotDealId: string) => {
+  const syncFromHubSpot = async (negocioId: string) => {
     if (!user) return;
 
     setLoading(true);
     try {
+      console.log('Syncing business from HubSpot:', negocioId);
       const { data, error } = await supabase.functions.invoke('hubspot-bidirectional-sync', {
         body: {
           action: 'sync_from_hubspot',
-          hubspotDealId,
+          hubspotDealId: negocioId, // This can be either negocio ID or HubSpot deal ID
           userId: user.id
         }
       });
@@ -190,10 +194,12 @@ export const useBidirectionalSync = () => {
       if (error) throw error;
 
       if (data.success) {
-        toast({
-          title: "Sincronización exitosa",
-          description: "Los cambios de HubSpot se han aplicado"
-        });
+        if (data.changed) {
+          toast({
+            title: "Sincronización exitosa",
+            description: `Estado actualizado a: ${data.newState}`
+          });
+        }
         await loadSyncLogs();
         return data.newState;
       } else {
@@ -214,10 +220,11 @@ export const useBidirectionalSync = () => {
 
   // Poll HubSpot for changes
   const pollHubSpotChanges = async () => {
-    if (!user || isPolling) return;
+    if (!user || isPolling || !config?.bidirectional_sync) return;
 
     setIsPolling(true);
     try {
+      console.log('Polling HubSpot for changes...');
       const { data, error } = await supabase.functions.invoke('hubspot-bidirectional-sync', {
         body: {
           action: 'poll_changes',
@@ -228,8 +235,18 @@ export const useBidirectionalSync = () => {
       if (error) throw error;
 
       if (data.success) {
+        const changedCount = data.results.filter((r: any) => r.success && r.changed).length;
         const failedSyncs = data.results.filter((r: any) => !r.success);
+        
+        if (changedCount > 0) {
+          toast({
+            title: "Sincronización completada",
+            description: `${changedCount} negocios actualizados desde HubSpot`
+          });
+        }
+        
         if (failedSyncs.length > 0) {
+          console.error('Failed syncs:', failedSyncs);
           toast({
             title: "Sincronización parcial",
             description: `${failedSyncs.length} negocios no se pudieron sincronizar`,
@@ -240,6 +257,11 @@ export const useBidirectionalSync = () => {
       }
     } catch (error) {
       console.error('Error polling HubSpot changes:', error);
+      toast({
+        title: "Error de sincronización",
+        description: "No se pudo verificar cambios en HubSpot",
+        variant: "destructive"
+      });
     } finally {
       setIsPolling(false);
     }
@@ -283,16 +305,20 @@ export const useBidirectionalSync = () => {
     return false;
   };
 
-  // Auto-polling setup
+  // Auto-polling setup with more frequent intervals
   useEffect(() => {
-    if (!user) return;
+    if (!user || !config?.bidirectional_sync) return;
 
+    const intervalMinutes = config?.polling_interval_minutes || 1; // Default to 1 minute for testing
     const interval = setInterval(() => {
       pollHubSpotChanges();
-    }, 30000); // Poll every 30 seconds
+    }, intervalMinutes * 60 * 1000);
+
+    // Initial poll
+    pollHubSpotChanges();
 
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, config?.bidirectional_sync, config?.polling_interval_minutes]);
 
   // Load initial data
   useEffect(() => {
