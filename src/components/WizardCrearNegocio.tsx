@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,25 +34,25 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
   const [productora, setProductora] = useState({
     nombre: '',
     rut: '',
-    sitioWeb: '',
+    sitio_web: '',
     direccion: ''
   });
   const [tieneClienteFinal, setTieneClienteFinal] = useState(false);
   const [clienteFinal, setClienteFinal] = useState({
     nombre: '',
     rut: '',
-    sitioWeb: '',
+    sitio_web: '',
     direccion: ''
   });
 
   // Paso 3: Información del Evento
   const [evento, setEvento] = useState({
-    tipoEvento: '',
-    nombreEvento: '',
-    fechaEvento: '',
-    horasAcreditacion: '',
-    cantidadAsistentes: 0,
-    cantidadInvitados: 0,
+    tipo_evento: '',
+    nombre_evento: '',
+    fecha_evento: '',
+    horas_acreditacion: '',
+    cantidad_asistentes: 0,
+    cantidad_invitados: 0,
     locacion: ''
   });
 
@@ -77,8 +76,8 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
   };
 
   const validarPaso3 = () => {
-    return evento.tipoEvento && evento.nombreEvento && evento.fechaEvento && 
-           evento.horasAcreditacion && evento.locacion;
+    return evento.tipo_evento && evento.nombre_evento && evento.fecha_evento && 
+           evento.horas_acreditacion && evento.locacion;
   };
 
   const siguientePaso = () => {
@@ -120,22 +119,17 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
     setCreando(true);
     try {
       const negocioData = {
-        contacto: {
-          id: `contacto-${Date.now()}`,
-          ...contacto
-        },
+        contacto,
         productora: tipoCliente === 'productora' ? {
-          id: `productora-${Date.now()}`,
           ...productora,
           tipo: 'productora' as const
         } : undefined,
         clienteFinal: (tipoCliente === 'cliente_final' || tieneClienteFinal) ? {
-          id: `cliente-${Date.now()}`,
           ...clienteFinal,
           tipo: 'cliente_final' as const
         } : undefined,
-        evento,
-        fechaCierre: fechaCierre || undefined
+        ...evento,
+        fecha_cierre: fechaCierre || undefined
       };
 
       const negocioId = await crearNegocio(negocioData);
@@ -286,8 +280,8 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                       <Label htmlFor="productoraWeb">Sitio Web (opcional)</Label>
                       <Input
                         id="productoraWeb"
-                        value={productora.sitioWeb}
-                        onChange={(e) => setProductora({...productora, sitioWeb: e.target.value})}
+                        value={productora.sitio_web}
+                        onChange={(e) => setProductora({...productora, sitio_web: e.target.value})}
                         placeholder="www.productora.com"
                       />
                     </div>
@@ -341,8 +335,8 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                       <Label htmlFor="clienteWeb">Sitio Web (opcional)</Label>
                       <Input
                         id="clienteWeb"
-                        value={clienteFinal.sitioWeb}
-                        onChange={(e) => setClienteFinal({...clienteFinal, sitioWeb: e.target.value})}
+                        value={clienteFinal.sitio_web}
+                        onChange={(e) => setClienteFinal({...clienteFinal, sitio_web: e.target.value})}
                         placeholder="www.cliente.com"
                       />
                     </div>
@@ -365,7 +359,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="tipoEvento">Tipo de Evento *</Label>
-                <Select value={evento.tipoEvento} onValueChange={(value) => setEvento({...evento, tipoEvento: value})}>
+                <Select value={evento.tipo_evento} onValueChange={(value) => setEvento({...evento, tipo_evento: value})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccione el tipo" />
                   </SelectTrigger>
@@ -380,8 +374,8 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                 <Label htmlFor="nombreEvento">Nombre del Evento *</Label>
                 <Input
                   id="nombreEvento"
-                  value={evento.nombreEvento}
-                  onChange={(e) => setEvento({...evento, nombreEvento: e.target.value})}
+                  value={evento.nombre_evento}
+                  onChange={(e) => setEvento({...evento, nombre_evento: e.target.value})}
                   placeholder="Nombre del evento"
                 />
               </div>
@@ -390,16 +384,16 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                 <Input
                   id="fechaEvento"
                   type="date"
-                  value={evento.fechaEvento}
-                  onChange={(e) => setEvento({...evento, fechaEvento: e.target.value})}
+                  value={evento.fecha_evento}
+                  onChange={(e) => setEvento({...evento, fecha_evento: e.target.value})}
                 />
               </div>
               <div>
                 <Label htmlFor="horasAcreditacion">Horas de Acreditación *</Label>
                 <Input
                   id="horasAcreditacion"
-                  value={evento.horasAcreditacion}
-                  onChange={(e) => setEvento({...evento, horasAcreditacion: e.target.value})}
+                  value={evento.horas_acreditacion}
+                  onChange={(e) => setEvento({...evento, horas_acreditacion: e.target.value})}
                   placeholder="Ej: 08:00 - 18:00"
                 />
               </div>
@@ -408,8 +402,8 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                 <Input
                   id="cantidadAsistentes"
                   type="number"
-                  value={evento.cantidadAsistentes}
-                  onChange={(e) => setEvento({...evento, cantidadAsistentes: parseInt(e.target.value) || 0})}
+                  value={evento.cantidad_asistentes}
+                  onChange={(e) => setEvento({...evento, cantidad_asistentes: parseInt(e.target.value) || 0})}
                   placeholder="0"
                 />
               </div>
@@ -418,8 +412,8 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                 <Input
                   id="cantidadInvitados"
                   type="number"
-                  value={evento.cantidadInvitados}
-                  onChange={(e) => setEvento({...evento, cantidadInvitados: parseInt(e.target.value) || 0})}
+                  value={evento.cantidad_invitados}
+                  onChange={(e) => setEvento({...evento, cantidad_invitados: parseInt(e.target.value) || 0})}
                   placeholder="0"
                 />
               </div>
