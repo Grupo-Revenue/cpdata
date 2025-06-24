@@ -27,7 +27,8 @@ const CrearPresupuesto: React.FC<CrearPresupuestoProps> = ({ negocioId, presupue
     actualizarProducto,
     calcularTotal,
     proceedToEdit,
-    guardarPresupuesto
+    guardarPresupuesto,
+    volverASeleccion
   } = useCreateQuote({ negocioId, presupuestoId, onCerrar });
 
   if (!negocio) {
@@ -53,37 +54,44 @@ const CrearPresupuesto: React.FC<CrearPresupuestoProps> = ({ negocioId, presupue
   }
 
   return (
-    <div className="space-y-6">
-      <CreateQuoteHeader
-        negocio={negocio}
-        presupuestoId={presupuestoId}
-        onCerrar={onCerrar}
-        step={step}
-        productosCount={productos.length}
-        total={calcularTotal()}
-        onProceedToEdit={proceedToEdit}
-        onVolverASeleccion={() => setStep('selection')}
-      />
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white border-b">
+        <div className="container mx-auto px-4">
+          <CreateQuoteHeader
+            negocio={negocio}
+            presupuestoId={presupuestoId}
+            onCerrar={onCerrar}
+            step={step}
+            productosCount={productos.length}
+            total={calcularTotal()}
+            onProceedToEdit={proceedToEdit}
+            onVolverASeleccion={step === 'editing' ? volverASeleccion : undefined}
+          />
+        </div>
+      </div>
 
-      {step === 'selection' ? (
-        <CreateQuoteSelection
-          productosBiblioteca={productosBiblioteca}
-          productosSeleccionados={productos}
-          onProductoSeleccionado={agregarProductoBiblioteca}
-          onProductoDeseleccionado={eliminarProducto}
-          onAgregarProductoPersonalizado={agregarProductoPersonalizado}
-          loading={loadingProductos}
-        />
-      ) : (
-        <QuoteEditView
-          productos={productos}
-          onActualizarProducto={actualizarProducto}
-          onEliminarProducto={eliminarProducto}
-          onVolver={() => setStep('selection')}
-          onConfirmar={guardarPresupuesto}
-          total={calcularTotal()}
-        />
-      )}
+      <div className="container mx-auto px-4 py-6">
+        {step === 'selection' ? (
+          <CreateQuoteSelection
+            productosBiblioteca={productosBiblioteca}
+            productosSeleccionados={productos}
+            onProductoSeleccionado={agregarProductoBiblioteca}
+            onProductoDeseleccionado={eliminarProducto}
+            onAgregarProductoPersonalizado={agregarProductoPersonalizado}
+            onProceedToEdit={proceedToEdit}
+            loading={loadingProductos}
+          />
+        ) : (
+          <QuoteEditView
+            productos={productos}
+            onActualizarProducto={actualizarProducto}
+            onEliminarProducto={eliminarProducto}
+            onVolver={volverASeleccion}
+            onConfirmar={guardarPresupuesto}
+            total={calcularTotal()}
+          />
+        )}
+      </div>
     </div>
   );
 };

@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import { formatearPrecio } from '@/utils/formatters';
+import { ArrowLeft, FileText } from 'lucide-react';
 import { Negocio } from '@/types';
 
 interface CreateQuoteHeaderProps {
@@ -27,38 +26,69 @@ const CreateQuoteHeader: React.FC<CreateQuoteHeaderProps> = ({
   onVolverASeleccion
 }) => {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center space-x-4">
-        <Button variant="outline" onClick={onCerrar}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Cerrar
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            {presupuestoId ? 'Editar' : 'Crear'} Presupuesto
-          </h1>
-          <p className="text-gray-600">Negocio #{negocio.numero} - {negocio.evento.nombreEvento}</p>
-          {step === 'editing' && (
-            <p className="text-sm text-gray-500 mt-1">Ajusta cantidades, precios y descripciones de los productos seleccionados</p>
-          )}
-        </div>
-      </div>
-      
-      {step === 'selection' && (
+    <div className="mb-6">
+      {/* Navigation Bar */}
+      <div className="flex items-center justify-between py-4 border-b border-gray-200">
         <div className="flex items-center space-x-4">
-          <div className="text-right">
-            <p className="text-sm text-gray-600">Productos seleccionados: {productosCount}</p>
-            <p className="text-xl font-bold text-green-600">{formatearPrecio(total)}</p>
-          </div>
           <Button 
-            onClick={onProceedToEdit}
-            disabled={productosCount === 0}
-            className="bg-blue-600 hover:bg-blue-700"
+            variant="ghost" 
+            onClick={onCerrar}
+            className="text-gray-600 hover:text-gray-900"
           >
-            Continuar con Edición
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Volver
           </Button>
+          
+          <div className="h-6 w-px bg-gray-300" />
+          
+          <div className="flex items-center space-x-2">
+            <FileText className="w-5 h-5 text-blue-600" />
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">
+                {presupuestoId ? 'Editar' : 'Crear'} Presupuesto
+              </h1>
+              <p className="text-sm text-gray-600">
+                Negocio #{negocio.numero} • {negocio.evento.nombreEvento}
+              </p>
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Step indicator for editing mode */}
+        {step === 'editing' && onVolverASeleccion && (
+          <Button 
+            variant="outline" 
+            onClick={onVolverASeleccion}
+            className="text-sm"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Volver a Selección
+          </Button>
+        )}
+      </div>
+
+      {/* Step Description */}
+      <div className="py-3">
+        {step === 'selection' ? (
+          <div>
+            <p className="text-gray-700 font-medium">
+              Paso 1: Selecciona productos
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              Elige productos de la biblioteca o crea productos personalizados para este presupuesto
+            </p>
+          </div>
+        ) : (
+          <div>
+            <p className="text-gray-700 font-medium">
+              Paso 2: Ajusta detalles
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              Modifica cantidades, precios y descripciones de los productos seleccionados
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

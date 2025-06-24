@@ -81,6 +81,10 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
     baseSaveQuote(productos);
   }, [baseSaveQuote, productos]);
 
+  const volverASeleccion = useCallback(() => {
+    setStep('selection');
+  }, [setStep]);
+
   return {
     negocio,
     step,
@@ -96,6 +100,7 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
     calcularTotal,
     calcularTotales,
     proceedToEdit,
-    guardarPresupuesto
+    guardarPresupuesto,
+    volverASeleccion
   };
 };
