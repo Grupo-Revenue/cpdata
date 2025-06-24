@@ -109,9 +109,9 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
             size="sm"
             onClick={handleHubSpotSync}
             disabled={isSyncing(negocio.id)}
-            className="h-8 text-xs"
+            className="h-9 px-3"
           >
-            <RefreshCw className={`h-3 w-3 mr-1 ${isSyncing(negocio.id) ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing(negocio.id) ? 'animate-spin' : ''}`} />
             {isSyncing(negocio.id) ? 'Sincronizando...' : 'HubSpot Sync'}
           </Button>
         </div>
