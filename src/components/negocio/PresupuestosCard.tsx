@@ -6,7 +6,6 @@ import PresupuestosCardHeader from './presupuestos/PresupuestosCardHeader';
 import EmptyPresupuestosState from './presupuestos/EmptyPresupuestosState';
 import PresupuestoItem from './presupuestos/PresupuestoItem';
 import PresupuestoEstadoDialog from './presupuestos/PresupuestoEstadoDialog';
-import PresupuestosResumen from './PresupuestosResumen';
 import { useBidirectionalSync } from '@/hooks/useBidirectionalSync';
 
 interface PresupuestosCardProps {
@@ -117,25 +116,21 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
           {presupuestos.length === 0 ? (
             <EmptyPresupuestosState onCrearPresupuesto={onCrearPresupuesto} />
           ) : (
-            <>
-              <PresupuestosResumen presupuestos={presupuestos} />
-              
-              <div className="space-y-4">
-                {presupuestos.map((presupuesto) => (
-                  <PresupuestoItem
-                    key={presupuesto.id}
-                    presupuesto={presupuesto}
-                    onEditarPresupuesto={onEditarPresupuesto}
-                    onEliminarPresupuesto={handleEliminarPresupuesto}
-                    onVerPDF={onVerPDF}
-                    onEnviarPresupuesto={handleEnviarPresupuesto}
-                    onCambiarEstado={handleCambiarEstado}
-                    eliminandoPresupuesto={eliminandoPresupuesto}
-                    procesandoEstado={procesandoEstado}
-                  />
-                ))}
-              </div>
-            </>
+            <div className="space-y-4">
+              {presupuestos.map((presupuesto) => (
+                <PresupuestoItem
+                  key={presupuesto.id}
+                  presupuesto={presupuesto}
+                  onEditarPresupuesto={onEditarPresupuesto}
+                  onEliminarPresupuesto={handleEliminarPresupuesto}
+                  onVerPDF={onVerPDF}
+                  onEnviarPresupuesto={handleEnviarPresupuesto}
+                  onCambiarEstado={handleCambiarEstado}
+                  eliminandoPresupuesto={eliminandoPresupuesto}
+                  procesandoEstado={procesandoEstado}
+                />
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
