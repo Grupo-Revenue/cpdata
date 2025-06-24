@@ -142,7 +142,7 @@ export const useBidirectionalSync = () => {
     }
   };
 
-  // Sync business to HubSpot with enhanced amount handling
+  // Enhanced sync to HubSpot with better amount handling
   const syncToHubSpot = async (negocioId: string, forceAmountSync: boolean = false) => {
     if (!user) return false;
 
@@ -161,11 +161,13 @@ export const useBidirectionalSync = () => {
       if (error) throw error;
 
       if (data.success) {
+        const successMessage = forceAmountSync && data.amountUpdated ? 
+          "El negocio y monto se han sincronizado con HubSpot" :
+          "El negocio se ha sincronizado con HubSpot";
+        
         toast({
           title: "Sincronización exitosa",
-          description: data.amountUpdated ? 
-            "El negocio y monto se han sincronizado con HubSpot" :
-            "El negocio se ha sincronizado con HubSpot"
+          description: successMessage
         });
         await loadSyncLogs();
         return true;
@@ -185,7 +187,7 @@ export const useBidirectionalSync = () => {
     }
   };
 
-  // Sync from HubSpot with enhanced amount handling
+  // Enhanced sync from HubSpot with better amount handling
   const syncFromHubSpot = async (negocioId: string) => {
     if (!user) return null;
 
@@ -206,7 +208,7 @@ export const useBidirectionalSync = () => {
         if (data.changed) {
           const changeMessages = [];
           if (data.stateChanged) changeMessages.push(`Estado: ${data.newState}`);
-          if (data.amountChanged) changeMessages.push(`Monto: ${data.newAmount}`);
+          if (data.amountChanged) changeMessages.push(`Monto actualizado`);
           
           toast({
             title: "Sincronización exitosa",
@@ -231,7 +233,7 @@ export const useBidirectionalSync = () => {
     }
   };
 
-  // Mass sync all amounts to HubSpot
+  // Enhanced mass sync with better progress reporting
   const syncAllAmountsToHubSpot = async () => {
     if (!user) return false;
 
@@ -271,18 +273,12 @@ export const useBidirectionalSync = () => {
     }
   };
 
-  // Poll HubSpot for changes with enhanced amount checking
+  // Enhanced polling with better error handling
   const pollHubSpotChanges = async () => {
     if (!user || isPolling) return false;
 
-    // Check if bidirectional sync is enabled
     if (!config?.bidirectional_sync) {
       console.log('Bidirectional sync is disabled');
-      toast({
-        title: "Sincronización deshabilitada",
-        description: "La sincronización bidireccional no está habilitada",
-        variant: "destructive"
-      });
       return false;
     }
 
@@ -302,9 +298,9 @@ export const useBidirectionalSync = () => {
       if (data.success) {
         const stateChanges = data.results?.filter((r: any) => r.success && r.stateChanged).length || 0;
         const amountChanges = data.results?.filter((r: any) => r.success && r.amountChanged).length || 0;
-        const failedSyncs = data.results?.filter((r: any) => !r.success) || [];
+        const totalChanges = stateChanges + amountChanges;
         
-        if (stateChanges > 0 || amountChanges > 0) {
+        if (totalChanges > 0) {
           const messages = [];
           if (stateChanges > 0) messages.push(`${stateChanges} estados`);
           if (amountChanges > 0) messages.push(`${amountChanges} montos`);
@@ -312,20 +308,6 @@ export const useBidirectionalSync = () => {
           toast({
             title: "Sincronización completada",
             description: `Actualizados: ${messages.join(' y ')}`
-          });
-        } else {
-          toast({
-            title: "Sincronización completada",
-            description: "No se encontraron cambios en HubSpot"
-          });
-        }
-        
-        if (failedSyncs.length > 0) {
-          console.error('Failed syncs:', failedSyncs);
-          toast({
-            title: "Sincronización parcial",
-            description: `${failedSyncs.length} negocios no se pudieron sincronizar`,
-            variant: "destructive"
           });
         }
         
@@ -336,18 +318,21 @@ export const useBidirectionalSync = () => {
       }
     } catch (error) {
       console.error('Error polling HubSpot changes:', error);
-      toast({
-        title: "Error de sincronización",
-        description: error.message || "No se pudo verificar cambios en HubSpot",
-        variant: "destructive"
-      });
+      // Only show error toast for non-network errors to avoid spam
+      if (!error.message?.includes('fetch')) {
+        toast({
+          title: "Error de sincronización",
+          description: error.message || "No se pudo verificar cambios en HubSpot",
+          variant: "destructive"
+        });
+      }
       return false;
     } finally {
       setIsPolling(false);
     }
   };
 
-  // Auto-sync when budget is updated
+  // Enhanced auto-sync when budget is updated
   const syncOnBudgetUpdate = async (negocioId: string) => {
     if (!config?.auto_sync || !config?.api_key_set) {
       console.log('Auto-sync disabled or HubSpot not configured');
@@ -355,7 +340,17 @@ export const useBidirectionalSync = () => {
     }
 
     console.log('Auto-syncing business after budget update:', negocioId);
-    return await syncToHubSpot(negocioId, true); // Force amount sync
+    
+    // Always force amount sync when budget changes
+    const success = await syncToHubSpot(negocioId, true);
+    
+    if (success) {
+      console.log('Budget update sync completed successfully for business:', negocioId);
+    } else {
+      console.error('Budget update sync failed for business:', negocioId);
+    }
+    
+    return success;
   };
 
   // Resolve conflict
@@ -381,7 +376,6 @@ export const useBidirectionalSync = () => {
           description: "El conflicto se ha resuelto correctamente"
         });
         
-        // Remove from conflicts list
         setSyncConflicts(prev => prev.filter(c => c.negocio_id !== negocioId));
         await loadSyncLogs();
         return true;

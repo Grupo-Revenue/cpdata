@@ -2,9 +2,10 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, CheckCircle, Clock, RefreshCw, ExternalLink, DollarSign } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, RefreshCw, ExternalLink, DollarSign, Sync } from 'lucide-react';
 import { useBidirectionalSync } from '@/hooks/useBidirectionalSync';
 import { Negocio } from '@/types';
+import { calcularValorNegocio } from '@/utils/businessCalculations';
 
 interface BusinessSyncStatusProps {
   negocio: Negocio;
@@ -19,23 +20,30 @@ const BusinessSyncStatus: React.FC<BusinessSyncStatusProps> = ({ negocio }) => {
     loading 
   } = useBidirectionalSync();
   
-  // Check if this business has any conflicts
+  // Check if this business has conflicts
   const hasConflict = syncConflicts.some(conflict => conflict.negocio_id === negocio.id);
   const conflict = syncConflicts.find(conflict => conflict.negocio_id === negocio.id);
 
+  // Calculate current business value
+  const currentAmount = calcularValorNegocio(negocio);
+
   const handleSyncToHubSpot = async () => {
+    console.log('Manual sync to HubSpot triggered for business:', negocio.id);
     await syncToHubSpot(negocio.id);
   };
 
   const handleSyncFromHubSpot = async () => {
+    console.log('Manual sync from HubSpot triggered for business:', negocio.id);
     await syncFromHubSpot(negocio.id);
   };
 
   const handleSyncAmountToHubSpot = async () => {
-    await syncToHubSpot(negocio.id, true); // Force amount sync
+    console.log('Force amount sync triggered for business:', negocio.id, 'Amount:', currentAmount);
+    await syncToHubSpot(negocio.id, true);
   };
 
   const handleMassAmountSync = async () => {
+    console.log('Mass amount sync triggered');
     await syncAllAmountsToHubSpot();
   };
 
@@ -86,6 +94,10 @@ const BusinessSyncStatus: React.FC<BusinessSyncStatusProps> = ({ negocio }) => {
 
   return (
     <div className="space-y-2">
+      <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+        <span>Valor calculado: ${currentAmount.toLocaleString('es-CL')}</span>
+      </div>
+      
       {/* Regular sync controls */}
       <div className="flex items-center space-x-2">
         <Button
@@ -94,7 +106,7 @@ const BusinessSyncStatus: React.FC<BusinessSyncStatusProps> = ({ negocio }) => {
           onClick={handleSyncToHubSpot}
           disabled={loading}
           className="text-xs h-6 px-2"
-          title="Sincronizar a HubSpot"
+          title="Sincronizar a HubSpot (estado y monto)"
         >
           {loading ? (
             <Clock className="w-3 h-3 animate-spin" />
@@ -118,7 +130,7 @@ const BusinessSyncStatus: React.FC<BusinessSyncStatusProps> = ({ negocio }) => {
           onClick={handleSyncAmountToHubSpot}
           disabled={loading}
           className="text-xs h-6 px-2"
-          title="Forzar sincronización de monto"
+          title="Forzar sincronización de monto a HubSpot"
         >
           <DollarSign className="w-3 h-3" />
         </Button>
@@ -137,7 +149,7 @@ const BusinessSyncStatus: React.FC<BusinessSyncStatusProps> = ({ negocio }) => {
           {loading ? (
             <Clock className="w-3 h-3 animate-spin mr-1" />
           ) : (
-            <DollarSign className="w-3 h-3 mr-1" />
+            <Sync className="w-3 h-3 mr-1" />
           )}
           Sync Masivo
         </Button>

@@ -309,7 +309,9 @@ export type Database = {
           hubspot_old_stage: string | null
           id: string
           negocio_id: string
+          new_amount: number | null
           new_state: string | null
+          old_amount: number | null
           old_state: string | null
           operation_type: string
           success: boolean
@@ -324,7 +326,9 @@ export type Database = {
           hubspot_old_stage?: string | null
           id?: string
           negocio_id: string
+          new_amount?: number | null
           new_state?: string | null
+          old_amount?: number | null
           old_state?: string | null
           operation_type: string
           success?: boolean
@@ -339,7 +343,9 @@ export type Database = {
           hubspot_old_stage?: string | null
           id?: string
           negocio_id?: string
+          new_amount?: number | null
           new_state?: string | null
+          old_amount?: number | null
           old_state?: string | null
           operation_type?: string
           success?: boolean

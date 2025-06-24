@@ -39,9 +39,13 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
     if (confirm('¿Está seguro de que desea eliminar este presupuesto?')) {
       setEliminandoPresupuesto(presupuestoId);
       try {
+        console.log('Deleting budget and triggering amount sync for business:', negocio.id);
         await onEliminarPresupuesto(presupuestoId);
-        // Auto-sync amount after budget deletion
-        await syncOnBudgetUpdate(negocio.id);
+        
+        // Trigger amount sync after budget deletion with a small delay
+        setTimeout(async () => {
+          await syncOnBudgetUpdate(negocio.id);
+        }, 1000);
       } catch (error) {
         console.error('Error eliminando presupuesto:', error);
       } finally {
@@ -53,7 +57,7 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
   const handleEnviarPresupuesto = (presupuestoId: string) => {
     setPresupuestoSeleccionado(presupuestoId);
     setMostrarDialogoEnvio(true);
-    // Establecer fecha de vencimiento por defecto (30 días)
+    // Set default due date (30 days)
     const fechaDefault = new Date();
     fechaDefault.setDate(fechaDefault.getDate() + 30);
     setFechaVencimiento(fechaDefault.toISOString().split('T')[0]);
@@ -64,9 +68,14 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
 
     setProcesandoEstado(presupuestoSeleccionado);
     try {
+      console.log('Sending budget and triggering sync for business:', negocio.id);
       await onCambiarEstado(presupuestoSeleccionado, 'enviado', fechaVencimiento);
-      // Auto-sync amount after state change (may affect business calculations)
-      await syncOnBudgetUpdate(negocio.id);
+      
+      // Trigger amount sync after state change with a small delay
+      setTimeout(async () => {
+        await syncOnBudgetUpdate(negocio.id);
+      }, 1000);
+      
       setMostrarDialogoEnvio(false);
       setPresupuestoSeleccionado(null);
       setFechaVencimiento('');
@@ -82,9 +91,13 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
 
     setProcesandoEstado(presupuestoId);
     try {
+      console.log('Changing budget state and triggering sync for business:', negocio.id, 'New state:', nuevoEstado);
       await onCambiarEstado(presupuestoId, nuevoEstado);
-      // Auto-sync amount after state change (may affect business calculations)
-      await syncOnBudgetUpdate(negocio.id);
+      
+      // Trigger amount sync after state change with a small delay
+      setTimeout(async () => {
+        await syncOnBudgetUpdate(negocio.id);
+      }, 1000);
     } catch (error) {
       console.error('Error cambiando estado:', error);
     } finally {
@@ -105,10 +118,8 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
             <EmptyPresupuestosState onCrearPresupuesto={onCrearPresupuesto} />
           ) : (
             <>
-              {/* Summary cards */}
               <PresupuestosResumen presupuestos={presupuestos} />
               
-              {/* Presupuestos list */}
               <div className="space-y-4">
                 {presupuestos.map((presupuesto) => (
                   <PresupuestoItem
@@ -129,7 +140,6 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
         </CardContent>
       </Card>
 
-      {/* Diálogo para enviar presupuesto */}
       <PresupuestoEstadoDialog
         open={mostrarDialogoEnvio}
         onOpenChange={setMostrarDialogoEnvio}
