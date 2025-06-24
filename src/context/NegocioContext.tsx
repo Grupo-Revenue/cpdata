@@ -1,485 +1,94 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Negocio, Presupuesto, ProductoPresupuesto, CrearNegocioData, ExtendedNegocio } from '@/types';
+import React, { createContext, useState, useContext, useCallback } from 'react';
+import { Negocio, Presupuesto } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
-import { toast } from '@/hooks/use-toast';
-import { useHubSpotConfig } from '@/hooks/useHubSpotConfig';
-import { calcularValorNegocio, mapLegacyBusinessState } from '@/utils/businessCalculations';
 
-interface NegocioContextType {
+interface NegocioContextProps {
   negocios: Negocio[];
-  contadorNegocio: number;
   loading: boolean;
-  crearNegocio: (negocio: CrearNegocioData) => Promise<string>;
+  error: string | null;
   obtenerNegocio: (id: string) => Negocio | undefined;
-  actualizarNegocio: (negocioId: string, actualizaciones: Partial<Negocio>) => Promise<void>;
-  crearPresupuesto: (negocioId: string, productos: ProductoPresupuesto[]) => Promise<string>;
-  actualizarPresupuesto: (negocioId: string, presupuestoId: string, productos: ProductoPresupuesto[]) => Promise<void>;
-  eliminarPresupuesto: (negocioId: string, presupuestoId: string) => Promise<void>;
+  crearNegocio: (negocioData: Omit<Negocio, 'id' | 'created_at' | 'updated_at'>) => Promise<Negocio | null>;
+  actualizarNegocio: (id: string, updates: Partial<Negocio>) => Promise<Negocio | null>;
+  eliminarNegocio: (id: string) => Promise<boolean>;
+  crearPresupuesto: (negocioId: string, presupuestoData: Omit<Presupuesto, 'id' | 'created_at' | 'updated_at'>) => Promise<Presupuesto | null>;
+  actualizarPresupuesto: (negocioId: string, presupuestoId: string, updates: Partial<Presupuesto>) => Promise<Presupuesto | null>;
+  eliminarPresupuesto: (negocioId: string, presupuestoId: string) => Promise<boolean>;
   cambiarEstadoPresupuesto: (negocioId: string, presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string) => Promise<void>;
   cambiarEstadoNegocio: (negocioId: string, nuevoEstado: string) => Promise<void>;
-  cargarNegocios: () => Promise<void>;
+  refreshNegocios: () => Promise<void>;
 }
 
-const NegocioContext = createContext<NegocioContextType | undefined>(undefined);
+const NegocioContext = createContext<NegocioContextProps | undefined>(undefined);
 
-export const useNegocio = () => {
-  const context = useContext(NegocioContext);
-  if (!context) {
-    throw new Error('useNegocio debe ser usado dentro de un NegocioProvider');
+const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('negocios')
+      .select(`
+        *,
+        contacto: contactos (id, nombre, apellido, email, telefono),
+        evento: eventos (id, nombreEvento),
+        productora: productoras (id, nombre),
+        clienteFinal: clientes_finales (id, nombre),
+        presupuestos (
+          id,
+          estado,
+          facturado,
+          total,
+          created_at,
+          fecha_envio,
+          fecha_aprobacion,
+          fecha_rechazo,
+          fecha_vencimiento
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Error fetching negocios:", error);
+      throw error;
+    }
+    
+    return data as Negocio[];
+  } catch (error) {
+    console.error("Failed to fetch negocios:", error);
+    throw error;
   }
-  return context;
 };
 
-interface NegocioProviderProps {
-  children: ReactNode;
-}
-
-export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) => {
-  const { user } = useAuth();
-  const { syncNegocio } = useHubSpotConfig();
+const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [negocios, setNegocios] = useState<Negocio[]>([]);
-  const [contadorNegocio, setContadorNegocio] = useState(17658);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const cargarNegocios = async () => {
-    if (!user) return;
-    
+  const obtenerNegocios = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: negociosData, error } = await supabase
-        .from('negocios')
-        .select(`
-          *,
-          contacto:contactos(*),
-          productora:empresas!negocios_productora_id_fkey(*),
-          cliente_final:empresas!negocios_cliente_final_id_fkey(*),
-          presupuestos(
-            *,
-            productos:productos_presupuesto(*)
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      const negociosFormateados: ExtendedNegocio[] = negociosData?.map(negocio => {
-        // Apply state normalization to ensure legacy states are mapped to new states
-        const estadoNormalizado = mapLegacyBusinessState(negocio.estado);
-        
-        return {
-          // Include all database fields first
-          ...negocio,
-          // Then add the formatted fields
-          contacto: {
-            id: negocio.contacto.id,
-            nombre: negocio.contacto.nombre,
-            apellido: negocio.contacto.apellido,
-            email: negocio.contacto.email,
-            telefono: negocio.contacto.telefono,
-            cargo: negocio.contacto.cargo || '',
-            created_at: negocio.contacto.created_at,
-            updated_at: negocio.contacto.updated_at,
-            user_id: negocio.contacto.user_id
-          },
-          productora: negocio.productora ? {
-            ...negocio.productora
-          } : null,
-          clienteFinal: negocio.cliente_final ? {
-            ...negocio.cliente_final
-          } : null,
-          evento: {
-            tipoEvento: negocio.tipo_evento,
-            nombreEvento: negocio.nombre_evento,
-            fechaEvento: negocio.fecha_evento || '',
-            horasAcreditacion: negocio.horas_acreditacion,
-            cantidadAsistentes: negocio.cantidad_asistentes || 0,
-            cantidadInvitados: negocio.cantidad_invitados || 0,
-            locacion: negocio.locacion
-          },
-          presupuestos: negocio.presupuestos?.map((presupuesto: any) => ({
-            ...presupuesto,
-            productos: presupuesto.productos?.map((producto: any) => ({
-              ...producto,
-              comentarios: '',
-              descuentoPorcentaje: 0,
-              precioUnitario: parseFloat(producto.precio_unitario),
-              precio_unitario: parseFloat(producto.precio_unitario)
-            })) || [],
-            fechaCreacion: presupuesto.created_at,
-            fechaVencimiento: presupuesto.fecha_vencimiento || undefined,
-            fechaEnvio: presupuesto.fecha_envio || undefined,
-            fechaAprobacion: presupuesto.fecha_aprobacion || undefined,
-            fechaRechazo: presupuesto.fecha_rechazo || undefined,
-            fechaFacturacion: presupuesto.fecha_facturacion || undefined
-          })) || [],
-          fechaCreacion: negocio.created_at,
-          estado: estadoNormalizado as ExtendedNegocio['estado'],
-          fechaCierre: negocio.fecha_cierre || undefined
-        };
-      }) || [];
-
-      setNegocios(negociosFormateados);
-
-      // Cargar contador del usuario
-      const { data: contadorData } = await supabase
-        .from('contadores_usuario')
-        .select('contador_negocio')
-        .eq('user_id', user.id)
-        .single();
-
-      if (contadorData) {
-        setContadorNegocio(contadorData.contador_negocio);
-      }
-    } catch (error) {
-      console.error('Error cargando negocios:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los negocios",
-        variant: "destructive"
-      });
+      const negociosData = await obtenerNegociosDesdeSupabase();
+      setNegocios(negociosData);
+      setError(null);
+    } catch (e: any) {
+      setError(e.message || "Error al cargar los negocios");
+      setNegocios([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const findOrCreateEmpresa = async (empresaData: any, tipo: 'productora' | 'cliente_final') => {
-    if (!empresaData || !empresaData.nombre || empresaData.nombre.trim() === '') {
-      console.log(`No ${tipo} data provided or empty name, skipping creation`);
-      return null;
-    }
+  useEffect(() => {
+    obtenerNegocios();
+  }, [obtenerNegocios]);
 
-    const nombreLimpio = empresaData.nombre.trim();
-    console.log(`Processing ${tipo}: "${nombreLimpio}"`);
-
+  // Nueva función para refrescar negocios manualmente
+  const refreshNegocios = async () => {
+    console.log('[NegocioContext] Manual refresh requested');
+    setLoading(true);
     try {
-      // First, try to find existing company with exact name match
-      console.log(`Searching for existing ${tipo} with name: "${nombreLimpio}"`);
-      const { data: existingEmpresas, error: searchError } = await supabase
-        .from('empresas')
-        .select('id, nombre')
-        .eq('user_id', user!.id)
-        .eq('tipo', tipo)
-        .ilike('nombre', nombreLimpio);
-
-      if (searchError) {
-        console.error(`Error searching for existing ${tipo}:`, searchError);
-        throw new Error(`Error al buscar ${tipo} existente: ${searchError.message}`);
-      }
-
-      console.log(`Found ${existingEmpresas?.length || 0} existing ${tipo}(s) matching "${nombreLimpio}"`);
-
-      // If exact match found, return the first one
-      if (existingEmpresas && existingEmpresas.length > 0) {
-        console.log(`Using existing ${tipo}:`, existingEmpresas[0].id);
-        return existingEmpresas[0].id;
-      }
-
-      // If no existing company found, create new one
-      console.log(`Creating new ${tipo}: "${nombreLimpio}"`);
-      const empresaToInsert = {
-        user_id: user!.id,
-        nombre: nombreLimpio,
-        rut: empresaData.rut?.trim() || null,
-        sitio_web: empresaData.sitioWeb?.trim() || null,
-        direccion: empresaData.direccion?.trim() || null,
-        tipo: tipo
-      };
-
-      console.log(`Inserting ${tipo} data:`, empresaToInsert);
-
-      const { data: nuevaEmpresa, error: createError } = await supabase
-        .from('empresas')
-        .insert(empresaToInsert)
-        .select()
-        .single();
-
-      if (createError) {
-        console.error(`Error creating ${tipo}:`, createError);
-        
-        // Handle specific unique constraint violations
-        if (createError.code === '23505') {
-          console.log(`Unique constraint error for ${tipo}, attempting to find existing record again`);
-          
-          // Try to find the existing record again (race condition handling)
-          const { data: retryEmpresas, error: retryError } = await supabase
-            .from('empresas')
-            .select('id, nombre')
-            .eq('user_id', user!.id)
-            .eq('tipo', tipo)
-            .ilike('nombre', nombreLimpio)
-            .limit(1);
-
-          if (!retryError && retryEmpresas && retryEmpresas.length > 0) {
-            console.log(`Found existing ${tipo} on retry:`, retryEmpresas[0].id);
-            return retryEmpresas[0].id;
-          }
-
-          // If still can't find, try with a unique suffix as fallback
-          const timestamp = Date.now();
-          const fallbackName = `${nombreLimpio} (${timestamp})`;
-          console.log(`Attempting fallback creation with name: "${fallbackName}"`);
-
-          const fallbackEmpresa = {
-            ...empresaToInsert,
-            nombre: fallbackName
-          };
-
-          const { data: fallbackResult, error: fallbackError } = await supabase
-            .from('empresas')
-            .insert(fallbackEmpresa)
-            .select()
-            .single();
-
-          if (fallbackError) {
-            console.error(`Fallback creation failed for ${tipo}:`, fallbackError);
-            throw new Error(`No se pudo crear ${tipo}: ${fallbackError.message}`);
-          }
-
-          console.log(`Fallback ${tipo} created successfully:`, fallbackResult.id);
-          return fallbackResult.id;
-        }
-
-        throw new Error(`Error al crear ${tipo}: ${createError.message}`);
-      }
-
-      console.log(`New ${tipo} created successfully:`, nuevaEmpresa.id);
-      return nuevaEmpresa.id;
+      await obtenerNegocios();
     } catch (error) {
-      console.error(`Critical error in findOrCreateEmpresa for ${tipo}:`, error);
-      
-      if (error instanceof Error) {
-        throw error;
-      }
-      
-      throw new Error(`Error inesperado al procesar ${tipo}`);
-    }
-  };
-
-  const crearNegocio = async (negocioData: CrearNegocioData): Promise<string> => {
-    if (!user) throw new Error('Usuario no autenticado');
-
-    try {
-      console.log('=== Starting business creation process ===');
-      console.log('Business data received:', {
-        contacto: negocioData.contacto,
-        productora: negocioData.productora?.nombre || 'None',
-        clienteFinal: negocioData.clienteFinal?.nombre || 'None',
-        tipoEvento: negocioData.tipo_evento
-      });
-      
-      // Validate required fields before proceeding
-      if (!negocioData.contacto?.nombre || !negocioData.contacto?.apellido || 
-          !negocioData.contacto?.email || !negocioData.contacto?.telefono) {
-        throw new Error('Información de contacto incompleta');
-      }
-
-      if (!negocioData.tipo_evento || !negocioData.nombre_evento || 
-          !negocioData.horas_acreditacion || !negocioData.locacion) {
-        throw new Error('Información del evento incompleta');
-      }
-
-      // Create contact
-      console.log('Creating contact...');
-      const { data: contactoData, error: contactoError } = await supabase
-        .from('contactos')
-        .insert({
-          user_id: user.id,
-          nombre: negocioData.contacto.nombre.trim(),
-          apellido: negocioData.contacto.apellido.trim(),
-          email: negocioData.contacto.email.trim(),
-          telefono: negocioData.contacto.telefono.trim(),
-          cargo: negocioData.contacto.cargo?.trim() || null
-        })
-        .select()
-        .single();
-
-      if (contactoError) {
-        console.error('Error creating contact:', contactoError);
-        
-        // Handle duplicate contact error
-        if (contactoError.code === '23505' && contactoError.message.includes('contactos_user_id_email_key')) {
-          throw new Error('Ya existe un contacto con este email. Use un email diferente.');
-        }
-        
-        throw new Error(`Error al crear contacto: ${contactoError.message}`);
-      }
-
-      console.log('Contact created successfully:', contactoData.id);
-
-      // Handle productora (find or create)
-      let productoraId = null;
-      if (negocioData.productora) {
-        console.log('Processing productora...');
-        productoraId = await findOrCreateEmpresa(negocioData.productora, 'productora');
-        console.log('Productora processed, ID:', productoraId);
-      }
-
-      // Handle cliente final (find or create)
-      let clienteFinalId = null;
-      if (negocioData.clienteFinal) {
-        console.log('Processing cliente final...');
-        clienteFinalId = await findOrCreateEmpresa(negocioData.clienteFinal, 'cliente_final');
-        console.log('Cliente final processed, ID:', clienteFinalId);
-      }
-
-      // Create business with new state 'oportunidad_creada'
-      console.log('Creating business...');
-      const negocioToInsert = {
-        user_id: user.id,
-        numero: contadorNegocio,
-        contacto_id: contactoData.id,
-        productora_id: productoraId,
-        cliente_final_id: clienteFinalId,
-        tipo_evento: negocioData.tipo_evento,
-        nombre_evento: negocioData.nombre_evento.trim(),
-        fecha_evento: negocioData.fecha_evento || null,
-        horas_acreditacion: negocioData.horas_acreditacion.trim(),
-        cantidad_asistentes: negocioData.cantidad_asistentes || 0,
-        cantidad_invitados: negocioData.cantidad_invitados || 0,
-        locacion: negocioData.locacion.trim(),
-        estado: 'oportunidad_creada' as const,
-        fecha_cierre: negocioData.fecha_cierre || null
-      };
-
-      console.log('Inserting business data:', negocioToInsert);
-
-      const { data: negocio, error: negocioError } = await supabase
-        .from('negocios')
-        .insert(negocioToInsert)
-        .select()
-        .single();
-
-      if (negocioError) {
-        console.error('Error creating business:', negocioError);
-        throw new Error(`Error al crear negocio: ${negocioError.message}`);
-      }
-
-      console.log('Business created successfully:', negocio.id);
-
-      // Update counter
-      console.log('Updating business counter...');
-      const { error: counterError } = await supabase
-        .from('contadores_usuario')
-        .upsert({
-          user_id: user.id,
-          contador_negocio: contadorNegocio + 1
-        });
-
-      if (counterError) {
-        console.warn('Error updating counter (non-critical):', counterError);
-      }
-
-      setContadorNegocio(prev => prev + 1);
-      
-      // Reload businesses FIRST, then sync with HubSpot
-      console.log('Reloading businesses...');
-      await cargarNegocios();
-
-      // Sync with HubSpot AFTER reloading businesses
-      console.log('Syncing with HubSpot...');
-      try {
-        // Now that cargarNegocios has completed, obtenerNegocio should find the business
-        const negocioCompleto = obtenerNegocio(negocio.id);
-        
-        if (negocioCompleto) {
-          console.log('Found complete business for HubSpot sync:', negocioCompleto.id);
-          const valorTotal = calcularValorNegocio(negocioCompleto);
-          const hubspotData = {
-            id: negocio.id,
-            numero: negocio.numero,
-            contacto: negocioData.contacto,
-            evento: {
-              tipoEvento: negocioData.tipo_evento,
-              nombreEvento: negocioData.nombre_evento,
-              fechaEvento: negocioData.fecha_evento || '',
-              horasAcreditacion: negocioData.horas_acreditacion,
-              cantidadAsistentes: negocioData.cantidad_asistentes || 0,
-              cantidadInvitados: negocioData.cantidad_invitados || 0,
-              locacion: negocioData.locacion
-            },
-            valorTotal: valorTotal
-          };
-          
-          const syncResult = await syncNegocio(hubspotData, 'create');
-          if (syncResult.success && !syncResult.skipped) {
-            console.log('Business synced with HubSpot successfully');
-          } else if (syncResult.skipped) {
-            console.log('HubSpot sync skipped (not configured or disabled)');
-          }
-        } else {
-          // Fallback: construct hubspotData from available data
-          console.log('Business not found in local state, using fallback data for HubSpot sync');
-          const hubspotData = {
-            id: negocio.id,
-            numero: negocio.numero,
-            contacto: negocioData.contacto,
-            evento: {
-              tipoEvento: negocioData.tipo_evento,
-              nombreEvento: negocioData.nombre_evento,
-              fechaEvento: negocioData.fecha_evento || '',
-              horasAcreditacion: negocioData.horas_acreditacion,
-              cantidadAsistentes: negocioData.cantidad_asistentes || 0,
-              cantidadInvitados: negocioData.cantidad_invitados || 0,
-              locacion: negocioData.locacion
-            },
-            valorTotal: 0 // No budget yet, so value is 0
-          };
-          
-          const syncResult = await syncNegocio(hubspotData, 'create');
-          if (syncResult.success && !syncResult.skipped) {
-            console.log('Business synced with HubSpot successfully (fallback data)');
-          }
-        }
-      } catch (syncError) {
-        console.warn('HubSpot sync failed (non-critical):', syncError);
-        // Don't throw error here as the business was created successfully
-      }
-
-      console.log('=== Business creation completed successfully ===');
-      return negocio.id;
-    } catch (error) {
-      console.error('=== Business creation failed ===');
-      console.error('Error details:', error);
-      
-      // Provide more specific error messages
-      if (error instanceof Error) {
-        const errorMessage = error.message;
-        
-        if (errorMessage.includes('contactos_user_id_email_key')) {
-          toast({
-            title: "Email duplicado",
-            description: "Ya existe un contacto con este email. Use un email diferente.",
-            variant: "destructive"
-          });
-        } else if (errorMessage.includes('unique constraint') || errorMessage.includes('duplicate key')) {
-          toast({
-            title: "Información duplicada",
-            description: "Ya existe información similar. Verifique los datos e intente nuevamente.",
-            variant: "destructive"
-          });
-        } else if (errorMessage.includes('incompleta')) {
-          toast({
-            title: "Información incompleta",
-            description: errorMessage,
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: `Error al crear el negocio: ${errorMessage}`,
-            variant: "destructive"
-          });
-        }
-      } else {
-        toast({
-          title: "Error",
-          description: "No se pudo crear el negocio. Verifique los datos e intente nuevamente.",
-          variant: "destructive"
-        });
-      }
-      
-      throw error;
+      console.error('[NegocioContext] Error during manual refresh:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -487,326 +96,306 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
     return negocios.find(negocio => negocio.id === id);
   };
 
-  const actualizarNegocio = async (negocioId: string, actualizaciones: Partial<Negocio>): Promise<void> => {
-    if (!user) throw new Error('Usuario no autenticado');
-    
+  const crearNegocio = async (negocioData: Omit<Negocio, 'id' | 'created_at' | 'updated_at'>): Promise<Negocio | null> => {
     try {
-      // Build the update object for database
-      const updateData: any = {};
-      
-      if (actualizaciones.fechaCierre !== undefined) {
-        updateData.fecha_cierre = actualizaciones.fechaCierre;
-      }
-      
-      // Add other fields as needed in the future
-      if (actualizaciones.estado !== undefined) {
-        updateData.estado = actualizaciones.estado;
+      const { data, error } = await supabase
+        .from('negocios')
+        .insert([negocioData])
+        .select(`
+          *,
+          contacto: contactos (id, nombre, apellido, email, telefono),
+          evento: eventos (id, nombreEvento),
+          productora: productoras (id, nombre),
+          clienteFinal: clientes_finales (id, nombre),
+          presupuestos (
+            id,
+            estado,
+            facturado,
+            total,
+            created_at,
+            fecha_envio,
+            fecha_aprobacion,
+            fecha_rechazo,
+            fecha_vencimiento
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error("Error creating negocio:", error);
+        throw error;
       }
 
+      setNegocios(prevNegocios => [data as Negocio, ...prevNegocios]);
+      return data as Negocio;
+    } catch (error) {
+      console.error("Failed to create negocio:", error);
+      return null;
+    }
+  };
+
+  const actualizarNegocio = async (id: string, updates: Partial<Negocio>): Promise<Negocio | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('negocios')
+        .update(updates)
+        .eq('id', id)
+        .select(`
+          *,
+          contacto: contactos (id, nombre, apellido, email, telefono),
+          evento: eventos (id, nombreEvento),
+          productora: productoras (id, nombre),
+          clienteFinal: clientes_finales (id, nombre),
+          presupuestos (
+            id,
+            estado,
+            facturado,
+            total,
+            created_at,
+            fecha_envio,
+            fecha_aprobacion,
+            fecha_rechazo,
+            fecha_vencimiento
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error("Error updating negocio:", error);
+        throw error;
+      }
+
+      setNegocios(prevNegocios =>
+        prevNegocios.map(negocio => (negocio.id === id ? { ...negocio, ...data } : negocio))
+      );
+      return data as Negocio;
+    } catch (error) {
+      console.error("Failed to update negocio:", error);
+      return null;
+    }
+  };
+
+  const eliminarNegocio = async (id: string): Promise<boolean> => {
+    try {
       const { error } = await supabase
         .from('negocios')
-        .update(updateData)
-        .eq('id', negocioId);
-      
-      if (error) throw error;
-      
-      // Reload businesses to reflect changes
-      await cargarNegocios();
-    } catch (error) {
-      console.error('Error actualizando negocio:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el negocio",
-        variant: "destructive"
-      });
-      throw error;
-    }
-  };
-
-  const generarNombrePresupuesto = (numero: number, cantidadPresupuestos: number): string => {
-    const letra = String.fromCharCode(65 + cantidadPresupuestos);
-    return `${numero}${letra}`;
-  };
-
-  const crearPresupuesto = async (negocioId: string, productos: ProductoPresupuesto[]): Promise<string> => {
-    if (!user) throw new Error('Usuario no autenticado');
-    
-    try {
-      const negocio = obtenerNegocio(negocioId);
-      if (!negocio) throw new Error('Negocio no encontrado');
-      
-      const nombrePresupuesto = generarNombrePresupuesto(negocio.numero, negocio.presupuestos.length);
-      const total = productos.reduce((sum, producto) => sum + producto.total, 0);
-      
-      const { data: presupuesto, error: presupuestoError } = await supabase
-        .from('presupuestos')
-        .insert({
-          negocio_id: negocioId,
-          nombre: nombrePresupuesto,
-          total: total
-        })
-        .select()
-        .single();
-      
-      if (presupuestoError) throw presupuestoError;
-      
-      // Crear productos del presupuesto
-      if (productos.length > 0) {
-        const productosInsert = productos.map(producto => ({
-          presupuesto_id: presupuesto.id,
-          nombre: producto.nombre,
-          descripcion: producto.descripcion,
-          cantidad: producto.cantidad,
-          precio_unitario: producto.precioUnitario,
-          total: producto.total
-        }));
-        
-        const { error: productosError } = await supabase
-          .from('productos_presupuesto')
-          .insert(productosInsert);
-        
-        if (productosError) throw productosError;
-      }
-      
-      // Reload businesses FIRST, then sync with HubSpot
-      await cargarNegocios();
-      
-      // Sync updated business value with HubSpot AFTER reloading
-      try {
-        const negocioActualizado = obtenerNegocio(negocioId);
-        if (negocioActualizado) {
-          const valorTotal = calcularValorNegocio(negocioActualizado);
-          const hubspotData = {
-            id: negocioActualizado.id,
-            numero: negocioActualizado.numero,
-            contacto: negocioActualizado.contacto,
-            evento: negocioActualizado.evento,
-            valorTotal: valorTotal
-          };
-          
-          await syncNegocio(hubspotData, 'update');
-        }
-      } catch (syncError) {
-        console.warn('HubSpot sync failed (non-critical):', syncError);
-      }
-      
-      return presupuesto.id;
-    } catch (error) {
-      console.error('Error creando presupuesto:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo crear el presupuesto",
-        variant: "destructive"
-      });
-      throw error;
-    }
-  };
-
-  const actualizarPresupuesto = async (negocioId: string, presupuestoId: string, productos: ProductoPresupuesto[]): Promise<void> => {
-    if (!user) throw new Error('Usuario no autenticado');
-    
-    try {
-      // Calcular nuevo total
-      const total = productos.reduce((sum, producto) => sum + producto.total, 0);
-      
-      // Actualizar el presupuesto con el nuevo total
-      const { error: updatePresupuestoError } = await supabase
-        .from('presupuestos')
-        .update({ total })
-        .eq('id', presupuestoId);
-      
-      if (updatePresupuestoError) throw updatePresupuestoError;
-      
-      // Eliminar productos existentes
-      const { error: deleteError } = await supabase
-        .from('productos_presupuesto')
         .delete()
-        .eq('presupuesto_id', presupuestoId);
-      
-      if (deleteError) throw deleteError;
-      
-      // Crear nuevos productos
-      if (productos.length > 0) {
-        const productosInsert = productos.map(producto => ({
-          presupuesto_id: presupuestoId,
-          nombre: producto.nombre,
-          descripcion: producto.descripcion,
-          cantidad: producto.cantidad,
-          precio_unitario: producto.precioUnitario,
-          total: producto.total
-        }));
-        
-        const { error: insertError } = await supabase
-          .from('productos_presupuesto')
-          .insert(productosInsert);
-        
-        if (insertError) throw insertError;
+        .eq('id', id);
+
+      if (error) {
+        console.error("Error deleting negocio:", error);
+        throw error;
       }
-      
-      // Reload businesses FIRST, then sync with HubSpot
-      await cargarNegocios();
-      
-      // Sync updated business value with HubSpot AFTER reloading
-      try {
-        const negocioActualizado = obtenerNegocio(negocioId);
-        if (negocioActualizado) {
-          const valorTotal = calcularValorNegocio(negocioActualizado);
-          const hubspotData = {
-            id: negocioActualizado.id,
-            numero: negocioActualizado.numero,
-            contacto: negocioActualizado.contacto,
-            evento: negocioActualizado.evento,
-            valorTotal: valorTotal
-          };
-          
-          await syncNegocio(hubspotData, 'update');
-        }
-      } catch (syncError) {
-        console.warn('HubSpot sync failed (non-critical):', syncError);
-      }
+
+      setNegocios(prevNegocios => prevNegocios.filter(negocio => negocio.id !== id));
+      return true;
     } catch (error) {
-      console.error('Error actualizando presupuesto:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el presupuesto",
-        variant: "destructive"
-      });
-      throw error;
+      console.error("Failed to delete negocio:", error);
+      return false;
     }
   };
 
-  const eliminarPresupuesto = async (negocioId: string, presupuestoId: string): Promise<void> => {
-    if (!user) throw new Error('Usuario no autenticado');
-    
+  const crearPresupuesto = async (negocioId: string, presupuestoData: Omit<Presupuesto, 'id' | 'created_at' | 'updated_at'>): Promise<Presupuesto | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('presupuestos')
+        .insert([{ ...presupuestoData, negocio_id: negocioId }])
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error("Error creating presupuesto:", error);
+        throw error;
+      }
+
+      // Optimistically update the negocios state
+      setNegocios(prevNegocios =>
+        prevNegocios.map(negocio =>
+          negocio.id === negocioId
+            ? { ...negocio, presupuestos: [...(negocio.presupuestos || []), data as Presupuesto] }
+            : negocio
+        )
+      );
+
+      return data as Presupuesto;
+    } catch (error) {
+      console.error("Failed to create presupuesto:", error);
+      return null;
+    }
+  };
+
+  const actualizarPresupuesto = async (negocioId: string, presupuestoId: string, updates: Partial<Presupuesto>): Promise<Presupuesto | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('presupuestos')
+        .update(updates)
+        .eq('id', presupuestoId)
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error("Error updating presupuesto:", error);
+        throw error;
+      }
+
+      // Optimistically update the negocios state
+      setNegocios(prevNegocios =>
+        prevNegocios.map(negocio =>
+          negocio.id === negocioId
+            ? {
+                ...negocio,
+                presupuestos: negocio.presupuestos.map(presupuesto =>
+                  presupuesto.id === presupuestoId ? { ...presupuesto, ...data } : presupuesto
+                )
+              }
+            : negocio
+        )
+      );
+
+      return data as Presupuesto;
+    } catch (error) {
+      console.error("Failed to update presupuesto:", error);
+      return null;
+    }
+  };
+
+  const eliminarPresupuesto = async (negocioId: string, presupuestoId: string): Promise<boolean> => {
     try {
       const { error } = await supabase
         .from('presupuestos')
         .delete()
         .eq('id', presupuestoId);
-      
-      if (error) throw error;
-      
-      await cargarNegocios();
+
+      if (error) {
+        console.error("Error deleting presupuesto:", error);
+        throw error;
+      }
+
+      // Optimistically update the negocios state
+      setNegocios(prevNegocios =>
+        prevNegocios.map(negocio =>
+          negocio.id === negocioId
+            ? {
+                ...negocio,
+                presupuestos: negocio.presupuestos.filter(presupuesto => presupuesto.id !== presupuestoId)
+              }
+            : negocio
+        )
+      );
+
+      return true;
     } catch (error) {
-      console.error('Error eliminando presupuesto:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el presupuesto",
-        variant: "destructive"
-      });
-      throw error;
+      console.error("Failed to delete presupuesto:", error);
+      return false;
     }
   };
 
   const cambiarEstadoPresupuesto = async (negocioId: string, presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string): Promise<void> => {
-    if (!user) throw new Error('Usuario no autenticado');
-    
     try {
-      const updateData: any = { estado: nuevoEstado };
-      
-      // Agregar fecha de vencimiento si se está enviando el presupuesto
-      if (nuevoEstado === 'enviado' && fechaVencimiento) {
-        updateData.fecha_vencimiento = fechaVencimiento;
+      const updates: { estado: string; fecha_vencimiento?: string } = { estado: nuevoEstado };
+      if (fechaVencimiento) {
+        updates.fecha_vencimiento = fechaVencimiento;
       }
-      
-      const { error } = await supabase
+
+      const { data, error } = await supabase
         .from('presupuestos')
-        .update(updateData)
-        .eq('id', presupuestoId);
-      
-      if (error) throw error;
-      
-      await cargarNegocios();
-      
-      toast({
-        title: "Estado actualizado",
-        description: `El presupuesto ha sido marcado como ${nuevoEstado}`,
-      });
+        .update(updates)
+        .eq('id', presupuestoId)
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error("Error updating presupuesto state:", error);
+        throw error;
+      }
+
+      setNegocios(prevNegocios =>
+        prevNegocios.map(negocio =>
+          negocio.id === negocioId
+            ? {
+                ...negocio,
+                presupuestos: negocio.presupuestos.map(presupuesto =>
+                  presupuesto.id === presupuestoId ? { ...presupuesto, ...data } : presupuesto
+                )
+              }
+            : negocio
+        )
+      );
     } catch (error) {
-      console.error('Error cambiando estado del presupuesto:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo cambiar el estado del presupuesto",
-        variant: "destructive"
-      });
-      throw error;
+      console.error("Failed to update presupuesto state:", error);
     }
   };
 
   const cambiarEstadoNegocio = async (negocioId: string, nuevoEstado: string): Promise<void> => {
-    if (!user) throw new Error('Usuario no autenticado');
-    
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('negocios')
-        .update({ estado: nuevoEstado as Negocio['estado'] })
-        .eq('id', negocioId);
-      
-      if (error) throw error;
-      
-      // Reload businesses FIRST, then sync with HubSpot
-      await cargarNegocios();
-      
-      // Sync updated business state with HubSpot AFTER reloading
-      try {
-        const negocioActualizado = obtenerNegocio(negocioId);
-        if (negocioActualizado) {
-          const valorTotal = calcularValorNegocio(negocioActualizado);
-          const hubspotData = {
-            id: negocioActualizado.id,
-            numero: negocioActualizado.numero,
-            contacto: negocioActualizado.contacto,
-            evento: negocioActualizado.evento,
-            valorTotal: valorTotal
-          };
-          
-          await syncNegocio(hubspotData, 'update');
-        }
-      } catch (syncError) {
-        console.warn('HubSpot sync failed (non-critical):', syncError);
+        .update({ estado: nuevoEstado })
+        .eq('id', negocioId)
+        .select(`
+          *,
+          contacto: contactos (id, nombre, apellido, email, telefono),
+          evento: eventos (id, nombreEvento),
+          productora: productoras (id, nombre),
+          clienteFinal: clientes_finales (id, nombre),
+          presupuestos (
+            id,
+            estado,
+            facturado,
+            total,
+            created_at,
+            fecha_envio,
+            fecha_aprobacion,
+            fecha_rechazo,
+            fecha_vencimiento
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error("Error updating negocio state:", error);
+        throw error;
       }
-      
-      toast({
-        title: "Estado actualizado",
-        description: "El estado del negocio ha sido actualizado correctamente",
-      });
+
+      setNegocios(prevNegocios =>
+        prevNegocios.map(negocio =>
+          negocio.id === negocioId ? { ...negocio, ...data } : negocio
+        )
+      );
     } catch (error) {
-      console.error('Error cambiando estado del negocio:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo cambiar el estado del negocio",
-        variant: "destructive"
-      });
-      throw error;
+      console.error("Failed to update negocio state:", error);
     }
   };
 
-  // Cargar datos cuando el usuario cambie
-  useEffect(() => {
-    if (user) {
-      cargarNegocios();
-    } else {
-      setNegocios([]);
-      setContadorNegocio(17658);
-    }
-  }, [user]);
+  const value = {
+    negocios,
+    loading,
+    error,
+    obtenerNegocio,
+    crearNegocio,
+    actualizarNegocio,
+    eliminarNegocio,
+    crearPresupuesto,
+    actualizarPresupuesto,
+    eliminarPresupuesto,
+    cambiarEstadoPresupuesto,
+    cambiarEstadoNegocio,
+    refreshNegocios // Nueva función añadida
+  };
 
   return (
-    <NegocioContext.Provider value={{
-      negocios,
-      contadorNegocio,
-      loading,
-      crearNegocio,
-      obtenerNegocio,
-      actualizarNegocio,
-      crearPresupuesto,
-      actualizarPresupuesto,
-      eliminarPresupuesto,
-      cambiarEstadoPresupuesto,
-      cambiarEstadoNegocio,
-      cargarNegocios
-    }}>
+    <NegocioContext.Provider value={value}>
       {children}
     </NegocioContext.Provider>
   );
 };
+
+const useNegocio = (): NegocioContextProps => {
+  const context = useContext(NegocioContext);
+  if (context === undefined) {
+    throw new Error("useNegocio must be used within a NegocioProvider");
+  }
+  return context;
+};
+
+export { NegocioProvider, useNegocio };

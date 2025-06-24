@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,7 @@ const BusinessStatusCard: React.FC<BusinessStatusCardProps> = ({ negocio, onRefr
   const [recalculating, setRecalculating] = React.useState(false);
   const [diagnosing, setDiagnosing] = React.useState(false);
   const [diagnosticInfo, setDiagnosticInfo] = React.useState<any>(null);
+  const [fixingBusiness, setFixingBusiness] = React.useState(false);
 
   const handleRecalculateStates = async () => {
     setRecalculating(true);
@@ -49,6 +49,62 @@ const BusinessStatusCard: React.FC<BusinessStatusCardProps> = ({ negocio, onRefr
       });
     } finally {
       setRecalculating(false);
+    }
+  };
+
+  const handleFixSpecificBusiness = async () => {
+    setFixingBusiness(true);
+    try {
+      console.log(`[BusinessStatusCard] Fixing specific business ${negocio.id}...`);
+      
+      // Calcular el estado correcto
+      const { data: calculatedState, error: calcError } = await supabase
+        .rpc('calcular_estado_negocio', { negocio_id_param: negocio.id });
+
+      if (calcError) {
+        console.error('[BusinessStatusCard] Error calculating state:', calcError);
+        throw calcError;
+      }
+
+      // Actualizar el estado si es diferente
+      if (negocio.estado !== calculatedState) {
+        const { error: updateError } = await supabase
+          .from('negocios')
+          .update({ 
+            estado: calculatedState,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', negocio.id);
+
+        if (updateError) {
+          console.error('[BusinessStatusCard] Error updating business state:', updateError);
+          throw updateError;
+        }
+
+        console.log(`[BusinessStatusCard] Successfully corrected business state from ${negocio.estado} to ${calculatedState}`);
+        
+        toast({
+          title: "Estado corregido",
+          description: `El estado se ha corregido de "${negocio.estado}" a "${calculatedState}"`,
+        });
+        
+        onRefresh();
+      } else {
+        toast({
+          title: "Sin cambios necesarios",
+          description: "El estado del negocio ya es correcto",
+        });
+      }
+
+    } catch (error) {
+      console.error('[BusinessStatusCard] Error fixing business:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo corregir el estado del negocio",
+        variant: "destructive"
+      });
+    } finally {
+      setFixingBusiness(false);
     }
   };
 
@@ -216,6 +272,18 @@ const BusinessStatusCard: React.FC<BusinessStatusCardProps> = ({ negocio, onRefr
               <Bug className={`w-4 h-4 mr-1 ${diagnosing ? 'animate-spin' : ''}`} />
               Diagnosticar
             </Button>
+            {hasStateIssue && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleFixSpecificBusiness}
+                disabled={fixingBusiness}
+                className="h-8 px-3"
+              >
+                <RefreshCw className={`w-4 h-4 mr-1 ${fixingBusiness ? 'animate-spin' : ''}`} />
+                Corregir
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
