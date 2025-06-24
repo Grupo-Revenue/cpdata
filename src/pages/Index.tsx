@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useNegocio } from '@/context/NegocioContext';
-import { validateAllBusinessStates } from '@/utils/businessCalculations';
+import { useBusinessStateMonitor } from '@/hooks/useBusinessStateMonitor';
 import DashboardView from '@/pages/DashboardView';
 import CreateBusinessView from '@/pages/CreateBusinessView';
 import BusinessDetailView from '@/pages/BusinessDetailView';
@@ -18,24 +18,31 @@ const Index = () => {
   } = useNavigation();
   
   const { negocios, loading } = useNegocio();
+  const { 
+    inconsistencyCount, 
+    validateCurrentStates,
+    runComprehensiveAudit
+  } = useBusinessStateMonitor();
 
-  // Monitor business state consistency on app load
+  // Monitor business state consistency on app load with enhanced monitoring
   useEffect(() => {
     if (!loading && negocios.length > 0) {
-      console.log('[Index] Performing initial state validation...');
+      console.log('[Index] Performing initial enhanced state validation...');
       
-      // Run validation in background
+      // Run initial validation
       setTimeout(() => {
-        const results = validateAllBusinessStates(negocios);
-        
-        if (results.inconsistencies > 0) {
-          console.warn(`[Index] Found ${results.inconsistencies} state inconsistencies:`, results.inconsistentBusinesses);
-        } else {
-          console.log(`[Index] All ${results.totalBusinesses} business states are consistent`);
+        validateCurrentStates();
+      }, 1000);
+
+      // Run comprehensive audit if inconsistencies are detected after initial validation
+      setTimeout(() => {
+        if (inconsistencyCount > 0) {
+          console.log(`[Index] Found ${inconsistencyCount} inconsistencies, running comprehensive audit...`);
+          runComprehensiveAudit();
         }
-      }, 2000);
+      }, 3000);
     }
-  }, [negocios, loading]);
+  }, [negocios, loading, inconsistencyCount]);
 
   if (vistaActual === 'crear-negocio') {
     return (

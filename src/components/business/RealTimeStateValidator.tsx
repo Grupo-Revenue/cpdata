@@ -1,241 +1,234 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNegocio } from '@/context/NegocioContext';
-import { validateAllBusinessStates } from '@/utils/businessCalculations';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useBusinessStateMonitor } from '@/hooks/useBusinessStateMonitor';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { AlertTriangle, CheckCircle, RefreshCw, Activity, Clock, Bug } from 'lucide-react';
 
 const RealTimeStateValidator: React.FC = () => {
-  const { negocios, loading, refreshNegocios } = useNegocio();
-  const { toast } = useToast();
-  const [validationResults, setValidationResults] = useState<any>(null);
-  const [isValidating, setIsValidating] = useState(false);
-  const [isFixing, setIsFixing] = useState(false);
-  const [lastValidation, setLastValidation] = useState<Date | null>(null);
+  const { negocios, loading } = useNegocio();
+  const { 
+    inconsistencyCount, 
+    lastCheck, 
+    isMonitoring, 
+    autoFixEnabled,
+    lastAuditResults,
+    validateCurrentStates,
+    runComprehensiveAudit,
+    fixSpecificBusiness,
+    toggleAutoFix
+  } = useBusinessStateMonitor();
+  
+  const [isRunningAudit, setIsRunningAudit] = useState(false);
+  const [showDetailedResults, setShowDetailedResults] = useState(false);
 
-  // Validación automática al cargar la página
-  useEffect(() => {
-    if (!loading && negocios.length > 0) {
-      console.log('[RealTimeStateValidator] Starting automatic validation on page load...');
-      performValidation();
-    }
-  }, [negocios, loading]);
-
-  // Validación periódica cada 2 minutos
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!loading && negocios.length > 0) {
-        console.log('[RealTimeStateValidator] Performing periodic validation...');
-        performValidation();
-      }
-    }, 120000); // 2 minutos
-
-    return () => clearInterval(interval);
-  }, [negocios, loading]);
-
-  const performValidation = async () => {
-    if (isValidating || negocios.length === 0) return;
-    
-    setIsValidating(true);
+  const handleRunAudit = async () => {
+    setIsRunningAudit(true);
     try {
-      console.log('[RealTimeStateValidator] Validating business states...');
-      
-      const results = validateAllBusinessStates(negocios);
-      setValidationResults(results);
-      setLastValidation(new Date());
-      
-      if (results.inconsistencies > 0) {
-        console.warn('[RealTimeStateValidator] Found inconsistencies:', results.inconsistentBusinesses);
-        
-        // Mostrar notificación discreta
-        toast({
-          title: "Inconsistencias detectadas",
-          description: `${results.inconsistencies} negocios con estados incorrectos`,
-          variant: "destructive",
-        });
-      } else {
-        console.log('[RealTimeStateValidator] All business states are consistent');
-      }
+      await runComprehensiveAudit();
+      setShowDetailedResults(true);
     } catch (error) {
-      console.error('[RealTimeStateValidator] Error during validation:', error);
+      console.error('Error running audit:', error);
     } finally {
-      setIsValidating(false);
+      setIsRunningAudit(false);
     }
   };
 
-  const fixBusiness17662 = async () => {
-    setIsFixing(true);
-    try {
-      console.log('[RealTimeStateValidator] Fixing business #17662...');
+  const handleQuickFix = async () => {
+    if (lastAuditResults?.inconsistencies?.length > 0) {
+      // Fix the first few high-confidence inconsistencies
+      const highConfidenceIssues = lastAuditResults.inconsistencies
+        .filter(issue => issue.confidence === 'high' && issue.autoFixable)
+        .slice(0, 3);
       
-      // Find business 17662
-      const business17662 = negocios.find(n => n.numero === 17662);
-      if (!business17662) {
-        throw new Error('Business #17662 not found');
+      for (const issue of highConfidenceIssues) {
+        await fixSpecificBusiness(issue.negocioId);
       }
-
-      // Calculate correct state
-      const { data: correctState, error: calcError } = await supabase.rpc('calcular_estado_negocio', {
-        negocio_id_param: business17662.id
-      });
       
-      if (calcError) throw calcError;
-
-      // Update the business state
-      const { error: updateError } = await supabase
-        .from('negocios')
-        .update({ 
-          estado: correctState,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', business17662.id);
-        
-      if (updateError) throw updateError;
-
-      console.log('[RealTimeStateValidator] Successfully fixed business #17662');
-      
-      toast({
-        title: "Negocio corregido",
-        description: `Negocio #17662 actualizado al estado: ${correctState}`,
-        variant: "default"
-      });
-      
-      // Refrescar datos después de la corrección
-      await refreshNegocios();
-      
-      // Re-validar después de la corrección
-      setTimeout(() => performValidation(), 1000);
-      
-    } catch (error) {
-      console.error('[RealTimeStateValidator] Error in fix process:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo corregir el negocio #17662",
-        variant: "destructive"
-      });
-    } finally {
-      setIsFixing(false);
+      // Re-run validation
+      setTimeout(() => validateCurrentStates(), 1000);
     }
   };
 
-  const runComprehensiveAudit = async () => {
-    setIsFixing(true);
-    let fixedCount = 0;
-    let errorCount = 0;
-    
-    try {
-      console.log('[RealTimeStateValidator] Running comprehensive audit...');
-      
-      if (validationResults?.inconsistentBusinesses?.length > 0) {
-        for (const inconsistency of validationResults.inconsistentBusinesses) {
-          try {
-            console.log(`[RealTimeStateValidator] Fixing business ${inconsistency.numero} (${inconsistency.negocioId})`);
-            
-            const { error } = await supabase
-              .from('negocios')
-              .update({ 
-                estado: inconsistency.expectedState,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', inconsistency.negocioId);
-
-            if (error) {
-              console.error(`[RealTimeStateValidator] Error fixing business ${inconsistency.numero}:`, error);
-              errorCount++;
-            } else {
-              console.log(`[RealTimeStateValidator] Successfully fixed business ${inconsistency.numero}`);
-              fixedCount++;
-            }
-          } catch (error) {
-            console.error(`[RealTimeStateValidator] Exception fixing business ${inconsistency.numero}:`, error);
-            errorCount++;
-          }
-        }
-      }
-
-      console.log(`[RealTimeStateValidator] Audit completed: ${fixedCount} fixed, ${errorCount} errors`);
-      
-      toast({
-        title: "Auditoría completada",
-        description: `${fixedCount} inconsistencias corregidas. ${errorCount > 0 ? `${errorCount} errores.` : ''}`,
-        variant: errorCount > 0 ? "destructive" : "default"
-      });
-      
-      // Refrescar datos después de la auditoría
-      await refreshNegocios();
-      
-      // Re-validar después de la auditoría
-      setTimeout(() => performValidation(), 1000);
-      
-    } catch (error) {
-      console.error('[RealTimeStateValidator] Error in audit process:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo completar la auditoría",
-        variant: "destructive"
-      });
-    } finally {
-      setIsFixing(false);
-    }
-  };
-
-  // No mostrar nada si no hay inconsistencias
-  if (!validationResults || validationResults.inconsistencies === 0) {
-    return null;
+  // Si no hay inconsistencias, mostrar estado OK de forma más sutil
+  if (!loading && inconsistencyCount === 0) {
+    return (
+      <div className="mb-2">
+        <div className="flex items-center space-x-2 text-green-600 text-sm">
+          <CheckCircle className="h-4 w-4" />
+          <span>Estados de negocio validados</span>
+          {lastCheck && (
+            <span className="text-xs text-gray-500">
+              ({lastCheck.toLocaleTimeString()})
+            </span>
+          )}
+        </div>
+      </div>
+    );
   }
 
+  // Si hay inconsistencias, mostrar panel completo
   return (
     <div className="mb-4">
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
-          <div className="flex items-center justify-between">
-            <div>
-              <strong>Inconsistencias detectadas:</strong> {validationResults.inconsistencies} negocios con estados incorrectos.
-              {lastValidation && (
-                <div className="text-xs text-gray-500 mt-1">
-                  Última validación: {lastValidation.toLocaleTimeString()}
-                </div>
-              )}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <strong>Inconsistencias detectadas:</strong> {inconsistencyCount} negocios con estados incorrectos.
+                {lastCheck && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    Última validación: {lastCheck.toLocaleTimeString()}
+                  </div>
+                )}
+              </div>
+              <div className="flex space-x-2 ml-4">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={validateCurrentStates}
+                  disabled={isMonitoring}
+                  className="h-8"
+                >
+                  <RefreshCw className={`w-3 h-3 mr-1 ${isMonitoring ? 'animate-spin' : ''}`} />
+                  Re-validar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={handleRunAudit}
+                  disabled={isRunningAudit}
+                  className="h-8"
+                >
+                  <Activity className={`w-3 h-3 mr-1 ${isRunningAudit ? 'animate-spin' : ''}`} />
+                  Auditoría Completa
+                </Button>
+              </div>
             </div>
-            <div className="flex space-x-2 ml-4">
+
+            {/* Auto-fix toggle */}
+            <div className="flex items-center space-x-2">
               <Button
                 size="sm"
-                variant="outline"
-                onClick={fixBusiness17662}
-                disabled={isFixing}
-                className="h-8"
+                variant={autoFixEnabled ? "default" : "outline"}
+                onClick={() => toggleAutoFix(!autoFixEnabled)}
+                className="h-7 text-xs"
               >
-                <RefreshCw className={`w-3 h-3 mr-1 ${isFixing ? 'animate-spin' : ''}`} />
-                Corregir #17662
+                <Bug className="w-3 h-3 mr-1" />
+                Auto-corrección: {autoFixEnabled ? 'ON' : 'OFF'}
               </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={runComprehensiveAudit}
-                disabled={isFixing}
-                className="h-8"
-              >
-                <CheckCircle className={`w-3 h-3 mr-1 ${isFixing ? 'animate-spin' : ''}`} />
-                Auditoría Completa
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={performValidation}
-                disabled={isValidating}
-                className="h-8"
-              >
-                <RefreshCw className={`w-3 h-3 mr-1 ${isValidating ? 'animate-spin' : ''}`} />
-                Re-validar
-              </Button>
+              
+              {lastAuditResults?.inconsistencies?.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleQuickFix}
+                  className="h-7 text-xs"
+                >
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  Corrección Rápida
+                </Button>
+              )}
             </div>
           </div>
         </AlertDescription>
       </Alert>
+
+      {/* Detailed audit results */}
+      {showDetailedResults && lastAuditResults && (
+        <Card className="mt-4">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center space-x-2">
+              <Activity className="w-5 h-5" />
+              <span>Resultados de Auditoría</span>
+              <Badge variant="outline">
+                {new Date(lastAuditResults.summary.auditTimestamp).toLocaleTimeString()}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {lastAuditResults.summary.totalBusinesses}
+                </div>
+                <div className="text-xs text-gray-500">Total</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">
+                  {lastAuditResults.summary.inconsistentBusinesses}
+                </div>
+                <div className="text-xs text-gray-500">Inconsistencias</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {lastAuditResults.summary.fixedInThisRun}
+                </div>
+                <div className="text-xs text-gray-500">Corregidas</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-amber-600">
+                  {lastAuditResults.summary.highConfidenceInconsistencies}
+                </div>
+                <div className="text-xs text-gray-500">Alta Confianza</div>
+              </div>
+            </div>
+
+            {lastAuditResults.inconsistencies?.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm">Inconsistencias Restantes:</h4>
+                <div className="max-h-40 overflow-y-auto space-y-1">
+                  {lastAuditResults.inconsistencies.slice(0, 10).map((issue, index) => (
+                    <div key={index} className="flex items-center justify-between text-xs bg-red-50 p-2 rounded">
+                      <div>
+                        <span className="font-medium">#{issue.numero}</span>
+                        <span className="mx-2">|</span>
+                        <span>{issue.currentState} → {issue.expectedState}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Badge 
+                          variant={issue.confidence === 'high' ? 'destructive' : 'outline'}
+                          className="text-xs"
+                        >
+                          {issue.confidence}
+                        </Badge>
+                        {issue.autoFixable && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => fixSpecificBusiness(issue.negocioId)}
+                            className="h-6 px-2 text-xs"
+                          >
+                            Corregir
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {lastAuditResults.inconsistencies.length > 10 && (
+                    <div className="text-xs text-gray-500 text-center py-2">
+                      ... y {lastAuditResults.inconsistencies.length - 10} más
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowDetailedResults(false)}
+              className="mt-3 w-full h-7 text-xs"
+            >
+              Ocultar Detalles
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
