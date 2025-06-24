@@ -29,6 +29,47 @@ const MAIN_BUSINESS_STATES: Negocio['estado'][] = [
   'negocio_perdido'
 ];
 
+const getStateConfig = (estado: Negocio['estado']) => {
+  const configs = {
+    'oportunidad_creada': {
+      label: 'Oportunidad',
+      triggerClass: 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100',
+      iconColor: 'text-slate-500'
+    },
+    'presupuesto_enviado': {
+      label: 'Presupuesto Enviado',
+      triggerClass: 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100',
+      iconColor: 'text-blue-500'
+    },
+    'parcialmente_aceptado': {
+      label: 'Parcialmente Aceptado',
+      triggerClass: 'bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100',
+      iconColor: 'text-amber-500'
+    },
+    'negocio_aceptado': {
+      label: 'Aceptado',
+      triggerClass: 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100',
+      iconColor: 'text-emerald-500'
+    },
+    'negocio_cerrado': {
+      label: 'Cerrado',
+      triggerClass: 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100',
+      iconColor: 'text-green-500'
+    },
+    'negocio_perdido': {
+      label: 'Perdido',
+      triggerClass: 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100',
+      iconColor: 'text-red-500'
+    }
+  };
+
+  return configs[estado] || {
+    label: estado.charAt(0).toUpperCase() + estado.slice(1).replace('_', ' '),
+    triggerClass: 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100',
+    iconColor: 'text-slate-500'
+  };
+};
+
 const BusinessStateSelect: React.FC<BusinessStateSelectProps> = ({
   negocio,
   onStateChange,
@@ -97,8 +138,10 @@ const BusinessStateSelect: React.FC<BusinessStateSelectProps> = ({
     }
   };
 
+  const config = getStateConfig(negocio.estado);
   const triggerHeight = size === 'sm' ? 'h-8' : 'h-10';
-  const triggerPadding = size === 'sm' ? 'px-2' : 'px-3';
+  const triggerPadding = size === 'sm' ? 'px-3' : 'px-4';
+  const fontSize = size === 'sm' ? 'text-sm' : 'text-base';
 
   return (
     <div className="flex items-center space-x-2">
@@ -108,22 +151,17 @@ const BusinessStateSelect: React.FC<BusinessStateSelectProps> = ({
         disabled={disabled || syncStatus === 'syncing'}
       >
         <SelectTrigger 
-          className={`${triggerHeight} ${triggerPadding} min-w-fit border-slate-200 hover:border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-white transition-all duration-200`}
+          className={`${triggerHeight} ${triggerPadding} ${fontSize} ${config.triggerClass} min-w-fit font-medium transition-all duration-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-400`}
         >
           <SelectValue asChild>
-            <div className="flex items-center justify-between w-full">
-              <BusinessStateBadge 
-                estado={negocio.estado} 
-                size={size}
-                showIcon={true}
-              />
-              <ChevronDown className="w-4 h-4 text-slate-400 ml-2 flex-shrink-0" />
-            </div>
+            <span className="font-medium">
+              {config.label}
+            </span>
           </SelectValue>
         </SelectTrigger>
         
         <SelectContent 
-          className="min-w-[240px] bg-white border-slate-200 shadow-lg rounded-lg p-1"
+          className="min-w-[240px] bg-white border-slate-200 shadow-lg rounded-lg p-1 z-50"
           align="start"
         >
           <div className="p-2 border-b border-slate-100 mb-1">
