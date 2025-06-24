@@ -9,6 +9,7 @@ import BusinessDetailHeader from './negocio/BusinessDetailHeader';
 import DetalleNegocioMainContent from './negocio/DetalleNegocioMainContent';
 import ConflictResolutionDialog from './business/ConflictResolutionDialog';
 import { Button } from '@/components/ui/button';
+import { EstadoPresupuesto, EstadoNegocio } from '@/types';
 
 interface DetalleNegocioProps {
   negocioId: string;
@@ -85,11 +86,11 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
   };
 
   const handleCambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string): Promise<void> => {
-    await cambiarEstadoPresupuesto(negocioId, presupuestoId, nuevoEstado, fechaVencimiento);
+    await cambiarEstadoPresupuesto(negocioId, presupuestoId, nuevoEstado as EstadoPresupuesto, fechaVencimiento);
   };
 
   const handleCambiarEstadoNegocio = async (negocioId: string, nuevoEstado: string) => {
-    await cambiarEstadoNegocio(negocioId, nuevoEstado);
+    await cambiarEstadoNegocio(negocioId, nuevoEstado as EstadoNegocio);
   };
 
   const handleResolveConflict = async (negocioId: string, resolvedState: string) => {
