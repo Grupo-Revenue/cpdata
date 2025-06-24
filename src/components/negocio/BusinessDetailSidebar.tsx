@@ -13,22 +13,11 @@ import {
 } from '@/components/ui/sidebar';
 import { 
   ArrowLeft, 
-  User, 
-  Building, 
-  Calendar, 
-  MapPin, 
-  Users, 
-  TrendingUp, 
   FileText, 
   RefreshCw,
-  Plus,
-  Phone,
-  Mail,
-  DollarSign
+  Plus
 } from 'lucide-react';
 import { Negocio } from '@/types';
-import { formatearPrecio } from '@/utils/formatters';
-import { calcularValorNegocio } from '@/utils/businessCalculations';
 import BusinessStateSelect from '@/components/business/BusinessStateSelect';
 import BusinessSyncStatus from '@/components/business/BusinessSyncStatus';
 
@@ -45,10 +34,8 @@ const BusinessDetailSidebar: React.FC<BusinessDetailSidebarProps> = ({
   onCrearPresupuesto,
   onCambiarEstado
 }) => {
-  const valorTotal = calcularValorNegocio(negocio);
   const presupuestosAprobados = negocio.presupuestos.filter(p => p.estado === 'aprobado').length;
   const presupuestosEnviados = negocio.presupuestos.filter(p => p.estado === 'enviado').length;
-  const empresaDisplay = negocio.productora?.nombre || negocio.clienteFinal?.nombre || 'Sin empresa';
 
   const handleStateChange = (negocioId: string, nuevoEstado: string) => {
     if (onCambiarEstado) {
@@ -79,62 +66,6 @@ const BusinessDetailSidebar: React.FC<BusinessDetailSidebarProps> = ({
       </SidebarHeader>
 
       <SidebarContent className="px-4">
-        {/* Contact Information */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-medium text-slate-700 mb-2">
-            Contacto
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <Card className="border-slate-200">
-              <CardContent className="p-3 space-y-2">
-                <div className="flex items-center space-x-2">
-                  <User className="w-3 h-3 text-slate-500 flex-shrink-0" />
-                  <span className="text-sm text-slate-700">{negocio.contacto.nombre}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Phone className="w-3 h-3 text-slate-500 flex-shrink-0" />
-                  <span className="text-sm text-slate-700">{negocio.contacto.telefono}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Mail className="w-3 h-3 text-slate-500 flex-shrink-0" />
-                  <span className="text-sm text-slate-700 truncate">{negocio.contacto.email}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Building className="w-3 h-3 text-slate-500 flex-shrink-0" />
-                  <span className="text-sm text-slate-700 truncate">{empresaDisplay}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Event Information */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-medium text-slate-700 mb-2">
-            Evento
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <Card className="border-slate-200">
-              <CardContent className="p-3 space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-3 h-3 text-slate-500 flex-shrink-0" />
-                  <span className="text-sm text-slate-700">
-                    {negocio.evento.fechaEvento ? new Date(negocio.evento.fechaEvento).toLocaleDateString('es-CL') : 'Pendiente'}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <MapPin className="w-3 h-3 text-slate-500 flex-shrink-0" />
-                  <span className="text-sm text-slate-700">{negocio.evento.locacion}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Users className="w-3 h-3 text-slate-500 flex-shrink-0" />
-                  <span className="text-sm text-slate-700">{negocio.evento.cantidadAsistentes.toLocaleString()} asistentes</span>
-                </div>
-              </CardContent>
-            </Card>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
         {/* Metrics */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-medium text-slate-700 mb-2">
