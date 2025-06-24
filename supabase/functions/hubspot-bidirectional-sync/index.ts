@@ -26,6 +26,16 @@ interface BusinessStateMapping {
   hubspot_stage_id: string;
 }
 
+interface SyncConflict {
+  negocio_id: string;
+  app_state: string;
+  hubspot_state: string;
+  app_amount?: number;
+  hubspot_amount?: number;
+  conflict_type: 'state' | 'amount' | 'both';
+  timestamp: string;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -81,7 +91,8 @@ serve(async (req) => {
 })
 
 async function syncToHubSpot(supabase: any, negocioId: string, userId: string, forceAmountSync: boolean = false) {
-  console.log('Starting sync to HubSpot for negocio:', negocioId, 'Force amount sync:', forceAmountSync)
+  console.log('=== SYNC TO HUBSPOT START ===')
+  console.log('Negocio ID:', negocioId, 'Force Amount Sync:', forceAmountSync)
   
   try {
     // Get business data with related data for value calculation
@@ -104,6 +115,8 @@ async function syncToHubSpot(supabase: any, negocioId: string, userId: string, f
     if (!negocio) {
       throw new Error('Business not found')
     }
+
+    console.log('Business data loaded:', negocio.numero, negocio.estado)
 
     // Get HubSpot configuration
     const { data: config, error: configError } = await supabase
@@ -141,10 +154,12 @@ async function syncToHubSpot(supabase: any, negocioId: string, userId: string, f
       throw new Error(`No mapping configured for business state: ${negocio.estado}. Please configure state mappings first.`)
     }
 
+    console.log('State mapping found:', negocio.estado, '->', mapping.hubspot_stage_id)
+
     // Check if deal exists in HubSpot
     const { data: existingSync } = await supabase
       .from('hubspot_sync')
-      .select('hubspot_deal_id')
+      .select('hubspot_deal_id, app_last_modified')
       .eq('negocio_id', negocioId)
       .single()
 
@@ -160,7 +175,7 @@ async function syncToHubSpot(supabase: any, negocioId: string, userId: string, f
     }
 
     // Add close date if available
-    if (negocio.fecha_cierre) {
+    if (negocio.fecha_cierre && negocio.fecha_cierre !== '1970-01-01') {
       try {
         const closeDateTimestamp = new Date(negocio.fecha_cierre).getTime()
         dealData.closedate = closeDateTimestamp.toString()
@@ -175,6 +190,25 @@ async function syncToHubSpot(supabase: any, negocioId: string, userId: string, f
 
     if (hubspotDealId) {
       console.log('Updating existing HubSpot deal:', hubspotDealId)
+      
+      // Check for potential conflicts before updating
+      if (!forceAmountSync && config.bidirectional_sync) {
+        const conflictResult = await checkForConflicts(supabase, negocioId, userId, apiKeyData.api_key, hubspotDealId, negocio, currentValue, mapping)
+        if (conflictResult.hasConflict) {
+          console.log('Conflict detected, storing for manual resolution')
+          await storeConflict(supabase, conflictResult.conflict)
+          
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              conflict: true,
+              conflictData: conflictResult.conflict,
+              message: 'Conflict detected - manual resolution required'
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      }
       
       // Update existing deal
       const updateResponse = await fetch(`https://api.hubapi.com/crm/v3/objects/deals/${hubspotDealId}`, {
@@ -219,7 +253,7 @@ async function syncToHubSpot(supabase: any, negocioId: string, userId: string, f
       console.log('Successfully created HubSpot deal:', hubspotDealId)
     }
 
-    // Update sync record
+    // Update sync record with precedence timestamp
     await supabase
       .from('hubspot_sync')
       .upsert({
@@ -228,7 +262,8 @@ async function syncToHubSpot(supabase: any, negocioId: string, userId: string, f
         sync_status: 'success',
         last_sync_at: new Date().toISOString(),
         last_hubspot_sync_at: new Date().toISOString(),
-        app_last_modified: negocio.updated_at
+        app_last_modified: negocio.updated_at,
+        sync_direction: 'outbound'
       })
 
     // Log the operation
@@ -238,14 +273,18 @@ async function syncToHubSpot(supabase: any, negocioId: string, userId: string, f
         negocio_id: negocioId,
         hubspot_deal_id: hubspotDealId,
         operation_type: 'app_to_hubspot',
+        old_state: 'unknown',
         new_state: negocio.estado,
+        old_amount: null,
         new_amount: parseFloat(currentValue),
+        hubspot_old_stage: 'unknown',
         hubspot_new_stage: mapping.hubspot_stage_id,
         success: true,
-        sync_direction: 'outbound'
+        sync_direction: 'outbound',
+        force_sync: forceAmountSync
       })
 
-    console.log('Successfully synced to HubSpot:', hubspotDealId, 'Amount updated:', amountUpdated)
+    console.log('=== SYNC TO HUBSPOT COMPLETE ===')
     return new Response(
       JSON.stringify({ success: true, hubspotDealId, amountUpdated }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -274,11 +313,103 @@ async function syncToHubSpot(supabase: any, negocioId: string, userId: string, f
   }
 }
 
-async function syncFromHubSpot(supabase: any, hubspotDealIdOrNegocioId: string, userId: string) {
-  console.log('Starting sync from HubSpot for:', hubspotDealIdOrNegocioId)
+async function checkForConflicts(supabase: any, negocioId: string, userId: string, apiKey: string, hubspotDealId: string, negocio: any, currentValue: number, mapping: any) {
+  console.log('=== CHECKING FOR CONFLICTS ===')
   
   try {
-    // Get HubSpot configuration and API key
+    // Fetch current HubSpot deal data
+    const hubspotResponse = await fetch(`https://api.hubapi.com/crm/v3/objects/deals/${hubspotDealId}?properties=dealstage,amount,hs_lastmodifieddate,closedate`, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!hubspotResponse.ok) {
+      console.error('Failed to fetch HubSpot deal for conflict check')
+      return { hasConflict: false }
+    }
+
+    const hubspotDeal = await hubspotResponse.json()
+    console.log('HubSpot deal data for conflict check:', hubspotDeal.properties)
+
+    // Find the business state that corresponds to HubSpot stage
+    const { data: reverseMapping } = await supabase
+      .from('hubspot_state_mapping')
+      .select('business_state')
+      .eq('user_id', userId)
+      .eq('hubspot_stage_id', hubspotDeal.properties.dealstage)
+      .single()
+
+    const hubspotBusinessState = reverseMapping?.business_state || 'unknown'
+    const hubspotAmount = parseFloat(hubspotDeal.properties.amount || '0')
+    
+    console.log('Conflict check - App state:', negocio.estado, 'HubSpot state:', hubspotBusinessState)
+    console.log('Conflict check - App amount:', currentValue, 'HubSpot amount:', hubspotAmount)
+
+    // Check for state conflicts
+    const stateConflict = negocio.estado !== hubspotBusinessState && hubspotBusinessState !== 'unknown'
+    
+    // Check for amount conflicts (with tolerance for small differences)
+    const amountTolerance = 100 // Allow $100 difference
+    const amountConflict = Math.abs(currentValue - hubspotAmount) > amountTolerance
+
+    if (stateConflict || amountConflict) {
+      const conflictType = stateConflict && amountConflict ? 'both' : 
+                          stateConflict ? 'state' : 'amount'
+
+      const conflict: SyncConflict = {
+        negocio_id: negocioId,
+        app_state: negocio.estado,
+        hubspot_state: hubspotBusinessState,
+        app_amount: currentValue,
+        hubspot_amount: hubspotAmount,
+        conflict_type: conflictType,
+        timestamp: new Date().toISOString()
+      }
+
+      console.log('Conflict detected:', conflict)
+      return { hasConflict: true, conflict }
+    }
+
+    console.log('No conflicts detected')
+    return { hasConflict: false }
+
+  } catch (error) {
+    console.error('Error checking for conflicts:', error)
+    return { hasConflict: false }
+  }
+}
+
+async function storeConflict(supabase: any, conflict: SyncConflict) {
+  console.log('Storing conflict for manual resolution')
+  
+  try {
+    await supabase
+      .from('hubspot_sync_conflicts')
+      .upsert({
+        negocio_id: conflict.negocio_id,
+        app_state: conflict.app_state,
+        hubspot_state: conflict.hubspot_state,
+        app_amount: conflict.app_amount,
+        hubspot_amount: conflict.hubspot_amount,
+        conflict_type: conflict.conflict_type,
+        status: 'pending',
+        created_at: conflict.timestamp
+      })
+      
+    console.log('Conflict stored successfully')
+  } catch (error) {
+    console.error('Error storing conflict:', error)
+  }
+}
+
+async function syncFromHubSpot(supabase: any, hubspotDealIdOrNegocioId: string, userId: string) {
+  console.log('=== SYNC FROM HUBSPOT START ===')
+  console.log('Input ID:', hubspotDealIdOrNegocioId)
+  
+  try {
+    // Get HubSpot configuration
     const { data: config, error: configError } = await supabase
       .from('hubspot_config')
       .select('*')
@@ -286,9 +417,10 @@ async function syncFromHubSpot(supabase: any, hubspotDealIdOrNegocioId: string, 
       .single()
 
     if (configError || !config?.api_key_set) {
-      throw new Error('HubSpot not configured')
+      throw new Error('HubSpot not configured or API key not set')
     }
 
+    // Get API key
     const { data: apiKeyData, error: apiKeyError } = await supabase
       .from('hubspot_api_keys')
       .select('api_key')
@@ -299,171 +431,148 @@ async function syncFromHubSpot(supabase: any, hubspotDealIdOrNegocioId: string, 
       throw new Error('HubSpot API key not found')
     }
 
+    // Check if input is negocio ID or HubSpot deal ID
     let hubspotDealId = hubspotDealIdOrNegocioId
     let negocioId = null
 
-    // Check if we got a negocio ID instead of HubSpot deal ID
-    if (hubspotDealIdOrNegocioId.length === 36) { // UUID length
-      const { data: syncRecord } = await supabase
-        .from('hubspot_sync')
-        .select('hubspot_deal_id, negocio_id')
-        .eq('negocio_id', hubspotDealIdOrNegocioId)
-        .single()
+    // Try to find sync record first
+    const { data: syncRecord } = await supabase
+      .from('hubspot_sync')
+      .select('negocio_id, hubspot_deal_id')
+      .or(`negocio_id.eq.${hubspotDealIdOrNegocioId},hubspot_deal_id.eq.${hubspotDealIdOrNegocioId}`)
+      .single()
 
-      if (syncRecord) {
-        hubspotDealId = syncRecord.hubspot_deal_id
-        negocioId = syncRecord.negocio_id
-      }
+    if (syncRecord) {
+      negocioId = syncRecord.negocio_id
+      hubspotDealId = syncRecord.hubspot_deal_id
+      console.log('Found sync record - Negocio:', negocioId, 'HubSpot Deal:', hubspotDealId)
     } else {
-      // Find corresponding business
-      const { data: syncRecord } = await supabase
-        .from('hubspot_sync')
-        .select('negocio_id')
-        .eq('hubspot_deal_id', hubspotDealId)
-        .single()
-
-      if (syncRecord) {
-        negocioId = syncRecord.negocio_id
-      }
+      // Assume it's a HubSpot deal ID
+      console.log('No sync record found, assuming HubSpot deal ID')
     }
 
-    if (!negocioId || !hubspotDealId) {
-      throw new Error('No corresponding business or HubSpot deal found')
-    }
-
-    // Fetch deal from HubSpot with close date
-    const dealResponse = await fetch(`https://api.hubapi.com/crm/v3/objects/deals/${hubspotDealId}?properties=dealname,dealstage,amount,closedate,hs_lastmodifieddate`, {
+    // Fetch HubSpot deal
+    const hubspotResponse = await fetch(`https://api.hubapi.com/crm/v3/objects/deals/${hubspotDealId}?properties=dealname,dealstage,amount,hs_lastmodifieddate,closedate,pipeline`, {
       headers: {
-        'Authorization': `Bearer ${apiKeyData.api_key}`
+        'Authorization': `Bearer ${apiKeyData.api_key}`,
+        'Content-Type': 'application/json'
       }
     })
 
-    if (!dealResponse.ok) {
-      const errorText = await dealResponse.text()
-      console.error('Failed to fetch deal from HubSpot:', errorText)
-      throw new Error(`Failed to fetch deal from HubSpot: ${dealResponse.status} ${dealResponse.statusText}`)
+    if (!hubspotResponse.ok) {
+      throw new Error(`Failed to fetch HubSpot deal: ${hubspotResponse.status}`)
     }
 
-    const deal: HubSpotDeal = await dealResponse.json()
-    console.log('Fetched HubSpot deal:', deal.id, 'stage:', deal.properties.dealstage, 'amount:', deal.properties.amount, 'closedate:', deal.properties.closedate)
+    const hubspotDeal = await hubspotResponse.json()
+    console.log('Fetched HubSpot deal:', hubspotDeal.id, 'stage:', hubspotDeal.properties.dealstage, 'amount:', hubspotDeal.properties.amount)
 
-    // Get current business data with budgets for amount comparison
-    const { data: negocio, error: negocioError } = await supabase
+    if (!negocioId) {
+      console.log('No corresponding business found for HubSpot deal:', hubspotDealId)
+      return new Response(
+        JSON.stringify({ success: false, error: 'No corresponding business found' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Get current business data
+    const { data: currentNegocio, error: negocioError } = await supabase
       .from('negocios')
       .select(`
         *,
         presupuestos(*)
       `)
       .eq('id', negocioId)
+      .eq('user_id', userId)
       .single()
 
-    if (negocioError || !negocio) {
-      console.error('Error fetching business:', negocioError)
+    if (negocioError || !currentNegocio) {
       throw new Error('Business not found')
     }
 
-    // Find business state mapping from HubSpot stage
-    const { data: mapping, error: mappingError } = await supabase
+    console.log('Current business state:', currentNegocio.estado)
+
+    // Calculate current business value
+    const currentValue = calculateBusinessValue(currentNegocio)
+    console.log('Calculated business value:', currentValue, 'from', currentNegocio.presupuestos?.length || 0, 'budgets')
+
+    // Find corresponding business state from HubSpot stage
+    const { data: stateMapping } = await supabase
       .from('hubspot_state_mapping')
       .select('business_state')
       .eq('user_id', userId)
-      .eq('hubspot_stage_id', deal.properties.dealstage)
+      .eq('hubspot_stage_id', hubspotDeal.properties.dealstage)
       .single()
 
-    if (mappingError || !mapping) {
-      console.error(`No mapping found for HubSpot stage: ${deal.properties.dealstage}`)
-      throw new Error(`No mapping found for HubSpot stage: ${deal.properties.dealstage}`)
-    }
-
-    // Check for changes
-    const currentAppAmount = calculateBusinessValue(negocio)
-    const hubspotAmount = parseFloat(deal.properties.amount || '0')
-    
-    const stateChanged = negocio.estado !== mapping.business_state
-    const amountChanged = Math.abs(parseFloat(currentAppAmount) - hubspotAmount) > 0.01
-    
-    // Check close date changes
-    let closeDateChanged = false
-    let newCloseDate = null
-    
-    if (deal.properties.closedate) {
-      try {
-        const hubspotCloseDate = new Date(parseInt(deal.properties.closedate)).toISOString().split('T')[0]
-        const currentCloseDate = negocio.fecha_cierre
-        
-        if (currentCloseDate !== hubspotCloseDate) {
-          closeDateChanged = true
-          newCloseDate = hubspotCloseDate
-        }
-      } catch (error) {
-        console.error('Error parsing HubSpot close date:', deal.properties.closedate, error)
-      }
-    } else if (negocio.fecha_cierre) {
-      closeDateChanged = true
-      newCloseDate = null
-    }
-    
-    console.log('Comparison:', {
-      currentState: negocio.estado,
-      newState: mapping.business_state,
-      stateChanged,
-      currentAmount: currentAppAmount,
-      hubspotAmount,
-      amountChanged,
-      currentCloseDate: negocio.fecha_cierre,
-      newCloseDate,
-      closeDateChanged
-    })
-
-    if (!stateChanged && !amountChanged && !closeDateChanged) {
-      console.log('No changes detected, skipping update')
+    const newState = stateMapping?.business_state
+    if (!newState) {
+      console.log('No mapping found for HubSpot stage:', hubspotDeal.properties.dealstage)
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          newState: mapping.business_state, 
-          newAmount: currentAppAmount,
-          changed: false,
-          stateChanged: false,
-          amountChanged: false,
-          closeDateChanged: false
-        }),
+        JSON.stringify({ success: false, error: 'No state mapping found for HubSpot stage' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Prepare update data
+    const hubspotAmount = parseFloat(hubspotDeal.properties.amount || '0')
+    const hubspotCloseDate = hubspotDeal.properties.closedate ? 
+      new Date(parseInt(hubspotDeal.properties.closedate)).toISOString().split('T')[0] : null
+
+    // Check what needs to be updated
+    const stateChanged = currentNegocio.estado !== newState
+    const amountChanged = Math.abs(currentValue - hubspotAmount) > 100 // $100 tolerance
+    const closeDateChanged = currentNegocio.fecha_cierre !== hubspotCloseDate
+
+    console.log('Comparison:', {
+      currentState: currentNegocio.estado,
+      newState: newState,
+      stateChanged: stateChanged,
+      currentAmount: currentValue.toString(),
+      hubspotAmount: hubspotAmount,
+      amountChanged: amountChanged,
+      currentCloseDate: currentNegocio.fecha_cierre || '1970-01-01',
+      newCloseDate: hubspotCloseDate,
+      closeDateChanged: closeDateChanged
+    })
+
+    let updated = false
     const updateData: any = {}
-    
+
     if (stateChanged) {
-      updateData.estado = mapping.business_state
-    }
-    
-    if (closeDateChanged) {
-      updateData.fecha_cierre = newCloseDate
+      updateData.estado = newState
+      updated = true
+      console.log('Updating business with:', { estado: newState })
     }
 
-    // Update business if needed
-    if (Object.keys(updateData).length > 0) {
-      console.log('Updating business with:', updateData)
+    if (closeDateChanged && hubspotCloseDate) {
+      updateData.fecha_cierre = hubspotCloseDate
+      updated = true
+    }
+
+    if (updated) {
       const { error: updateError } = await supabase
         .from('negocios')
         .update(updateData)
         .eq('id', negocioId)
 
       if (updateError) {
-        console.error('Error updating business:', updateError)
         throw new Error(`Failed to update business: ${updateError.message}`)
       }
+
+      console.log('Successfully updated business')
+    } else {
+      console.log('No changes detected, skipping update')
     }
 
     // Update sync record
     await supabase
       .from('hubspot_sync')
-      .update({
+      .upsert({
+        negocio_id: negocioId,
+        hubspot_deal_id: hubspotDealId,
+        sync_status: 'success',
         last_sync_at: new Date().toISOString(),
-        hubspot_last_modified: deal.properties.hs_lastmodifieddate
+        last_hubspot_sync_at: hubspotDeal.properties.hs_lastmodifieddate,
+        sync_direction: 'inbound'
       })
-      .eq('negocio_id', negocioId)
 
     // Log the operation
     await supabase
@@ -472,192 +581,186 @@ async function syncFromHubSpot(supabase: any, hubspotDealIdOrNegocioId: string, 
         negocio_id: negocioId,
         hubspot_deal_id: hubspotDealId,
         operation_type: 'hubspot_to_app',
-        old_state: negocio.estado,
-        new_state: stateChanged ? mapping.business_state : negocio.estado,
-        old_amount: parseFloat(currentAppAmount),
+        old_state: currentNegocio.estado,
+        new_state: newState,
+        old_amount: currentValue,
         new_amount: hubspotAmount,
-        hubspot_new_stage: deal.properties.dealstage,
+        hubspot_old_stage: 'unknown',
+        hubspot_new_stage: hubspotDeal.properties.dealstage,
         success: true,
         sync_direction: 'inbound'
       })
 
     console.log('Successfully synced from HubSpot')
+    console.log('=== SYNC FROM HUBSPOT COMPLETE ===')
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        newState: stateChanged ? mapping.business_state : negocio.estado, 
-        newAmount: stateChanged ? currentAppAmount : undefined,
-        newCloseDate: closeDateChanged ? newCloseDate : undefined,
-        changed: stateChanged || amountChanged || closeDateChanged,
-        stateChanged,
-        amountChanged: false, // We don't change amounts from HubSpot
-        closeDateChanged
+        changed: updated,
+        stateChanged: stateChanged,
+        amountChanged: amountChanged,
+        closeDateChanged: closeDateChanged,
+        newState: newState
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
-    console.error('Error in syncFromHubSpot:', error)
-    
-    // Log failed operation
-    try {
-      await supabase
-        .from('hubspot_sync_log')
-        .insert({
-          hubspot_deal_id: hubspotDealIdOrNegocioId,
-          operation_type: 'hubspot_to_app',
-          success: false,
-          error_message: error.message,
-          sync_direction: 'inbound'
-        })
-    } catch (logError) {
-      console.error('Failed to log sync error:', logError)
+    console.error('Error syncing from HubSpot:', error)
+    throw error
+  }
+}
+
+async function pollHubSpotChanges(supabase: any, userId: string, checkAmounts: boolean = true) {
+  console.log('=== POLLING HUBSPOT CHANGES ===')
+  
+  try {
+    // Get all synced businesses
+    const { data: syncedBusinesses, error: syncError } = await supabase
+      .from('hubspot_sync')
+      .select('negocio_id, hubspot_deal_id')
+      .eq('sync_status', 'success')
+
+    if (syncError) {
+      throw new Error(`Failed to fetch synced businesses: ${syncError.message}`)
     }
 
+    if (!syncedBusinesses || syncedBusinesses.length === 0) {
+      console.log('No synced businesses found')
+      return new Response(
+        JSON.stringify({ success: true, results: [] }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('Found', syncedBusinesses.length, 'synced businesses to check')
+
+    const results = []
+    for (const sync of syncedBusinesses) {
+      console.log('Processing business:', sync.negocio_id)
+      
+      try {
+        const syncResult = await syncFromHubSpot(supabase, sync.negocio_id, userId)
+        const resultData = await syncResult.json()
+        
+        results.push({
+          negocio_id: sync.negocio_id,
+          success: resultData.success,
+          changed: resultData.changed || false,
+          stateChanged: resultData.stateChanged || false,
+          amountChanged: resultData.amountChanged || false,
+          closeDateChanged: resultData.closeDateChanged || false
+        })
+      } catch (error) {
+        console.error('Error syncing business:', sync.negocio_id, error)
+        results.push({
+          negocio_id: sync.negocio_id,
+          success: false,
+          error: error.message
+        })
+      }
+    }
+
+    console.log('Polling complete, results:', results)
+
+    return new Response(
+      JSON.stringify({ success: true, results }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
+  } catch (error) {
+    console.error('Error polling HubSpot changes:', error)
     throw error
   }
 }
 
 async function massSyncAmounts(supabase: any, userId: string) {
-  console.log('Starting mass amount sync for user:', userId)
+  console.log('=== MASS SYNC AMOUNTS START ===')
   
   try {
-    // Get all synced businesses for the user
-    const { data: syncedBusinesses, error: syncError } = await supabase
-      .from('hubspot_sync')
+    // Get all businesses with budgets
+    const { data: businesses, error: businessError } = await supabase
+      .from('negocios')
       .select(`
-        negocio_id,
-        hubspot_deal_id,
-        negocios!inner(user_id, presupuestos(*))
+        id,
+        numero,
+        estado,
+        presupuestos(*)
       `)
-      .eq('negocios.user_id', userId)
+      .eq('user_id', userId)
 
-    if (syncError) {
-      console.error('Error fetching synced businesses:', syncError)
-      throw new Error(`Failed to fetch synced businesses: ${syncError.message}`)
+    if (businessError) {
+      throw new Error(`Failed to fetch businesses: ${businessError.message}`)
     }
 
-    console.log('Found synced businesses for mass amount sync:', syncedBusinesses?.length || 0)
+    console.log('Found', businesses?.length || 0, 'businesses to sync amounts')
 
     const results = { updated: 0, failed: 0, skipped: 0 }
 
-    for (const business of syncedBusinesses || []) {
+    for (const business of businesses || []) {
       try {
-        console.log('Mass syncing amounts for business:', business.negocio_id)
-        const result = await syncToHubSpot(supabase, business.negocio_id, userId, true)
-        const resultData = await result.json()
+        const currentValue = calculateBusinessValue(business)
         
-        if (resultData.success) {
-          results.updated++
+        if (currentValue > 0) {
+          const syncResult = await syncToHubSpot(supabase, business.id, userId, true) // Force amount sync
+          const resultData = await syncResult.json()
+          
+          if (resultData.success) {
+            results.updated++
+            console.log('Updated business:', business.numero, 'with amount:', currentValue)
+          } else {
+            results.failed++
+            console.error('Failed to update business:', business.numero)
+          }
         } else {
-          results.failed++
+          results.skipped++
+          console.log('Skipped business:', business.numero, 'no budget value')
         }
       } catch (error) {
-        console.error('Error in mass sync for business:', business.negocio_id, error.message)
         results.failed++
+        console.error('Error syncing business:', business.numero, error)
       }
     }
 
-    console.log('Mass amount sync complete:', results)
+    console.log('Mass sync complete:', results)
+
     return new Response(
       JSON.stringify({ success: true, results }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
-    console.error('Error in massSyncAmounts:', error)
-    throw error
-  }
-}
-
-async function pollHubSpotChanges(supabase: any, userId: string, checkAmounts: boolean = false) {
-  console.log('Starting to poll HubSpot changes for user:', userId, 'Check amounts:', checkAmounts)
-  
-  try {
-    // Get all synced deals for the user
-    const { data: syncedBusinesses, error: syncError } = await supabase
-      .from('hubspot_sync')
-      .select(`
-        negocio_id,
-        hubspot_deal_id,
-        hubspot_last_modified,
-        negocios!inner(user_id)
-      `)
-      .eq('negocios.user_id', userId)
-
-    if (syncError) {
-      console.error('Error fetching synced businesses for polling:', syncError)
-      throw new Error(`Failed to fetch synced businesses: ${syncError.message}`)
-    }
-
-    console.log('Found synced businesses for polling:', syncedBusinesses?.length || 0)
-
-    const results = []
-
-    for (const business of syncedBusinesses || []) {
-      try {
-        console.log('Processing business:', business.negocio_id)
-        const result = await syncFromHubSpot(supabase, business.hubspot_deal_id, userId)
-        const resultData = await result.json()
-        results.push({ 
-          negocio_id: business.negocio_id, 
-          success: resultData.success,
-          changed: resultData.changed,
-          stateChanged: resultData.stateChanged,
-          amountChanged: resultData.amountChanged,
-          closeDateChanged: resultData.closeDateChanged
-        })
-      } catch (error) {
-        console.error('Error syncing business:', business.negocio_id, error.message)
-        results.push({ 
-          negocio_id: business.negocio_id, 
-          success: false, 
-          error: error.message 
-        })
-      }
-    }
-
-    // Update last poll time
-    await supabase
-      .from('hubspot_config')
-      .update({ last_poll_at: new Date().toISOString() })
-      .eq('user_id', userId)
-
-    console.log('Polling complete, results:', results)
-    return new Response(
-      JSON.stringify({ success: true, results }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
-  } catch (error) {
-    console.error('Error in pollHubSpotChanges:', error)
+    console.error('Error in mass sync amounts:', error)
     throw error
   }
 }
 
 async function resolveConflict(supabase: any, negocioId: string, userId: string, resolvedState: string, resolvedAmount?: number) {
-  console.log('Resolving conflict for negocio:', negocioId, 'with state:', resolvedState, 'amount:', resolvedAmount)
+  console.log('=== RESOLVING CONFLICT ===')
+  console.log('Negocio:', negocioId, 'Resolved state:', resolvedState, 'Resolved amount:', resolvedAmount)
   
   try {
-    // Update business with resolved state
+    // Update the business with resolved values
+    const updateData: any = { estado: resolvedState }
+    
     const { error: updateError } = await supabase
       .from('negocios')
-      .update({ estado: resolvedState })
+      .update(updateData)
       .eq('id', negocioId)
-      .eq('user_id', userId)
 
     if (updateError) {
-      console.error('Error resolving conflict:', updateError)
-      throw new Error(`Failed to update business state: ${updateError.message}`)
+      throw new Error(`Failed to update business: ${updateError.message}`)
     }
 
+    // Remove the conflict record
+    await supabase
+      .from('hubspot_sync_conflicts')
+      .delete()
+      .eq('negocio_id', negocioId)
+
     // Sync the resolved state to HubSpot
-    try {
-      await syncToHubSpot(supabase, negocioId, userId, true)
-      console.log('Successfully synced resolved conflict to HubSpot')
-    } catch (error) {
-      console.error('Warning: Could not sync resolved conflict to HubSpot:', error.message)
-    }
+    await syncToHubSpot(supabase, negocioId, userId, true)
 
     // Log the resolution
     await supabase
@@ -668,32 +771,38 @@ async function resolveConflict(supabase: any, negocioId: string, userId: string,
         new_state: resolvedState,
         new_amount: resolvedAmount,
         success: true,
-        conflict_resolved: true,
-        sync_direction: 'bidirectional'
+        sync_direction: 'resolution'
       })
 
+    console.log('Conflict resolved successfully')
+
     return new Response(
-      JSON.stringify({ success: true, resolvedState, resolvedAmount }),
+      JSON.stringify({ success: true }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
-    console.error('Error in resolveConflict:', error)
+    console.error('Error resolving conflict:', error)
     throw error
   }
 }
 
-function calculateBusinessValue(negocio: any): string {
-  try {
-    const total = negocio.presupuestos?.reduce((sum: number, p: any) => {
-      const presupuestoTotal = parseFloat(p.total || 0)
-      return sum + presupuestoTotal
-    }, 0) || 0
-    
-    console.log('Calculated business value:', total, 'from', negocio.presupuestos?.length || 0, 'budgets')
-    return total.toString()
-  } catch (error) {
-    console.error('Error calculating business value:', error)
-    return '0'
+function calculateBusinessValue(negocio: any): number {
+  if (!negocio.presupuestos || negocio.presupuestos.length === 0) {
+    return 0
   }
+
+  // Sum all approved budgets
+  const approvedTotal = negocio.presupuestos
+    .filter((p: any) => p.estado === 'aprobado')
+    .reduce((sum: number, p: any) => sum + parseFloat(p.total || '0'), 0)
+
+  // If no approved budgets, use sent budgets
+  if (approvedTotal === 0) {
+    return negocio.presupuestos
+      .filter((p: any) => p.estado === 'enviado')
+      .reduce((sum: number, p: any) => sum + parseFloat(p.total || '0'), 0)
+  }
+
+  return approvedTotal
 }

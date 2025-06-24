@@ -22,6 +22,7 @@ interface SyncConflict {
   hubspot_amount?: number;
   conflict_type: 'state' | 'amount' | 'both';
   timestamp: string;
+  status: 'pending' | 'resolved';
 }
 
 interface SyncLog {
@@ -35,6 +36,8 @@ interface SyncLog {
   success: boolean;
   error_message: string;
   created_at: string;
+  sync_direction: 'inbound' | 'outbound' | 'resolution';
+  force_sync?: boolean;
 }
 
 export const useBidirectionalSync = () => {
@@ -75,6 +78,29 @@ export const useBidirectionalSync = () => {
     }
   }, [user, toast]);
 
+  // Load sync conflicts
+  const loadSyncConflicts = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('hubspot_sync_conflicts')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading sync conflicts:', error);
+        throw error;
+      }
+      
+      console.log('Loaded sync conflicts:', data?.length || 0);
+      setSyncConflicts(data || []);
+    } catch (error) {
+      console.error('Error in loadSyncConflicts:', error);
+    }
+  }, [user]);
+
   // Load sync logs with better filtering
   const loadSyncLogs = useCallback(async () => {
     if (!user) return;
@@ -84,7 +110,7 @@ export const useBidirectionalSync = () => {
         .from('hubspot_sync_log')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(100);
 
       if (error) {
         console.error('Error loading sync logs:', error);
@@ -162,7 +188,7 @@ export const useBidirectionalSync = () => {
     }
   };
 
-  // Enhanced sync to HubSpot with better error handling
+  // Enhanced sync to HubSpot with conflict detection
   const syncToHubSpot = async (negocioId: string, forceAmountSync: boolean = false) => {
     if (!user) {
       console.error('No user authenticated for sync');
@@ -195,6 +221,18 @@ export const useBidirectionalSync = () => {
       if (error) {
         console.error('Edge function error:', error);
         throw error;
+      }
+
+      if (data?.conflict) {
+        console.log('Conflict detected during sync:', data.conflictData);
+        await loadSyncConflicts(); // Reload conflicts
+        
+        toast({
+          title: "Conflicto detectado",
+          description: "Se ha detectado un conflicto que requiere resolución manual",
+          variant: "destructive"
+        });
+        return false;
       }
 
       if (data?.success) {
@@ -394,6 +432,7 @@ export const useBidirectionalSync = () => {
         }
         
         await loadSyncLogs();
+        await loadSyncConflicts(); // Check for new conflicts
         return true;
       } else {
         console.error('Polling failed:', data?.error);
@@ -437,7 +476,7 @@ export const useBidirectionalSync = () => {
     return success;
   };
 
-  // Resolve conflict with better validation
+  // Enhanced conflict resolution with better validation
   const resolveConflict = async (negocioId: string, resolvedState: string, resolvedAmount?: number) => {
     if (!user) {
       console.error('No user authenticated for conflict resolution');
@@ -517,8 +556,9 @@ export const useBidirectionalSync = () => {
       console.log('Loading initial sync data for user:', user.id);
       loadStateMappings();
       loadSyncLogs();
+      loadSyncConflicts();
     }
-  }, [user, loadStateMappings, loadSyncLogs]);
+  }, [user, loadStateMappings, loadSyncLogs, loadSyncConflicts]);
 
   return {
     stateMappings,
@@ -535,6 +575,7 @@ export const useBidirectionalSync = () => {
     pollHubSpotChanges,
     resolveConflict,
     loadStateMappings,
-    loadSyncLogs
+    loadSyncLogs,
+    loadSyncConflicts
   };
 };

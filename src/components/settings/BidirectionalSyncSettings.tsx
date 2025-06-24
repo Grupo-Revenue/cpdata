@@ -29,6 +29,7 @@ import { useBidirectionalSync } from '@/hooks/useBidirectionalSync';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import ConflictResolutionPanel from '@/components/business/ConflictResolutionPanel';
 
 const BUSINESS_STATES = [
   { value: 'oportunidad_creada', label: 'Oportunidad Creada' },
@@ -53,6 +54,7 @@ const BidirectionalSyncSettings: React.FC = () => {
   const { pipelines, dealStages, fetchPipelines, fetchDealStages, clearStages, loadingPipelines } = useHubSpotData();
   const {
     stateMappings,
+    syncConflicts,
     syncLogs,
     saveStateMapping,
     deleteStateMapping,
@@ -159,8 +161,16 @@ const BidirectionalSyncSettings: React.FC = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="config" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="config">Configuración</TabsTrigger>
+              <TabsTrigger value="conflicts">
+                Conflictos 
+                {syncConflicts.length > 0 && (
+                  <Badge variant="destructive" className="ml-2 text-xs">
+                    {syncConflicts.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="mappings">Mapeos de Estados</TabsTrigger>
               <TabsTrigger value="logs">Historial de Sync</TabsTrigger>
             </TabsList>
@@ -270,6 +280,10 @@ const BidirectionalSyncSettings: React.FC = () => {
                   Guardar Configuración
                 </Button>
               </div>
+            </TabsContent>
+
+            <TabsContent value="conflicts" className="space-y-6">
+              <ConflictResolutionPanel />
             </TabsContent>
 
             <TabsContent value="mappings" className="space-y-6">
