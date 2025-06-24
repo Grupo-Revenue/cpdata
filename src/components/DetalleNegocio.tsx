@@ -119,6 +119,7 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
               onEliminarPresupuesto={handleEliminarPresupuesto}
               onVerPDF={handleVerPDF}
               onCambiarEstado={handleCambiarEstadoPresupuesto}
+              onCambiarEstadoNegocio={handleCambiarEstadoNegocio}
             />
           </div>
         </main>
