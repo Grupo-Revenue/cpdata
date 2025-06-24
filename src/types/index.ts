@@ -1,15 +1,22 @@
 
-
 import { Database } from "@/integrations/supabase/types";
 
 export type Contacto = Database['public']['Tables']['contactos']['Row']
 export type Empresa = Database['public']['Tables']['empresas']['Row']
-export type Negocio = ExtendedNegocio //Database['public']['Tables']['negocios']['Row']
-export type Presupuesto = ExtendedPresupuesto //Database['public']['Tables']['presupuestos']['Row']
-export type ProductoPresupuesto = Database['public']['Tables']['productos_presupuesto']['Row']
+export type Negocio = ExtendedNegocio
+export type Presupuesto = ExtendedPresupuesto
+export type ProductoPresupuesto = ExtendedProductoPresupuesto
 export type ProductoBiblioteca = Database['public']['Tables']['productos_biblioteca']['Row']
 export type LineaProducto = Database['public']['Tables']['lineas_producto']['Row']
 export type ConfiguracionMarca = Database['public']['Tables']['configuracion_marca']['Row']
+
+// Extended types for application use
+export type ExtendedProductoPresupuesto = Database['public']['Tables']['productos_presupuesto']['Row'] & {
+  comentarios?: string;
+  descuentoPorcentaje?: number;
+  precioUnitario?: number; // Legacy property name mapping
+  precio_unitario: number;
+}
 
 export type ExtendedNegocio = Database['public']['Tables']['negocios']['Row'] & {
   contacto: Contacto;
@@ -23,11 +30,13 @@ export type ExtendedNegocio = Database['public']['Tables']['negocios']['Row'] & 
 }
 
 export type ExtendedPresupuesto = Database['public']['Tables']['presupuestos']['Row'] & {
-  productos?: ProductoPresupuesto[];
+  productos?: ExtendedProductoPresupuesto[];
   fechaCreacion: string;
   fechaEnvio?: string;
   fechaAprobacion?: string;
   fechaRechazo?: string;
+  // Legacy property name for backwards compatibility
+  fechaVencimiento?: string;
 }
 
 export type Evento = {
@@ -40,16 +49,12 @@ export type Evento = {
   locacion: string;
 }
 
-export type EstadoNegocio = 
-  | 'oportunidad_creada'
-  | 'presupuesto_enviado' 
-  | 'negocio_aceptado'
-  | 'parcialmente_aceptado'
-  | 'negocio_perdido'
-  | 'negocio_cerrado';
+// Update EstadoNegocio to match database enum exactly
+export type EstadoNegocio = Database['public']['Enums']['estado_negocio'];
 
-export type EstadoPresupuesto = 'borrador' | 'enviado' | 'aprobado' | 'rechazado';
-export type TipoEmpresa = 'productora' | 'cliente_final';
+export type EstadoPresupuesto = Database['public']['Enums']['estado_presupuesto'];
+
+export type TipoEmpresa = Database['public']['Enums']['tipo_empresa'];
 
 // Event types constant that was missing
 export const TIPOS_EVENTO = [
@@ -67,4 +72,3 @@ export const TIPOS_EVENTO = [
   'Networking',
   'Otro'
 ] as const;
-

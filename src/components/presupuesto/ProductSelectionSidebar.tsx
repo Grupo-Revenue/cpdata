@@ -4,12 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShoppingCart, ArrowRight, Package } from 'lucide-react';
-import { ProductoPresupuesto } from '@/types';
+import { ExtendedProductoPresupuesto } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
 import { calcularTotalesPresupuesto } from '@/utils/quoteCalculations';
 
 interface ProductSelectionSidebarProps {
-  productosSeleccionados: ProductoPresupuesto[];
+  productosSeleccionados: ExtendedProductoPresupuesto[];
   onEliminarProducto: (id: string) => void;
   onProceedToEdit: () => void;
   disabled?: boolean;
@@ -58,7 +58,7 @@ const ProductSelectionSidebar: React.FC<ProductSelectionSidebarProps> = ({
                       Cant: {producto.cantidad}
                     </span>
                     <span className="text-xs text-green-600 font-medium">
-                      {formatearPrecio(producto.precioUnitario)}
+                      {formatearPrecio(producto.precioUnitario || producto.precio_unitario)}
                     </span>
                   </div>
                 </div>

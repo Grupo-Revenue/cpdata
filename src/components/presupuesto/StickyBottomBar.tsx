@@ -3,12 +3,12 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, ShoppingCart } from 'lucide-react';
-import { ProductoPresupuesto } from '@/types';
+import { ExtendedProductoPresupuesto } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
 import { calcularTotalesPresupuesto } from '@/utils/quoteCalculations';
 
 interface StickyBottomBarProps {
-  productosSeleccionados: ProductoPresupuesto[];
+  productosSeleccionados: ExtendedProductoPresupuesto[];
   onProceedToEdit: () => void;
   disabled?: boolean;
 }

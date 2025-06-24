@@ -4,12 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShoppingCart, ArrowLeft } from 'lucide-react';
-import { ProductoPresupuesto } from '@/types';
+import { ExtendedProductoPresupuesto } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
 import { calcularTotalesPresupuesto } from '@/utils/quoteCalculations';
 
 interface QuoteSummaryPanelProps {
-  productos: ProductoPresupuesto[];
+  productos: ExtendedProductoPresupuesto[];
   onVolver: () => void;
   onConfirmar: () => void;
 }

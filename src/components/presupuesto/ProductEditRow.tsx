@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
-import { ProductoPresupuesto } from '@/types';
+import { ExtendedProductoPresupuesto } from '@/types';
 import ProductMainRow from './components/ProductMainRow';
 import ProductExpandedDetails from './components/ProductExpandedDetails';
 
 interface ProductEditRowProps {
-  producto: ProductoPresupuesto;
+  producto: ExtendedProductoPresupuesto;
   index: number;
-  onActualizarProducto: (id: string, campo: keyof ProductoPresupuesto, valor: any) => void;
+  onActualizarProducto: (id: string, campo: keyof ExtendedProductoPresupuesto, valor: any) => void;
   onEliminarProducto: (id: string) => void;
 }
 

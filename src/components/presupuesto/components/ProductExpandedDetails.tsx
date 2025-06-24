@@ -2,11 +2,11 @@
 import React from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import RichTextEditor from '@/components/ui/rich-text-editor';
-import { ProductoPresupuesto } from '@/types';
+import { ExtendedProductoPresupuesto } from '@/types';
 
 interface ProductExpandedDetailsProps {
-  producto: ProductoPresupuesto;
-  onActualizarProducto: (id: string, campo: keyof ProductoPresupuesto, valor: any) => void;
+  producto: ExtendedProductoPresupuesto;
+  onActualizarProducto: (id: string, campo: keyof ExtendedProductoPresupuesto, valor: any) => void;
 }
 
 const ProductExpandedDetails: React.FC<ProductExpandedDetailsProps> = ({

@@ -3,17 +3,17 @@ import React from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Percent, Trash2, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
-import { ProductoPresupuesto } from '@/types';
+import { ExtendedProductoPresupuesto } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
 import ProductNumberInput from './ProductNumberInput';
 import ProductPriceInput from './ProductPriceInput';
 
 interface ProductMainRowProps {
-  producto: ProductoPresupuesto;
+  producto: ExtendedProductoPresupuesto;
   index: number;
   isExpanded: boolean;
   onToggleExpanded: () => void;
-  onActualizarProducto: (id: string, campo: keyof ProductoPresupuesto, valor: any) => void;
+  onActualizarProducto: (id: string, campo: keyof ExtendedProductoPresupuesto, valor: any) => void;
   onEliminarProducto: (id: string) => void;
 }
 
@@ -82,7 +82,7 @@ const ProductMainRow: React.FC<ProductMainRowProps> = ({
       
       <TableCell className="text-center align-middle py-3">
         <ProductPriceInput
-          value={producto.precioUnitario}
+          value={producto.precioUnitario || producto.precio_unitario}
           onChange={(value) => {
             console.log('Price change', { productId: producto.id, value });
             onActualizarProducto(producto.id, 'precioUnitario', value);
@@ -94,7 +94,7 @@ const ProductMainRow: React.FC<ProductMainRowProps> = ({
         <div className="relative inline-block">
           <Percent className="absolute right-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
           <ProductNumberInput
-            value={producto.descuentoPorcentaje}
+            value={producto.descuentoPorcentaje || 0}
             onChange={handleDescuentoChange}
             min={0}
             max={100}

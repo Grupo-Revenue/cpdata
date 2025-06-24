@@ -2,12 +2,12 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ProductoPresupuesto } from '@/types';
+import { ExtendedProductoPresupuesto } from '@/types';
 import ProductEditRow from './ProductEditRow';
 
 interface ProductEditTableProps {
-  productos: ProductoPresupuesto[];
-  onActualizarProducto: (id: string, campo: keyof ProductoPresupuesto, valor: any) => void;
+  productos: ExtendedProductoPresupuesto[];
+  onActualizarProducto: (id: string, campo: keyof ExtendedProductoPresupuesto, valor: any) => void;
   onEliminarProducto: (id: string) => void;
 }
 

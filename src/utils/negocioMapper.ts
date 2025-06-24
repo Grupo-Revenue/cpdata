@@ -1,5 +1,4 @@
 
-
 import { Database } from "@/integrations/supabase/types";
 import { ExtendedNegocio, ExtendedPresupuesto, Evento } from "@/types";
 
@@ -32,6 +31,7 @@ export const mapDatabaseToExtendedNegocio = (
     fechaEnvio: presupuesto.fecha_envio || undefined,
     fechaAprobacion: presupuesto.fecha_aprobacion || undefined,
     fechaRechazo: presupuesto.fecha_rechazo || undefined,
+    fechaVencimiento: presupuesto.fecha_vencimiento || undefined,
     productos: [] // Will be populated separately if needed
   }));
 
@@ -64,3 +64,12 @@ export const mapExtendedToDatabase = (negocio: Partial<ExtendedNegocio>) => {
   };
 };
 
+// Helper function to map ProductoPresupuesto with legacy property names
+export const mapProductoPresupuestoToExtended = (producto: Database['public']['Tables']['productos_presupuesto']['Row']) => {
+  return {
+    ...producto,
+    precioUnitario: producto.precio_unitario,
+    comentarios: '',
+    descuentoPorcentaje: 0
+  };
+};

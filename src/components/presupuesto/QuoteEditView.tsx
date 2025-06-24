@@ -1,13 +1,13 @@
 
 import React from 'react';
-import { ProductoPresupuesto } from '@/types';
+import { ExtendedProductoPresupuesto } from '@/types';
 import ProductEditTable from './ProductEditTable';
 import QuoteSummaryPanel from './QuoteSummaryPanel';
 import EmptyProductsState from './EmptyProductsState';
 
 interface QuoteEditViewProps {
-  productos: ProductoPresupuesto[];
-  onActualizarProducto: (id: string, campo: keyof ProductoPresupuesto, valor: any) => void;
+  productos: ExtendedProductoPresupuesto[];
+  onActualizarProducto: (id: string, campo: keyof ExtendedProductoPresupuesto, valor: any) => void;
   onEliminarProducto: (id: string) => void;
   onVolver: () => void;
   onConfirmar: () => void;

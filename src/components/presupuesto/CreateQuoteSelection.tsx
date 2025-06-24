@@ -2,7 +2,7 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProductoBiblioteca } from '@/hooks/useProductosBiblioteca';
-import { ProductoPresupuesto } from '@/types';
+import { ExtendedProductoPresupuesto } from '@/types';
 import ProductsSelectionTable from './ProductsSelectionTable';
 import CustomProductForm from './CustomProductForm';
 import ProductSelectionSidebar from './ProductSelectionSidebar';
@@ -10,7 +10,7 @@ import StickyBottomBar from './StickyBottomBar';
 
 interface CreateQuoteSelectionProps {
   productosBiblioteca: ProductoBiblioteca[];
-  productosSeleccionados: ProductoPresupuesto[];
+  productosSeleccionados: ExtendedProductoPresupuesto[];
   onProductoSeleccionado: (producto: ProductoBiblioteca) => void;
   onProductoDeseleccionado: (id: string) => void;
   onAgregarProductoPersonalizado: (producto: {
