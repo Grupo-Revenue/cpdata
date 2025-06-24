@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useCallback } from 'react';
+import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
 import { Negocio, Presupuesto } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -7,7 +7,7 @@ interface NegocioContextProps {
   loading: boolean;
   error: string | null;
   obtenerNegocio: (id: string) => Negocio | undefined;
-  crearNegocio: (negocioData: Omit<Negocio, 'id' | 'created_at' | 'updated_at'>) => Promise<Negocio | null>;
+  crearNegocio: (negocioData: any) => Promise<Negocio | null>;
   actualizarNegocio: (id: string, updates: Partial<Negocio>) => Promise<Negocio | null>;
   eliminarNegocio: (id: string) => Promise<boolean>;
   crearPresupuesto: (negocioId: string, presupuestoData: Omit<Presupuesto, 'id' | 'created_at' | 'updated_at'>) => Promise<Presupuesto | null>;
@@ -27,9 +27,8 @@ const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
       .select(`
         *,
         contacto: contactos (id, nombre, apellido, email, telefono),
-        evento: eventos (id, nombreEvento),
-        productora: productoras (id, nombre),
-        clienteFinal: clientes_finales (id, nombre),
+        productora: empresas!productora_id (id, nombre, tipo, rut, sitio_web, direccion),
+        clienteFinal: empresas!cliente_final_id (id, nombre, tipo, rut, sitio_web, direccion),
         presupuestos (
           id,
           estado,
@@ -49,7 +48,32 @@ const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
       throw error;
     }
     
-    return data as Negocio[];
+    // Transform the data to match ExtendedNegocio type
+    const transformedData = data.map(negocio => ({
+      ...negocio,
+      // Add required legacy properties for backwards compatibility
+      evento: {
+        tipoEvento: negocio.tipo_evento,
+        nombreEvento: negocio.nombre_evento,
+        fechaEvento: negocio.fecha_evento,
+        horasAcreditacion: negocio.horas_acreditacion,
+        cantidadAsistentes: negocio.cantidad_asistentes,
+        cantidadInvitados: negocio.cantidad_invitados,
+        locacion: negocio.locacion
+      },
+      fechaCreacion: negocio.created_at,
+      fechaCierre: negocio.fecha_cierre,
+      presupuestos: negocio.presupuestos?.map(p => ({
+        ...p,
+        fechaCreacion: p.created_at,
+        fechaEnvio: p.fecha_envio,
+        fechaAprobacion: p.fecha_aprobacion,
+        fechaRechazo: p.fecha_rechazo,
+        fechaVencimiento: p.fecha_vencimiento
+      })) || []
+    }));
+    
+    return transformedData as Negocio[];
   } catch (error) {
     console.error("Failed to fetch negocios:", error);
     throw error;
@@ -96,17 +120,90 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     return negocios.find(negocio => negocio.id === id);
   };
 
-  const crearNegocio = async (negocioData: Omit<Negocio, 'id' | 'created_at' | 'updated_at'>): Promise<Negocio | null> => {
+  const crearNegocio = async (negocioData: any): Promise<Negocio | null> => {
     try {
+      // First create contact if provided
+      let contactoId = null;
+      if (negocioData.contacto) {
+        const { data: contactoData, error: contactoError } = await supabase
+          .from('contactos')
+          .insert([{
+            ...negocioData.contacto,
+            user_id: (await supabase.auth.getUser()).data.user?.id
+          }])
+          .select('id')
+          .single();
+
+        if (contactoError) throw contactoError;
+        contactoId = contactoData.id;
+      }
+
+      // Create productora if provided
+      let productoraId = null;
+      if (negocioData.productora) {
+        const { data: productoraData, error: productoraError } = await supabase
+          .from('empresas')
+          .insert([{
+            ...negocioData.productora,
+            user_id: (await supabase.auth.getUser()).data.user?.id
+          }])
+          .select('id')
+          .single();
+
+        if (productoraError) throw productoraError;
+        productoraId = productoraData.id;
+      }
+
+      // Create cliente final if provided
+      let clienteFinalId = null;
+      if (negocioData.clienteFinal) {
+        const { data: clienteData, error: clienteError } = await supabase
+          .from('empresas')
+          .insert([{
+            ...negocioData.clienteFinal,
+            user_id: (await supabase.auth.getUser()).data.user?.id
+          }])
+          .select('id')
+          .single();
+
+        if (clienteError) throw clienteError;
+        clienteFinalId = clienteData.id;
+      }
+
+      // Get next business number
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      const { data: counterData, error: counterError } = await supabase
+        .from('contadores_usuario')
+        .select('contador_negocio')
+        .eq('user_id', userId)
+        .single();
+
+      if (counterError) throw counterError;
+
+      // Create the negocio
       const { data, error } = await supabase
         .from('negocios')
-        .insert([negocioData])
+        .insert([{
+          user_id: userId,
+          numero: counterData.contador_negocio,
+          contacto_id: contactoId,
+          productora_id: productoraId,
+          cliente_final_id: clienteFinalId,
+          tipo_evento: negocioData.tipo_evento,
+          nombre_evento: negocioData.nombre_evento,
+          fecha_evento: negocioData.fecha_evento,
+          horas_acreditacion: negocioData.horas_acreditacion,
+          cantidad_asistentes: negocioData.cantidad_asistentes || 0,
+          cantidad_invitados: negocioData.cantidad_invitados || 0,
+          locacion: negocioData.locacion,
+          fecha_cierre: negocioData.fecha_cierre,
+          estado: 'oportunidad_creada'
+        }])
         .select(`
           *,
           contacto: contactos (id, nombre, apellido, email, telefono),
-          evento: eventos (id, nombreEvento),
-          productora: productoras (id, nombre),
-          clienteFinal: clientes_finales (id, nombre),
+          productora: empresas!productora_id (id, nombre, tipo, rut, sitio_web, direccion),
+          clienteFinal: empresas!cliente_final_id (id, nombre, tipo, rut, sitio_web, direccion),
           presupuestos (
             id,
             estado,
@@ -126,8 +223,38 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         throw error;
       }
 
-      setNegocios(prevNegocios => [data as Negocio, ...prevNegocios]);
-      return data as Negocio;
+      // Update counter
+      await supabase
+        .from('contadores_usuario')
+        .update({ contador_negocio: counterData.contador_negocio + 1 })
+        .eq('user_id', userId);
+
+      // Transform the data to match ExtendedNegocio type
+      const transformedNegocio = {
+        ...data,
+        evento: {
+          tipoEvento: data.tipo_evento,
+          nombreEvento: data.nombre_evento,
+          fechaEvento: data.fecha_evento,
+          horasAcreditacion: data.horas_acreditacion,
+          cantidadAsistentes: data.cantidad_asistentes,
+          cantidadInvitados: data.cantidad_invitados,
+          locacion: data.locacion
+        },
+        fechaCreacion: data.created_at,
+        fechaCierre: data.fecha_cierre,
+        presupuestos: data.presupuestos?.map(p => ({
+          ...p,
+          fechaCreacion: p.created_at,
+          fechaEnvio: p.fecha_envio,
+          fechaAprobacion: p.fecha_aprobacion,
+          fechaRechazo: p.fecha_rechazo,
+          fechaVencimiento: p.fecha_vencimiento
+        })) || []
+      };
+
+      setNegocios(prevNegocios => [transformedNegocio as Negocio, ...prevNegocios]);
+      return transformedNegocio as Negocio;
     } catch (error) {
       console.error("Failed to create negocio:", error);
       return null;
@@ -143,9 +270,8 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         .select(`
           *,
           contacto: contactos (id, nombre, apellido, email, telefono),
-          evento: eventos (id, nombreEvento),
-          productora: productoras (id, nombre),
-          clienteFinal: clientes_finales (id, nombre),
+          productora: empresas!productora_id (id, nombre, tipo, rut, sitio_web, direccion),
+          clienteFinal: empresas!cliente_final_id (id, nombre, tipo, rut, sitio_web, direccion),
           presupuestos (
             id,
             estado,
@@ -165,10 +291,34 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         throw error;
       }
 
+      // Transform the data
+      const transformedNegocio = {
+        ...data,
+        evento: {
+          tipoEvento: data.tipo_evento,
+          nombreEvento: data.nombre_evento,
+          fechaEvento: data.fecha_evento,
+          horasAcreditacion: data.horas_acreditacion,
+          cantidadAsistentes: data.cantidad_asistentes,
+          cantidadInvitados: data.cantidad_invitados,
+          locacion: data.locacion
+        },
+        fechaCreacion: data.created_at,
+        fechaCierre: data.fecha_cierre,
+        presupuestos: data.presupuestos?.map(p => ({
+          ...p,
+          fechaCreacion: p.created_at,
+          fechaEnvio: p.fecha_envio,
+          fechaAprobacion: p.fecha_aprobacion,
+          fechaRechazo: p.fecha_rechazo,
+          fechaVencimiento: p.fecha_vencimiento
+        })) || []
+      };
+
       setNegocios(prevNegocios =>
-        prevNegocios.map(negocio => (negocio.id === id ? { ...negocio, ...data } : negocio))
+        prevNegocios.map(negocio => (negocio.id === id ? transformedNegocio as Negocio : negocio))
       );
-      return data as Negocio;
+      return transformedNegocio as Negocio;
     } catch (error) {
       console.error("Failed to update negocio:", error);
       return null;
@@ -335,9 +485,8 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         .select(`
           *,
           contacto: contactos (id, nombre, apellido, email, telefono),
-          evento: eventos (id, nombreEvento),
-          productora: productoras (id, nombre),
-          clienteFinal: clientes_finales (id, nombre),
+          productora: empresas!productora_id (id, nombre, tipo, rut, sitio_web, direccion),
+          clienteFinal: empresas!cliente_final_id (id, nombre, tipo, rut, sitio_web, direccion),
           presupuestos (
             id,
             estado,

@@ -120,7 +120,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
     setCreando(true);
     try {
       // Create the data object with the proper structure expected by the crearNegocio function
-      const negocioData: CrearNegocioData = {
+      const negocioData = {
         contacto,
         productora: tipoCliente === 'productora' ? {
           ...productora,
@@ -141,14 +141,18 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
         fecha_cierre: fechaCierre || undefined
       };
 
-      const negocioId = await crearNegocio(negocioData);
+      const negocioCreado = await crearNegocio(negocioData);
       
-      toast({
-        title: "Negocio creado exitosamente",
-        description: "El negocio ha sido creado. Ahora puede agregar presupuestos.",
-      });
+      if (negocioCreado) {
+        toast({
+          title: "Negocio creado exitosamente",
+          description: "El negocio ha sido creado. Ahora puede agregar presupuestos.",
+        });
 
-      onComplete(negocioId);
+        onComplete(negocioCreado.id);
+      } else {
+        throw new Error('No se pudo crear el negocio');
+      }
     } catch (error) {
       console.error('Error creando negocio:', error);
       toast({

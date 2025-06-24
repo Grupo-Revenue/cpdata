@@ -71,21 +71,36 @@ const RealTimeStateValidator: React.FC = () => {
     try {
       console.log('[RealTimeStateValidator] Fixing business #17662...');
       
-      const { data, error } = await supabase.rpc('fix_business_17662_and_verify_triggers');
-      
-      if (error) {
-        console.error('[RealTimeStateValidator] Error fixing business #17662:', error);
-        throw error;
+      // Find business 17662
+      const business17662 = negocios.find(n => n.numero === 17662);
+      if (!business17662) {
+        throw new Error('Business #17662 not found');
       }
 
-      console.log('[RealTimeStateValidator] Fix result:', data);
+      // Calculate correct state
+      const { data: correctState, error: calcError } = await supabase.rpc('calcular_estado_negocio', {
+        negocio_id_param: business17662.id
+      });
+      
+      if (calcError) throw calcError;
+
+      // Update the business state
+      const { error: updateError } = await supabase
+        .from('negocios')
+        .update({ 
+          estado: correctState,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', business17662.id);
+        
+      if (updateError) throw updateError;
+
+      console.log('[RealTimeStateValidator] Successfully fixed business #17662');
       
       toast({
-        title: data.success ? "Negocio corregido" : "Error en corrección",
-        description: data.success 
-          ? `Negocio #17662 ${data.state_was_corrected ? 'corregido' : 'ya estaba correcto'}. Triggers ${data.triggers_working ? 'funcionando' : 'no funcionan'}.`
-          : data.error || 'Error desconocido',
-        variant: data.success ? "default" : "destructive"
+        title: "Negocio corregido",
+        description: `Negocio #17662 actualizado al estado: ${correctState}`,
+        variant: "default"
       });
       
       // Refrescar datos después de la corrección
@@ -108,22 +123,45 @@ const RealTimeStateValidator: React.FC = () => {
 
   const runComprehensiveAudit = async () => {
     setIsFixing(true);
+    let fixedCount = 0;
+    let errorCount = 0;
+    
     try {
       console.log('[RealTimeStateValidator] Running comprehensive audit...');
       
-      const { data, error } = await supabase.rpc('comprehensive_state_audit_and_fix');
-      
-      if (error) {
-        console.error('[RealTimeStateValidator] Error in comprehensive audit:', error);
-        throw error;
+      if (validationResults?.inconsistentBusinesses?.length > 0) {
+        for (const inconsistency of validationResults.inconsistentBusinesses) {
+          try {
+            console.log(`[RealTimeStateValidator] Fixing business ${inconsistency.numero} (${inconsistency.negocioId})`);
+            
+            const { error } = await supabase
+              .from('negocios')
+              .update({ 
+                estado: inconsistency.expectedState,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', inconsistency.negocioId);
+
+            if (error) {
+              console.error(`[RealTimeStateValidator] Error fixing business ${inconsistency.numero}:`, error);
+              errorCount++;
+            } else {
+              console.log(`[RealTimeStateValidator] Successfully fixed business ${inconsistency.numero}`);
+              fixedCount++;
+            }
+          } catch (error) {
+            console.error(`[RealTimeStateValidator] Exception fixing business ${inconsistency.numero}:`, error);
+            errorCount++;
+          }
+        }
       }
 
-      console.log('[RealTimeStateValidator] Audit result:', data);
+      console.log(`[RealTimeStateValidator] Audit completed: ${fixedCount} fixed, ${errorCount} errors`);
       
       toast({
         title: "Auditoría completada",
-        description: `${data.corrected_count} de ${data.total_inconsistencies} inconsistencias corregidas`,
-        variant: data.error_count > 0 ? "destructive" : "default"
+        description: `${fixedCount} inconsistencias corregidas. ${errorCount > 0 ? `${errorCount} errores.` : ''}`,
+        variant: errorCount > 0 ? "destructive" : "default"
       });
       
       // Refrescar datos después de la auditoría
