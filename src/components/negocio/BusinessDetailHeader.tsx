@@ -10,7 +10,6 @@ import {
   Calendar, 
   MapPin, 
   Users, 
-  FileText, 
   RefreshCw,
   Plus,
   Phone,
@@ -20,7 +19,8 @@ import { Negocio } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
 import { calcularValorNegocio } from '@/utils/businessCalculations';
 import BusinessStateSelect from '@/components/business/BusinessStateSelect';
-import BusinessSyncStatus from '@/components/business/BusinessSyncStatus';
+import { useHubSpotSync } from '@/hooks/useHubSpotSync';
+import BusinessValueSection from './sections/BusinessValueSection';
 
 interface BusinessDetailHeaderProps {
   negocio: Negocio;
@@ -36,14 +36,19 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
   onCambiarEstado
 }) => {
   const valorTotal = calcularValorNegocio(negocio);
-  const presupuestosAprobados = negocio.presupuestos.filter(p => p.estado === 'aprobado').length;
-  const presupuestosEnviados = negocio.presupuestos.filter(p => p.estado === 'enviado').length;
+  const { manualSyncNegocio, isSyncing } = useHubSpotSync();
+  
+  // Get company name for the title
   const empresaDisplay = negocio.productora?.nombre || negocio.clienteFinal?.nombre || 'Sin empresa';
 
   const handleStateChange = (negocioId: string, nuevoEstado: string) => {
     if (onCambiarEstado) {
       onCambiarEstado(negocioId, nuevoEstado);
     }
+  };
+
+  const handleHubSpotSync = () => {
+    manualSyncNegocio(negocio.id);
   };
 
   return (
@@ -63,7 +68,9 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
           
           <div>
             <div className="flex items-center space-x-3">
-              <h1 className="text-2xl font-bold text-slate-900">Negocio #{negocio.numero}</h1>
+              <h1 className="text-2xl font-bold text-slate-900">
+                {empresaDisplay} - Negocio #{negocio.numero}
+              </h1>
               <BusinessStateSelect
                 negocio={negocio}
                 onStateChange={handleStateChange}
@@ -73,10 +80,38 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
             <p className="text-lg text-slate-600 mt-1">{negocio.evento.nombreEvento}</p>
           </div>
         </div>
+
+        {/* Header Actions */}
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleHubSpotSync}
+            disabled={isSyncing(negocio.id)}
+            className="h-9"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing(negocio.id) ? 'animate-spin' : ''}`} />
+            {isSyncing(negocio.id) ? 'Sincronizando...' : 'HubSpot Sync'}
+          </Button>
+          
+          <Button 
+            onClick={onCrearPresupuesto}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 h-9"
+            size="sm"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Presupuesto
+          </Button>
+        </div>
       </div>
 
-      {/* Key Metrics Row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Business Value Section */}
+      <div className="flex justify-center">
+        <BusinessValueSection valorNegocio={valorTotal} />
+      </div>
+
+      {/* Key Information Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Contact Info */}
         <Card className="border-slate-200">
           <CardContent className="p-4">
@@ -85,15 +120,47 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
               <span className="text-sm font-medium text-slate-700">Contacto</span>
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-slate-800 font-medium">{negocio.contacto.nombre}</p>
+              <p className="text-sm text-slate-800 font-medium">{negocio.contacto.nombre} {negocio.contacto.apellido}</p>
               <div className="flex items-center space-x-1">
                 <Phone className="w-3 h-3 text-slate-400" />
                 <span className="text-xs text-slate-600">{negocio.contacto.telefono}</span>
               </div>
               <div className="flex items-center space-x-1">
-                <Building className="w-3 h-3 text-slate-400" />
-                <span className="text-xs text-slate-600 truncate">{empresaDisplay}</span>
+                <Mail className="w-3 h-3 text-slate-400" />
+                <span className="text-xs text-slate-600 truncate">{negocio.contacto.email}</span>
               </div>
+              {negocio.contacto.cargo && (
+                <p className="text-xs text-slate-500">{negocio.contacto.cargo}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Company Info */}
+        <Card className="border-slate-200">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <Building className="w-4 h-4 text-slate-500" />
+              <span className="text-sm font-medium text-slate-700">Empresa</span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-slate-800 font-medium">{empresaDisplay}</p>
+              {negocio.productora && negocio.clienteFinal && (
+                <>
+                  <div className="text-xs text-slate-600">
+                    <span className="font-medium">Productora:</span> {negocio.productora.nombre}
+                  </div>
+                  <div className="text-xs text-slate-600">
+                    <span className="font-medium">Cliente Final:</span> {negocio.clienteFinal.nombre}
+                  </div>
+                </>
+              )}
+              {negocio.productora && !negocio.clienteFinal && (
+                <div className="text-xs text-slate-500">Productora</div>
+              )}
+              {!negocio.productora && negocio.clienteFinal && (
+                <div className="text-xs text-slate-500">Cliente Directo</div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -106,10 +173,11 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
               <span className="text-sm font-medium text-slate-700">Evento</span>
             </div>
             <div className="space-y-1">
+              <p className="text-sm text-slate-800 font-medium">{negocio.evento.tipoEvento}</p>
               <div className="flex items-center space-x-1">
                 <Calendar className="w-3 h-3 text-slate-400" />
                 <span className="text-xs text-slate-600">
-                  {negocio.evento.fechaEvento ? new Date(negocio.evento.fechaEvento).toLocaleDateString('es-CL') : 'Pendiente'}
+                  {negocio.evento.fechaEvento ? new Date(negocio.evento.fechaEvento).toLocaleDateString('es-CL') : 'Por definir'}
                 </span>
               </div>
               <div className="flex items-center space-x-1">
@@ -123,57 +191,6 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
             </div>
           </CardContent>
         </Card>
-
-        {/* Budget Summary */}
-        <Card className="border-slate-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2 mb-2">
-              <FileText className="w-4 h-4 text-slate-500" />
-              <span className="text-sm font-medium text-slate-700">Presupuestos</span>
-            </div>
-            <div className="space-y-1">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-slate-600">Total:</span>
-                <span className="text-xs font-semibold text-slate-800">{negocio.presupuestos.length}</span>
-              </div>
-              {presupuestosAprobados > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-green-600">Aprobados:</span>
-                  <span className="text-xs font-medium text-green-600">{presupuestosAprobados}</span>
-                </div>
-              )}
-              {presupuestosEnviados > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-blue-600">Enviados:</span>
-                  <span className="text-xs font-medium text-blue-600">{presupuestosEnviados}</span>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Sync Status */}
-        <Card className="border-slate-200">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2 mb-2">
-              <RefreshCw className="w-4 h-4 text-slate-500" />
-              <span className="text-sm font-medium text-slate-700">HubSpot</span>
-            </div>
-            <BusinessSyncStatus negocio={negocio} />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="flex justify-end">
-        <Button 
-          onClick={onCrearPresupuesto}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 h-9"
-          size="sm"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Presupuesto
-        </Button>
       </div>
     </div>
   );
