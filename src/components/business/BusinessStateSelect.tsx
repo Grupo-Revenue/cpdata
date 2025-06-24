@@ -7,12 +7,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { AlertCircle, CheckCircle, Clock } from 'lucide-react';
-import { obtenerEstadoNegocioInfo, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
+import { AlertCircle, CheckCircle, Clock, ChevronDown } from 'lucide-react';
 import { useHubSpotSync } from '@/hooks/useHubSpotSync';
 import { useBidirectionalSync } from '@/hooks/useBidirectionalSync';
 import { Negocio } from '@/types';
+import BusinessStateBadge from './BusinessStateBadge';
 
 interface BusinessStateSelectProps {
   negocio: Negocio;
@@ -36,7 +35,6 @@ const BusinessStateSelect: React.FC<BusinessStateSelectProps> = ({
   disabled = false,
   size = 'default'
 }) => {
-  const { colorEstado } = obtenerEstadoNegocioInfo(negocio);
   const { manualSyncNegocio } = useHubSpotSync();
   const { syncToHubSpot } = useBidirectionalSync();
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
@@ -89,7 +87,7 @@ const BusinessStateSelect: React.FC<BusinessStateSelectProps> = ({
   const getSyncIcon = () => {
     switch (syncStatus) {
       case 'syncing':
-        return <Clock className="w-3 h-3 animate-spin" />;
+        return <Clock className="w-3 h-3 animate-spin text-blue-500" />;
       case 'success':
         return <CheckCircle className="w-3 h-3 text-green-600" />;
       case 'error':
@@ -99,6 +97,9 @@ const BusinessStateSelect: React.FC<BusinessStateSelectProps> = ({
     }
   };
 
+  const triggerHeight = size === 'sm' ? 'h-8' : 'h-10';
+  const triggerPadding = size === 'sm' ? 'px-2' : 'px-3';
+
   return (
     <div className="flex items-center space-x-2">
       <Select
@@ -106,32 +107,56 @@ const BusinessStateSelect: React.FC<BusinessStateSelectProps> = ({
         onValueChange={handleStateChange}
         disabled={disabled || syncStatus === 'syncing'}
       >
-        <SelectTrigger className={size === 'sm' ? 'h-8 text-xs' : 'h-10'}>
+        <SelectTrigger 
+          className={`${triggerHeight} ${triggerPadding} min-w-fit border-slate-200 hover:border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-white transition-all duration-200`}
+        >
           <SelectValue asChild>
-            <Badge className={`${colorEstado} border`}>
-              {formatBusinessStateForDisplay(negocio.estado)}
-            </Badge>
+            <div className="flex items-center justify-between w-full">
+              <BusinessStateBadge 
+                estado={negocio.estado} 
+                size={size}
+                showIcon={true}
+              />
+              <ChevronDown className="w-4 h-4 text-slate-400 ml-2 flex-shrink-0" />
+            </div>
           </SelectValue>
         </SelectTrigger>
-        <SelectContent>
-          {MAIN_BUSINESS_STATES.map((estado) => {
-            const mockNegocio: Negocio = { ...negocio, estado: estado };
-            const { colorEstado: itemColor } = obtenerEstadoNegocioInfo(mockNegocio);
-            return (
-              <SelectItem key={estado} value={estado}>
-                <Badge className={`${itemColor} border`}>
-                  {formatBusinessStateForDisplay(estado)}
-                </Badge>
-              </SelectItem>
-            );
-          })}
+        
+        <SelectContent 
+          className="min-w-[240px] bg-white border-slate-200 shadow-lg rounded-lg p-1"
+          align="start"
+        >
+          <div className="p-2 border-b border-slate-100 mb-1">
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+              Cambiar Estado
+            </p>
+          </div>
+          
+          {MAIN_BUSINESS_STATES.map((estado) => (
+            <SelectItem 
+              key={estado} 
+              value={estado}
+              className="cursor-pointer hover:bg-slate-50 focus:bg-slate-50 rounded-md p-2 transition-colors duration-150"
+            >
+              <div className="flex items-center justify-between w-full">
+                <BusinessStateBadge 
+                  estado={estado} 
+                  size="sm"
+                  showIcon={true}
+                />
+                {estado === negocio.estado && (
+                  <CheckCircle className="w-4 h-4 text-blue-500 ml-2" />
+                )}
+              </div>
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
       
       {/* Sync status indicator */}
       {syncStatus !== 'idle' && (
         <div 
-          className="flex items-center"
+          className="flex items-center p-1 rounded-full bg-slate-50 border border-slate-200"
           title={syncStatus === 'error' ? lastSyncError || 'Sync failed' : 
                  syncStatus === 'syncing' ? 'Syncing with HubSpot...' : 
                  'Synced successfully'}

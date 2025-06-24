@@ -98,18 +98,18 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
         </div>
 
         {/* State and Sync Controls */}
-        <div className="flex flex-col items-end space-y-2">
+        <div className="flex items-center space-x-3">
           <BusinessStateSelect
             negocio={negocio}
             onStateChange={handleStateChange}
-            size="sm"
+            size="default"
           />
           <Button
             variant="outline"
             size="sm"
             onClick={handleHubSpotSync}
             disabled={isSyncing(negocio.id)}
-            className="h-9 px-3"
+            className="h-10 px-3"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing(negocio.id) ? 'animate-spin' : ''}`} />
             {isSyncing(negocio.id) ? 'Sincronizando...' : 'HubSpot Sync'}
