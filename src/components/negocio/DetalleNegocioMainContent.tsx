@@ -11,6 +11,7 @@ interface DetalleNegocioMainContentProps {
   onVerPDF: (presupuestoId: string) => void;
   onCambiarEstado: (presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string) => Promise<void>;
   onCambiarEstadoNegocio?: (negocioId: string, nuevoEstado: string) => void;
+  onRefresh: () => void;
 }
 
 const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
@@ -19,7 +20,8 @@ const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
   onEditarPresupuesto,
   onEliminarPresupuesto,
   onVerPDF,
-  onCambiarEstado
+  onCambiarEstado,
+  onRefresh
 }) => {
   return (
     <div className="space-y-6">
@@ -31,6 +33,7 @@ const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
         onEliminarPresupuesto={onEliminarPresupuesto}
         onVerPDF={onVerPDF}
         onCambiarEstado={onCambiarEstado}
+        onRefresh={onRefresh}
       />
     </div>
   );

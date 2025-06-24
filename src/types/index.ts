@@ -1,137 +1,38 @@
+import { Database } from "@/integrations/supabase/types";
 
-export interface Contacto {
-  id: string;
-  nombre: string;
-  apellido: string;
-  email: string;
-  telefono: string;
-  cargo?: string;
+export type Contacto = Database['public']['Tables']['contactos']['Row']
+export type Empresa = Database['public']['Tables']['empresas']['Row']
+export type Negocio = ExtendedNegocio //Database['public']['Tables']['negocios']['Row']
+export type Presupuesto = Database['public']['Tables']['presupuestos']['Row']
+export type ProductoPresupuesto = Database['public']['Tables']['productos_presupuesto']['Row']
+export type ProductoBiblioteca = Database['public']['Tables']['productos_biblioteca']['Row']
+export type LineaProducto = Database['public']['Tables']['lineas_producto']['Row']
+export type ConfiguracionMarca = Database['public']['Tables']['configuracion_marca']['Row']
+
+export type ExtendedNegocio = Database['public']['Tables']['negocios']['Row'] & {
+  contacto: Contacto;
+  productora: Empresa | null;
+  clienteFinal: Empresa | null;
+  presupuestos: Presupuesto[];
 }
 
-export interface Empresa {
-  id: string;
-  nombre: string;
-  rut?: string;
-  sitioWeb?: string;
-  direccion?: string;
-  tipo: 'productora' | 'cliente_final';
-}
-
-export interface Evento {
+export type Evento = {
   tipoEvento: string;
   nombreEvento: string;
-  fechaEvento: string;
+  fechaEvento: string | null;
   horasAcreditacion: string;
   cantidadAsistentes: number;
   cantidadInvitados: number;
   locacion: string;
 }
 
-export interface ProductoPresupuesto {
-  id: string;
-  nombre: string;
-  descripcion: string;
-  comentarios: string;
-  cantidad: number;
-  precioUnitario: number;
-  descuentoPorcentaje: number;
-  total: number;
-}
+export type EstadoNegocio = 
+  | 'oportunidad_creada'
+  | 'presupuesto_enviado' 
+  | 'negocio_aceptado'
+  | 'parcialmente_aceptado'
+  | 'negocio_perdido'
+  | 'negocio_cerrado';
 
-export interface Presupuesto {
-  id: string;
-  nombre: string; // Ej: 17658A
-  productos: ProductoPresupuesto[];
-  total: number;
-  fechaCreacion: string;
-  estado: 'borrador' | 'enviado' | 'aprobado' | 'rechazado' | 'vencido' | 'cancelado';
-  fechaVencimiento?: string;
-  fechaEnvio?: string;
-  fechaAprobacion?: string;
-  fechaRechazo?: string;
-  fechaFacturacion?: string;
-  facturado?: boolean;
-}
-
-export interface Negocio {
-  id: string;
-  numero: number; // Numero correlativo
-  contacto: Contacto;
-  productora?: Empresa;
-  clienteFinal?: Empresa;
-  evento: Evento;
-  presupuestos: Presupuesto[];
-  fechaCreacion: string;
-  estado: 'oportunidad_creada' | 'presupuesto_enviado' | 'parcialmente_aceptado' | 'negocio_aceptado' | 'negocio_cerrado' | 'negocio_perdido' | 
-          // Legacy states (keeping for backward compatibility)
-          'activo' | 'cerrado' | 'cancelado' | 'prospecto' | 'perdido' | 'ganado' | 'revision_pendiente' | 'en_negociacion' | 'parcialmente_ganado';
-  fechaCierre?: string; // Expected close date of the deal
-}
-
-export interface ProductoBiblioteca {
-  id: string;
-  nombre: string;
-  descripcion: string;
-  precioBase: number;
-  categoria: string;
-}
-
-export const TIPOS_EVENTO = [
-  'Conferencia',
-  'Seminario',
-  'Workshop',
-  'Congreso',
-  'Feria Comercial',
-  'Lanzamiento de Producto',
-  'Evento Corporativo',
-  'Capacitación',
-  'Otros'
-];
-
-export const PRODUCTOS_BIBLIOTECA: ProductoBiblioteca[] = [
-  {
-    id: '1',
-    nombre: 'Acreditación Digital',
-    descripcion: 'Sistema de acreditación digital con QR',
-    precioBase: 15000,
-    categoria: 'Acreditación'
-  },
-  {
-    id: '2',
-    nombre: 'Acreditación Presencial',
-    descripcion: 'Stand de acreditación con personal',
-    precioBase: 25000,
-    categoria: 'Acreditación'
-  },
-  {
-    id: '3',
-    nombre: 'Confirmación por Email',
-    descripcion: 'Sistema automatizado de confirmación',
-    precioBase: 8000,
-    categoria: 'Confirmación'
-  },
-  {
-    id: '4',
-    nombre: 'Confirmación Telefónica',
-    descripcion: 'Llamadas de confirmación personalizadas',
-    precioBase: 12000,
-    categoria: 'Confirmación'
-  },
-  {
-    id: '5',
-    nombre: 'Base de Datos Personalizada',
-    descripcion: 'Desarrollo de BD específica para el evento',
-    precioBase: 45000,
-    categoria: 'Desarrollo'
-  },
-  {
-    id: '6',
-    nombre: 'Reportes en Tiempo Real',
-    descripcion: 'Dashboard con métricas en vivo',
-    precioBase: 35000,
-    categoria: 'Reportes'
-  }
-];
-
-// Constants for IVA calculation
-export const IVA_PERCENTAGE = 19;
+export type EstadoPresupuesto = 'borrador' | 'enviado' | 'aprobado' | 'rechazado';
+export type TipoEmpresa = 'productora' | 'cliente_final';

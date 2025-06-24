@@ -1,19 +1,22 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Edit, Trash2, FileText, Loader2, Send, Check, X } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, Edit, Trash2, FileText, Send, CheckCircle, XCircle, DollarSign } from 'lucide-react';
 import { Presupuesto } from '@/types';
+import { usePresupuestoActions } from '@/hooks/usePresupuestoActions';
 
 interface PresupuestoTableActionsProps {
   presupuesto: Presupuesto;
   onEditarPresupuesto: (presupuestoId: string) => void;
   onEliminarPresupuesto: (presupuestoId: string) => void;
   onVerPDF: (presupuestoId: string) => void;
-  onEnviarPresupuesto: (presupuestoId: string) => void;
-  onCambiarEstado: (presupuestoId: string, nuevoEstado: string) => void;
+  onEnviarPresupuesto?: (presupuestoId: string) => void;
+  onCambiarEstado?: (presupuestoId: string, nuevoEstado: string) => void;
   eliminandoPresupuesto: string | null;
   procesandoEstado: string | null;
+  negocioId: string;
+  onRefresh: () => void;
 }
 
 const PresupuestoTableActions: React.FC<PresupuestoTableActionsProps> = ({
@@ -24,151 +27,86 @@ const PresupuestoTableActions: React.FC<PresupuestoTableActionsProps> = ({
   onEnviarPresupuesto,
   onCambiarEstado,
   eliminandoPresupuesto,
-  procesandoEstado
+  procesandoEstado,
+  negocioId,
+  onRefresh
 }) => {
-  const isProcessing = procesandoEstado === presupuesto.id;
-  const isDeleting = eliminandoPresupuesto === presupuesto.id;
+  const { marcarComoFacturado, loading: facturandoPresupuesto } = usePresupuestoActions(negocioId, onRefresh);
+  const isProcessing = eliminandoPresupuesto === presupuesto.id || procesandoEstado === presupuesto.id || facturandoPresupuesto;
 
-  const getStateActions = () => {
-    const actions = [];
-
-    switch (presupuesto.estado) {
-      case 'borrador':
-        actions.push(
-          <Tooltip key="send">
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEnviarPresupuesto(presupuesto.id)}
-                className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 border-blue-200 hover:bg-blue-50"
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Send className="w-3 h-3" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Enviar presupuesto</p>
-            </TooltipContent>
-          </Tooltip>
-        );
-        break;
-
-      case 'enviado':
-        actions.push(
-          <Tooltip key="approve">
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onCambiarEstado(presupuesto.id, 'aprobado')}
-                className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 border-emerald-200 hover:bg-emerald-50"
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Check className="w-3 h-3" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Aprobar presupuesto</p>
-            </TooltipContent>
-          </Tooltip>,
-          <Tooltip key="reject">
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onCambiarEstado(presupuesto.id, 'rechazado')}
-                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <X className="w-3 h-3" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Rechazar presupuesto</p>
-            </TooltipContent>
-          </Tooltip>
-        );
-        break;
-    }
-
-    return actions;
-  };
+  const canEdit = presupuesto.estado === 'borrador';
+  const canSend = presupuesto.estado === 'borrador' && onEnviarPresupuesto;
+  const canApprove = presupuesto.estado === 'enviado' && onCambiarEstado;
+  const canReject = ['enviado', 'aprobado'].includes(presupuesto.estado) && onCambiarEstado;
+  const canMarkAsInvoiced = presupuesto.estado === 'aprobado' && !presupuesto.facturado;
 
   return (
-    <div className="flex items-center justify-center space-x-1">
-      {/* State-specific actions */}
-      {getStateActions()}
-      
-      {/* Always available actions */}
-      <Tooltip>
-        <TooltipTrigger asChild>
+    <div className="flex items-center justify-center">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            onClick={() => onVerPDF(presupuesto.id)}
-            className="h-8 w-8 p-0 text-slate-600 hover:text-slate-700 border-slate-200 hover:bg-slate-50"
+            className="h-8 w-8 p-0"
+            disabled={isProcessing}
           >
-            <FileText className="w-3 h-3" />
+            <MoreHorizontal className="h-4 w-4" />
           </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Ver PDF</p>
-        </TooltipContent>
-      </Tooltip>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem onClick={() => onVerPDF(presupuesto.id)}>
+            <FileText className="h-4 w-4 mr-2" />
+            Ver PDF
+          </DropdownMenuItem>
+          
+          {canEdit && (
+            <DropdownMenuItem onClick={() => onEditarPresupuesto(presupuesto.id)}>
+              <Edit className="h-4 w-4 mr-2" />
+              Editar
+            </DropdownMenuItem>
+          )}
+          
+          {canSend && (
+            <DropdownMenuItem onClick={() => onEnviarPresupuesto(presupuesto.id)}>
+              <Send className="h-4 w-4 mr-2" />
+              Enviar
+            </DropdownMenuItem>
+          )}
+          
+          {canApprove && (
+            <DropdownMenuItem onClick={() => onCambiarEstado(presupuesto.id, 'aprobado')}>
+              <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+              Aprobar
+            </DropdownMenuItem>
+          )}
+          
+          {canReject && (
+            <DropdownMenuItem onClick={() => onCambiarEstado(presupuesto.id, 'rechazado')}>
+              <XCircle className="h-4 w-4 mr-2 text-red-600" />
+              Rechazar
+            </DropdownMenuItem>
+          )}
 
-      {/* Edit - only for draft and sent budgets */}
-      {(presupuesto.estado === 'borrador' || presupuesto.estado === 'enviado') && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onEditarPresupuesto(presupuesto.id)}
-              className="h-8 w-8 p-0 text-slate-600 hover:text-slate-700 border-slate-200 hover:bg-slate-50"
-            >
-              <Edit className="w-3 h-3" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Editar presupuesto</p>
-          </TooltipContent>
-        </Tooltip>
-      )}
-
-      {/* Delete */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
+          {canMarkAsInvoiced && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => marcarComoFacturado(presupuesto.id)}>
+                <DollarSign className="h-4 w-4 mr-2 text-purple-600" />
+                Marcar como Facturado
+              </DropdownMenuItem>
+            </>
+          )}
+          
+          <DropdownMenuSeparator />
+          <DropdownMenuItem 
             onClick={() => onEliminarPresupuesto(presupuesto.id)}
-            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
-            disabled={isDeleting}
+            className="text-red-600 focus:text-red-600"
           >
-            {isDeleting ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              <Trash2 className="w-3 h-3" />
-            )}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Eliminar presupuesto</p>
-        </TooltipContent>
-      </Tooltip>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Eliminar
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };

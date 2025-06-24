@@ -20,6 +20,7 @@ interface PresupuestosTableProps {
   onEliminarPresupuesto: (presupuestoId: string) => Promise<void>;
   onVerPDF: (presupuestoId: string) => void;
   onCambiarEstado?: (presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string) => Promise<void>;
+  onRefresh: () => void;
 }
 
 const getEstadoBadgeVariant = (estado: string) => {
@@ -60,7 +61,8 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
   onEditarPresupuesto,
   onEliminarPresupuesto,
   onVerPDF,
-  onCambiarEstado
+  onCambiarEstado,
+  onRefresh
 }) => {
   const { syncOnBudgetUpdate } = useBidirectionalSync();
   const [eliminandoPresupuesto, setEliminandoPresupuesto] = useState<string | null>(null);
@@ -85,6 +87,8 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
         setTimeout(async () => {
           await syncOnBudgetUpdate(negocio.id);
         }, 1000);
+        
+        onRefresh();
       } catch (error) {
         console.error('Error eliminando presupuesto:', error);
       } finally {
@@ -118,6 +122,7 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
       setMostrarDialogoEnvio(false);
       setPresupuestoSeleccionado(null);
       setFechaVencimiento('');
+      onRefresh();
     } catch (error) {
       console.error('Error enviando presupuesto:', error);
     } finally {
@@ -137,6 +142,8 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
       setTimeout(async () => {
         await syncOnBudgetUpdate(negocio.id);
       }, 1000);
+      
+      onRefresh();
     } catch (error) {
       console.error('Error cambiando estado:', error);
     } finally {
@@ -218,6 +225,11 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
                     >
                       <TableCell className="font-medium text-slate-800">
                         {presupuesto.nombre}
+                        {presupuesto.facturado && (
+                          <Badge variant="secondary" className="ml-2 text-xs bg-purple-100 text-purple-700">
+                            Facturado
+                          </Badge>
+                        )}
                       </TableCell>
                       
                       <TableCell>
@@ -262,6 +274,8 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
                           onCambiarEstado={handleCambiarEstado}
                           eliminandoPresupuesto={eliminandoPresupuesto}
                           procesandoEstado={procesandoEstado}
+                          negocioId={negocio.id}
+                          onRefresh={onRefresh}
                         />
                       </TableCell>
                     </TableRow>

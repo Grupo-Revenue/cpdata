@@ -510,6 +510,7 @@ export type Database = {
         Row: {
           created_at: string
           estado: Database["public"]["Enums"]["estado_presupuesto"]
+          facturado: boolean | null
           fecha_aprobacion: string | null
           fecha_envio: string | null
           fecha_rechazo: string | null
@@ -523,6 +524,7 @@ export type Database = {
         Insert: {
           created_at?: string
           estado?: Database["public"]["Enums"]["estado_presupuesto"]
+          facturado?: boolean | null
           fecha_aprobacion?: string | null
           fecha_envio?: string | null
           fecha_rechazo?: string | null
@@ -536,6 +538,7 @@ export type Database = {
         Update: {
           created_at?: string
           estado?: Database["public"]["Enums"]["estado_presupuesto"]
+          facturado?: boolean | null
           fecha_aprobacion?: string | null
           fecha_envio?: string | null
           fecha_rechazo?: string | null
@@ -729,6 +732,14 @@ export type Database = {
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      marcar_presupuesto_facturado: {
+        Args: { presupuesto_id_param: string }
+        Returns: undefined
+      }
+      recalcular_todos_estados_negocios: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
     }
     Enums: {

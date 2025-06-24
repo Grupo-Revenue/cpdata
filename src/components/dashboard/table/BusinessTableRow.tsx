@@ -1,25 +1,22 @@
 
 import React from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import BusinessStateSelect from '@/components/business/BusinessStateSelect';
+import { Button } from '@/components/ui/button';
+import { Eye, Calendar, Building2, User } from 'lucide-react';
 import { Negocio } from '@/types';
+import { formatearPrecio } from '@/utils/formatters';
 import { calcularValorNegocio } from '@/utils/businessCalculations';
-import { useNegocio } from '@/context/NegocioContext';
+import BusinessStateBadge from '@/components/business/BusinessStateBadge';
 
 interface BusinessTableRowProps {
   negocio: Negocio;
-  onVerNegocio: (negocioId: string) => void;
+  onVerNegocio: (id: string) => void;
 }
 
-const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ 
-  negocio, 
-  onVerNegocio 
-}) => {
-  const { cambiarEstadoNegocio } = useNegocio();
-
-  const obtenerNombreEmpresa = (negocio: Negocio) => {
+const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegocio }) => {
+  const valorTotal = calcularValorNegocio(negocio);
+  
+  const obtenerNombreEmpresa = () => {
     if (negocio.productora) {
       return negocio.productora.nombre;
     }
@@ -29,78 +26,61 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({
     return 'Sin empresa asignada';
   };
 
-  const formatearFecha = (fecha: string) => {
-    try {
-      return format(new Date(fecha), 'dd/MM/yyyy', { locale: es });
-    } catch {
-      return fecha;
-    }
-  };
-
-  const formatearPrecio = (precio: number) => {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(precio);
-  };
-
-  const valorTotal = calcularValorNegocio(negocio);
-
-  const handleEstadoChange = async (negocioId: string, nuevoEstado: string) => {
-    await cambiarEstadoNegocio(negocioId, nuevoEstado);
-  };
-
-  const handleCellClick = () => {
-    onVerNegocio(negocio.id);
-  };
-
-  const clickableCellClasses = "cursor-pointer hover:bg-slate-50 transition-colors text-blue-600 hover:text-blue-800 hover:underline";
-
   return (
-    <TableRow className="hover:bg-slate-50/50">
-      <TableCell 
-        className={`font-medium ${clickableCellClasses}`}
-        onClick={handleCellClick}
-      >
+    <TableRow className="hover:bg-slate-50 transition-colors">
+      <TableCell className="font-medium text-slate-800">
         #{negocio.numero}
       </TableCell>
-      <TableCell 
-        className={clickableCellClasses}
-        onClick={handleCellClick}
-      >
-        <div>
-          <div className="font-medium">
+      
+      <TableCell>
+        <div className="flex items-center space-x-2">
+          <User className="w-4 h-4 text-slate-400" />
+          <span className="text-sm">
             {negocio.contacto.nombre} {negocio.contacto.apellido}
-          </div>
-          <div className="text-sm text-gray-500">{negocio.contacto.email}</div>
+          </span>
         </div>
       </TableCell>
-      <TableCell 
-        className={clickableCellClasses}
-        onClick={handleCellClick}
-      >
-        {obtenerNombreEmpresa(negocio)}
+      
+      <TableCell>
+        <div className="flex items-center space-x-2">
+          <Building2 className="w-4 h-4 text-slate-400" />
+          <span className="text-sm">{obtenerNombreEmpresa()}</span>
+        </div>
       </TableCell>
-      <TableCell 
-        className={clickableCellClasses}
-        onClick={handleCellClick}
-      >
+      
+      <TableCell className="font-medium">
         {negocio.evento.nombreEvento}
       </TableCell>
+      
       <TableCell>
-        {negocio.evento.fechaEvento ? formatearFecha(negocio.evento.fechaEvento) : 'Por definir'}
+        <BusinessStateBadge estado={negocio.estado} />
       </TableCell>
-      <TableCell className="font-semibold">
+      
+      <TableCell className="text-right font-semibold text-slate-800">
         {formatearPrecio(valorTotal)}
       </TableCell>
+      
       <TableCell>
-        <BusinessStateSelect
-          negocio={negocio}
-          onStateChange={handleEstadoChange}
+        <div className="flex items-center text-sm text-slate-600">
+          <Calendar className="w-3 h-3 mr-1" />
+          {new Date(negocio.fechaCreacion).toLocaleDateString('es-CL', {
+            day: '2-digit',
+            month: '2-digit',
+            year: '2-digit'
+          })}
+        </div>
+      </TableCell>
+      
+      <TableCell>
+        <Button
+          variant="outline"
           size="sm"
-        />
+          onClick={() => onVerNegocio(negocio.id)}
+          className="h-8 px-3"
+        >
+          <Eye className="w-4 h-4 mr-1" />
+          Ver
+        </Button>
       </TableCell>
     </TableRow>
   );
