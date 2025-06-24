@@ -1,8 +1,10 @@
 
+
 import { Database } from "@/integrations/supabase/types";
-import { ExtendedNegocio, Evento } from "@/types";
+import { ExtendedNegocio, ExtendedPresupuesto, Evento } from "@/types";
 
 type DatabaseNegocio = Database['public']['Tables']['negocios']['Row'];
+type DatabasePresupuesto = Database['public']['Tables']['presupuestos']['Row'];
 
 export const mapDatabaseToExtendedNegocio = (
   negocio: DatabaseNegocio & {
@@ -23,6 +25,16 @@ export const mapDatabaseToExtendedNegocio = (
     locacion: negocio.locacion
   };
 
+  // Map presupuestos to extended format
+  const presupuestosExtended: ExtendedPresupuesto[] = negocio.presupuestos.map((presupuesto: DatabasePresupuesto) => ({
+    ...presupuesto,
+    fechaCreacion: presupuesto.created_at,
+    fechaEnvio: presupuesto.fecha_envio || undefined,
+    fechaAprobacion: presupuesto.fecha_aprobacion || undefined,
+    fechaRechazo: presupuesto.fecha_rechazo || undefined,
+    productos: [] // Will be populated separately if needed
+  }));
+
   return {
     ...negocio,
     evento,
@@ -31,12 +43,12 @@ export const mapDatabaseToExtendedNegocio = (
     contacto: negocio.contacto,
     productora: negocio.productora,
     clienteFinal: negocio.clienteFinal,
-    presupuestos: negocio.presupuestos
+    presupuestos: presupuestosExtended
   };
 };
 
 export const mapExtendedToDatabase = (negocio: Partial<ExtendedNegocio>) => {
-  const { evento, fechaCreacion, fechaCierre, ...rest } = negocio;
+  const { evento, fechaCreacion, fechaCierre, presupuestos, ...rest } = negocio;
   
   return {
     ...rest,
@@ -51,3 +63,4 @@ export const mapExtendedToDatabase = (negocio: Partial<ExtendedNegocio>) => {
     created_at: fechaCreacion
   };
 };
+

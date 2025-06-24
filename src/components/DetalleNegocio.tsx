@@ -37,6 +37,11 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
     }
   }, [negocio, syncConflicts, conflictDialogOpen]);
 
+  const handleRefresh = () => {
+    // Trigger a refresh of the data
+    window.location.reload();
+  };
+
   if (loading && !negocio) {
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
@@ -124,6 +129,7 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
             onVerPDF={handleVerPDF}
             onCambiarEstado={handleCambiarEstadoPresupuesto}
             onCambiarEstadoNegocio={handleCambiarEstadoNegocio}
+            onRefresh={handleRefresh}
           />
         </div>
       </main>

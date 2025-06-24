@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -118,6 +119,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
 
     setCreando(true);
     try {
+      // Create the data object with the proper structure expected by the crearNegocio function
       const negocioData = {
         contacto,
         productora: tipoCliente === 'productora' ? {
@@ -128,7 +130,14 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
           ...clienteFinal,
           tipo: 'cliente_final' as const
         } : undefined,
-        ...evento,
+        // Event data should be passed as individual fields, not nested
+        tipo_evento: evento.tipo_evento,
+        nombre_evento: evento.nombre_evento,
+        fecha_evento: evento.fecha_evento,
+        horas_acreditacion: evento.horas_acreditacion,
+        cantidad_asistentes: evento.cantidad_asistentes,
+        cantidad_invitados: evento.cantidad_invitados,
+        locacion: evento.locacion,
         fecha_cierre: fechaCierre || undefined
       };
 

@@ -134,10 +134,10 @@ const BusinessInfoCard: React.FC<BusinessInfoCardProps> = ({ negocio }) => {
                 <h5 className="font-medium text-sm text-slate-900 mb-1">{negocio.productora.nombre}</h5>
                 <div className="text-xs text-slate-600 space-y-1">
                   {negocio.productora.rut && <p>RUT: {negocio.productora.rut}</p>}
-                  {negocio.productora.sitioWeb && (
+                  {negocio.productora.sitio_web && (
                     <div className="flex items-center">
                       <Globe className="w-3 h-3 mr-1" />
-                      <span>{negocio.productora.sitioWeb}</span>
+                      <span>{negocio.productora.sitio_web}</span>
                     </div>
                   )}
                 </div>
@@ -154,10 +154,10 @@ const BusinessInfoCard: React.FC<BusinessInfoCardProps> = ({ negocio }) => {
                 <h5 className="font-medium text-sm text-slate-900 mb-1">{negocio.clienteFinal.nombre}</h5>
                 <div className="text-xs text-slate-600 space-y-1">
                   {negocio.clienteFinal.rut && <p>RUT: {negocio.clienteFinal.rut}</p>}
-                  {negocio.clienteFinal.sitioWeb && (
+                  {negocio.clienteFinal.sitio_web && (
                     <div className="flex items-center">
                       <Globe className="w-3 h-3 mr-1" />
-                      <span>{negocio.clienteFinal.sitioWeb}</span>
+                      <span>{negocio.clienteFinal.sitio_web}</span>
                     </div>
                   )}
                 </div>

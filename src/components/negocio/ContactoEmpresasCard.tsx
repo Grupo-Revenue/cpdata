@@ -71,10 +71,10 @@ const ContactoEmpresasCard: React.FC<ContactoEmpresasCardProps> = ({
                     {productora.rut && (
                       <p><span className="font-medium">RUT:</span> {productora.rut}</p>
                     )}
-                    {productora.sitioWeb && (
+                    {productora.sitio_web && (
                       <div className="flex items-center">
                         <Globe className="w-3 h-3 mr-1" />
-                        <span>{productora.sitioWeb}</span>
+                        <span>{productora.sitio_web}</span>
                       </div>
                     )}
                     {productora.direccion && (
@@ -99,10 +99,10 @@ const ContactoEmpresasCard: React.FC<ContactoEmpresasCardProps> = ({
                     {clienteFinal.rut && (
                       <p><span className="font-medium">RUT:</span> {clienteFinal.rut}</p>
                     )}
-                    {clienteFinal.sitioWeb && (
+                    {clienteFinal.sitio_web && (
                       <div className="flex items-center">
                         <Globe className="w-3 h-3 mr-1" />
-                        <span>{clienteFinal.sitioWeb}</span>
+                        <span>{clienteFinal.sitio_web}</span>
                       </div>
                     )}
                     {clienteFinal.direccion && (

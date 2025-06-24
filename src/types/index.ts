@@ -1,10 +1,11 @@
 
+
 import { Database } from "@/integrations/supabase/types";
 
 export type Contacto = Database['public']['Tables']['contactos']['Row']
 export type Empresa = Database['public']['Tables']['empresas']['Row']
 export type Negocio = ExtendedNegocio //Database['public']['Tables']['negocios']['Row']
-export type Presupuesto = Database['public']['Tables']['presupuestos']['Row']
+export type Presupuesto = ExtendedPresupuesto //Database['public']['Tables']['presupuestos']['Row']
 export type ProductoPresupuesto = Database['public']['Tables']['productos_presupuesto']['Row']
 export type ProductoBiblioteca = Database['public']['Tables']['productos_biblioteca']['Row']
 export type LineaProducto = Database['public']['Tables']['lineas_producto']['Row']
@@ -14,11 +15,19 @@ export type ExtendedNegocio = Database['public']['Tables']['negocios']['Row'] & 
   contacto: Contacto;
   productora: Empresa | null;
   clienteFinal: Empresa | null;
-  presupuestos: Presupuesto[];
+  presupuestos: ExtendedPresupuesto[];
   // Legacy properties for backwards compatibility
   evento: Evento;
   fechaCreacion: string;
   fechaCierre?: string;
+}
+
+export type ExtendedPresupuesto = Database['public']['Tables']['presupuestos']['Row'] & {
+  productos?: ProductoPresupuesto[];
+  fechaCreacion: string;
+  fechaEnvio?: string;
+  fechaAprobacion?: string;
+  fechaRechazo?: string;
 }
 
 export type Evento = {
@@ -58,3 +67,4 @@ export const TIPOS_EVENTO = [
   'Networking',
   'Otro'
 ] as const;
+
