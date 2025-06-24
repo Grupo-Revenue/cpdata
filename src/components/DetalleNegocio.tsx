@@ -5,10 +5,11 @@ import { useBidirectionalSync } from '@/hooks/useBidirectionalSync';
 import { Loader2 } from 'lucide-react';
 import CrearPresupuesto from './CrearPresupuesto';
 import { useNavigate } from 'react-router-dom';
-import CompactBusinessHeader from './negocio/CompactBusinessHeader';
+import BusinessDetailSidebar from './negocio/BusinessDetailSidebar';
 import DetalleNegocioMainContent from './negocio/DetalleNegocioMainContent';
 import ConflictResolutionDialog from './business/ConflictResolutionDialog';
 import { Button } from '@/components/ui/button';
+import { SidebarInset } from '@/components/ui/sidebar';
 
 interface DetalleNegocioProps {
   negocioId: string;
@@ -39,7 +40,7 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
 
   if (loading && !negocio) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
           <p className="text-gray-600">Cargando negocio...</p>
@@ -50,7 +51,7 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
 
   if (!negocio) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-12 w-full">
         <p className="text-gray-600 mb-4">Negocio no encontrado</p>
         <Button onClick={onVolver} variant="outline">Volver</Button>
       </div>
@@ -95,32 +96,41 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
 
   if (mostrarCrearPresupuesto) {
     return (
-      <CrearPresupuesto
-        negocioId={negocioId}
-        presupuestoId={presupuestoEditando}
-        onCerrar={handleCerrarCrearPresupuesto}
-      />
+      <div className="w-full">
+        <CrearPresupuesto
+          negocioId={negocioId}
+          presupuestoId={presupuestoEditando}
+          onCerrar={handleCerrarCrearPresupuesto}
+        />
+      </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Compact Header */}
-      <CompactBusinessHeader 
-        negocio={negocio} 
+    <>
+      {/* Sidebar with all business information */}
+      <BusinessDetailSidebar
+        negocio={negocio}
         onVolver={onVolver}
+        onCrearPresupuesto={handleCrearPresupuesto}
         onCambiarEstado={handleCambiarEstadoNegocio}
       />
 
-      {/* Main Content */}
-      <DetalleNegocioMainContent
-        negocio={negocio}
-        onCrearPresupuesto={handleCrearPresupuesto}
-        onEditarPresupuesto={handleEditarPresupuesto}
-        onEliminarPresupuesto={handleEliminarPresupuesto}
-        onVerPDF={handleVerPDF}
-        onCambiarEstado={handleCambiarEstadoPresupuesto}
-      />
+      {/* Main content area */}
+      <SidebarInset>
+        <main className="flex-1 overflow-auto">
+          <div className="container mx-auto px-6 py-6 max-w-6xl">
+            <DetalleNegocioMainContent
+              negocio={negocio}
+              onCrearPresupuesto={handleCrearPresupuesto}
+              onEditarPresupuesto={handleEditarPresupuesto}
+              onEliminarPresupuesto={handleEliminarPresupuesto}
+              onVerPDF={handleVerPDF}
+              onCambiarEstado={handleCambiarEstadoPresupuesto}
+            />
+          </div>
+        </main>
+      </SidebarInset>
 
       {/* Conflict Resolution Dialog */}
       {currentConflict && (
@@ -131,7 +141,7 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
           onResolve={handleResolveConflict}
         />
       )}
-    </div>
+    </>
   );
 };
 
