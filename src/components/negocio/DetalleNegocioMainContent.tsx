@@ -1,7 +1,7 @@
 
 import React from 'react';
 import BusinessSummaryHeader from './BusinessSummaryHeader';
-import PresupuestosCard from './PresupuestosCard';
+import PresupuestosTable from './presupuestos/PresupuestosTable';
 import { Negocio } from '@/types';
 
 interface DetalleNegocioMainContentProps {
@@ -31,8 +31,8 @@ const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
         onCambiarEstado={onCambiarEstadoNegocio}
       />
       
-      {/* Budgets - Main Focus */}
-      <PresupuestosCard
+      {/* Budgets Table - Main Focus */}
+      <PresupuestosTable
         negocio={negocio}
         onCrearPresupuesto={onCrearPresupuesto}
         onEditarPresupuesto={onEditarPresupuesto}
