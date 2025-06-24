@@ -2,10 +2,9 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import ContactoEmpresasCard from './ContactoEmpresasCard';
-import EventoCard from './EventoCard';
+import BusinessInfoCard from './BusinessInfoCard';
 import PresupuestosCard from './PresupuestosCard';
-import BusinessStatusCard from './BusinessStatusCard';
+import CompactMetricsCard from './CompactMetricsCard';
 import { Negocio } from '@/types';
 
 interface DetalleNegocioMainContentProps {
@@ -26,13 +25,10 @@ const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
   onCambiarEstado
 }) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      {/* Left Column - Main Info */}
-      <div className="lg:col-span-3 space-y-6">
-        {/* Event Details */}
-        <EventoCard negocio={negocio} />
-        
-        {/* Budgets */}
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      {/* Left Column - Main Content */}
+      <div className="lg:col-span-3 space-y-4">
+        {/* Budgets - Main Focus */}
         <PresupuestosCard
           negocio={negocio}
           onCrearPresupuesto={onCrearPresupuesto}
@@ -41,32 +37,27 @@ const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
           onVerPDF={onVerPDF}
           onCambiarEstado={onCambiarEstado}
         />
+        
+        {/* Business Info - Secondary */}
+        <BusinessInfoCard negocio={negocio} />
       </div>
       
-      {/* Right Column - Secondary Info */}
-      <div className="space-y-6">
-        {/* Business Summary */}
-        <BusinessStatusCard negocio={negocio} />
-        
-        {/* Contact and Companies */}
-        <ContactoEmpresasCard 
-          contacto={negocio.contacto}
-          productora={negocio.productora}
-          clienteFinal={negocio.clienteFinal}
-        />
+      {/* Right Column - Metrics and Quick Actions */}
+      <div className="space-y-4">
+        {/* Compact Metrics */}
+        <CompactMetricsCard negocio={negocio} />
         
         {/* Quick Actions */}
-        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-          <h3 className="font-semibold text-slate-900 mb-3 text-sm">Acciones Rápidas</h3>
+        <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+          <h3 className="font-medium text-slate-900 mb-3 text-sm">Acciones</h3>
           <div className="space-y-2">
             <Button 
               onClick={onCrearPresupuesto}
-              className="w-full justify-start text-sm"
-              variant="outline"
+              className="w-full justify-start text-sm h-8"
               size="sm"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Crear Presupuesto
+              <Plus className="h-3 w-3 mr-2" />
+              Nuevo Presupuesto
             </Button>
           </div>
         </div>

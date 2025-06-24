@@ -5,7 +5,7 @@ import { useBidirectionalSync } from '@/hooks/useBidirectionalSync';
 import { Loader2 } from 'lucide-react';
 import CrearPresupuesto from './CrearPresupuesto';
 import { useNavigate } from 'react-router-dom';
-import DetalleNegocioCompactHeader from './negocio/DetalleNegocioCompactHeader';
+import CompactBusinessHeader from './negocio/CompactBusinessHeader';
 import DetalleNegocioMainContent from './negocio/DetalleNegocioMainContent';
 import ConflictResolutionDialog from './business/ConflictResolutionDialog';
 import { Button } from '@/components/ui/button';
@@ -104,27 +104,23 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <DetalleNegocioCompactHeader 
-          negocio={negocio} 
-          onVolver={onVolver}
-          onCambiarEstado={handleCambiarEstadoNegocio}
-        />
-      </div>
+    <div className="space-y-4">
+      {/* Compact Header */}
+      <CompactBusinessHeader 
+        negocio={negocio} 
+        onVolver={onVolver}
+        onCambiarEstado={handleCambiarEstadoNegocio}
+      />
 
       {/* Main Content */}
-      <div>
-        <DetalleNegocioMainContent
-          negocio={negocio}
-          onCrearPresupuesto={handleCrearPresupuesto}
-          onEditarPresupuesto={handleEditarPresupuesto}
-          onEliminarPresupuesto={handleEliminarPresupuesto}
-          onVerPDF={handleVerPDF}
-          onCambiarEstado={handleCambiarEstadoPresupuesto}
-        />
-      </div>
+      <DetalleNegocioMainContent
+        negocio={negocio}
+        onCrearPresupuesto={handleCrearPresupuesto}
+        onEditarPresupuesto={handleEditarPresupuesto}
+        onEliminarPresupuesto={handleEliminarPresupuesto}
+        onVerPDF={handleVerPDF}
+        onCambiarEstado={handleCambiarEstadoPresupuesto}
+      />
 
       {/* Conflict Resolution Dialog */}
       {currentConflict && (
