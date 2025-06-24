@@ -59,8 +59,8 @@ const BusinessDetailSidebar: React.FC<BusinessDetailSidebarProps> = ({
   return (
     <Sidebar className="border-l border-slate-200" side="right">
       <SidebarHeader className="p-4">
-        {/* Header with Back Button */}
-        <div className="flex items-center justify-between mb-4">
+        {/* Header with Back Button and State Select */}
+        <div className="flex items-center justify-between">
           <Button
             variant="ghost"
             size="sm"
@@ -75,22 +75,6 @@ const BusinessDetailSidebar: React.FC<BusinessDetailSidebarProps> = ({
             onStateChange={handleStateChange}
             size="sm"
           />
-        </div>
-
-        {/* Business Title */}
-        <div className="text-center">
-          <h1 className="text-lg font-bold text-slate-900">
-            Negocio #{negocio.numero}
-          </h1>
-          <p className="text-sm text-slate-600 mt-1">{negocio.evento.nombreEvento}</p>
-          
-          {/* Total Value */}
-          <div className="mt-3 p-3 bg-green-50 rounded-lg">
-            <div className="text-xl font-bold text-green-600">
-              {formatearPrecio(valorTotal)}
-            </div>
-            <div className="text-xs text-green-700">Valor Total</div>
-          </div>
         </div>
       </SidebarHeader>
 
