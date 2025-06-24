@@ -1,6 +1,5 @@
 
 import React from 'react';
-import BusinessSummaryHeader from './BusinessSummaryHeader';
 import PresupuestosTable from './presupuestos/PresupuestosTable';
 import { Negocio } from '@/types';
 
@@ -20,17 +19,10 @@ const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
   onEditarPresupuesto,
   onEliminarPresupuesto,
   onVerPDF,
-  onCambiarEstado,
-  onCambiarEstadoNegocio
+  onCambiarEstado
 }) => {
   return (
     <div className="space-y-6">
-      {/* Business Summary Header */}
-      <BusinessSummaryHeader
-        negocio={negocio}
-        onCambiarEstado={onCambiarEstadoNegocio}
-      />
-      
       {/* Budgets Table - Main Focus */}
       <PresupuestosTable
         negocio={negocio}

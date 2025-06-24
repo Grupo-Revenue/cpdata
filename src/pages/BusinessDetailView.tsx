@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { SidebarProvider } from '@/components/ui/sidebar';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import DetalleNegocio from '@/components/DetalleNegocio';
 
@@ -13,14 +12,10 @@ const BusinessDetailView: React.FC<BusinessDetailViewProps> = ({ negocioId, onVo
   return (
     <DashboardLayout>
       <div className="h-full">
-        <SidebarProvider>
-          <div className="min-h-screen flex w-full">
-            <DetalleNegocio
-              negocioId={negocioId}
-              onVolver={onVolver}
-            />
-          </div>
-        </SidebarProvider>
+        <DetalleNegocio
+          negocioId={negocioId}
+          onVolver={onVolver}
+        />
       </div>
     </DashboardLayout>
   );

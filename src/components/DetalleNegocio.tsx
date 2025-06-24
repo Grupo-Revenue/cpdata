@@ -5,11 +5,10 @@ import { useBidirectionalSync } from '@/hooks/useBidirectionalSync';
 import { Loader2 } from 'lucide-react';
 import CrearPresupuesto from './CrearPresupuesto';
 import { useNavigate } from 'react-router-dom';
-import BusinessDetailSidebar from './negocio/BusinessDetailSidebar';
+import BusinessDetailHeader from './negocio/BusinessDetailHeader';
 import DetalleNegocioMainContent from './negocio/DetalleNegocioMainContent';
 import ConflictResolutionDialog from './business/ConflictResolutionDialog';
 import { Button } from '@/components/ui/button';
-import { SidebarInset } from '@/components/ui/sidebar';
 
 interface DetalleNegocioProps {
   negocioId: string;
@@ -107,31 +106,27 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
   }
 
   return (
-    <>
-      {/* Main content area */}
-      <SidebarInset>
-        <main className="flex-1 overflow-auto">
-          <div className="container mx-auto px-6 py-6 max-w-6xl">
-            <DetalleNegocioMainContent
-              negocio={negocio}
-              onCrearPresupuesto={handleCrearPresupuesto}
-              onEditarPresupuesto={handleEditarPresupuesto}
-              onEliminarPresupuesto={handleEliminarPresupuesto}
-              onVerPDF={handleVerPDF}
-              onCambiarEstado={handleCambiarEstadoPresupuesto}
-              onCambiarEstadoNegocio={handleCambiarEstadoNegocio}
-            />
-          </div>
-        </main>
-      </SidebarInset>
-
-      {/* Sidebar with all business information */}
-      <BusinessDetailSidebar
-        negocio={negocio}
-        onVolver={onVolver}
-        onCrearPresupuesto={handleCrearPresupuesto}
-        onCambiarEstado={handleCambiarEstadoNegocio}
-      />
+    <div className="w-full">
+      <main className="flex-1 overflow-auto">
+        <div className="container mx-auto px-6 py-6 max-w-6xl">
+          <BusinessDetailHeader
+            negocio={negocio}
+            onVolver={onVolver}
+            onCrearPresupuesto={handleCrearPresupuesto}
+            onCambiarEstado={handleCambiarEstadoNegocio}
+          />
+          
+          <DetalleNegocioMainContent
+            negocio={negocio}
+            onCrearPresupuesto={handleCrearPresupuesto}
+            onEditarPresupuesto={handleEditarPresupuesto}
+            onEliminarPresupuesto={handleEliminarPresupuesto}
+            onVerPDF={handleVerPDF}
+            onCambiarEstado={handleCambiarEstadoPresupuesto}
+            onCambiarEstadoNegocio={handleCambiarEstadoNegocio}
+          />
+        </div>
+      </main>
 
       {/* Conflict Resolution Dialog */}
       {currentConflict && (
@@ -142,7 +137,7 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
           onResolve={handleResolveConflict}
         />
       )}
-    </>
+    </div>
   );
 };
 
