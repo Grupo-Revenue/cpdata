@@ -78,11 +78,9 @@ const BusinessesTable: React.FC<BusinessesTableProps> = ({ onCrearNegocio, onVer
                   <TableHead>Contacto</TableHead>
                   <TableHead>Empresa</TableHead>
                   <TableHead>Evento</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Valor Total</TableHead>
                   <TableHead>Fecha Evento</TableHead>
-                  <TableHead>HubSpot</TableHead>
-                  <TableHead>Acciones</TableHead>
+                  <TableHead>Valor Total</TableHead>
+                  <TableHead>Estado</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

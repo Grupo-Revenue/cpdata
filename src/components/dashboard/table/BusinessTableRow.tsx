@@ -1,12 +1,9 @@
 
 import React from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import BusinessStateSelect from '@/components/business/BusinessStateSelect';
-import HubSpotSyncButton from '@/components/hubspot/HubSpotSyncButton';
 import { Negocio } from '@/types';
 import { calcularValorNegocio } from '@/utils/businessCalculations';
 import { useNegocio } from '@/context/NegocioContext';
@@ -55,10 +52,24 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({
     await cambiarEstadoNegocio(negocioId, nuevoEstado);
   };
 
+  const handleCellClick = () => {
+    onVerNegocio(negocio.id);
+  };
+
+  const clickableCellClasses = "cursor-pointer hover:bg-slate-50 transition-colors text-blue-600 hover:text-blue-800 hover:underline";
+
   return (
-    <TableRow>
-      <TableCell className="font-medium">#{negocio.numero}</TableCell>
-      <TableCell>
+    <TableRow className="hover:bg-slate-50/50">
+      <TableCell 
+        className={`font-medium ${clickableCellClasses}`}
+        onClick={handleCellClick}
+      >
+        #{negocio.numero}
+      </TableCell>
+      <TableCell 
+        className={clickableCellClasses}
+        onClick={handleCellClick}
+      >
         <div>
           <div className="font-medium">
             {negocio.contacto.nombre} {negocio.contacto.apellido}
@@ -66,37 +77,30 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({
           <div className="text-sm text-gray-500">{negocio.contacto.email}</div>
         </div>
       </TableCell>
-      <TableCell>{obtenerNombreEmpresa(negocio)}</TableCell>
-      <TableCell>{negocio.evento.nombreEvento}</TableCell>
+      <TableCell 
+        className={clickableCellClasses}
+        onClick={handleCellClick}
+      >
+        {obtenerNombreEmpresa(negocio)}
+      </TableCell>
+      <TableCell 
+        className={clickableCellClasses}
+        onClick={handleCellClick}
+      >
+        {negocio.evento.nombreEvento}
+      </TableCell>
+      <TableCell>
+        {negocio.evento.fechaEvento ? formatearFecha(negocio.evento.fechaEvento) : 'Por definir'}
+      </TableCell>
+      <TableCell className="font-semibold">
+        {formatearPrecio(valorTotal)}
+      </TableCell>
       <TableCell>
         <BusinessStateSelect
           negocio={negocio}
           onStateChange={handleEstadoChange}
           size="sm"
         />
-      </TableCell>
-      <TableCell className="font-semibold">
-        {formatearPrecio(valorTotal)}
-      </TableCell>
-      <TableCell>
-        {negocio.evento.fechaEvento ? formatearFecha(negocio.evento.fechaEvento) : 'Por definir'}
-      </TableCell>
-      <TableCell>
-        <HubSpotSyncButton
-          negocio={negocio}
-          variant="outline"
-          size="sm"
-          showText={false}
-        />
-      </TableCell>
-      <TableCell>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onVerNegocio(negocio.id)}
-        >
-          <Eye className="h-4 w-4" />
-        </Button>
       </TableCell>
     </TableRow>
   );
