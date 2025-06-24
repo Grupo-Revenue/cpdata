@@ -265,7 +265,7 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
         contacto: negocioData.contacto,
         productora: negocioData.productora?.nombre || 'None',
         clienteFinal: negocioData.clienteFinal?.nombre || 'None',
-        evento: negocioData.evento
+        tipoEvento: negocioData.tipo_evento
       });
       
       // Validate required fields before proceeding
@@ -274,8 +274,8 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
         throw new Error('Información de contacto incompleta');
       }
 
-      if (!negocioData.evento?.tipo_evento || !negocioData.evento?.nombre_evento || 
-          !negocioData.evento?.horas_acreditacion || !negocioData.evento?.locacion) {
+      if (!negocioData.tipo_evento || !negocioData.nombre_evento || 
+          !negocioData.horas_acreditacion || !negocioData.locacion) {
         throw new Error('Información del evento incompleta');
       }
 
@@ -389,7 +389,15 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
             id: negocio.id,
             numero: negocio.numero,
             contacto: negocioData.contacto,
-            evento: negocioData.evento,
+            evento: {
+              tipoEvento: negocioData.tipo_evento,
+              nombreEvento: negocioData.nombre_evento,
+              fechaEvento: negocioData.fecha_evento || '',
+              horasAcreditacion: negocioData.horas_acreditacion,
+              cantidadAsistentes: negocioData.cantidad_asistentes || 0,
+              cantidadInvitados: negocioData.cantidad_invitados || 0,
+              locacion: negocioData.locacion
+            },
             valorTotal: valorTotal
           };
           
@@ -406,7 +414,15 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
             id: negocio.id,
             numero: negocio.numero,
             contacto: negocioData.contacto,
-            evento: negocioData.evento,
+            evento: {
+              tipoEvento: negocioData.tipo_evento,
+              nombreEvento: negocioData.nombre_evento,
+              fechaEvento: negocioData.fecha_evento || '',
+              horasAcreditacion: negocioData.horas_acreditacion,
+              cantidadAsistentes: negocioData.cantidad_asistentes || 0,
+              cantidadInvitados: negocioData.cantidad_invitados || 0,
+              locacion: negocioData.locacion
+            },
             valorTotal: 0 // No budget yet, so value is 0
           };
           
