@@ -2,7 +2,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, CheckCircle, Clock, RefreshCw, ExternalLink, DollarSign, Sync } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, RefreshCw, ExternalLink, DollarSign, RefreshCcw } from 'lucide-react';
 import { useBidirectionalSync } from '@/hooks/useBidirectionalSync';
 import { Negocio } from '@/types';
 import { calcularValorNegocio } from '@/utils/businessCalculations';
@@ -149,7 +149,7 @@ const BusinessSyncStatus: React.FC<BusinessSyncStatusProps> = ({ negocio }) => {
           {loading ? (
             <Clock className="w-3 h-3 animate-spin mr-1" />
           ) : (
-            <Sync className="w-3 h-3 mr-1" />
+            <RefreshCcw className="w-3 h-3 mr-1" />
           )}
           Sync Masivo
         </Button>
