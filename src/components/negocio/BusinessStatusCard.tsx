@@ -91,9 +91,9 @@ const BusinessStatusCard: React.FC<BusinessStatusCardProps> = ({ negocio, onRefr
         throw calcError;
       }
 
-      // Get budget statistics
-      const budgetInfo = obtenerInfoPresupuestos(currentData);
-      const totalValue = calcularValorNegocio(currentData);
+      // Get budget statistics using the properly formatted negocio
+      const budgetInfo = obtenerInfoPresupuestos(negocio);
+      const totalValue = calcularValorNegocio(negocio);
 
       const diagnostics = {
         businessId: negocio.id,
@@ -202,7 +202,7 @@ const BusinessStatusCard: React.FC<BusinessStatusCardProps> = ({ negocio, onRefr
               Estado del Negocio
             </CardTitle>
             {hasStateIssue && (
-              <AlertTriangle className="w-4 h-4 text-amber-500" title="Posible inconsistencia de estado" />
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
             )}
           </div>
           <div className="flex space-x-2">

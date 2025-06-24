@@ -40,7 +40,7 @@ const App = () => {
                 } />
                 <Route path="/admin" element={
                   <ProtectedRoute>
-                    <Admin onVolver={() => window.location.href = '/'} />
+                    <Admin />
                   </ProtectedRoute>
                 } />
                 <Route path="/presupuesto/:negocioId/:presupuestoId/pdf" element={

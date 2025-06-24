@@ -99,6 +99,7 @@ export const analyzeBusinessState = (negocio: Negocio) => {
   }
   
   const stateMatches = negocio.estado === expectedState;
+  const hasInconsistency = !stateMatches;
   
   console.log(`[businessCalculations] State analysis result: expected "${expectedState}", actual "${negocio.estado}", matches: ${stateMatches}`);
   
@@ -106,10 +107,11 @@ export const analyzeBusinessState = (negocio: Negocio) => {
     currentState: negocio.estado,
     expectedState,
     stateMatches,
+    hasInconsistency,
     budgetInfo: info,
     analysis: {
-      hasInconsistency: !stateMatches,
-      reason: !stateMatches ? `Expected "${expectedState}" but found "${negocio.estado}"` : 'States match'
+      hasInconsistency,
+      reason: hasInconsistency ? `Expected "${expectedState}" but found "${negocio.estado}"` : 'States match'
     }
   };
 };
