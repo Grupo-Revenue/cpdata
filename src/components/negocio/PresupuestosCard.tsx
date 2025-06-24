@@ -6,7 +6,7 @@ import PresupuestosCardHeader from './presupuestos/PresupuestosCardHeader';
 import EmptyPresupuestosState from './presupuestos/EmptyPresupuestosState';
 import PresupuestoItem from './presupuestos/PresupuestoItem';
 import PresupuestoEstadoDialog from './presupuestos/PresupuestoEstadoDialog';
-import { useBidirectionalSync } from '@/hooks/useBidirectionalSync';
+import { useEnhancedBidirectionalSync } from '@/hooks/useEnhancedBidirectionalSync';
 
 interface PresupuestosCardProps {
   negocio: Negocio;
@@ -25,7 +25,7 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
   onVerPDF,
   onCambiarEstado
 }) => {
-  const { syncOnBudgetUpdate } = useBidirectionalSync();
+  const { syncOnBudgetUpdate } = useEnhancedBidirectionalSync();
   const [eliminandoPresupuesto, setEliminandoPresupuesto] = useState<string | null>(null);
   const [mostrarDialogoEnvio, setMostrarDialogoEnvio] = useState(false);
   const [presupuestoSeleccionado, setPresupuestoSeleccionado] = useState<string | null>(null);
@@ -38,10 +38,10 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
     if (confirm('¿Está seguro de que desea eliminar este presupuesto?')) {
       setEliminandoPresupuesto(presupuestoId);
       try {
-        console.log('Deleting budget and triggering amount sync for business:', negocio.id);
+        console.log('Deleting budget and triggering sync for business:', negocio.id);
         await onEliminarPresupuesto(presupuestoId);
         
-        // Trigger amount sync after budget deletion with a small delay
+        // Trigger sync after budget deletion with a small delay
         setTimeout(async () => {
           await syncOnBudgetUpdate(negocio.id);
         }, 1000);
@@ -70,7 +70,7 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
       console.log('Sending budget and triggering sync for business:', negocio.id);
       await onCambiarEstado(presupuestoSeleccionado, 'enviado', fechaVencimiento);
       
-      // Trigger amount sync after state change with a small delay
+      // Trigger sync after state change with a small delay
       setTimeout(async () => {
         await syncOnBudgetUpdate(negocio.id);
       }, 1000);
@@ -93,7 +93,7 @@ const PresupuestosCard: React.FC<PresupuestosCardProps> = ({
       console.log('Changing budget state and triggering sync for business:', negocio.id, 'New state:', nuevoEstado);
       await onCambiarEstado(presupuestoId, nuevoEstado);
       
-      // Trigger amount sync after state change with a small delay
+      // Trigger sync after state change with a small delay
       setTimeout(async () => {
         await syncOnBudgetUpdate(negocio.id);
       }, 1000);

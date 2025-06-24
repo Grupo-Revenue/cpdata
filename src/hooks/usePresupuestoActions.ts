@@ -2,11 +2,11 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useBidirectionalSync } from './useBidirectionalSync';
+import { useEnhancedBidirectionalSync } from './useEnhancedBidirectionalSync';
 
 export const usePresupuestoActions = (negocioId: string, onRefresh: () => void) => {
   const { toast } = useToast();
-  const { syncOnBudgetUpdate } = useBidirectionalSync();
+  const { syncOnBudgetUpdate } = useEnhancedBidirectionalSync();
   const [loading, setLoading] = useState(false);
 
   const marcarComoFacturado = async (presupuestoId: string) => {

@@ -357,6 +357,7 @@ export type Database = {
       }
       hubspot_sync_log: {
         Row: {
+          batch_id: string | null
           conflict_resolved: boolean | null
           created_at: string
           error_message: string | null
@@ -371,10 +372,13 @@ export type Database = {
           old_amount: number | null
           old_state: string | null
           operation_type: string
+          queue_id: string | null
           success: boolean
           sync_direction: string
+          trigger_source: string | null
         }
         Insert: {
+          batch_id?: string | null
           conflict_resolved?: boolean | null
           created_at?: string
           error_message?: string | null
@@ -389,10 +393,13 @@ export type Database = {
           old_amount?: number | null
           old_state?: string | null
           operation_type: string
+          queue_id?: string | null
           success?: boolean
           sync_direction: string
+          trigger_source?: string | null
         }
         Update: {
+          batch_id?: string | null
           conflict_resolved?: boolean | null
           created_at?: string
           error_message?: string | null
@@ -407,8 +414,10 @@ export type Database = {
           old_amount?: number | null
           old_state?: string | null
           operation_type?: string
+          queue_id?: string | null
           success?: boolean
           sync_direction?: string
+          trigger_source?: string | null
         }
         Relationships: [
           {
@@ -418,7 +427,62 @@ export type Database = {
             referencedRelation: "negocios"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "hubspot_sync_log_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "hubspot_sync_queue"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      hubspot_sync_queue: {
+        Row: {
+          attempts: number | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          max_attempts: number | null
+          negocio_id: string
+          operation_type: string
+          payload: Json
+          priority: number | null
+          processed_at: string | null
+          scheduled_at: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          max_attempts?: number | null
+          negocio_id: string
+          operation_type: string
+          payload: Json
+          priority?: number | null
+          processed_at?: string | null
+          scheduled_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          max_attempts?: number | null
+          negocio_id?: string
+          operation_type?: string
+          payload?: Json
+          priority?: number | null
+          processed_at?: string | null
+          scheduled_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       hubspot_webhooks: {
         Row: {
@@ -781,6 +845,25 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      enqueue_hubspot_sync: {
+        Args: {
+          p_negocio_id: string
+          p_operation_type: string
+          p_payload: Json
+          p_priority?: number
+        }
+        Returns: string
+      }
+      get_hubspot_sync_stats: {
+        Args: { p_user_id?: string }
+        Returns: {
+          total_pending: number
+          total_processing: number
+          total_failed: number
+          total_completed_today: number
+          avg_processing_time_minutes: number
+        }[]
+      }
       has_role: {
         Args: {
           _user_id: string
@@ -795,6 +878,12 @@ export type Database = {
       marcar_presupuesto_facturado: {
         Args: { presupuesto_id_param: string }
         Returns: undefined
+      }
+      process_hubspot_sync_queue: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          processed_count: number
+        }[]
       }
       recalcular_todos_estados_negocios: {
         Args: Record<PropertyKey, never>

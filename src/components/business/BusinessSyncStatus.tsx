@@ -3,7 +3,7 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, CheckCircle, Clock, RefreshCw, ExternalLink, DollarSign, RefreshCcw } from 'lucide-react';
-import { useBidirectionalSync } from '@/hooks/useBidirectionalSync';
+import { useEnhancedBidirectionalSync } from '@/hooks/useEnhancedBidirectionalSync';
 import { Negocio } from '@/types';
 import { calcularValorNegocio } from '@/utils/businessCalculations';
 
@@ -18,7 +18,7 @@ const BusinessSyncStatus: React.FC<BusinessSyncStatusProps> = ({ negocio }) => {
     syncFromHubSpot, 
     syncAllAmountsToHubSpot,
     loading 
-  } = useBidirectionalSync();
+  } = useEnhancedBidirectionalSync();
   
   // Check if this business has conflicts
   const hasConflict = syncConflicts.some(conflict => conflict.negocio_id === negocio.id);
