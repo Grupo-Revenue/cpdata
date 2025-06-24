@@ -15,29 +15,33 @@ interface StateMapping {
 }
 
 interface SyncConflict {
+  id: string;
   negocio_id: string;
   app_state: string;
   hubspot_state: string;
   app_amount?: number;
   hubspot_amount?: number;
   conflict_type: 'state' | 'amount' | 'both';
-  timestamp: string;
   status: 'pending' | 'resolved';
+  created_at: string;
+  resolved_at?: string;
 }
 
 interface SyncLog {
   id: string;
   negocio_id: string;
   operation_type: string;
-  old_state: string;
-  new_state: string;
+  old_state?: string;
+  new_state?: string;
   old_amount?: number;
   new_amount?: number;
   success: boolean;
-  error_message: string;
+  error_message?: string;
   created_at: string;
-  sync_direction: 'inbound' | 'outbound' | 'resolution';
+  sync_direction?: 'inbound' | 'outbound' | 'resolution';
   force_sync?: boolean;
+  hubspot_old_stage?: string;
+  hubspot_new_stage?: string;
 }
 
 export const useBidirectionalSync = () => {

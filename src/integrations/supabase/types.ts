@@ -256,6 +256,7 @@ export type Database = {
           last_sync_at: string | null
           negocio_id: string
           sync_conflicts: number
+          sync_direction: string | null
           sync_status: string
           updated_at: string
         }
@@ -271,6 +272,7 @@ export type Database = {
           last_sync_at?: string | null
           negocio_id: string
           sync_conflicts?: number
+          sync_direction?: string | null
           sync_status?: string
           updated_at?: string
         }
@@ -286,6 +288,7 @@ export type Database = {
           last_sync_at?: string | null
           negocio_id?: string
           sync_conflicts?: number
+          sync_direction?: string | null
           sync_status?: string
           updated_at?: string
         }
@@ -299,11 +302,65 @@ export type Database = {
           },
         ]
       }
+      hubspot_sync_conflicts: {
+        Row: {
+          app_amount: number | null
+          app_state: string
+          conflict_type: string
+          created_at: string | null
+          hubspot_amount: number | null
+          hubspot_state: string
+          id: string
+          negocio_id: string
+          resolution_strategy: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          app_amount?: number | null
+          app_state: string
+          conflict_type: string
+          created_at?: string | null
+          hubspot_amount?: number | null
+          hubspot_state: string
+          id?: string
+          negocio_id: string
+          resolution_strategy?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          app_amount?: number | null
+          app_state?: string
+          conflict_type?: string
+          created_at?: string | null
+          hubspot_amount?: number | null
+          hubspot_state?: string
+          id?: string
+          negocio_id?: string
+          resolution_strategy?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hubspot_sync_conflicts_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hubspot_sync_log: {
         Row: {
           conflict_resolved: boolean | null
           created_at: string
           error_message: string | null
+          force_sync: boolean | null
           hubspot_deal_id: string | null
           hubspot_new_stage: string | null
           hubspot_old_stage: string | null
@@ -321,6 +378,7 @@ export type Database = {
           conflict_resolved?: boolean | null
           created_at?: string
           error_message?: string | null
+          force_sync?: boolean | null
           hubspot_deal_id?: string | null
           hubspot_new_stage?: string | null
           hubspot_old_stage?: string | null
@@ -338,6 +396,7 @@ export type Database = {
           conflict_resolved?: boolean | null
           created_at?: string
           error_message?: string | null
+          force_sync?: boolean | null
           hubspot_deal_id?: string | null
           hubspot_new_stage?: string | null
           hubspot_old_stage?: string | null
