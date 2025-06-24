@@ -41,7 +41,14 @@ export const useEnhancedBidirectionalSync = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setSyncConflicts(data || []);
+      
+      // Type cast the data to ensure conflict_type matches our expected union type
+      const typedData = (data || []).map(item => ({
+        ...item,
+        conflict_type: item.conflict_type as 'state' | 'amount' | 'both'
+      }));
+      
+      setSyncConflicts(typedData);
     } catch (error) {
       console.error('[useEnhancedBidirectionalSync] Error loading conflicts:', error);
     }
