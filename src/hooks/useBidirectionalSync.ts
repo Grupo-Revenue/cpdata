@@ -25,6 +25,9 @@ interface SyncConflict {
   status: 'pending' | 'resolved';
   created_at: string;
   resolved_at?: string;
+  resolution_strategy?: string;
+  resolved_by?: string;
+  timestamp: string; // Adding timestamp property
 }
 
 interface SyncLog {
@@ -42,6 +45,8 @@ interface SyncLog {
   force_sync?: boolean;
   hubspot_old_stage?: string;
   hubspot_new_stage?: string;
+  hubspot_deal_id?: string;
+  conflict_resolved?: boolean;
 }
 
 export const useBidirectionalSync = () => {
@@ -99,7 +104,16 @@ export const useBidirectionalSync = () => {
       }
       
       console.log('Loaded sync conflicts:', data?.length || 0);
-      setSyncConflicts(data || []);
+      
+      // Transform the data to match our interface, adding timestamp from created_at
+      const transformedConflicts: SyncConflict[] = (data || []).map(conflict => ({
+        ...conflict,
+        conflict_type: conflict.conflict_type as 'state' | 'amount' | 'both',
+        status: conflict.status as 'pending' | 'resolved',
+        timestamp: conflict.created_at
+      }));
+      
+      setSyncConflicts(transformedConflicts);
     } catch (error) {
       console.error('Error in loadSyncConflicts:', error);
     }
@@ -122,7 +136,14 @@ export const useBidirectionalSync = () => {
       }
       
       console.log('Loaded sync logs:', data?.length || 0);
-      setSyncLogs(data || []);
+      
+      // Transform the data to match our interface
+      const transformedLogs: SyncLog[] = (data || []).map(log => ({
+        ...log,
+        sync_direction: log.sync_direction as 'inbound' | 'outbound' | 'resolution' | undefined
+      }));
+      
+      setSyncLogs(transformedLogs);
     } catch (error) {
       console.error('Error in loadSyncLogs:', error);
     }
