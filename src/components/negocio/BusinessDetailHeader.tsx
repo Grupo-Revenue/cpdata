@@ -11,16 +11,16 @@ import {
   MapPin, 
   Users, 
   RefreshCw,
-  Plus,
   Phone,
-  Mail
+  Mail,
+  DollarSign,
+  TrendingUp
 } from 'lucide-react';
 import { Negocio } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
 import { calcularValorNegocio } from '@/utils/businessCalculations';
 import BusinessStateSelect from '@/components/business/BusinessStateSelect';
 import { useHubSpotSync } from '@/hooks/useHubSpotSync';
-import BusinessValueSection from './sections/BusinessValueSection';
 
 interface BusinessDetailHeaderProps {
   negocio: Negocio;
@@ -66,48 +66,55 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
             Volver
           </Button>
           
-          <div>
-            <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-6">
+            <div>
               <h1 className="text-2xl font-bold text-slate-900">
                 {empresaDisplay} - Negocio #{negocio.numero}
               </h1>
-              <BusinessStateSelect
-                negocio={negocio}
-                onStateChange={handleStateChange}
-                size="sm"
-              />
+              <p className="text-lg text-slate-600 mt-1">{negocio.evento.nombreEvento}</p>
             </div>
-            <p className="text-lg text-slate-600 mt-1">{negocio.evento.nombreEvento}</p>
+            
+            {/* Integrated Business Value */}
+            <div className="flex items-center space-x-3 px-4 py-2 bg-slate-50 rounded-lg border">
+              <div className="p-2 bg-slate-100 rounded-lg">
+                <DollarSign className="w-5 h-5 text-slate-700" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-600 font-medium">Valor Total</p>
+                <div className="flex items-baseline space-x-2">
+                  <span className="text-xl font-bold text-slate-900">
+                    {formatearPrecio(valorTotal)}
+                  </span>
+                  {valorTotal > 0 && (
+                    <div className="flex items-center space-x-1 text-emerald-600">
+                      <TrendingUp className="w-3 h-3" />
+                      <span className="text-xs font-medium">Activo</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Header Actions */}
-        <div className="flex items-center space-x-3">
+        {/* State and Sync Controls */}
+        <div className="flex flex-col items-end space-y-2">
+          <BusinessStateSelect
+            negocio={negocio}
+            onStateChange={handleStateChange}
+            size="sm"
+          />
           <Button
             variant="outline"
             size="sm"
             onClick={handleHubSpotSync}
             disabled={isSyncing(negocio.id)}
-            className="h-9"
+            className="h-8 text-xs"
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing(negocio.id) ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3 w-3 mr-1 ${isSyncing(negocio.id) ? 'animate-spin' : ''}`} />
             {isSyncing(negocio.id) ? 'Sincronizando...' : 'HubSpot Sync'}
           </Button>
-          
-          <Button 
-            onClick={onCrearPresupuesto}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 h-9"
-            size="sm"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Presupuesto
-          </Button>
         </div>
-      </div>
-
-      {/* Business Value Section */}
-      <div className="flex justify-center">
-        <BusinessValueSection valorNegocio={valorTotal} />
       </div>
 
       {/* Key Information Cards */}
