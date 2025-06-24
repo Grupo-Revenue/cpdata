@@ -29,8 +29,11 @@ export const useBusinessStateMonitor = () => {
     if (!loading && negocios.length > 0) {
       console.log('[useBusinessStateMonitor] Setting up real-time monitoring...');
       
-      const channel = supabase
-        .channel('business-state-monitor')
+      // Create a unique channel name to avoid conflicts
+      const channelName = `business-state-monitor-${Date.now()}-${Math.random()}`;
+      const channel = supabase.channel(channelName);
+      
+      channel
         .on(
           'postgres_changes',
           {
@@ -63,7 +66,7 @@ export const useBusinessStateMonitor = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [negocios, loading]);
+  }, [negocios.length, loading]); // Simplified dependencies to prevent unnecessary re-subscriptions
 
   const validateCurrentStates = async () => {
     if (monitoringState.isMonitoring || negocios.length === 0) return;
@@ -114,7 +117,7 @@ export const useBusinessStateMonitor = () => {
       console.log('[useBusinessStateMonitor] Performing initial validation...');
       validateCurrentStates();
     }
-  }, [negocios, loading]);
+  }, [negocios.length, loading]); // Simplified dependencies
 
   const runComprehensiveAudit = async () => {
     try {
