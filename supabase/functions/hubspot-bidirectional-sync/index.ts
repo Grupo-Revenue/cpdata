@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -13,6 +12,7 @@ interface HubSpotDeal {
     dealname: string;
     dealstage: string;
     amount: string;
+    closedate: string;
     hs_lastmodifieddate: string;
     [key: string]: any;
   };
@@ -143,6 +143,13 @@ async function syncToHubSpot(supabase: any, negocioId: string, userId: string, f
     dealstage: mapping.hubspot_stage_id,
     amount: currentValue,
     pipeline: mapping.hubspot_pipeline_id,
+  }
+
+  // Add close date if available
+  if (negocio.fechaCierre) {
+    // Convert to timestamp in milliseconds for HubSpot
+    const closeDateTimestamp = new Date(negocio.fechaCierre).getTime()
+    dealData.closedate = closeDateTimestamp.toString()
   }
 
   let hubspotDealId = existingSync?.hubspot_deal_id
@@ -297,8 +304,8 @@ async function syncFromHubSpot(supabase: any, hubspotDealIdOrNegocioId: string, 
     throw new Error('No corresponding business or HubSpot deal found')
   }
 
-  // Fetch deal from HubSpot
-  const dealResponse = await fetch(`https://api.hubapi.com/crm/v3/objects/deals/${hubspotDealId}`, {
+  // Fetch deal from HubSpot with close date
+  const dealResponse = await fetch(`https://api.hubapi.com/crm/v3/objects/deals/${hubspotDealId}?properties=dealname,dealstage,amount,closedate,hs_lastmodifieddate`, {
     headers: {
       'Authorization': `Bearer ${apiKeyData.api_key}`
     }
@@ -311,7 +318,7 @@ async function syncFromHubSpot(supabase: any, hubspotDealIdOrNegocioId: string, 
   }
 
   const deal: HubSpotDeal = await dealResponse.json()
-  console.log('Fetched HubSpot deal:', deal.id, 'stage:', deal.properties.dealstage, 'amount:', deal.properties.amount)
+  console.log('Fetched HubSpot deal:', deal.id, 'stage:', deal.properties.dealstage, 'amount:', deal.properties.amount, 'closedate:', deal.properties.closedate)
 
   // Get current business data with budgets for amount comparison
   const { data: negocio } = await supabase
@@ -347,16 +354,38 @@ async function syncFromHubSpot(supabase: any, hubspotDealIdOrNegocioId: string, 
   const stateChanged = negocio.estado !== mapping.business_state
   const amountChanged = Math.abs(parseFloat(currentAppAmount) - hubspotAmount) > 0.01 // Allow for small rounding differences
   
+  // Check close date changes
+  let closeDateChanged = false
+  let newCloseDate = null
+  
+  if (deal.properties.closedate) {
+    // Convert HubSpot timestamp to date string
+    const hubspotCloseDate = new Date(parseInt(deal.properties.closedate)).toISOString().split('T')[0]
+    const currentCloseDate = negocio.fechaCierre
+    
+    if (currentCloseDate !== hubspotCloseDate) {
+      closeDateChanged = true
+      newCloseDate = hubspotCloseDate
+    }
+  } else if (negocio.fechaCierre) {
+    // HubSpot has no close date but we have one
+    closeDateChanged = true
+    newCloseDate = null
+  }
+  
   console.log('Comparison:', {
     currentState: negocio.estado,
     newState: mapping.business_state,
     stateChanged,
     currentAmount: currentAppAmount,
     hubspotAmount,
-    amountChanged
+    amountChanged,
+    currentCloseDate: negocio.fechaCierre,
+    newCloseDate,
+    closeDateChanged
   })
 
-  if (!stateChanged && !amountChanged) {
+  if (!stateChanged && !amountChanged && !closeDateChanged) {
     console.log('No changes detected, skipping update')
     return new Response(
       JSON.stringify({ 
@@ -365,22 +394,34 @@ async function syncFromHubSpot(supabase: any, hubspotDealIdOrNegocioId: string, 
         newAmount: currentAppAmount,
         changed: false,
         stateChanged: false,
-        amountChanged: false
+        amountChanged: false,
+        closeDateChanged: false
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 
-  // Update business state if needed
+  // Prepare update data
+  const updateData: any = {}
+  
   if (stateChanged) {
-    console.log(`Updating business state from ${negocio.estado} to ${mapping.business_state}`)
+    updateData.estado = mapping.business_state
+  }
+  
+  if (closeDateChanged) {
+    updateData.fechaCierre = newCloseDate
+  }
+
+  // Update business if needed
+  if (Object.keys(updateData).length > 0) {
+    console.log('Updating business with:', updateData)
     const { error: updateError } = await supabase
       .from('negocios')
-      .update({ estado: mapping.business_state })
+      .update(updateData)
       .eq('id', negocioId)
 
     if (updateError) {
-      console.error('Error updating business state:', updateError)
+      console.error('Error updating business:', updateError)
       throw updateError
     }
   }
@@ -405,7 +446,7 @@ async function syncFromHubSpot(supabase: any, hubspotDealIdOrNegocioId: string, 
       hubspot_deal_id: hubspotDealId,
       operation_type: 'hubspot_to_app',
       old_state: negocio.estado,
-      new_state: mapping.business_state,
+      new_state: stateChanged ? mapping.business_state : negocio.estado,
       old_amount: parseFloat(currentAppAmount),
       new_amount: hubspotAmount,
       hubspot_new_stage: deal.properties.dealstage,
@@ -417,11 +458,13 @@ async function syncFromHubSpot(supabase: any, hubspotDealIdOrNegocioId: string, 
   return new Response(
     JSON.stringify({ 
       success: true, 
-      newState: mapping.business_state, 
+      newState: stateChanged ? mapping.business_state : negocio.estado, 
       newAmount: stateChanged ? currentAppAmount : undefined,
-      changed: stateChanged || amountChanged,
+      newCloseDate: closeDateChanged ? newCloseDate : undefined,
+      changed: stateChanged || amountChanged || closeDateChanged,
       stateChanged,
-      amountChanged: false // We don't change amounts from HubSpot
+      amountChanged: false, // We don't change amounts from HubSpot
+      closeDateChanged
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   )
@@ -496,7 +539,8 @@ async function pollHubSpotChanges(supabase: any, userId: string, checkAmounts: b
         success: resultData.success,
         changed: resultData.changed,
         stateChanged: resultData.stateChanged,
-        amountChanged: resultData.amountChanged
+        amountChanged: resultData.amountChanged,
+        closeDateChanged: resultData.closeDateChanged
       })
     } catch (error) {
       console.error('Error syncing business:', business.negocio_id, error.message)

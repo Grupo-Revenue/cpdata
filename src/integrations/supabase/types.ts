@@ -432,6 +432,7 @@ export type Database = {
           contacto_id: string
           created_at: string
           estado: Database["public"]["Enums"]["estado_negocio"]
+          fecha_cierre: string | null
           fecha_evento: string | null
           horas_acreditacion: string
           id: string
@@ -450,6 +451,7 @@ export type Database = {
           contacto_id: string
           created_at?: string
           estado?: Database["public"]["Enums"]["estado_negocio"]
+          fecha_cierre?: string | null
           fecha_evento?: string | null
           horas_acreditacion: string
           id?: string
@@ -468,6 +470,7 @@ export type Database = {
           contacto_id?: string
           created_at?: string
           estado?: Database["public"]["Enums"]["estado_negocio"]
+          fecha_cierre?: string | null
           fecha_evento?: string | null
           horas_acreditacion?: string
           id?: string

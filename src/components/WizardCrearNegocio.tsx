@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +56,9 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
     cantidadInvitados: 0,
     locacion: ''
   });
+
+  // New field for close date
+  const [fechaCierre, setFechaCierre] = useState('');
 
   const validarPaso1 = () => {
     return contacto.nombre && contacto.apellido && contacto.email && contacto.telefono;
@@ -130,7 +134,8 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
           ...clienteFinal,
           tipo: 'cliente_final' as const
         } : undefined,
-        evento
+        evento,
+        fechaCierre: fechaCierre || undefined
       };
 
       const negocioId = await crearNegocio(negocioData);
@@ -426,6 +431,19 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                   onChange={(e) => setEvento({...evento, locacion: e.target.value})}
                   placeholder="Dirección o nombre del lugar"
                 />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="fechaCierre">Fecha de Cierre Esperada (opcional)</Label>
+                <Input
+                  id="fechaCierre"
+                  type="date"
+                  value={fechaCierre}
+                  onChange={(e) => setFechaCierre(e.target.value)}
+                  placeholder="Fecha esperada de cierre del negocio"
+                />
+                <p className="text-sm text-gray-500 mt-1">
+                  Esta fecha se sincronizará con HubSpot como "closedate"
+                </p>
               </div>
             </div>
           )}

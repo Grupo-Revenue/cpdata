@@ -1,3 +1,4 @@
+
 export interface Contacto {
   id: string;
   nombre: string;
@@ -64,6 +65,7 @@ export interface Negocio {
   estado: 'oportunidad_creada' | 'presupuesto_enviado' | 'parcialmente_aceptado' | 'negocio_aceptado' | 'negocio_cerrado' | 'negocio_perdido' | 
           // Legacy states (keeping for backward compatibility)
           'activo' | 'cerrado' | 'cancelado' | 'prospecto' | 'perdido' | 'ganado' | 'revision_pendiente' | 'en_negociacion' | 'parcialmente_ganado';
+  fechaCierre?: string; // Expected close date of the deal
 }
 
 export interface ProductoBiblioteca {
