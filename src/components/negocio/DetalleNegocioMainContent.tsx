@@ -30,7 +30,7 @@ const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
       {/* Left Column - Main Info */}
       <div className="lg:col-span-3 space-y-6">
         {/* Event Details */}
-        <EventoCard evento={negocio.evento} />
+        <EventoCard negocio={negocio} />
         
         {/* Budgets */}
         <PresupuestosCard

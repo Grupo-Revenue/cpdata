@@ -12,6 +12,7 @@ interface NegocioContextType {
   loading: boolean;
   crearNegocio: (negocio: Omit<Negocio, 'id' | 'numero' | 'presupuestos' | 'fechaCreacion' | 'estado'>) => Promise<string>;
   obtenerNegocio: (id: string) => Negocio | undefined;
+  actualizarNegocio: (negocioId: string, actualizaciones: Partial<Negocio>) => Promise<void>;
   crearPresupuesto: (negocioId: string, productos: ProductoPresupuesto[]) => Promise<string>;
   actualizarPresupuesto: (negocioId: string, presupuestoId: string, productos: ProductoPresupuesto[]) => Promise<void>;
   eliminarPresupuesto: (negocioId: string, presupuestoId: string) => Promise<void>;
@@ -41,7 +42,6 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
   const [contadorNegocio, setContadorNegocio] = useState(17658);
   const [loading, setLoading] = useState(false);
 
-  // Cargar negocios desde Supabase
   const cargarNegocios = async () => {
     if (!user) return;
     
@@ -127,7 +127,8 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
             facturado: presupuesto.facturado || false
           })) || [],
           fechaCreacion: negocio.created_at,
-          estado: estadoNormalizado as Negocio['estado'] // Use the normalized state
+          estado: estadoNormalizado as Negocio['estado'], // Use the normalized state
+          fechaCierre: negocio.fecha_cierre || undefined
         };
       }) || [];
 
@@ -350,7 +351,8 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
         cantidad_asistentes: negocioData.evento.cantidadAsistentes || 0,
         cantidad_invitados: negocioData.evento.cantidadInvitados || 0,
         locacion: negocioData.evento.locacion.trim(),
-        estado: 'oportunidad_creada' as const
+        estado: 'oportunidad_creada' as const,
+        fecha_cierre: negocioData.fechaCierre || null
       };
 
       console.log('Inserting business data:', negocioToInsert);
@@ -480,6 +482,42 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
 
   const obtenerNegocio = (id: string): Negocio | undefined => {
     return negocios.find(negocio => negocio.id === id);
+  };
+
+  const actualizarNegocio = async (negocioId: string, actualizaciones: Partial<Negocio>): Promise<void> => {
+    if (!user) throw new Error('Usuario no autenticado');
+    
+    try {
+      // Build the update object for database
+      const updateData: any = {};
+      
+      if (actualizaciones.fechaCierre !== undefined) {
+        updateData.fecha_cierre = actualizaciones.fechaCierre;
+      }
+      
+      // Add other fields as needed in the future
+      if (actualizaciones.estado !== undefined) {
+        updateData.estado = actualizaciones.estado;
+      }
+
+      const { error } = await supabase
+        .from('negocios')
+        .update(updateData)
+        .eq('id', negocioId);
+      
+      if (error) throw error;
+      
+      // Reload businesses to reflect changes
+      await cargarNegocios();
+    } catch (error) {
+      console.error('Error actualizando negocio:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el negocio",
+        variant: "destructive"
+      });
+      throw error;
+    }
   };
 
   const generarNombrePresupuesto = (numero: number, cantidadPresupuestos: number): string => {
@@ -757,6 +795,7 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
       loading,
       crearNegocio,
       obtenerNegocio,
+      actualizarNegocio,
       crearPresupuesto,
       actualizarPresupuesto,
       eliminarPresupuesto,
