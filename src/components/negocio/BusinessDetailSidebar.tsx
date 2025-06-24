@@ -57,7 +57,7 @@ const BusinessDetailSidebar: React.FC<BusinessDetailSidebarProps> = ({
   };
 
   return (
-    <Sidebar className="border-r border-slate-200">
+    <Sidebar className="border-l border-slate-200" side="right">
       <SidebarHeader className="p-4">
         {/* Header with Back Button */}
         <div className="flex items-center justify-between mb-4">

@@ -108,14 +108,6 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
 
   return (
     <>
-      {/* Sidebar with all business information */}
-      <BusinessDetailSidebar
-        negocio={negocio}
-        onVolver={onVolver}
-        onCrearPresupuesto={handleCrearPresupuesto}
-        onCambiarEstado={handleCambiarEstadoNegocio}
-      />
-
       {/* Main content area */}
       <SidebarInset>
         <main className="flex-1 overflow-auto">
@@ -131,6 +123,14 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
           </div>
         </main>
       </SidebarInset>
+
+      {/* Sidebar with all business information */}
+      <BusinessDetailSidebar
+        negocio={negocio}
+        onVolver={onVolver}
+        onCrearPresupuesto={handleCrearPresupuesto}
+        onCambiarEstado={handleCambiarEstadoNegocio}
+      />
 
       {/* Conflict Resolution Dialog */}
       {currentConflict && (
