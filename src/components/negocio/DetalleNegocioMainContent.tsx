@@ -2,7 +2,6 @@
 import React from 'react';
 import BusinessSummaryHeader from './BusinessSummaryHeader';
 import PresupuestosCard from './PresupuestosCard';
-import BusinessInfoCard from './BusinessInfoCard';
 import { Negocio } from '@/types';
 
 interface DetalleNegocioMainContentProps {
@@ -41,9 +40,6 @@ const DetalleNegocioMainContent: React.FC<DetalleNegocioMainContentProps> = ({
         onVerPDF={onVerPDF}
         onCambiarEstado={onCambiarEstado}
       />
-      
-      {/* Business Info - Secondary */}
-      <BusinessInfoCard negocio={negocio} />
     </div>
   );
 };
