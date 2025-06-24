@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
-import { Negocio, Presupuesto } from '@/types';
+import { Negocio, Presupuesto, EstadoNegocio, EstadoPresupuesto } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
 interface NegocioContextProps {
@@ -13,8 +13,8 @@ interface NegocioContextProps {
   crearPresupuesto: (negocioId: string, presupuestoData: Omit<Presupuesto, 'id' | 'created_at' | 'updated_at'>) => Promise<Presupuesto | null>;
   actualizarPresupuesto: (negocioId: string, presupuestoId: string, updates: Partial<Presupuesto>) => Promise<Presupuesto | null>;
   eliminarPresupuesto: (negocioId: string, presupuestoId: string) => Promise<boolean>;
-  cambiarEstadoPresupuesto: (negocioId: string, presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string) => Promise<void>;
-  cambiarEstadoNegocio: (negocioId: string, nuevoEstado: string) => Promise<void>;
+  cambiarEstadoPresupuesto: (negocioId: string, presupuestoId: string, nuevoEstado: EstadoPresupuesto, fechaVencimiento?: string) => Promise<void>;
+  cambiarEstadoNegocio: (negocioId: string, nuevoEstado: EstadoNegocio) => Promise<void>;
   refreshNegocios: () => Promise<void>;
 }
 
@@ -26,9 +26,9 @@ const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
       .from('negocios')
       .select(`
         *,
-        contacto: contactos (id, nombre, apellido, email, telefono),
-        productora: empresas!productora_id (id, nombre, tipo, rut, sitio_web, direccion),
-        clienteFinal: empresas!cliente_final_id (id, nombre, tipo, rut, sitio_web, direccion),
+        contacto: contactos (id, nombre, apellido, email, telefono, cargo, created_at, updated_at, user_id),
+        productora: empresas!productora_id (id, nombre, tipo, rut, sitio_web, direccion, created_at, updated_at, user_id),
+        clienteFinal: empresas!cliente_final_id (id, nombre, tipo, rut, sitio_web, direccion, created_at, updated_at, user_id),
         presupuestos (
           id,
           estado,
@@ -38,7 +38,10 @@ const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
           fecha_envio,
           fecha_aprobacion,
           fecha_rechazo,
-          fecha_vencimiento
+          fecha_vencimiento,
+          nombre,
+          negocio_id,
+          updated_at
         )
       `)
       .order('created_at', { ascending: false });
@@ -57,8 +60,8 @@ const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
         nombreEvento: negocio.nombre_evento,
         fechaEvento: negocio.fecha_evento,
         horasAcreditacion: negocio.horas_acreditacion,
-        cantidadAsistentes: negocio.cantidad_asistentes,
-        cantidadInvitados: negocio.cantidad_invitados,
+        cantidadAsistentes: negocio.cantidad_asistentes || 0,
+        cantidadInvitados: negocio.cantidad_invitados || 0,
         locacion: negocio.locacion
       },
       fechaCreacion: negocio.created_at,
@@ -201,9 +204,9 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         }])
         .select(`
           *,
-          contacto: contactos (id, nombre, apellido, email, telefono),
-          productora: empresas!productora_id (id, nombre, tipo, rut, sitio_web, direccion),
-          clienteFinal: empresas!cliente_final_id (id, nombre, tipo, rut, sitio_web, direccion),
+          contacto: contactos (id, nombre, apellido, email, telefono, cargo, created_at, updated_at, user_id),
+          productora: empresas!productora_id (id, nombre, tipo, rut, sitio_web, direccion, created_at, updated_at, user_id),
+          clienteFinal: empresas!cliente_final_id (id, nombre, tipo, rut, sitio_web, direccion, created_at, updated_at, user_id),
           presupuestos (
             id,
             estado,
@@ -213,7 +216,10 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
             fecha_envio,
             fecha_aprobacion,
             fecha_rechazo,
-            fecha_vencimiento
+            fecha_vencimiento,
+            nombre,
+            negocio_id,
+            updated_at
           )
         `)
         .single();
@@ -269,9 +275,9 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         .eq('id', id)
         .select(`
           *,
-          contacto: contactos (id, nombre, apellido, email, telefono),
-          productora: empresas!productora_id (id, nombre, tipo, rut, sitio_web, direccion),
-          clienteFinal: empresas!cliente_final_id (id, nombre, tipo, rut, sitio_web, direccion),
+          contacto: contactos (id, nombre, apellido, email, telefono, cargo, created_at, updated_at, user_id),
+          productora: empresas!productora_id (id, nombre, tipo, rut, sitio_web, direccion, created_at, updated_at, user_id),
+          clienteFinal: empresas!cliente_final_id (id, nombre, tipo, rut, sitio_web, direccion, created_at, updated_at, user_id),
           presupuestos (
             id,
             estado,
@@ -281,7 +287,10 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
             fecha_envio,
             fecha_aprobacion,
             fecha_rechazo,
-            fecha_vencimiento
+            fecha_vencimiento,
+            nombre,
+            negocio_id,
+            updated_at
           )
         `)
         .single();
@@ -299,8 +308,8 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
           nombreEvento: data.nombre_evento,
           fechaEvento: data.fecha_evento,
           horasAcreditacion: data.horas_acreditacion,
-          cantidadAsistentes: data.cantidad_asistentes,
-          cantidadInvitados: data.cantidad_invitados,
+          cantidadAsistentes: data.cantidad_asistentes || 0,
+          cantidadInvitados: data.cantidad_invitados || 0,
           locacion: data.locacion
         },
         fechaCreacion: data.created_at,
@@ -440,9 +449,9 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     }
   };
 
-  const cambiarEstadoPresupuesto = async (negocioId: string, presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string): Promise<void> => {
+  const cambiarEstadoPresupuesto = async (negocioId: string, presupuestoId: string, nuevoEstado: EstadoPresupuesto, fechaVencimiento?: string): Promise<void> => {
     try {
-      const updates: { estado: string; fecha_vencimiento?: string } = { estado: nuevoEstado };
+      const updates: { estado: EstadoPresupuesto; fecha_vencimiento?: string } = { estado: nuevoEstado };
       if (fechaVencimiento) {
         updates.fecha_vencimiento = fechaVencimiento;
       }
@@ -476,7 +485,7 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     }
   };
 
-  const cambiarEstadoNegocio = async (negocioId: string, nuevoEstado: string): Promise<void> => {
+  const cambiarEstadoNegocio = async (negocioId: string, nuevoEstado: EstadoNegocio): Promise<void> => {
     try {
       const { data, error } = await supabase
         .from('negocios')
@@ -484,9 +493,9 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         .eq('id', negocioId)
         .select(`
           *,
-          contacto: contactos (id, nombre, apellido, email, telefono),
-          productora: empresas!productora_id (id, nombre, tipo, rut, sitio_web, direccion),
-          clienteFinal: empresas!cliente_final_id (id, nombre, tipo, rut, sitio_web, direccion),
+          contacto: contactos (id, nombre, apellido, email, telefono, cargo, created_at, updated_at, user_id),
+          productora: empresas!productora_id (id, nombre, tipo, rut, sitio_web, direccion, created_at, updated_at, user_id),
+          clienteFinal: empresas!cliente_final_id (id, nombre, tipo, rut, sitio_web, direccion, created_at, updated_at, user_id),
           presupuestos (
             id,
             estado,
@@ -496,7 +505,10 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
             fecha_envio,
             fecha_aprobacion,
             fecha_rechazo,
-            fecha_vencimiento
+            fecha_vencimiento,
+            nombre,
+            negocio_id,
+            updated_at
           )
         `)
         .single();
@@ -506,9 +518,33 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         throw error;
       }
 
+      // Transform the data properly to match ExtendedNegocio
+      const transformedNegocio = {
+        ...data,
+        evento: {
+          tipoEvento: data.tipo_evento,
+          nombreEvento: data.nombre_evento,
+          fechaEvento: data.fecha_evento,
+          horasAcreditacion: data.horas_acreditacion,
+          cantidadAsistentes: data.cantidad_asistentes || 0,
+          cantidadInvitados: data.cantidad_invitados || 0,
+          locacion: data.locacion
+        },
+        fechaCreacion: data.created_at,
+        fechaCierre: data.fecha_cierre,
+        presupuestos: data.presupuestos?.map(p => ({
+          ...p,
+          fechaCreacion: p.created_at,
+          fechaEnvio: p.fecha_envio,
+          fechaAprobacion: p.fecha_aprobacion,
+          fechaRechazo: p.fecha_rechazo,
+          fechaVencimiento: p.fecha_vencimiento
+        })) || []
+      };
+
       setNegocios(prevNegocios =>
         prevNegocios.map(negocio =>
-          negocio.id === negocioId ? { ...negocio, ...data } : negocio
+          negocio.id === negocioId ? transformedNegocio as Negocio : negocio
         )
       );
     } catch (error) {
@@ -529,7 +565,7 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     eliminarPresupuesto,
     cambiarEstadoPresupuesto,
     cambiarEstadoNegocio,
-    refreshNegocios // Nueva función añadida
+    refreshNegocios
   };
 
   return (

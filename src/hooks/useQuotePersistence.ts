@@ -16,7 +16,7 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
   const presupuestoExistente = presupuestoId ? 
     negocio?.presupuestos.find(p => p.id === presupuestoId) : null;
 
-  const guardarPresupuesto = (productos: ProductoPresupuesto[]) => {
+  const guardarPresupuesto = async (productos: ProductoPresupuesto[]) => {
     if (productos.length === 0) {
       toast({
         title: "Sin productos",
@@ -26,21 +26,52 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
       return;
     }
 
-    if (presupuestoId) {
-      actualizarPresupuesto(negocioId, presupuestoId, productos);
+    // Calculate total from products
+    const total = productos.reduce((sum, producto) => {
+      return sum + (producto.cantidad * producto.precio_unitario);
+    }, 0);
+
+    const presupuestoData = {
+      nombre: `Presupuesto ${new Date().toLocaleDateString()}`,
+      estado: 'borrador' as const,
+      total,
+      facturado: false,
+      negocio_id: negocioId,
+      fecha_envio: null,
+      fecha_aprobacion: null,
+      fecha_rechazo: null,
+      fecha_vencimiento: null,
+      fechaCreacion: new Date().toISOString(),
+      fechaEnvio: undefined,
+      fechaAprobacion: undefined,
+      fechaRechazo: undefined,
+      productos
+    };
+
+    try {
+      if (presupuestoId) {
+        await actualizarPresupuesto(negocioId, presupuestoId, presupuestoData);
+        toast({
+          title: "Presupuesto actualizado",
+          description: "El presupuesto ha sido actualizado exitosamente",
+        });
+      } else {
+        await crearPresupuesto(negocioId, presupuestoData);
+        toast({
+          title: "Presupuesto creado",
+          description: "El presupuesto ha sido creado exitosamente",
+        });
+      }
+
+      onCerrar();
+    } catch (error) {
+      console.error('Error saving presupuesto:', error);
       toast({
-        title: "Presupuesto actualizado",
-        description: "El presupuesto ha sido actualizado exitosamente",
-      });
-    } else {
-      crearPresupuesto(negocioId, productos);
-      toast({
-        title: "Presupuesto creado",
-        description: "El presupuesto ha sido creado exitosamente",
+        title: "Error",
+        description: "No se pudo guardar el presupuesto",
+        variant: "destructive"
       });
     }
-
-    onCerrar();
   };
 
   return {
