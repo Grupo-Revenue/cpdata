@@ -5,7 +5,9 @@ import { Negocio } from '@/types';
  * Calcula el valor total del negocio sumando todos los presupuestos
  */
 export const calcularValorNegocio = (negocio: Negocio): number => {
-  return negocio.presupuestos.reduce((total, presupuesto) => total + presupuesto.total, 0);
+  const total = negocio.presupuestos.reduce((total, presupuesto) => total + presupuesto.total, 0);
+  console.log(`[businessCalculations] Calculated business value for ${negocio.id}: ${total} (from ${negocio.presupuestos.length} budgets)`);
+  return total;
 };
 
 /**
@@ -21,7 +23,7 @@ export const obtenerInfoPresupuestos = (negocio: Negocio) => {
   const presupuestosFacturados = negocio.presupuestos.filter(p => p.estado === 'aprobado' && p.facturado === true).length;
   const presupuestosPendientes = negocio.presupuestos.filter(p => ['enviado', 'borrador'].includes(p.estado)).length;
   
-  return {
+  const info = {
     totalPresupuestos,
     presupuestosAprobados,
     presupuestosEnviados,
@@ -31,6 +33,10 @@ export const obtenerInfoPresupuestos = (negocio: Negocio) => {
     presupuestosFacturados,
     presupuestosPendientes
   };
+  
+  console.log(`[businessCalculations] Budget info for ${negocio.id}:`, info);
+  
+  return info;
 };
 
 /**
@@ -49,7 +55,63 @@ export const mapLegacyBusinessState = (estado: string): string => {
     'cancelado': 'negocio_perdido'
   };
   
-  return stateMapping[estado] || estado;
+  const mappedState = stateMapping[estado] || estado;
+  if (mappedState !== estado) {
+    console.log(`[businessCalculations] Mapped legacy state "${estado}" to "${mappedState}"`);
+  }
+  
+  return mappedState;
+};
+
+/**
+ * Analyzes business state and provides detailed information about expected vs actual state
+ */
+export const analyzeBusinessState = (negocio: Negocio) => {
+  const info = obtenerInfoPresupuestos(negocio);
+  let expectedState = '';
+  
+  console.log(`[businessCalculations] Analyzing business state for ${negocio.id}:`);
+  console.log(`[businessCalculations] Current state: ${negocio.estado}`);
+  console.log(`[businessCalculations] Budget breakdown:`, info);
+  
+  // Determine expected state based on business rules
+  if (info.totalPresupuestos === 0) {
+    expectedState = 'oportunidad_creada';
+    console.log(`[businessCalculations] No budgets → oportunidad_creada`);
+  } else if (info.presupuestosAprobados > 0 && info.presupuestosFacturados === info.presupuestosAprobados) {
+    expectedState = 'negocio_cerrado';
+    console.log(`[businessCalculations] All approved budgets invoiced → negocio_cerrado`);
+  } else if (info.presupuestosAprobados === info.totalPresupuestos) {
+    expectedState = 'negocio_aceptado';
+    console.log(`[businessCalculations] All budgets approved → negocio_aceptado`);
+  } else if (info.presupuestosAprobados > 0 && info.presupuestosAprobados < info.totalPresupuestos) {
+    expectedState = 'parcialmente_aceptado';
+    console.log(`[businessCalculations] Some budgets approved (${info.presupuestosAprobados}/${info.totalPresupuestos}) → parcialmente_aceptado`);
+  } else if ((info.presupuestosRechazados + info.presupuestosVencidos) === info.totalPresupuestos) {
+    expectedState = 'negocio_perdido';
+    console.log(`[businessCalculations] All budgets rejected/expired → negocio_perdido`);
+  } else if (info.presupuestosEnviados > 0 || info.presupuestosBorrador > 0) {
+    expectedState = 'presupuesto_enviado';
+    console.log(`[businessCalculations] Has sent or draft budgets → presupuesto_enviado`);
+  } else {
+    expectedState = 'oportunidad_creada';
+    console.log(`[businessCalculations] Default case → oportunidad_creada`);
+  }
+  
+  const stateMatches = negocio.estado === expectedState;
+  
+  console.log(`[businessCalculations] State analysis result: expected "${expectedState}", actual "${negocio.estado}", matches: ${stateMatches}`);
+  
+  return {
+    currentState: negocio.estado,
+    expectedState,
+    stateMatches,
+    budgetInfo: info,
+    analysis: {
+      hasInconsistency: !stateMatches,
+      reason: !stateMatches ? `Expected "${expectedState}" but found "${negocio.estado}"` : 'States match'
+    }
+  };
 };
 
 /**
@@ -164,10 +226,57 @@ export const obtenerEstadisticasDashboard = (negocios: Negocio[]) => {
 
   const totalPresupuestos = negocios.reduce((total, negocio) => total + negocio.presupuestos.length, 0);
   
+  console.log(`[businessCalculations] Dashboard statistics:`, {
+    totalNegocios,
+    valorTotalCartera,
+    estadisticasPorEstado,
+    totalPresupuestos
+  });
+  
   return {
     totalNegocios,
     valorTotalCartera,
     estadisticasPorEstado,
     totalPresupuestos
+  };
+};
+
+/**
+ * Validates all business states and returns inconsistencies
+ */
+export const validateAllBusinessStates = (negocios: Negocio[]) => {
+  console.log(`[businessCalculations] Validating states for ${negocios.length} businesses...`);
+  
+  const inconsistencies = [];
+  const validStates = [];
+  
+  for (const negocio of negocios) {
+    const analysis = analyzeBusinessState(negocio);
+    
+    if (analysis.hasInconsistency) {
+      inconsistencies.push({
+        negocioId: negocio.id,
+        numero: negocio.numero,
+        currentState: analysis.currentState,
+        expectedState: analysis.expectedState,
+        reason: analysis.analysis.reason,
+        budgetInfo: analysis.budgetInfo
+      });
+    } else {
+      validStates.push(negocio.id);
+    }
+  }
+  
+  console.log(`[businessCalculations] Validation complete: ${inconsistencies.length} inconsistencies found, ${validStates.length} valid states`);
+  
+  if (inconsistencies.length > 0) {
+    console.warn(`[businessCalculations] State inconsistencies found:`, inconsistencies);
+  }
+  
+  return {
+    totalBusinesses: negocios.length,
+    validStates: validStates.length,
+    inconsistencies: inconsistencies.length,
+    inconsistentBusinesses: inconsistencies
   };
 };
