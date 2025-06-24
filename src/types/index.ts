@@ -1,4 +1,5 @@
 
+
 import { Database } from "@/integrations/supabase/types";
 
 export type Contacto = Database['public']['Tables']['contactos']['Row']
@@ -9,6 +10,9 @@ export type ProductoPresupuesto = ExtendedProductoPresupuesto
 export type ProductoBiblioteca = Database['public']['Tables']['productos_biblioteca']['Row']
 export type LineaProducto = Database['public']['Tables']['lineas_producto']['Row']
 export type ConfiguracionMarca = Database['public']['Tables']['configuracion_marca']['Row']
+
+// Constants
+export const IVA_PERCENTAGE = 19;
 
 // Extended types for application use
 export type ExtendedProductoPresupuesto = Database['public']['Tables']['productos_presupuesto']['Row'] & {
@@ -72,3 +76,37 @@ export const TIPOS_EVENTO = [
   'Networking',
   'Otro'
 ] as const;
+
+// Create a simplified type for business creation that matches what WizardCrearNegocio provides
+export type CrearNegocioData = {
+  contacto: {
+    nombre: string;
+    apellido: string;
+    email: string;
+    telefono: string;
+    cargo?: string;
+  };
+  productora?: {
+    nombre: string;
+    rut?: string;
+    sitio_web?: string;
+    direccion?: string;
+    tipo: 'productora';
+  };
+  clienteFinal?: {
+    nombre: string;
+    rut?: string;
+    sitio_web?: string;
+    direccion?: string;
+    tipo: 'cliente_final';
+  };
+  tipo_evento: string;
+  nombre_evento: string;
+  fecha_evento: string;
+  horas_acreditacion: string;
+  cantidad_asistentes: number;
+  cantidad_invitados: number;
+  locacion: string;
+  fecha_cierre?: string;
+};
+

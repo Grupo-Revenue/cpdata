@@ -179,7 +179,6 @@ const BusinessStateSelect: React.FC<BusinessStateSelectProps> = ({
               <div className="flex items-center justify-between w-full">
                 <BusinessStateBadge 
                   estado={estado} 
-                  size="sm"
                   showIcon={true}
                 />
                 {estado === negocio.estado && (
@@ -207,3 +206,4 @@ const BusinessStateSelect: React.FC<BusinessStateSelectProps> = ({
 };
 
 export default BusinessStateSelect;
+

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useNegocio } from '@/context/NegocioContext';
-import { TIPOS_EVENTO } from '@/types';
+import { TIPOS_EVENTO, CrearNegocioData } from '@/types';
 import { ArrowLeft, ArrowRight, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -120,7 +120,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
     setCreando(true);
     try {
       // Create the data object with the proper structure expected by the crearNegocio function
-      const negocioData = {
+      const negocioData: CrearNegocioData = {
         contacto,
         productora: tipoCliente === 'productora' ? {
           ...productora,
@@ -493,3 +493,4 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
 };
 
 export default WizardCrearNegocio;
+

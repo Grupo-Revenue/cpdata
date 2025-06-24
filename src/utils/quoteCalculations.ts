@@ -1,4 +1,5 @@
 
+
 import { ProductoPresupuesto, IVA_PERCENTAGE } from '@/types';
 
 export interface QuoteTotals {
@@ -40,4 +41,5 @@ export const calcularTotalesPresupuesto = (productos: ProductoPresupuesto[]): Qu
 };
 
 // Export IVA_PERCENTAGE for use in templates
-export { IVA_PERCENTAGE } from '@/types';
+export { IVA_PERCENTAGE };
+

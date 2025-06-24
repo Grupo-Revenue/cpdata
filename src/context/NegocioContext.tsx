@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Negocio, Presupuesto, ProductoPresupuesto } from '@/types';
+import { Negocio, Presupuesto, ProductoPresupuesto, CrearNegocioData, ExtendedNegocio } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -10,7 +10,7 @@ interface NegocioContextType {
   negocios: Negocio[];
   contadorNegocio: number;
   loading: boolean;
-  crearNegocio: (negocio: Omit<Negocio, 'id' | 'numero' | 'presupuestos' | 'fechaCreacion' | 'estado'>) => Promise<string>;
+  crearNegocio: (negocio: CrearNegocioData) => Promise<string>;
   obtenerNegocio: (id: string) => Negocio | undefined;
   actualizarNegocio: (negocioId: string, actualizaciones: Partial<Negocio>) => Promise<void>;
   crearPresupuesto: (negocioId: string, productos: ProductoPresupuesto[]) => Promise<string>;
@@ -63,37 +63,31 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
 
       if (error) throw error;
 
-      const negociosFormateados: Negocio[] = negociosData?.map(negocio => {
+      const negociosFormateados: ExtendedNegocio[] = negociosData?.map(negocio => {
         // Apply state normalization to ensure legacy states are mapped to new states
         const estadoNormalizado = mapLegacyBusinessState(negocio.estado);
         
         return {
-          id: negocio.id,
-          numero: negocio.numero,
+          // Include all database fields first
+          ...negocio,
+          // Then add the formatted fields
           contacto: {
             id: negocio.contacto.id,
             nombre: negocio.contacto.nombre,
             apellido: negocio.contacto.apellido,
             email: negocio.contacto.email,
             telefono: negocio.contacto.telefono,
-            cargo: negocio.contacto.cargo || ''
+            cargo: negocio.contacto.cargo || '',
+            created_at: negocio.contacto.created_at,
+            updated_at: negocio.contacto.updated_at,
+            user_id: negocio.contacto.user_id
           },
           productora: negocio.productora ? {
-            id: negocio.productora.id,
-            nombre: negocio.productora.nombre,
-            rut: negocio.productora.rut || '',
-            sitioWeb: negocio.productora.sitio_web || '',
-            direccion: negocio.productora.direccion || '',
-            tipo: 'productora' as const
-          } : undefined,
+            ...negocio.productora
+          } : null,
           clienteFinal: negocio.cliente_final ? {
-            id: negocio.cliente_final.id,
-            nombre: negocio.cliente_final.nombre,
-            rut: negocio.cliente_final.rut || '',
-            sitioWeb: negocio.cliente_final.sitio_web || '',
-            direccion: negocio.cliente_final.direccion || '',
-            tipo: 'cliente_final' as const
-          } : undefined,
+            ...negocio.cliente_final
+          } : null,
           evento: {
             tipoEvento: negocio.tipo_evento,
             nombreEvento: negocio.nombre_evento,
@@ -104,30 +98,23 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
             locacion: negocio.locacion
           },
           presupuestos: negocio.presupuestos?.map((presupuesto: any) => ({
-            id: presupuesto.id,
-            nombre: presupuesto.nombre,
+            ...presupuesto,
             productos: presupuesto.productos?.map((producto: any) => ({
-              id: producto.id,
-              nombre: producto.nombre,
-              descripcion: producto.descripcion || '',
+              ...producto,
               comentarios: '',
-              cantidad: producto.cantidad,
-              precioUnitario: parseFloat(producto.precio_unitario),
               descuentoPorcentaje: 0,
-              total: parseFloat(producto.total)
+              precioUnitario: parseFloat(producto.precio_unitario),
+              precio_unitario: parseFloat(producto.precio_unitario)
             })) || [],
-            total: parseFloat(presupuesto.total),
             fechaCreacion: presupuesto.created_at,
-            estado: presupuesto.estado as 'borrador' | 'enviado' | 'aprobado' | 'rechazado' | 'vencido' | 'cancelado',
             fechaVencimiento: presupuesto.fecha_vencimiento || undefined,
             fechaEnvio: presupuesto.fecha_envio || undefined,
             fechaAprobacion: presupuesto.fecha_aprobacion || undefined,
             fechaRechazo: presupuesto.fecha_rechazo || undefined,
-            fechaFacturacion: presupuesto.fecha_facturacion || undefined,
-            facturado: presupuesto.facturado || false
+            fechaFacturacion: presupuesto.fecha_facturacion || undefined
           })) || [],
           fechaCreacion: negocio.created_at,
-          estado: estadoNormalizado as Negocio['estado'], // Use the normalized state
+          estado: estadoNormalizado as ExtendedNegocio['estado'],
           fechaCierre: negocio.fecha_cierre || undefined
         };
       }) || [];
@@ -269,7 +256,7 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
     }
   };
 
-  const crearNegocio = async (negocioData: Omit<Negocio, 'id' | 'numero' | 'presupuestos' | 'fechaCreacion' | 'estado'>): Promise<string> => {
+  const crearNegocio = async (negocioData: CrearNegocioData): Promise<string> => {
     if (!user) throw new Error('Usuario no autenticado');
 
     try {
@@ -287,8 +274,8 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
         throw new Error('Información de contacto incompleta');
       }
 
-      if (!negocioData.evento?.tipoEvento || !negocioData.evento?.nombreEvento || 
-          !negocioData.evento?.horasAcreditacion || !negocioData.evento?.locacion) {
+      if (!negocioData.evento?.tipo_evento || !negocioData.evento?.nombre_evento || 
+          !negocioData.evento?.horas_acreditacion || !negocioData.evento?.locacion) {
         throw new Error('Información del evento incompleta');
       }
 
@@ -344,15 +331,15 @@ export const NegocioProvider: React.FC<NegocioProviderProps> = ({ children }) =>
         contacto_id: contactoData.id,
         productora_id: productoraId,
         cliente_final_id: clienteFinalId,
-        tipo_evento: negocioData.evento.tipoEvento,
-        nombre_evento: negocioData.evento.nombreEvento.trim(),
-        fecha_evento: negocioData.evento.fechaEvento || null,
-        horas_acreditacion: negocioData.evento.horasAcreditacion.trim(),
-        cantidad_asistentes: negocioData.evento.cantidadAsistentes || 0,
-        cantidad_invitados: negocioData.evento.cantidadInvitados || 0,
-        locacion: negocioData.evento.locacion.trim(),
+        tipo_evento: negocioData.tipo_evento,
+        nombre_evento: negocioData.nombre_evento.trim(),
+        fecha_evento: negocioData.fecha_evento || null,
+        horas_acreditacion: negocioData.horas_acreditacion.trim(),
+        cantidad_asistentes: negocioData.cantidad_asistentes || 0,
+        cantidad_invitados: negocioData.cantidad_invitados || 0,
+        locacion: negocioData.locacion.trim(),
         estado: 'oportunidad_creada' as const,
-        fecha_cierre: negocioData.fechaCierre || null
+        fecha_cierre: negocioData.fecha_cierre || null
       };
 
       console.log('Inserting business data:', negocioToInsert);
