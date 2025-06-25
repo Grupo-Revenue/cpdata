@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 // Global subscription manager to ensure only one subscription per user
 const subscriptionManager = {
   activeChannels: new Map<string, any>(),
-  channelSubscriptionStatus: new Map<string, boolean>(),
+  channelSubscriptionStatus: new Map<string, 'connecting' | 'subscribed' | 'closed'>(),
   subscribers: new Map<string, Set<string>>(),
   callbacks: new Map<string, any>(),
   
@@ -23,21 +23,29 @@ const subscriptionManager = {
     // Store callbacks for this subscriber
     this.callbacks.set(`${userId}-${subscriberId}`, callbacks);
     
-    // If channel already exists and is subscribed, just return it
-    if (this.activeChannels.has(userId) && this.channelSubscriptionStatus.get(userId)) {
-      console.log(`[useRealtimeSubscription] Reusing existing active subscription for user ${userId}`);
-      return this.activeChannels.get(userId);
+    // Get or create channel
+    let channel = this.activeChannels.get(userId);
+    const currentStatus = this.channelSubscriptionStatus.get(userId);
+    
+    // If channel exists and is already subscribed, just return it
+    if (channel && currentStatus === 'subscribed') {
+      console.log(`[useRealtimeSubscription] Reusing existing subscribed channel for user ${userId}`);
+      return channel;
+    }
+    
+    // If channel exists but is still connecting, return it without subscribing again
+    if (channel && currentStatus === 'connecting') {
+      console.log(`[useRealtimeSubscription] Channel already connecting for user ${userId}, waiting...`);
+      return channel;
     }
     
     // Create new channel if it doesn't exist
-    let channel = this.activeChannels.get(userId);
     if (!channel) {
       console.log(`[useRealtimeSubscription] Creating new channel for user ${userId}`);
       channel = supabase.channel(channelName);
       this.activeChannels.set(userId, channel);
-      this.channelSubscriptionStatus.set(userId, false);
       
-      // Configure the channel
+      // Configure the channel with event handlers
       channel.on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -67,22 +75,21 @@ const subscriptionManager = {
       });
     }
     
-    // Only subscribe if not already subscribed
-    if (!this.channelSubscriptionStatus.get(userId)) {
+    // Only subscribe if not already connecting or subscribed
+    if (!currentStatus || currentStatus === 'closed') {
       console.log(`[useRealtimeSubscription] Subscribing to channel for user ${userId}`);
+      this.channelSubscriptionStatus.set(userId, 'connecting');
       
       // Subscribe to the configured channel
       channel.subscribe((status) => {
         console.log(`[useRealtimeSubscription] Channel subscription status: ${status}`);
         if (status === 'SUBSCRIBED') {
           console.log('[useRealtimeSubscription] Successfully subscribed to channel');
-          this.channelSubscriptionStatus.set(userId, true);
+          this.channelSubscriptionStatus.set(userId, 'subscribed');
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
           console.log('[useRealtimeSubscription] Channel subscription ended');
-          // Clean up from manager
-          this.activeChannels.delete(userId);
-          this.channelSubscriptionStatus.delete(userId);
-          this.cleanupCallbacks(userId);
+          this.channelSubscriptionStatus.set(userId, 'closed');
+          // Don't immediately clean up here as other subscribers might still need the channel
         }
       });
     }
@@ -104,7 +111,11 @@ const subscriptionManager = {
         const channel = this.activeChannels.get(userId);
         if (channel) {
           try {
-            channel.unsubscribe();
+            // Only unsubscribe if the channel is actually subscribed
+            const status = this.channelSubscriptionStatus.get(userId);
+            if (status === 'subscribed' || status === 'connecting') {
+              channel.unsubscribe();
+            }
             supabase.removeChannel(channel);
           } catch (error) {
             console.error('[useRealtimeSubscription] Error cleaning up channel:', error);
