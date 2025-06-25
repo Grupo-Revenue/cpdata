@@ -1,60 +1,87 @@
 
-import React from 'react';
-import { Input } from '@/components/ui/input';
-import { DollarSign } from 'lucide-react';
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Calculator } from 'lucide-react';
+import { ExtendedProductoPresupuesto } from '@/types';
+import { useProductLineCheck } from '@/hooks/useProductLineCheck';
+import { useProductosBiblioteca } from '@/hooks/useProductosBiblioteca';
+import PriceCalculatorDialog from '../PriceCalculatorDialog';
+import ProductNumberInput from './ProductNumberInput';
 
 interface ProductPriceInputProps {
   value: number;
   onChange: (value: number) => void;
+  producto?: ExtendedProductoPresupuesto;
   className?: string;
 }
 
 const ProductPriceInput: React.FC<ProductPriceInputProps> = ({
   value,
   onChange,
-  className = "w-28 h-9 text-center text-sm pl-7 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+  producto,
+  className = ""
 }) => {
-  const formatearNumeroConSeparadores = (numero: number): string => {
-    return new Intl.NumberFormat('es-CL').format(numero);
-  };
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
+  const { isAcreditacionProduct } = useProductLineCheck();
+  const { productos: productosBiblioteca } = useProductosBiblioteca();
 
-  const parsearNumeroConSeparadores = (valor: string): number => {
-    const numeroLimpio = valor.replace(/\./g, '');
-    return parseInt(numeroLimpio) || 0;
-  };
+  // Check if this product belongs to Acreditación line
+  const shouldShowCalculator = React.useMemo(() => {
+    if (!producto) return false;
 
-  const handlePriceChange = (value: string) => {
-    const valorLimpio = value.replace(/[^\d.]/g, '');
-    
-    if (valorLimpio === '') {
-      onChange(0);
-      return;
+    // First check if the product has a direct linea_producto_id
+    if (producto.linea_producto_id) {
+      return isAcreditacionProduct(producto.linea_producto_id);
     }
-    
-    const numeroValue = parsearNumeroConSeparadores(valorLimpio);
-    if (!isNaN(numeroValue)) {
-      onChange(numeroValue);
-    }
-  };
 
-  const handlePrecioKeyPress = (e: React.KeyboardEvent) => {
-    if (!/[\d.]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-      e.preventDefault();
+    // If not, try to find it in the biblioteca by matching the name
+    const bibliotecaProduct = productosBiblioteca.find(p => 
+      p.nombre === producto.nombre || 
+      producto.id.includes(p.id)
+    );
+
+    if (bibliotecaProduct?.linea_producto_id) {
+      return isAcreditacionProduct(bibliotecaProduct.linea_producto_id);
     }
+
+    return false;
+  }, [producto, isAcreditacionProduct, productosBiblioteca]);
+
+  const handlePriceCalculated = (calculatedPrice: number) => {
+    onChange(calculatedPrice);
   };
 
   return (
-    <div className="relative inline-block">
-      <DollarSign className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-      <Input
-        type="text"
-        value={value === 0 ? '' : formatearNumeroConSeparadores(value)}
-        onChange={(e) => handlePriceChange(e.target.value)}
-        onKeyDown={handlePrecioKeyPress}
-        className={`${className} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
-        placeholder="0"
-        style={{ MozAppearance: 'textfield' }}
+    <div className="flex items-center gap-2">
+      <ProductNumberInput
+        value={value}
+        onChange={onChange}
+        min={0}
+        step={1}
+        className={className}
       />
+      
+      {shouldShowCalculator && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setCalculatorOpen(true)}
+          className="h-9 px-2 flex-shrink-0"
+          title="Calcular precio"
+        >
+          <Calculator className="w-4 h-4" />
+        </Button>
+      )}
+
+      {shouldShowCalculator && (
+        <PriceCalculatorDialog
+          open={calculatorOpen}
+          onOpenChange={setCalculatorOpen}
+          onPriceCalculated={handlePriceCalculated}
+          initialAttendees={0}
+        />
+      )}
     </div>
   );
 };

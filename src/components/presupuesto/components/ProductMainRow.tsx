@@ -87,6 +87,7 @@ const ProductMainRow: React.FC<ProductMainRowProps> = ({
             console.log('Price change', { productId: producto.id, value });
             onActualizarProducto(producto.id, 'precioUnitario', value);
           }}
+          producto={producto}
         />
       </TableCell>
       

@@ -1,5 +1,4 @@
 
-
 import { Database } from "@/integrations/supabase/types";
 
 export type Contacto = Database['public']['Tables']['contactos']['Row']
@@ -20,6 +19,7 @@ export type ExtendedProductoPresupuesto = Database['public']['Tables']['producto
   descuentoPorcentaje?: number;
   precioUnitario?: number; // Legacy property name mapping
   precio_unitario: number;
+  linea_producto_id?: string; // Add this field for product line identification
 }
 
 export type ExtendedNegocio = Database['public']['Tables']['negocios']['Row'] & {
@@ -109,4 +109,3 @@ export type CrearNegocioData = {
   locacion: string;
   fecha_cierre?: string;
 };
-
