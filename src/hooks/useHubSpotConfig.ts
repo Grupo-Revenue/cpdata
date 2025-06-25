@@ -15,6 +15,7 @@ interface HubSpotConfig {
   webhook_enabled: boolean;
   conflict_resolution_strategy: string;
   polling_interval_minutes: number;
+  last_poll_at?: string;
 }
 
 export const useHubSpotConfig = () => {
