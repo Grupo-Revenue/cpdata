@@ -1,11 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calculator, Users, Percent, UserCheck, Settings } from 'lucide-react';
+import { Calculator, Users, Percent, UserCheck, Settings, Edit } from 'lucide-react';
 import { usePriceCalculator } from '@/hooks/usePriceCalculator';
 import { formatearPrecio } from '@/utils/formatters';
 
@@ -34,11 +34,32 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
     resetCalculator
   } = usePriceCalculator();
 
+  // Estados locales para costos unitarios editables y cantidades finales
+  const [editableUnitPrices, setEditableUnitPrices] = useState({
+    acreditador: 150000,
+    supervisor: 225000
+  });
+  
+  const [editableQuantities, setEditableQuantities] = useState({
+    acreditadores: 0,
+    supervisores: 0
+  });
+
   React.useEffect(() => {
     if (open && initialAttendees > 0) {
       updateInput('attendees', initialAttendees);
     }
   }, [open, initialAttendees, updateInput]);
+
+  // Actualizar cantidades editables cuando cambie el resultado
+  React.useEffect(() => {
+    if (result) {
+      setEditableQuantities({
+        acreditadores: result.breakdown.acreditadores.quantity,
+        supervisores: result.breakdown.supervisores.quantity
+      });
+    }
+  }, [result]);
 
   const handleCalculate = () => {
     try {
@@ -50,13 +71,18 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
 
   const handleApplyPrice = () => {
     if (result) {
-      onPriceCalculated(result.totalPrice);
+      // Calcular precio final con valores editables
+      const finalPrice = (editableQuantities.acreditadores * editableUnitPrices.acreditador) + 
+                        (editableQuantities.supervisores * editableUnitPrices.supervisor);
+      onPriceCalculated(finalPrice);
       onOpenChange(false);
     }
   };
 
   const handleClose = () => {
     resetCalculator();
+    setEditableUnitPrices({ acreditador: 150000, supervisor: 225000 });
+    setEditableQuantities({ acreditadores: 0, supervisores: 0 });
     onOpenChange(false);
   };
 
@@ -69,6 +95,19 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
     updateDistributionPercentage(type, adjustedValue);
     updateDistributionPercentage(otherType, remainingValue);
   };
+
+  // Calcular totales con valores editables
+  const calculateEditableTotals = () => {
+    const acreditadoresTotal = editableQuantities.acreditadores * editableUnitPrices.acreditador;
+    const supervisoresTotal = editableQuantities.supervisores * editableUnitPrices.supervisor;
+    return {
+      acreditadoresTotal,
+      supervisoresTotal,
+      total: acreditadoresTotal + supervisoresTotal
+    };
+  };
+
+  const editableTotals = result ? calculateEditableTotals() : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -212,25 +251,99 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
                     <p>Acreditadores Manual: {result.distributionSummary.manualAccreditors}</p>
                     <p>Acreditadores Express QR: {result.distributionSummary.expressQRAccreditors}</p>
                     <p>Total Acreditadores: {result.distributionSummary.totalAccreditors}</p>
-                    <p>Supervisores: {result.distributionSummary.supervisors}</p>
+                    <p>Supervisores: {result.distributionSummary.supervisores}</p>
                   </div>
 
-                  {/* Cost Breakdown */}
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center text-sm">
-                      <span>Acreditadores ({result.breakdown.acreditadores.quantity}x)</span>
-                      <span>{formatearPrecio(result.breakdown.acreditadores.total)}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span>Supervisores ({result.breakdown.supervisores.quantity}x)</span>
-                      <span>{formatearPrecio(result.breakdown.supervisores.total)}</span>
-                    </div>
-                    <hr />
-                    <div className="flex justify-between items-center font-semibold">
-                      <span>Costo Total Personal</span>
-                      <span className="text-green-600">{formatearPrecio(result.totalPrice)}</span>
+                  {/* Editable Unit Prices */}
+                  <div className="bg-yellow-50 p-3 rounded space-y-3">
+                    <p className="text-sm font-medium flex items-center">
+                      <Edit className="w-4 h-4 mr-2" />
+                      Costos Unitarios (Editables)
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Costo por Acreditador</Label>
+                        <Input
+                          type="number"
+                          value={editableUnitPrices.acreditador}
+                          onChange={(e) => setEditableUnitPrices(prev => ({
+                            ...prev,
+                            acreditador: parseInt(e.target.value) || 0
+                          }))}
+                          min="0"
+                          className="text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Costo por Supervisor</Label>
+                        <Input
+                          type="number"
+                          value={editableUnitPrices.supervisor}
+                          onChange={(e) => setEditableUnitPrices(prev => ({
+                            ...prev,
+                            supervisor: parseInt(e.target.value) || 0
+                          }))}
+                          min="0"
+                          className="text-sm"
+                        />
+                      </div>
                     </div>
                   </div>
+
+                  {/* Editable Final Quantities */}
+                  <div className="bg-purple-50 p-3 rounded space-y-3">
+                    <p className="text-sm font-medium flex items-center">
+                      <UserCheck className="w-4 h-4 mr-2" />
+                      Cantidades Finales (Editables)
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Número de Acreditadores</Label>
+                        <Input
+                          type="number"
+                          value={editableQuantities.acreditadores}
+                          onChange={(e) => setEditableQuantities(prev => ({
+                            ...prev,
+                            acreditadores: parseInt(e.target.value) || 0
+                          }))}
+                          min="0"
+                          className="text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Número de Supervisores</Label>
+                        <Input
+                          type="number"
+                          value={editableQuantities.supervisores}
+                          onChange={(e) => setEditableQuantities(prev => ({
+                            ...prev,
+                            supervisores: parseInt(e.target.value) || 0
+                          }))}
+                          min="0"
+                          className="text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cost Breakdown with Editable Values */}
+                  {editableTotals && (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center text-sm">
+                        <span>Acreditadores ({editableQuantities.acreditadores}x {formatearPrecio(editableUnitPrices.acreditador)})</span>
+                        <span>{formatearPrecio(editableTotals.acreditadoresTotal)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span>Supervisores ({editableQuantities.supervisores}x {formatearPrecio(editableUnitPrices.supervisor)})</span>
+                        <span>{formatearPrecio(editableTotals.supervisoresTotal)}</span>
+                      </div>
+                      <hr />
+                      <div className="flex justify-between items-center font-semibold">
+                        <span>Costo Total Personal</span>
+                        <span className="text-green-600">{formatearPrecio(editableTotals.total)}</span>
+                      </div>
+                    </div>
+                  )}
 
                   <Button onClick={handleApplyPrice} className="w-full">
                     Aplicar Precio
