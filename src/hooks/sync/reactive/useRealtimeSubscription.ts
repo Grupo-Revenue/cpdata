@@ -31,12 +31,14 @@ export const useRealtimeSubscription = (
   useEffect(() => {
     // Skip if no user or config
     if (!user || !config?.api_key_set) {
+      console.log('[useRealtimeSubscription] No user or API key not set, cleaning up subscription');
       cleanupChannel();
       return;
     }
 
     // Skip if already subscribed
     if (subscriptionActiveRef.current) {
+      console.log('[useRealtimeSubscription] Already subscribed, skipping');
       return;
     }
 
@@ -55,11 +57,12 @@ export const useRealtimeSubscription = (
       schema: 'public',
       table: 'hubspot_sync_queue'
     }, (payload) => {
-      console.log('[useRealtimeSubscription] Queue change detected:', payload);
+      console.log('[useRealtimeSubscription] Queue change detected:', payload.eventType, payload.new?.id);
       loadSyncData();
       
       // Process queue if new items were added
       if (payload.eventType === 'INSERT') {
+        console.log('[useRealtimeSubscription] New queue item added, triggering processing');
         setTimeout(() => processQueue(), 1000);
       }
     }).subscribe((status) => {
@@ -75,7 +78,7 @@ export const useRealtimeSubscription = (
       console.log('[useRealtimeSubscription] Cleaning up sync listeners...');
       cleanupChannel();
     };
-  }, [user?.id, config?.api_key_set]);
+  }, [user?.id, config?.api_key_set, loadSyncData, processQueue]);
 
   return { cleanupChannel };
 };

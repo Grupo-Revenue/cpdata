@@ -10,9 +10,14 @@ export const useSyncData = () => {
   const [syncStats, setSyncStats] = useState<SyncStats | null>(null);
 
   const loadSyncData = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('[useSyncData] No user available, skipping data load');
+      return;
+    }
 
     try {
+      console.log('[useSyncData] Loading sync data for user:', user.id);
+
       // First get the user's negocio IDs
       const { data: negociosData, error: negociosError } = await supabase
         .from('negocios')
@@ -22,6 +27,7 @@ export const useSyncData = () => {
       if (negociosError) throw negociosError;
 
       const negocioIds = negociosData?.map(n => n.id) || [];
+      console.log(`[useSyncData] Found ${negocioIds.length} negocios for user`);
 
       if (negocioIds.length > 0) {
         // Load queue items for user's negocios
@@ -33,7 +39,11 @@ export const useSyncData = () => {
           .limit(50);
 
         if (queueError) throw queueError;
+        
+        console.log(`[useSyncData] Loaded ${queueData?.length || 0} queue items`);
         setSyncQueue(queueData || []);
+      } else {
+        setSyncQueue([]);
       }
 
       // Load stats
@@ -41,8 +51,12 @@ export const useSyncData = () => {
         .rpc('get_hubspot_sync_stats');
 
       if (statsError) throw statsError;
+      
       if (statsData && statsData.length > 0) {
+        console.log('[useSyncData] Loaded sync stats:', statsData[0]);
         setSyncStats(statsData[0]);
+      } else {
+        setSyncStats(null);
       }
 
     } catch (error) {

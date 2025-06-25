@@ -7,6 +7,7 @@ import { useQueueProcessor } from './useQueueProcessor';
 import { useRealtimeSubscription } from './useRealtimeSubscription';
 import { useSyncTrigger } from './useSyncTrigger';
 import { useFailedItemsRetry } from './useFailedItemsRetry';
+import { usePeriodicProcessing } from './usePeriodicProcessing';
 
 export const useReactiveHubSpotSync = () => {
   const { user } = useAuth();
@@ -18,24 +19,14 @@ export const useReactiveHubSpotSync = () => {
   const { retryFailedItems } = useFailedItemsRetry(loadSyncData, processQueue);
   
   useRealtimeSubscription(loadSyncData, processQueue);
-
-  // Periodic queue processing
-  useEffect(() => {
-    if (!config?.auto_sync || !config?.api_key_set) return;
-
-    const interval = setInterval(() => {
-      processQueue();
-    }, 30000); // Process every 30 seconds
-
-    return () => clearInterval(interval);
-  }, [config?.auto_sync, config?.api_key_set, processQueue]);
+  usePeriodicProcessing(config, processQueue);
 
   // Initial data load
   useEffect(() => {
     if (user) {
       loadSyncData();
     }
-  }, [user?.id]);
+  }, [user?.id, loadSyncData]);
 
   return {
     syncQueue,

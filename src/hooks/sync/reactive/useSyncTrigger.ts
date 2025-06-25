@@ -8,11 +8,18 @@ export const useSyncTrigger = (processQueue: () => Promise<void>) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const triggerSync = useCallback(async (negocioId: string, operation: string = 'update', priority: number = 5) => {
-    if (!user) return;
+  const triggerSync = useCallback(async (
+    negocioId: string, 
+    operation: string = 'update', 
+    priority: number = 5
+  ) => {
+    if (!user) {
+      console.log('[useSyncTrigger] No user available, cannot trigger sync');
+      return;
+    }
 
     try {
-      console.log(`[useSyncTrigger] Manually triggering sync for negocio ${negocioId}`);
+      console.log(`[useSyncTrigger] Manually triggering sync for negocio ${negocioId}, operation: ${operation}`);
 
       // Get negocio data
       const { data: negocio, error } = await supabase
@@ -25,6 +32,10 @@ export const useSyncTrigger = (processQueue: () => Promise<void>) => {
         .single();
 
       if (error) throw error;
+
+      if (!negocio) {
+        throw new Error('Negocio not found');
+      }
 
       // Enqueue sync operation
       const { data: queueId, error: enqueueError } = await supabase
@@ -49,7 +60,10 @@ export const useSyncTrigger = (processQueue: () => Promise<void>) => {
       });
 
       // Trigger immediate processing
-      setTimeout(() => processQueue(), 500);
+      setTimeout(() => {
+        console.log('[useSyncTrigger] Triggering immediate queue processing');
+        processQueue();
+      }, 500);
 
       return queueId;
 
@@ -60,6 +74,7 @@ export const useSyncTrigger = (processQueue: () => Promise<void>) => {
         description: "No se pudo programar la sincronización",
         variant: "destructive"
       });
+      throw error;
     }
   }, [user, toast, processQueue]);
 
