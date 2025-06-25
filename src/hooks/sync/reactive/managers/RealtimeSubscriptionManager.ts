@@ -79,6 +79,12 @@ export class RealtimeSubscriptionManager {
   private startSubscription(subscriptionKey: string, subscription: ActiveSubscription) {
     console.log(`[RealtimeSubscriptionManager] Starting subscription: ${subscriptionKey}`);
     
+    // Check if already subscribing or subscribed to prevent multiple calls
+    if (subscription.isSubscribing || subscription.isSubscribed) {
+      console.log(`[RealtimeSubscriptionManager] Subscription already active for ${subscriptionKey}`);
+      return;
+    }
+
     // Mark as subscribing to prevent double subscription
     subscription.isSubscribing = true;
 

@@ -12,6 +12,7 @@ export const useRealtimeSubscription = (
   const { config } = useHubSpotConfig();
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const isSubscribedRef = useRef(false);
+  const userIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Skip if no user or API key not configured
@@ -20,14 +21,25 @@ export const useRealtimeSubscription = (
       return;
     }
 
-    // Prevent multiple subscriptions from the same hook instance
-    if (isSubscribedRef.current) {
-      console.log('[useRealtimeSubscription] Already subscribed, skipping');
+    // Check if user changed - if so, cleanup previous subscription
+    if (userIdRef.current && userIdRef.current !== user.id) {
+      console.log('[useRealtimeSubscription] User changed, cleaning up previous subscription');
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+        isSubscribedRef.current = false;
+      }
+    }
+
+    // Prevent multiple subscriptions for the same user
+    if (isSubscribedRef.current && userIdRef.current === user.id) {
+      console.log('[useRealtimeSubscription] Already subscribed for this user, skipping');
       return;
     }
 
     console.log('[useRealtimeSubscription] Setting up subscription...');
     isSubscribedRef.current = true;
+    userIdRef.current = user.id;
 
     const manager = RealtimeSubscriptionManager.getInstance();
     const callbacks = { loadSyncData, processQueue };
@@ -42,14 +54,16 @@ export const useRealtimeSubscription = (
         unsubscribeRef.current = null;
       }
       isSubscribedRef.current = false;
+      userIdRef.current = null;
     };
-  }, [user?.id, config?.api_key_set]); // Only depend on stable values
+  }, [user?.id, config?.api_key_set, loadSyncData, processQueue]); // Include callback dependencies
 
   const cleanupChannel = () => {
     if (unsubscribeRef.current) {
       unsubscribeRef.current();
       unsubscribeRef.current = null;
       isSubscribedRef.current = false;
+      userIdRef.current = null;
     }
   };
 
