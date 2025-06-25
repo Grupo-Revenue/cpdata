@@ -1,15 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNegocio } from '@/context/NegocioContext';
-import { useBidirectionalSync } from '@/hooks/useBidirectionalSync';
-import { Loader2 } from 'lucide-react';
 import CrearPresupuesto from './CrearPresupuesto';
-import { useNavigate } from 'react-router-dom';
 import BusinessDetailHeader from './negocio/BusinessDetailHeader';
 import DetalleNegocioMainContent from './negocio/DetalleNegocioMainContent';
-import ConflictResolutionDialog from './business/ConflictResolutionDialog';
-import { Button } from '@/components/ui/button';
-import { EstadoPresupuesto, EstadoNegocio } from '@/types';
+import LoadingState from './negocio/LoadingState';
+import BusinessNotFound from './negocio/BusinessNotFound';
+import ConflictHandler from './negocio/ConflictHandler';
+import { useBusinessDetailActions } from './negocio/BusinessDetailActions';
 
 interface DetalleNegocioProps {
   negocioId: string;
@@ -17,63 +15,27 @@ interface DetalleNegocioProps {
 }
 
 const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) => {
-  const { obtenerNegocio, eliminarPresupuesto, cambiarEstadoPresupuesto, cambiarEstadoNegocio, loading, negocios } = useNegocio();
-  const { syncConflicts, resolveConflict } = useBidirectionalSync();
-  const navigate = useNavigate();
+  const { obtenerNegocio, loading } = useNegocio();
   const [mostrarCrearPresupuesto, setMostrarCrearPresupuesto] = useState(false);
   const [presupuestoEditando, setPresupuestoEditando] = useState<string | null>(null);
-  const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
-  const [currentConflict, setCurrentConflict] = useState<any>(null);
 
   const negocio = obtenerNegocio(negocioId);
 
-  // Check for conflicts when component mounts or conflicts change
-  useEffect(() => {
-    if (negocio && syncConflicts.length > 0) {
-      const businessConflict = syncConflicts.find(conflict => conflict.negocio_id === negocio.id);
-      if (businessConflict && !conflictDialogOpen) {
-        setCurrentConflict(businessConflict);
-        setConflictDialogOpen(true);
-      }
-    }
-  }, [negocio, syncConflicts, conflictDialogOpen]);
-
-  const handleRefresh = () => {
-    window.location.reload();
-  };
+  const {
+    handleEliminarPresupuesto,
+    handleVerPDF,
+    handleCambiarEstadoPresupuesto,
+    handleCambiarEstadoNegocio,
+    handleRefresh
+  } = useBusinessDetailActions(negocioId);
 
   if (loading && !negocio) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px] w-full">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-gray-600">Cargando negocio...</p>
-        </div>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   if (!negocio) {
-    return (
-      <div className="text-center py-12 w-full">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
-          <h3 className="text-lg font-semibold text-red-800 mb-2">Negocio no encontrado</h3>
-          <p className="text-red-600 mb-4">
-            No se pudo encontrar el negocio solicitado.
-          </p>
-          <Button onClick={onVolver} variant="outline">Volver al Dashboard</Button>
-        </div>
-      </div>
-    );
+    return <BusinessNotFound onVolver={onVolver} />;
   }
-
-  const handleEliminarPresupuesto = async (presupuestoId: string): Promise<void> => {
-    await eliminarPresupuesto(negocioId, presupuestoId);
-  };
-
-  const handleVerPDF = (presupuestoId: string) => {
-    navigate(`/presupuesto/${negocioId}/${presupuestoId}/pdf`);
-  };
 
   const handleEditarPresupuesto = (presupuestoId: string) => {
     setPresupuestoEditando(presupuestoId);
@@ -87,20 +49,6 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
   const handleCerrarCrearPresupuesto = () => {
     setMostrarCrearPresupuesto(false);
     setPresupuestoEditando(null);
-  };
-
-  const handleCambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string): Promise<void> => {
-    await cambiarEstadoPresupuesto(negocioId, presupuestoId, nuevoEstado as EstadoPresupuesto, fechaVencimiento);
-  };
-
-  const handleCambiarEstadoNegocio = async (negocioId: string, nuevoEstado: string) => {
-    await cambiarEstadoNegocio(negocioId, nuevoEstado as EstadoNegocio);
-  };
-
-  const handleResolveConflict = async (negocioId: string, resolvedState: string) => {
-    await resolveConflict(negocioId, resolvedState);
-    setCurrentConflict(null);
-    setConflictDialogOpen(false);
   };
 
   if (mostrarCrearPresupuesto) {
@@ -139,15 +87,8 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
         </div>
       </main>
 
-      {/* Conflict Resolution Dialog */}
-      {currentConflict && (
-        <ConflictResolutionDialog
-          open={conflictDialogOpen}
-          onOpenChange={setConflictDialogOpen}
-          conflict={currentConflict}
-          onResolve={handleResolveConflict}
-        />
-      )}
+      {/* Conflict Resolution Handler */}
+      <ConflictHandler negocio={negocio} />
     </div>
   );
 };
