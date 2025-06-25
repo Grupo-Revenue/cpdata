@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 const subscriptionManager = {
   activeSubscriptions: new Map<string, any>(),
   subscribers: new Map<string, Set<string>>(),
+  callbacks: new Map<string, any>(),
   
   subscribe(userId: string, subscriberId: string, callbacks: any) {
     const channelName = `hubspot-sync-${userId}`;
@@ -18,7 +19,10 @@ const subscriptionManager = {
     }
     this.subscribers.get(userId)!.add(subscriberId);
     
-    // If channel already exists, just add the callback
+    // Store callbacks for this subscriber
+    this.callbacks.set(`${userId}-${subscriberId}`, callbacks);
+    
+    // If channel already exists and is subscribed, just return it
     if (this.activeSubscriptions.has(userId)) {
       console.log(`[useRealtimeSubscription] Reusing existing subscription for user ${userId}`);
       return this.activeSubscriptions.get(userId);
@@ -39,12 +43,22 @@ const subscriptionManager = {
       const recordId = newRecord?.id || 'unknown';
       
       console.log('[useRealtimeSubscription] Queue change detected:', payload.eventType, recordId);
-      callbacks.loadSyncData();
       
-      // Process queue if new items were added
-      if (payload.eventType === 'INSERT') {
-        console.log('[useRealtimeSubscription] New queue item added, triggering processing');
-        setTimeout(() => callbacks.processQueue(), 1000);
+      // Call all subscribers' callbacks
+      const subscribers = this.subscribers.get(userId);
+      if (subscribers) {
+        subscribers.forEach(subscriberId => {
+          const callbacks = this.callbacks.get(`${userId}-${subscriberId}`);
+          if (callbacks) {
+            callbacks.loadSyncData();
+            
+            // Process queue if new items were added
+            if (payload.eventType === 'INSERT') {
+              console.log('[useRealtimeSubscription] New queue item added, triggering processing');
+              setTimeout(() => callbacks.processQueue(), 1000);
+            }
+          }
+        });
       }
     });
 
@@ -57,6 +71,7 @@ const subscriptionManager = {
         console.log('[useRealtimeSubscription] Channel subscription ended');
         // Clean up from manager
         this.activeSubscriptions.delete(userId);
+        this.cleanupCallbacks(userId);
       }
     });
     
@@ -69,6 +84,9 @@ const subscriptionManager = {
     const subscribers = this.subscribers.get(userId);
     if (subscribers) {
       subscribers.delete(subscriberId);
+      
+      // Clean up callbacks for this subscriber
+      this.callbacks.delete(`${userId}-${subscriberId}`);
       
       // If no more subscribers, clean up the channel
       if (subscribers.size === 0) {
@@ -84,6 +102,16 @@ const subscriptionManager = {
         }
         this.activeSubscriptions.delete(userId);
         this.subscribers.delete(userId);
+        this.cleanupCallbacks(userId);
+      }
+    }
+  },
+  
+  cleanupCallbacks(userId: string) {
+    // Remove all callbacks for this user
+    for (const key of this.callbacks.keys()) {
+      if (key.startsWith(`${userId}-`)) {
+        this.callbacks.delete(key);
       }
     }
   }
@@ -115,17 +143,22 @@ export const useRealtimeSubscription = (
     isActiveRef.current = true;
 
     // Subscribe through the manager
-    const channel = subscriptionManager.subscribe(user.id, subscriberIdRef.current, {
-      loadSyncData,
-      processQueue
-    });
+    try {
+      const channel = subscriptionManager.subscribe(user.id, subscriberIdRef.current, {
+        loadSyncData,
+        processQueue
+      });
+    } catch (error) {
+      console.error('[useRealtimeSubscription] Error setting up subscription:', error);
+      isActiveRef.current = false;
+    }
 
     return () => {
       console.log('[useRealtimeSubscription] Cleaning up sync listeners...');
       isActiveRef.current = false;
       subscriptionManager.unsubscribe(user.id, subscriberIdRef.current);
     };
-  }, [user?.id, config?.api_key_set]); // Only depend on these stable values
+  }, [user?.id, config?.api_key_set]);
 
   const cleanupChannel = () => {
     if (user) {
