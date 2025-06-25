@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNegocio } from '@/context/NegocioContext';
 import { validateAllBusinessStates } from '@/utils/businessCalculations';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +16,7 @@ interface MonitoringState {
 export const useBusinessStateMonitor = () => {
   const { negocios, loading, refreshNegocios } = useNegocio();
   const { toast } = useToast();
+  const channelRef = useRef<any>(null);
   const [monitoringState, setMonitoringState] = useState<MonitoringState>({
     inconsistencyCount: 0,
     lastCheck: null,
@@ -23,50 +24,6 @@ export const useBusinessStateMonitor = () => {
     autoFixEnabled: false,
     lastAuditResults: null
   });
-
-  // Monitor en tiempo real con subscripción a cambios en la base de datos
-  useEffect(() => {
-    if (!loading && negocios.length > 0) {
-      console.log('[useBusinessStateMonitor] Setting up real-time monitoring...');
-      
-      // Create a unique channel name to avoid conflicts
-      const channelName = `business-state-monitor-${Date.now()}-${Math.random()}`;
-      const channel = supabase.channel(channelName);
-      
-      channel
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'negocios',
-            filter: 'estado=neq.null'
-          },
-          (payload) => {
-            console.log('[useBusinessStateMonitor] Business state changed:', payload);
-            setTimeout(() => validateCurrentStates(), 1000);
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'presupuestos'
-          },
-          (payload) => {
-            console.log('[useBusinessStateMonitor] Budget changed:', payload);
-            setTimeout(() => validateCurrentStates(), 1000);
-          }
-        )
-        .subscribe();
-
-      return () => {
-        console.log('[useBusinessStateMonitor] Cleaning up real-time monitoring...');
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [negocios.length, loading]); // Simplified dependencies to prevent unnecessary re-subscriptions
 
   const validateCurrentStates = async () => {
     if (monitoringState.isMonitoring || negocios.length === 0) return;
@@ -111,13 +68,70 @@ export const useBusinessStateMonitor = () => {
     }
   };
 
+  // Monitor en tiempo real con subscripción a cambios en la base de datos
+  useEffect(() => {
+    if (loading || negocios.length === 0) return;
+
+    // Clean up existing channel first
+    if (channelRef.current) {
+      console.log('[useBusinessStateMonitor] Cleaning up existing channel...');
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    console.log('[useBusinessStateMonitor] Setting up real-time monitoring...');
+    
+    // Create a unique channel name to avoid conflicts
+    const channelName = `business-state-monitor-${Date.now()}`;
+    const channel = supabase.channel(channelName);
+    channelRef.current = channel;
+    
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'negocios',
+          filter: 'estado=neq.null'
+        },
+        (payload) => {
+          console.log('[useBusinessStateMonitor] Business state changed:', payload);
+          setTimeout(() => validateCurrentStates(), 1000);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'presupuestos'
+        },
+        (payload) => {
+          console.log('[useBusinessStateMonitor] Budget changed:', payload);
+          setTimeout(() => validateCurrentStates(), 1000);
+        }
+      )
+      .subscribe((status) => {
+        console.log(`[useBusinessStateMonitor] Channel subscription status: ${status}`);
+      });
+
+    return () => {
+      console.log('[useBusinessStateMonitor] Cleaning up real-time monitoring...');
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [negocios.length, loading]);
+
   // Validación inicial
   useEffect(() => {
     if (!loading && negocios.length > 0) {
       console.log('[useBusinessStateMonitor] Performing initial validation...');
       validateCurrentStates();
     }
-  }, [negocios.length, loading]); // Simplified dependencies
+  }, [loading]); // Only depend on loading to avoid multiple validations
 
   const runComprehensiveAudit = async () => {
     try {

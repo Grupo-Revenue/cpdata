@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +28,7 @@ export const useReactiveHubSpotSync = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { config } = useHubSpotConfig();
+  const channelRef = useRef<any>(null);
   const [syncQueue, setSyncQueue] = useState<SyncQueueItem[]>([]);
   const [syncStats, setSyncStats] = useState<SyncStats | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -185,10 +186,18 @@ export const useReactiveHubSpotSync = () => {
   useEffect(() => {
     if (!user || !config?.api_key_set) return;
 
+    // Clean up existing channel first
+    if (channelRef.current) {
+      console.log('[useReactiveHubSpotSync] Cleaning up existing channel...');
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
     console.log('[useReactiveHubSpotSync] Setting up real-time sync listeners...');
 
     // Create a channel for listening to sync triggers
     const channel = supabase.channel('hubspot-sync-notifications');
+    channelRef.current = channel;
 
     // Listen to PostgreSQL notifications
     channel.on('postgres_changes', {
@@ -203,14 +212,18 @@ export const useReactiveHubSpotSync = () => {
       if (payload.eventType === 'INSERT') {
         setTimeout(() => processQueue(), 1000);
       }
+    }).subscribe((status) => {
+      console.log(`[useReactiveHubSpotSync] Channel subscription status: ${status}`);
     });
 
-    channel.subscribe();
-
     return () => {
-      supabase.removeChannel(channel);
+      console.log('[useReactiveHubSpotSync] Cleaning up sync listeners...');
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
-  }, [user, config?.api_key_set, loadSyncData, processQueue]);
+  }, [user?.id, config?.api_key_set]); // Simplified dependencies
 
   // Periodic queue processing
   useEffect(() => {
@@ -221,7 +234,7 @@ export const useReactiveHubSpotSync = () => {
     }, 30000); // Process every 30 seconds
 
     return () => clearInterval(interval);
-  }, [config, processQueue]);
+  }, [config?.auto_sync, config?.api_key_set, processQueue]);
 
   // Initial data load
   useEffect(() => {
