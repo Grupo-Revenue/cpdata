@@ -4,13 +4,13 @@ import { useAuth } from '@/context/AuthContext';
 import { useHubSpotConfig } from '@/hooks/useHubSpotConfig';
 import { supabase } from '@/integrations/supabase/client';
 
-// Global subscription manager - true singleton
+// Simple subscription manager that prevents multiple subscriptions
 class RealtimeSubscriptionManager {
   private static instance: RealtimeSubscriptionManager;
-  private subscriptions = new Map<string, {
+  private activeSubscriptions = new Map<string, {
     channel: any;
     callbacks: Set<any>;
-    isActive: boolean;
+    subscribed: boolean;
   }>();
 
   private constructor() {}
@@ -23,33 +23,36 @@ class RealtimeSubscriptionManager {
   }
 
   subscribe(userId: string, callbacks: any) {
-    console.log(`[RealtimeSubscriptionManager] Subscribing for user ${userId}`);
+    console.log(`[RealtimeSubscriptionManager] Subscribe request for user ${userId}`);
     
-    if (!this.subscriptions.has(userId)) {
+    let subscription = this.activeSubscriptions.get(userId);
+    
+    if (!subscription) {
       console.log(`[RealtimeSubscriptionManager] Creating new subscription for user ${userId}`);
-      this.createSubscription(userId);
+      subscription = this.createSubscription(userId);
+      this.activeSubscriptions.set(userId, subscription);
     }
 
-    const subscription = this.subscriptions.get(userId)!;
+    // Add callbacks to existing subscription
     subscription.callbacks.add(callbacks);
-    console.log(`[RealtimeSubscriptionManager] Added callbacks for user ${userId}. Total callbacks: ${subscription.callbacks.size}`);
+    console.log(`[RealtimeSubscriptionManager] Added callbacks for user ${userId}. Total: ${subscription.callbacks.size}`);
     
     return () => this.unsubscribe(userId, callbacks);
   }
 
   private createSubscription(userId: string) {
-    const channelName = `hubspot-sync-${userId}`;
+    const channelName = `hubspot-sync-${userId}-${Date.now()}`;
+    console.log(`[RealtimeSubscriptionManager] Creating channel: ${channelName}`);
+    
     const channel = supabase.channel(channelName);
-
+    
     const subscription = {
       channel,
       callbacks: new Set<any>(),
-      isActive: false
+      subscribed: false
     };
 
-    this.subscriptions.set(userId, subscription);
-
-    // Configure the channel
+    // Configure the channel BEFORE subscribing
     channel.on('postgres_changes', {
       event: '*',
       schema: 'public',
@@ -58,16 +61,15 @@ class RealtimeSubscriptionManager {
       const newRecord = payload.new as Record<string, any> | null;
       const recordId = newRecord?.id || 'unknown';
       
-      console.log(`[RealtimeSubscriptionManager] Queue change detected for user ${userId}:`, payload.eventType, recordId);
+      console.log(`[RealtimeSubscriptionManager] Queue change for user ${userId}:`, payload.eventType, recordId);
       
-      // Call all registered callbacks for this user
+      // Call all registered callbacks
       subscription.callbacks.forEach(callbacks => {
         try {
           callbacks.loadSyncData();
           
-          // Process queue if new items were added
           if (payload.eventType === 'INSERT') {
-            console.log('[RealtimeSubscriptionManager] New queue item added, triggering processing');
+            console.log('[RealtimeSubscriptionManager] New queue item, triggering processing');
             setTimeout(() => callbacks.processQueue(), 1000);
           }
         } catch (error) {
@@ -76,56 +78,61 @@ class RealtimeSubscriptionManager {
       });
     });
 
-    // Subscribe to the channel
+    // Subscribe to the channel only once
     channel.subscribe((status) => {
-      console.log(`[RealtimeSubscriptionManager] Channel subscription status: ${status} for user ${userId}`);
+      console.log(`[RealtimeSubscriptionManager] Channel status: ${status} for user ${userId}`);
       if (status === 'SUBSCRIBED') {
-        subscription.isActive = true;
+        subscription.subscribed = true;
         console.log(`[RealtimeSubscriptionManager] Successfully subscribed for user ${userId}`);
       } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-        subscription.isActive = false;
-        console.log(`[RealtimeSubscriptionManager] Channel subscription ended for user ${userId}`);
+        subscription.subscribed = false;
+        console.log(`[RealtimeSubscriptionManager] Channel ended for user ${userId}`);
       }
     });
+
+    return subscription;
   }
 
   private unsubscribe(userId: string, callbacks: any) {
-    console.log(`[RealtimeSubscriptionManager] Unsubscribing callbacks for user ${userId}`);
+    console.log(`[RealtimeSubscriptionManager] Unsubscribe request for user ${userId}`);
     
-    const subscription = this.subscriptions.get(userId);
-    if (!subscription) return;
+    const subscription = this.activeSubscriptions.get(userId);
+    if (!subscription) {
+      console.log(`[RealtimeSubscriptionManager] No subscription found for user ${userId}`);
+      return;
+    }
 
     subscription.callbacks.delete(callbacks);
-    console.log(`[RealtimeSubscriptionManager] Removed callbacks for user ${userId}. Remaining callbacks: ${subscription.callbacks.size}`);
+    console.log(`[RealtimeSubscriptionManager] Removed callbacks for user ${userId}. Remaining: ${subscription.callbacks.size}`);
 
-    // If no more callbacks, clean up the subscription
+    // Clean up if no more callbacks
     if (subscription.callbacks.size === 0) {
-      console.log(`[RealtimeSubscriptionManager] No more callbacks for user ${userId}, cleaning up subscription`);
+      console.log(`[RealtimeSubscriptionManager] Cleaning up subscription for user ${userId}`);
       this.cleanupSubscription(userId);
     }
   }
 
   private cleanupSubscription(userId: string) {
-    const subscription = this.subscriptions.get(userId);
+    const subscription = this.activeSubscriptions.get(userId);
     if (!subscription) return;
 
     try {
-      subscription.channel.unsubscribe();
+      if (subscription.subscribed) {
+        subscription.channel.unsubscribe();
+        console.log(`[RealtimeSubscriptionManager] Unsubscribed channel for user ${userId}`);
+      }
       supabase.removeChannel(subscription.channel);
-      console.log(`[RealtimeSubscriptionManager] Cleaned up channel for user ${userId}`);
+      console.log(`[RealtimeSubscriptionManager] Removed channel for user ${userId}`);
     } catch (error) {
-      console.error(`[RealtimeSubscriptionManager] Error cleaning up channel for user ${userId}:`, error);
+      console.error(`[RealtimeSubscriptionManager] Error during cleanup for user ${userId}:`, error);
     }
 
-    this.subscriptions.delete(userId);
+    this.activeSubscriptions.delete(userId);
   }
 
-  // Force cleanup all subscriptions (useful for debugging)
-  cleanup() {
-    console.log('[RealtimeSubscriptionManager] Force cleaning up all subscriptions');
-    for (const userId of this.subscriptions.keys()) {
-      this.cleanupSubscription(userId);
-    }
+  // Debug method to check active subscriptions
+  getActiveSubscriptions() {
+    return Array.from(this.activeSubscriptions.keys());
   }
 }
 
@@ -135,40 +142,45 @@ export const useRealtimeSubscription = (
 ) => {
   const { user } = useAuth();
   const { config } = useHubSpotConfig();
-  const managerRef = useRef<RealtimeSubscriptionManager>();
   const unsubscribeRef = useRef<(() => void) | null>(null);
+  const isSubscribedRef = useRef(false);
 
   useEffect(() => {
-    // Skip if no user or config
+    // Skip if no user or API key not configured
     if (!user || !config?.api_key_set) {
-      console.log('[useRealtimeSubscription] No user or API key not set, skipping subscription');
+      console.log('[useRealtimeSubscription] Skipping - no user or API key not set');
       return;
     }
 
-    console.log('[useRealtimeSubscription] Setting up real-time sync listeners...');
-
-    // Get singleton manager
-    if (!managerRef.current) {
-      managerRef.current = RealtimeSubscriptionManager.getInstance();
+    // Prevent multiple subscriptions
+    if (isSubscribedRef.current) {
+      console.log('[useRealtimeSubscription] Already subscribed, skipping');
+      return;
     }
 
-    // Subscribe with callbacks
+    console.log('[useRealtimeSubscription] Setting up subscription...');
+    isSubscribedRef.current = true;
+
+    const manager = RealtimeSubscriptionManager.getInstance();
     const callbacks = { loadSyncData, processQueue };
-    unsubscribeRef.current = managerRef.current.subscribe(user.id, callbacks);
+    
+    unsubscribeRef.current = manager.subscribe(user.id, callbacks);
 
     return () => {
-      console.log('[useRealtimeSubscription] Cleaning up sync listeners...');
+      console.log('[useRealtimeSubscription] Cleanup...');
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
+      isSubscribedRef.current = false;
     };
-  }, [user?.id, config?.api_key_set]); // Only depend on user ID and API key status
+  }, [user?.id, config?.api_key_set]); // Only depend on stable values
 
   const cleanupChannel = () => {
     if (unsubscribeRef.current) {
       unsubscribeRef.current();
       unsubscribeRef.current = null;
+      isSubscribedRef.current = false;
     }
   };
 
