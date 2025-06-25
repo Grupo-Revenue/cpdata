@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionCallbacks, ActiveSubscription } from '../types/subscription';
 
-// Subscription manager that shares one channel per user and manages multiple callbacks
+// Subscription manager that creates fresh channels for each subscription
 export class RealtimeSubscriptionManager {
   private static instance: RealtimeSubscriptionManager;
   private activeSubscriptions = new Map<string, ActiveSubscription>();
@@ -26,13 +26,10 @@ export class RealtimeSubscriptionManager {
     let subscription = this.activeSubscriptions.get(subscriptionKey);
     
     if (!subscription) {
-      // Create new subscription only if it doesn't exist
+      // Create new subscription
       console.log(`[RealtimeSubscriptionManager] Creating new subscription for user ${userId}`);
-      subscription = this.createSubscription(userId, subscriptionKey);
+      subscription = this.createAndStartSubscription(userId, subscriptionKey);
       this.activeSubscriptions.set(subscriptionKey, subscription);
-      
-      // Start the subscription immediately
-      this.startSubscription(subscriptionKey, subscription);
     } else {
       console.log(`[RealtimeSubscriptionManager] Reusing existing subscription for user ${userId}`);
     }
@@ -44,10 +41,10 @@ export class RealtimeSubscriptionManager {
     return () => this.unsubscribe(subscriptionKey, callbacks);
   }
 
-  private createSubscription(userId: string, subscriptionKey: string): ActiveSubscription {
-    // Create a channel name based on the user to ensure uniqueness
-    const channelName = `hubspot-sync-${userId}`;
-    console.log(`[RealtimeSubscriptionManager] Creating channel: ${channelName}`);
+  private createAndStartSubscription(userId: string, subscriptionKey: string): ActiveSubscription {
+    // Create a unique channel name to ensure we get a fresh channel instance
+    const channelName = `hubspot-sync-${userId}-${Date.now()}`;
+    console.log(`[RealtimeSubscriptionManager] Creating fresh channel: ${channelName}`);
     
     const channel = supabase.channel(channelName);
     
@@ -84,23 +81,10 @@ export class RealtimeSubscriptionManager {
       });
     });
 
-    return subscription;
-  }
-
-  private startSubscription(subscriptionKey: string, subscription: ActiveSubscription) {
-    console.log(`[RealtimeSubscriptionManager] Starting subscription: ${subscriptionKey}`);
-    
-    // Check if already subscribing or subscribed to prevent multiple calls
-    if (subscription.isSubscribing || subscription.isSubscribed) {
-      console.log(`[RealtimeSubscriptionManager] Subscription already active for ${subscriptionKey}`);
-      return;
-    }
-
-    // Mark as subscribing to prevent double subscription
+    // Start subscription immediately since we have a fresh channel
     subscription.isSubscribing = true;
-
-    // Subscribe to the channel - this should only happen once per channel instance
-    subscription.channel.subscribe((status: string) => {
+    
+    channel.subscribe((status: string) => {
       console.log(`[RealtimeSubscriptionManager] Channel status: ${status} for subscription ${subscriptionKey}`);
       
       if (status === 'SUBSCRIBED') {
@@ -113,6 +97,8 @@ export class RealtimeSubscriptionManager {
         console.log(`[RealtimeSubscriptionManager] Channel ended for subscription ${subscriptionKey}`);
       }
     });
+
+    return subscription;
   }
 
   private unsubscribe(subscriptionKey: string, callbacks: SubscriptionCallbacks) {
