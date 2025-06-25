@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNegocio } from '@/context/NegocioContext';
 import { useBidirectionalSync } from '@/hooks/useBidirectionalSync';
@@ -8,8 +7,6 @@ import { useNavigate } from 'react-router-dom';
 import BusinessDetailHeader from './negocio/BusinessDetailHeader';
 import DetalleNegocioMainContent from './negocio/DetalleNegocioMainContent';
 import ConflictResolutionDialog from './business/ConflictResolutionDialog';
-import ManualSyncInterface from './business/ManualSyncInterface';
-import SyncVerificationPanel from './business/SyncVerificationPanel';
 import { Button } from '@/components/ui/button';
 import { EstadoPresupuesto, EstadoNegocio } from '@/types';
 
@@ -19,9 +16,12 @@ interface DetalleNegocioProps {
 }
 
 const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) => {
-  console.log('[DetalleNegocio] Rendering for negocioId:', negocioId);
+  console.log('[DetalleNegocio] ==> COMPONENT RENDERING <==');
+  console.log('[DetalleNegocio] Received negocioId:', negocioId);
+  console.log('[DetalleNegocio] negocioId type:', typeof negocioId);
+  console.log('[DetalleNegocio] negocioId length:', negocioId?.length);
   
-  const { obtenerNegocio, eliminarPresupuesto, cambiarEstadoPresupuesto, cambiarEstadoNegocio, loading } = useNegocio();
+  const { obtenerNegocio, eliminarPresupuesto, cambiarEstadoPresupuesto, cambiarEstadoNegocio, loading, negocios } = useNegocio();
   const { syncConflicts, resolveConflict } = useBidirectionalSync();
   const navigate = useNavigate();
   const [mostrarCrearPresupuesto, setMostrarCrearPresupuesto] = useState(false);
@@ -29,13 +29,30 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
   const [currentConflict, setCurrentConflict] = useState<any>(null);
 
+  // Debug: Log all available negocios for comparison
+  useEffect(() => {
+    console.log('[DetalleNegocio] Debug - All available negocios:');
+    negocios.forEach((negocio, index) => {
+      console.log(`[DetalleNegocio] Negocio ${index}:`, {
+        id: negocio.id,
+        numero: negocio.numero,
+        contacto: negocio.contacto?.nombre,
+        evento: negocio.evento?.nombreEvento
+      });
+    });
+    console.log('[DetalleNegocio] Looking for negocioId:', negocioId);
+  }, [negocios, negocioId]);
+
   const negocio = obtenerNegocio(negocioId);
   
-  console.log('[DetalleNegocio] Negocio data:', {
+  console.log('[DetalleNegocio] obtenerNegocio result:', {
     found: !!negocio,
-    id: negocio?.id,
-    numero: negocio?.numero,
-    loading
+    negocioId: negocioId,
+    searchResult: negocio ? {
+      id: negocio.id,
+      numero: negocio.numero,
+      contacto: negocio.contacto?.nombre
+    } : 'NOT FOUND'
   });
 
   // Check for conflicts when component mounts or conflicts change
@@ -56,26 +73,47 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
   };
 
   if (loading && !negocio) {
-    console.log('[DetalleNegocio] Loading state');
+    console.log('[DetalleNegocio] ==> SHOWING LOADING STATE <==');
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
           <p className="text-gray-600">Cargando negocio...</p>
+          <p className="text-sm text-gray-500 mt-2">ID: {negocioId}</p>
         </div>
       </div>
     );
   }
 
   if (!negocio) {
-    console.log('[DetalleNegocio] Negocio not found');
+    console.log('[DetalleNegocio] ==> NEGOCIO NOT FOUND <==');
+    console.error('[DetalleNegocio] ERROR: Negocio not found for ID:', negocioId);
+    console.log('[DetalleNegocio] Available negocio IDs:', negocios.map(n => n.id));
+    
     return (
       <div className="text-center py-12 w-full">
-        <p className="text-gray-600 mb-4">Negocio no encontrado</p>
-        <Button onClick={onVolver} variant="outline">Volver</Button>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
+          <h3 className="text-lg font-semibold text-red-800 mb-2">Negocio no encontrado</h3>
+          <p className="text-red-600 mb-4">
+            No se pudo encontrar el negocio con ID: <code className="bg-red-100 px-1 rounded">{negocioId}</code>
+          </p>
+          <p className="text-sm text-red-500 mb-4">
+            Total de negocios disponibles: {negocios.length}
+          </p>
+          <Button onClick={onVolver} variant="outline">Volver al Dashboard</Button>
+        </div>
       </div>
     );
   }
+
+  console.log('[DetalleNegocio] ==> NEGOCIO FOUND - RENDERING CONTENT <==');
+  console.log('[DetalleNegocio] Negocio data:', {
+    id: negocio.id,
+    numero: negocio.numero,
+    contacto: negocio.contacto?.nombre,
+    evento: negocio.evento?.nombreEvento,
+    presupuestosCount: negocio.presupuestos?.length || 0
+  });
 
   const handleEliminarPresupuesto = async (presupuestoId: string): Promise<void> => {
     console.log('[DetalleNegocio] Eliminar presupuesto:', presupuestoId);
@@ -122,7 +160,7 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
   };
 
   if (mostrarCrearPresupuesto) {
-    console.log('[DetalleNegocio] Rendering CrearPresupuesto');
+    console.log('[DetalleNegocio] ==> RENDERING CrearPresupuesto <==');
     return (
       <div className="w-full">
         <CrearPresupuesto
@@ -134,7 +172,7 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
     );
   }
 
-  console.log('[DetalleNegocio] Rendering main content');
+  console.log('[DetalleNegocio] ==> RENDERING MAIN CONTENT <==');
   return (
     <div className="w-full">
       <main className="flex-1 overflow-auto">
@@ -146,12 +184,15 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
             onCambiarEstado={handleCambiarEstadoNegocio}
           />
           
-          {/* Sync Tools Section - Temporarily simplified */}
-          <div className="mb-6 space-y-4">
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                ℹ️ Sync tools temporarily disabled for debugging navigation issues
-              </p>
+          {/* Debug Panel - Temporary */}
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="font-semibold text-blue-800 mb-2">🔧 Debug Info</h4>
+            <div className="text-sm text-blue-700 space-y-1">
+              <p><strong>Negocio ID:</strong> {negocio.id}</p>
+              <p><strong>Número:</strong> #{negocio.numero}</p>
+              <p><strong>Contacto:</strong> {negocio.contacto?.nombre} {negocio.contacto?.apellido}</p>
+              <p><strong>Evento:</strong> {negocio.evento?.nombreEvento}</p>
+              <p><strong>Presupuestos:</strong> {negocio.presupuestos?.length || 0}</p>
             </div>
           </div>
           

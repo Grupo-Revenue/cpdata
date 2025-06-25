@@ -22,6 +22,8 @@ const NegocioContext = createContext<NegocioContextProps | undefined>(undefined)
 
 const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
   try {
+    console.log('[NegocioContext] ==> FETCHING NEGOCIOS FROM DATABASE <==');
+    
     const { data, error } = await supabase
       .from('negocios')
       .select(`
@@ -47,38 +49,66 @@ const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error("Error fetching negocios:", error);
+      console.error("[NegocioContext] Error fetching negocios:", error);
       throw error;
     }
     
+    console.log('[NegocioContext] Raw data from database:', {
+      count: data?.length || 0,
+      sample: data?.[0] ? {
+        id: data[0].id,
+        numero: data[0].numero,
+        contacto: data[0].contacto?.nombre
+      } : 'No data'
+    });
+    
     // Transform the data to match ExtendedNegocio type
-    const transformedData = data.map(negocio => ({
-      ...negocio,
-      // Add required legacy properties for backwards compatibility
-      evento: {
-        tipoEvento: negocio.tipo_evento,
-        nombreEvento: negocio.nombre_evento,
-        fechaEvento: negocio.fecha_evento,
-        horasAcreditacion: negocio.horas_acreditacion,
-        cantidadAsistentes: negocio.cantidad_asistentes || 0,
-        cantidadInvitados: negocio.cantidad_invitados || 0,
-        locacion: negocio.locacion
-      },
-      fechaCreacion: negocio.created_at,
-      fechaCierre: negocio.fecha_cierre,
-      presupuestos: negocio.presupuestos?.map(p => ({
-        ...p,
-        fechaCreacion: p.created_at,
-        fechaEnvio: p.fecha_envio,
-        fechaAprobacion: p.fecha_aprobacion,
-        fechaRechazo: p.fecha_rechazo,
-        fechaVencimiento: p.fecha_vencimiento
-      })) || []
-    }));
+    const transformedData = data.map((negocio, index) => {
+      const transformed = {
+        ...negocio,
+        // Add required legacy properties for backwards compatibility
+        evento: {
+          tipoEvento: negocio.tipo_evento,
+          nombreEvento: negocio.nombre_evento,
+          fechaEvento: negocio.fecha_evento,
+          horasAcreditacion: negocio.horas_acreditacion,
+          cantidadAsistentes: negocio.cantidad_asistentes || 0,
+          cantidadInvitados: negocio.cantidad_invitados || 0,
+          locacion: negocio.locacion
+        },
+        fechaCreacion: negocio.created_at,
+        fechaCierre: negocio.fecha_cierre,
+        presupuestos: negocio.presupuestos?.map(p => ({
+          ...p,
+          fechaCreacion: p.created_at,
+          fechaEnvio: p.fecha_envio,
+          fechaAprobacion: p.fecha_aprobacion,
+          fechaRechazo: p.fecha_rechazo,
+          fechaVencimiento: p.fecha_vencimiento
+        })) || []
+      };
+      
+      console.log(`[NegocioContext] Transformed negocio ${index}:`, {
+        originalId: negocio.id,
+        transformedId: transformed.id,
+        numero: transformed.numero,
+        contacto: transformed.contacto?.nombre,
+        evento: transformed.evento?.nombreEvento,
+        idMatch: negocio.id === transformed.id
+      });
+      
+      return transformed;
+    });
+    
+    console.log('[NegocioContext] ==> TRANSFORMATION COMPLETE <==');
+    console.log('[NegocioContext] Final transformed data:', {
+      count: transformedData.length,
+      ids: transformedData.map(n => ({ id: n.id, numero: n.numero }))
+    });
     
     return transformedData as Negocio[];
   } catch (error) {
-    console.error("Failed to fetch negocios:", error);
+    console.error("[NegocioContext] Failed to fetch negocios:", error);
     throw error;
   }
 };
@@ -89,16 +119,23 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const [error, setError] = useState<string | null>(null);
 
   const obtenerNegocios = useCallback(async () => {
+    console.log('[NegocioContext] ==> LOADING NEGOCIOS <==');
     setLoading(true);
     try {
       const negociosData = await obtenerNegociosDesdeSupabase();
+      console.log('[NegocioContext] Setting negocios state:', {
+        count: negociosData.length,
+        firstFew: negociosData.slice(0, 3).map(n => ({ id: n.id, numero: n.numero }))
+      });
       setNegocios(negociosData);
       setError(null);
     } catch (e: any) {
+      console.error('[NegocioContext] Error loading negocios:', e);
       setError(e.message || "Error al cargar los negocios");
       setNegocios([]);
     } finally {
       setLoading(false);
+      console.log('[NegocioContext] ==> LOADING COMPLETE <==');
     }
   }, []);
 
@@ -108,7 +145,7 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   // Nueva función para refrescar negocios manualmente
   const refreshNegocios = async () => {
-    console.log('[NegocioContext] Manual refresh requested');
+    console.log('[NegocioContext] ==> MANUAL REFRESH REQUESTED <==');
     setLoading(true);
     try {
       await obtenerNegocios();
@@ -120,7 +157,30 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   };
 
   const obtenerNegocio = (id: string): Negocio | undefined => {
-    return negocios.find(negocio => negocio.id === id);
+    console.log('[NegocioContext] ==> SEARCHING FOR NEGOCIO <==');
+    console.log('[NegocioContext] Searching for ID:', id);
+    console.log('[NegocioContext] ID type:', typeof id);
+    console.log('[NegocioContext] Available negocios:', negocios.length);
+    
+    // Log all available IDs for debugging
+    console.log('[NegocioContext] All available IDs:');
+    negocios.forEach((negocio, index) => {
+      console.log(`[NegocioContext] - ${index}: ${negocio.id} (${typeof negocio.id})`);
+    });
+    
+    const found = negocios.find(negocio => {
+      const match = negocio.id === id;
+      console.log(`[NegocioContext] Comparing ${negocio.id} === ${id}: ${match}`);
+      return match;
+    });
+    
+    console.log('[NegocioContext] Search result:', {
+      found: !!found,
+      foundId: found?.id,
+      foundNumero: found?.numero
+    });
+    
+    return found;
   };
 
   const crearNegocio = async (negocioData: any): Promise<Negocio | null> => {

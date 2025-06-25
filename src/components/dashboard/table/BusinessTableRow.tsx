@@ -16,6 +16,16 @@ interface BusinessTableRowProps {
 const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegocio }) => {
   const valorTotal = calcularValorNegocio(negocio);
   
+  console.log('[BusinessTableRow] Rendering row for negocio:', {
+    id: negocio.id,
+    numero: negocio.numero,
+    nombre: negocio.evento?.nombreEvento,
+    contacto: negocio.contacto?.nombre,
+    hasId: !!negocio.id,
+    idType: typeof negocio.id,
+    idLength: negocio.id?.length
+  });
+  
   const obtenerNombreEmpresa = () => {
     if (negocio.productora) {
       return negocio.productora.nombre;
@@ -27,15 +37,23 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegoc
   };
 
   const handleVerClick = () => {
-    console.log('[BusinessTableRow] Ver button clicked for negocio:', negocio.id);
-    console.log('[BusinessTableRow] Negocio data:', {
+    console.log('[BusinessTableRow] ==> VER BUTTON CLICKED <==');
+    console.log('[BusinessTableRow] Negocio ID:', negocio.id);
+    console.log('[BusinessTableRow] Negocio full data:', JSON.stringify({
       id: negocio.id,
       numero: negocio.numero,
       estado: negocio.estado,
-      contacto: negocio.contacto?.nombre
-    });
+      contacto: negocio.contacto?.nombre,
+      evento: negocio.evento?.nombreEvento
+    }, null, 2));
+    
+    if (!negocio.id) {
+      console.error('[BusinessTableRow] ERROR: Negocio ID is missing!');
+      return;
+    }
     
     try {
+      console.log('[BusinessTableRow] Calling onVerNegocio with ID:', negocio.id);
       onVerNegocio(negocio.id);
       console.log('[BusinessTableRow] onVerNegocio called successfully');
     } catch (error) {
@@ -53,7 +71,7 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegoc
         <div className="flex items-center space-x-2">
           <User className="w-4 h-4 text-slate-400" />
           <span className="text-sm">
-            {negocio.contacto.nombre} {negocio.contacto.apellido}
+            {negocio.contacto?.nombre} {negocio.contacto?.apellido}
           </span>
         </div>
       </TableCell>
@@ -66,11 +84,20 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegoc
       </TableCell>
       
       <TableCell className="font-medium">
-        {negocio.evento.nombreEvento}
+        {negocio.evento?.nombreEvento || 'Sin evento'}
       </TableCell>
       
       <TableCell>
-        <BusinessStateBadge estado={negocio.estado} />
+        <div className="flex items-center text-sm text-slate-600">
+          <Calendar className="w-3 h-3 mr-1" />
+          {negocio.evento?.fechaEvento ? 
+            new Date(negocio.evento.fechaEvento).toLocaleDateString('es-CL', {
+              day: '2-digit',
+              month: '2-digit',
+              year: '2-digit'
+            }) : 'Pendiente'
+          }
+        </div>
       </TableCell>
       
       <TableCell className="text-right font-semibold text-slate-800">
@@ -78,14 +105,7 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegoc
       </TableCell>
       
       <TableCell>
-        <div className="flex items-center text-sm text-slate-600">
-          <Calendar className="w-3 h-3 mr-1" />
-          {new Date(negocio.fechaCreacion).toLocaleDateString('es-CL', {
-            day: '2-digit',
-            month: '2-digit',
-            year: '2-digit'
-          })}
-        </div>
+        <BusinessStateBadge estado={negocio.estado} />
       </TableCell>
       
       <TableCell>

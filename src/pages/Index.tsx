@@ -17,12 +17,20 @@ const Index = () => {
     completarCreacionNegocio
   } = useNavigation();
   
-  const { negocios, loading } = useNegocio();
+  const { negocios, loading, obtenerNegocio } = useNegocio();
   const { 
     inconsistencyCount, 
     validateCurrentStates,
     runComprehensiveAudit
   } = useBusinessStateMonitor();
+
+  console.log('[Index] ==> RENDERING INDEX COMPONENT <==');
+  console.log('[Index] Current state:', {
+    vistaActual,
+    negocioSeleccionado,
+    negociosCount: negocios.length,
+    loading
+  });
 
   // Enhanced monitoring with better error handling
   useEffect(() => {
@@ -55,10 +63,33 @@ const Index = () => {
     }
   }, [negocios, loading, inconsistencyCount, validateCurrentStates, runComprehensiveAudit]);
 
-  console.log('[Index] Rendering view:', vistaActual);
+  // Verify business data when navigating to detail view
+  useEffect(() => {
+    if (vistaActual === 'detalle-negocio' && negocioSeleccionado) {
+      console.log('[Index] ==> VERIFYING BUSINESS DATA FOR DETAIL VIEW <==');
+      console.log('[Index] Looking for negocioId:', negocioSeleccionado);
+      
+      const negocio = obtenerNegocio(negocioSeleccionado);
+      console.log('[Index] Found negocio:', !!negocio);
+      
+      if (negocio) {
+        console.log('[Index] Negocio details:', {
+          id: negocio.id,
+          numero: negocio.numero,
+          contacto: negocio.contacto?.nombre,
+          evento: negocio.evento?.nombreEvento
+        });
+      } else {
+        console.error('[Index] ERROR: Negocio not found for ID:', negocioSeleccionado);
+        console.log('[Index] Available negocios IDs:', negocios.map(n => n.id));
+      }
+    }
+  }, [vistaActual, negocioSeleccionado, obtenerNegocio, negocios]);
+
+  console.log('[Index] Deciding which view to render...');
 
   if (vistaActual === 'crear-negocio') {
-    console.log('[Index] Rendering CreateBusinessView');
+    console.log('[Index] ==> RENDERING CreateBusinessView <==');
     return (
       <CreateBusinessView
         onComplete={completarCreacionNegocio}
@@ -68,7 +99,12 @@ const Index = () => {
   }
 
   if (vistaActual === 'detalle-negocio' && negocioSeleccionado) {
-    console.log('[Index] Rendering BusinessDetailView for:', negocioSeleccionado);
+    console.log('[Index] ==> RENDERING BusinessDetailView <==');
+    console.log('[Index] BusinessDetailView props:', {
+      negocioId: negocioSeleccionado,
+      hasOnVolver: !!volverADashboard
+    });
+    
     return (
       <BusinessDetailView
         negocioId={negocioSeleccionado}
@@ -77,7 +113,7 @@ const Index = () => {
     );
   }
 
-  console.log('[Index] Rendering DashboardView (default)');
+  console.log('[Index] ==> RENDERING DashboardView (default) <==');
   return (
     <DashboardView
       onCrearNegocio={navegarACrearNegocio}
