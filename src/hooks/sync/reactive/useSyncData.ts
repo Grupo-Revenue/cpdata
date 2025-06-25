@@ -30,12 +30,12 @@ export const useSyncData = () => {
       console.log(`[useSyncData] Found ${negocioIds.length} negocios for user`);
 
       if (negocioIds.length > 0) {
-        // Load queue items for user's negocios
+        // Load queue items for user's negocios - fix the ambiguous column reference
         const { data: queueData, error: queueError } = await supabase
           .from('hubspot_sync_queue')
           .select('*')
           .in('negocio_id', negocioIds)
-          .order('created_at', { ascending: false })
+          .order('hubspot_sync_queue.created_at', { ascending: false })
           .limit(50);
 
         if (queueError) throw queueError;
