@@ -11,7 +11,7 @@ export const useRealtimeSubscription = (
   const { user } = useAuth();
   const { config } = useHubSpotConfig();
   const unsubscribeRef = useRef<(() => void) | null>(null);
-  const hasSetupSubscription = useRef(false);
+  const isSubscribedRef = useRef(false);
 
   useEffect(() => {
     // Skip if no user or API key not configured
@@ -21,17 +21,18 @@ export const useRealtimeSubscription = (
     }
 
     // Prevent multiple subscriptions from the same hook instance
-    if (hasSetupSubscription.current) {
-      console.log('[useRealtimeSubscription] Already set up subscription, skipping');
+    if (isSubscribedRef.current) {
+      console.log('[useRealtimeSubscription] Already subscribed, skipping');
       return;
     }
 
     console.log('[useRealtimeSubscription] Setting up subscription...');
-    hasSetupSubscription.current = true;
+    isSubscribedRef.current = true;
 
     const manager = RealtimeSubscriptionManager.getInstance();
     const callbacks = { loadSyncData, processQueue };
     
+    // Create a new subscription - the manager will handle uniqueness
     unsubscribeRef.current = manager.subscribe(user.id, callbacks);
 
     return () => {
@@ -40,7 +41,7 @@ export const useRealtimeSubscription = (
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
-      hasSetupSubscription.current = false;
+      isSubscribedRef.current = false;
     };
   }, [user?.id, config?.api_key_set]); // Only depend on stable values
 
@@ -48,7 +49,7 @@ export const useRealtimeSubscription = (
     if (unsubscribeRef.current) {
       unsubscribeRef.current();
       unsubscribeRef.current = null;
-      hasSetupSubscription.current = false;
+      isSubscribedRef.current = false;
     }
   };
 
