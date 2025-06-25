@@ -1,50 +1,33 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  RefreshCw, 
-  ArrowRight, 
-  AlertTriangle, 
-  CheckCircle, 
-  Upload,
-  Download,
-  Zap
-} from 'lucide-react';
+import { AlertTriangle, Zap } from 'lucide-react';
 import { useEnhancedBidirectionalSync } from '@/hooks/useEnhancedBidirectionalSync';
 import { useHubSpotConfig } from '@/hooks/useHubSpotConfig';
+import { calculateBusinessValue } from '@/utils/businessValueCalculator';
 import { Negocio } from '@/types';
+import BusinessInfoPanel from './sync/BusinessInfoPanel';
+import SyncActions from './sync/SyncActions';
+import SyncResultAlert from './sync/SyncResultAlert';
+import SyncInstructions from './sync/SyncInstructions';
 
 interface ManualSyncInterfaceProps {
   negocio: Negocio;
 }
 
+interface SyncResult {
+  success: boolean;
+  direction: 'to_hubspot' | 'from_hubspot';
+  timestamp: Date;
+  forced?: boolean;
+  error?: string;
+}
+
 const ManualSyncInterface: React.FC<ManualSyncInterfaceProps> = ({ negocio }) => {
   const { config } = useHubSpotConfig();
   const { syncToHubSpot, syncFromHubSpot, loading } = useEnhancedBidirectionalSync();
-  const [lastSyncResult, setLastSyncResult] = useState<any>(null);
-
-  const calculateBusinessValue = () => {
-    if (!negocio.presupuestos || negocio.presupuestos.length === 0) {
-      return 0;
-    }
-
-    // Sum all approved budgets
-    const approvedTotal = negocio.presupuestos
-      .filter(p => p.estado === 'aprobado')
-      .reduce((sum, p) => sum + parseFloat(String(p.total || '0')), 0);
-
-    // If no approved budgets, use sent budgets
-    if (approvedTotal === 0) {
-      return negocio.presupuestos
-        .filter(p => p.estado === 'enviado')
-        .reduce((sum, p) => sum + parseFloat(String(p.total || '0')), 0);
-    }
-
-    return approvedTotal;
-  };
+  const [lastSyncResult, setLastSyncResult] = useState<SyncResult | null>(null);
 
   const handleSyncToHubSpot = async (forceAmount: boolean = false) => {
     console.log(`[ManualSyncInterface] Syncing business ${negocio.numero} to HubSpot, forceAmount: ${forceAmount}`);
@@ -100,7 +83,7 @@ const ManualSyncInterface: React.FC<ManualSyncInterfaceProps> = ({ negocio }) =>
     );
   }
 
-  const businessValue = calculateBusinessValue();
+  const businessValue = calculateBusinessValue(negocio);
 
   return (
     <Card className="border-blue-200 bg-blue-50/50">
@@ -112,108 +95,19 @@ const ManualSyncInterface: React.FC<ManualSyncInterfaceProps> = ({ negocio }) =>
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Business Information */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-3 bg-white rounded-lg border">
-          <div>
-            <div className="text-sm font-medium text-gray-700">Estado Actual</div>
-            <Badge variant="outline" className="mt-1">
-              {negocio.estado}
-            </Badge>
-          </div>
-          <div>
-            <div className="text-sm font-medium text-gray-700">Valor Calculado</div>
-            <div className="text-lg font-bold text-green-600">
-              ${businessValue.toLocaleString()}
-            </div>
-          </div>
-          <div>
-            <div className="text-sm font-medium text-gray-700">Presupuestos</div>
-            <div className="text-sm text-gray-600">
-              {negocio.presupuestos?.length || 0} total
-            </div>
-          </div>
-        </div>
+        <BusinessInfoPanel negocio={negocio} businessValue={businessValue} />
+        
+        <SyncActions
+          loading={loading}
+          onSyncToHubSpot={handleSyncToHubSpot}
+          onSyncFromHubSpot={handleSyncFromHubSpot}
+        />
 
-        {/* Sync Actions */}
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button
-              onClick={() => handleSyncToHubSpot(false)}
-              disabled={loading}
-              className="flex-1 flex items-center justify-center space-x-2"
-            >
-              {loading ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <Upload className="w-4 h-4" />
-              )}
-              <span>Sincronizar a HubSpot</span>
-            </Button>
-            
-            <Button
-              onClick={() => handleSyncToHubSpot(true)}
-              disabled={loading}
-              variant="outline"
-              className="flex-1 flex items-center justify-center space-x-2"
-            >
-              {loading ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <Upload className="w-4 h-4" />
-              )}
-              <span>Forzar Sincronización</span>
-            </Button>
-          </div>
-
-          <Button
-            onClick={handleSyncFromHubSpot}
-            disabled={loading}
-            variant="outline"
-            className="w-full flex items-center justify-center space-x-2"
-          >
-            {loading ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4" />
-            )}
-            <span>Sincronizar desde HubSpot</span>
-          </Button>
-        </div>
-
-        {/* Last Sync Result */}
         {lastSyncResult && (
-          <Alert className={lastSyncResult.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
-            <div className="flex items-center space-x-2">
-              {lastSyncResult.success ? (
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              ) : (
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-              )}
-              <div className="flex-1">
-                <AlertDescription className={lastSyncResult.success ? 'text-green-800' : 'text-red-800'}>
-                  {lastSyncResult.success ? (
-                    <span>
-                      Sincronización {lastSyncResult.direction === 'to_hubspot' ? 'a HubSpot' : 'desde HubSpot'} exitosa
-                      {lastSyncResult.forced && ' (forzada)'}
-                    </span>
-                  ) : (
-                    <span>Error en sincronización: {lastSyncResult.error}</span>
-                  )}
-                </AlertDescription>
-                <div className="text-xs text-gray-500 mt-1">
-                  {lastSyncResult.timestamp.toLocaleString()}
-                </div>
-              </div>
-            </div>
-          </Alert>
+          <SyncResultAlert result={lastSyncResult} />
         )}
 
-        {/* Instructions */}
-        <div className="text-xs text-gray-600 space-y-1">
-          <p><strong>Sincronizar a HubSpot:</strong> Envía los datos actuales de la app a HubSpot</p>
-          <p><strong>Forzar Sincronización:</strong> Fuerza la actualización incluso si no hay cambios detectados</p>
-          <p><strong>Sincronizar desde HubSpot:</strong> Obtiene los datos más recientes desde HubSpot</p>
-        </div>
+        <SyncInstructions />
       </CardContent>
     </Card>
   );
