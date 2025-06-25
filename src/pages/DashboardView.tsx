@@ -5,9 +5,8 @@ import CompactDashboardHeader from '@/components/dashboard/CompactDashboardHeade
 import BusinessesTable from '@/components/dashboard/BusinessesTable';
 import RealTimeStateValidator from '@/components/business/RealTimeStateValidator';
 import SyncMonitorDashboard from '@/components/business/SyncMonitorDashboard';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Building2, Activity } from 'lucide-react';
+import { Building2, Activity } from 'lucide-react';
 
 interface DashboardViewProps {
   onCrearNegocio: () => void;
@@ -26,18 +25,6 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onCrearNegocio, onVerNego
         {/* Header */}
         <div className="mb-8">
           <CompactDashboardHeader onCrearNegocio={onCrearNegocio} />
-        </div>
-
-        {/* Debug Helper - Quick access to problematic business */}
-        <div className="mb-6">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onVerNegocio('d4e5f6g7-h8i9-j0k1-l2m3-n4o5p6q7r8s9')}
-            className="text-xs"
-          >
-            🔧 Ver Negocio #17662 (Debug)
-          </Button>
         </div>
 
         {/* Main Content with Tabs */}
