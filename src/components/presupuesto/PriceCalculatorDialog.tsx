@@ -251,7 +251,7 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
                     <p>Acreditadores Manual: {result.distributionSummary.manualAccreditors}</p>
                     <p>Acreditadores Express QR: {result.distributionSummary.expressQRAccreditors}</p>
                     <p>Total Acreditadores: {result.distributionSummary.totalAccreditors}</p>
-                    <p>Supervisores: {result.distributionSummary.supervisores}</p>
+                    <p>Supervisores: {result.distributionSummary.supervisors}</p>
                   </div>
 
                   {/* Editable Unit Prices */}
