@@ -3,11 +3,9 @@ import { useState, useCallback } from 'react';
 
 export interface PriceCalculatorInputs {
   attendees: number;
-  manualPrice: number;
   distributionPercentages: {
-    credencial: number;
-    cordon: number;
-    portaCredencial: number;
+    manual: number;
+    expressQR: number;
   };
   accreditationValues: {
     credencial: number;
@@ -27,11 +25,9 @@ export interface PriceCalculatorResult {
 
 const DEFAULT_VALUES: PriceCalculatorInputs = {
   attendees: 0,
-  manualPrice: 0,
   distributionPercentages: {
-    credencial: 100,
-    cordon: 100,
-    portaCredencial: 100,
+    manual: 50,
+    expressQR: 50,
   },
   accreditationValues: {
     credencial: 1500,
@@ -80,10 +76,24 @@ export const usePriceCalculator = () => {
   const calculatePrice = useCallback((): PriceCalculatorResult => {
     const { attendees, distributionPercentages, accreditationValues } = inputs;
 
-    // Calculate quantities based on attendees and distribution percentages
-    const credencialQty = Math.ceil((attendees * distributionPercentages.credencial) / 100);
-    const cordonQty = Math.ceil((attendees * distributionPercentages.cordon) / 100);
-    const portaCredencialQty = Math.ceil((attendees * distributionPercentages.portaCredencial) / 100);
+    // Ensure percentages add up to 100%
+    const totalPercentage = distributionPercentages.manual + distributionPercentages.expressQR;
+    if (totalPercentage === 0) {
+      // Default to 50/50 if both are 0
+      distributionPercentages.manual = 50;
+      distributionPercentages.expressQR = 50;
+    }
+
+    // Calculate quantities based on attendees and distribution
+    const manualAttendees = Math.ceil((attendees * distributionPercentages.manual) / 100);
+    const expressQRAttendees = Math.ceil((attendees * distributionPercentages.expressQR) / 100);
+
+    // Based on Excel logic:
+    // - Manual: 1 credencial + 1 cordon + 1 porta per attendee
+    // - Express QR: 1 credencial + 1 cordon per attendee (no porta needed)
+    const credencialQty = manualAttendees + expressQRAttendees;
+    const cordonQty = manualAttendees + expressQRAttendees;
+    const portaCredencialQty = manualAttendees; // Only for manual attendees
 
     // Calculate totals for each item
     const credencialTotal = credencialQty * accreditationValues.credencial;

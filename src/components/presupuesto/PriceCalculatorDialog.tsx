@@ -86,50 +86,47 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
               </CardContent>
             </Card>
 
-            {/* Distribution Percentages */}
+            {/* Distribution Percentages - Manual vs Express QR */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center text-sm">
                   <Percent className="w-4 h-4 mr-2" />
-                  Porcentajes de Distribución
+                  Distribución de Asistentes
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="credencial-percent" className="text-xs">Credencial (%)</Label>
+                  <Label htmlFor="manual-percent" className="text-xs">Manual (%)</Label>
                   <Input
-                    id="credencial-percent"
+                    id="manual-percent"
                     type="number"
-                    value={inputs.distributionPercentages.credencial}
-                    onChange={(e) => updateDistributionPercentage('credencial', parseFloat(e.target.value) || 0)}
+                    value={inputs.distributionPercentages.manual}
+                    onChange={(e) => updateDistributionPercentage('manual', parseFloat(e.target.value) || 0)}
                     min="0"
                     max="100"
                     step="0.1"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Requiere: Credencial + Cordón + Porta Credencial
+                  </p>
                 </div>
                 <div>
-                  <Label htmlFor="cordon-percent" className="text-xs">Cordón (%)</Label>
+                  <Label htmlFor="express-percent" className="text-xs">Express QR (%)</Label>
                   <Input
-                    id="cordon-percent"
+                    id="express-percent"
                     type="number"
-                    value={inputs.distributionPercentages.cordon}
-                    onChange={(e) => updateDistributionPercentage('cordon', parseFloat(e.target.value) || 0)}
+                    value={inputs.distributionPercentages.expressQR}
+                    onChange={(e) => updateDistributionPercentage('expressQR', parseFloat(e.target.value) || 0)}
                     min="0"
                     max="100"
                     step="0.1"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Requiere: Credencial + Cordón (sin Porta Credencial)
+                  </p>
                 </div>
-                <div>
-                  <Label htmlFor="porta-percent" className="text-xs">Porta Credencial (%)</Label>
-                  <Input
-                    id="porta-percent"
-                    type="number"
-                    value={inputs.distributionPercentages.portaCredencial}
-                    onChange={(e) => updateDistributionPercentage('portaCredencial', parseFloat(e.target.value) || 0)}
-                    min="0"
-                    max="100"
-                    step="0.1"
-                  />
+                <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                  Total: {inputs.distributionPercentages.manual + inputs.distributionPercentages.expressQR}%
                 </div>
               </CardContent>
             </Card>
@@ -198,6 +195,13 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
                   <CardTitle className="text-sm">Resultado del Cálculo</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Distribution Summary */}
+                  <div className="bg-blue-50 p-3 rounded text-sm">
+                    <p><strong>Distribución de Asistentes:</strong></p>
+                    <p>Manual: {Math.ceil((inputs.attendees * inputs.distributionPercentages.manual) / 100)} asistentes</p>
+                    <p>Express QR: {Math.ceil((inputs.attendees * inputs.distributionPercentages.expressQR) / 100)} asistentes</p>
+                  </div>
+
                   {/* Breakdown */}
                   <div className="space-y-3">
                     <div className="flex justify-between items-center text-sm">
