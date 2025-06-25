@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,7 @@ import {
   Zap,
   BarChart3
 } from 'lucide-react';
-import { useReactiveHubSpotSync } from '@/hooks/useReactiveHubSpotSync';
+import { useSync } from '@/context/SyncContext';
 
 const RealtimeSyncMonitor: React.FC = () => {
   const { 
@@ -24,7 +24,13 @@ const RealtimeSyncMonitor: React.FC = () => {
     retryFailedItems, 
     loadSyncData,
     processQueue
-  } = useReactiveHubSpotSync();
+  } = useSync();
+
+  // Load data on mount
+  useEffect(() => {
+    console.log('[RealtimeSyncMonitor] Loading initial sync data');
+    loadSyncData();
+  }, [loadSyncData]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

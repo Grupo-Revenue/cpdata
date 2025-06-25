@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Upload, Check } from 'lucide-react';
+import { Loader2, Upload } from 'lucide-react';
 import { useHubSpotSync } from '@/hooks/useHubSpotSync';
 import { useSync } from '@/context/SyncContext';
 import { Negocio } from '@/types';
@@ -27,9 +27,10 @@ const HubSpotSyncButton: React.FC<HubSpotSyncButtonProps> = ({
     e.stopPropagation();
     
     try {
+      console.log(`[HubSpotSyncButton] Triggering sync for negocio ${negocio.id}`);
       await triggerSync(negocio.id, 'manual_sync', 1);
     } catch (error) {
-      console.error('Error triggering sync:', error);
+      console.error('[HubSpotSyncButton] Error triggering sync:', error);
     }
   };
 

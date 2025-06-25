@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useHubSpotConfig } from '@/hooks/useHubSpotConfig';
-import { RealtimeSubscriptionManager } from './managers/RealtimeSubscriptionManager';
+import { CentralizedSubscriptionManager } from './managers/CentralizedSubscriptionManager';
 
 export const useRealtimeSubscription = (
   loadSyncData: () => Promise<void>,
@@ -11,6 +11,7 @@ export const useRealtimeSubscription = (
   const { user } = useAuth();
   const { config } = useHubSpotConfig();
   const unsubscribeRef = useRef<(() => void) | null>(null);
+  const isSubscribedRef = useRef(false);
 
   useEffect(() => {
     // Skip if no user or API key not configured
@@ -19,13 +20,27 @@ export const useRealtimeSubscription = (
       return;
     }
 
+    // Prevent double subscription
+    if (isSubscribedRef.current) {
+      console.log('[useRealtimeSubscription] Already subscribed, skipping');
+      return;
+    }
+
     console.log('[useRealtimeSubscription] Setting up subscription for user:', user.id);
 
-    const manager = RealtimeSubscriptionManager.getInstance();
+    const manager = CentralizedSubscriptionManager.getInstance();
     const callbacks = { loadSyncData, processQueue };
     
-    // Subscribe - the manager will handle sharing channels and managing callbacks
-    unsubscribeRef.current = manager.subscribe(user.id, callbacks);
+    // Subscribe using centralized manager
+    manager.subscribe(user.id, callbacks)
+      .then(unsubscribeFn => {
+        unsubscribeRef.current = unsubscribeFn;
+        isSubscribedRef.current = true;
+        console.log('[useRealtimeSubscription] Successfully subscribed');
+      })
+      .catch(error => {
+        console.error('[useRealtimeSubscription] Subscription failed:', error);
+      });
 
     return () => {
       console.log('[useRealtimeSubscription] Cleanup...');
@@ -33,6 +48,7 @@ export const useRealtimeSubscription = (
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
+      isSubscribedRef.current = false;
     };
   }, [user?.id, config?.api_key_set, loadSyncData, processQueue]);
 
@@ -40,6 +56,7 @@ export const useRealtimeSubscription = (
     if (unsubscribeRef.current) {
       unsubscribeRef.current();
       unsubscribeRef.current = null;
+      isSubscribedRef.current = false;
     }
   };
 
