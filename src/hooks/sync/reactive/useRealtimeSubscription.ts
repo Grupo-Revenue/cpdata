@@ -6,7 +6,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Global subscription manager to ensure only one subscription per user
 const subscriptionManager = {
-  activeSubscriptions: new Map<string, any>(),
+  activeChannels: new Map<string, any>(),
+  channelSubscriptionStatus: new Map<string, boolean>(),
   subscribers: new Map<string, Set<string>>(),
   callbacks: new Map<string, any>(),
   
@@ -23,60 +24,69 @@ const subscriptionManager = {
     this.callbacks.set(`${userId}-${subscriberId}`, callbacks);
     
     // If channel already exists and is subscribed, just return it
-    if (this.activeSubscriptions.has(userId)) {
-      console.log(`[useRealtimeSubscription] Reusing existing subscription for user ${userId}`);
-      return this.activeSubscriptions.get(userId);
+    if (this.activeChannels.has(userId) && this.channelSubscriptionStatus.get(userId)) {
+      console.log(`[useRealtimeSubscription] Reusing existing active subscription for user ${userId}`);
+      return this.activeChannels.get(userId);
     }
     
-    console.log(`[useRealtimeSubscription] Creating new subscription for user ${userId}`);
-    
-    // Create new channel
-    const channel = supabase.channel(channelName);
-    
-    // Configure the channel
-    channel.on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'hubspot_sync_queue'
-    }, (payload) => {
-      const newRecord = payload.new as Record<string, any> | null;
-      const recordId = newRecord?.id || 'unknown';
+    // Create new channel if it doesn't exist
+    let channel = this.activeChannels.get(userId);
+    if (!channel) {
+      console.log(`[useRealtimeSubscription] Creating new channel for user ${userId}`);
+      channel = supabase.channel(channelName);
+      this.activeChannels.set(userId, channel);
+      this.channelSubscriptionStatus.set(userId, false);
       
-      console.log('[useRealtimeSubscription] Queue change detected:', payload.eventType, recordId);
-      
-      // Call all subscribers' callbacks
-      const subscribers = this.subscribers.get(userId);
-      if (subscribers) {
-        subscribers.forEach(subscriberId => {
-          const callbacks = this.callbacks.get(`${userId}-${subscriberId}`);
-          if (callbacks) {
-            callbacks.loadSyncData();
-            
-            // Process queue if new items were added
-            if (payload.eventType === 'INSERT') {
-              console.log('[useRealtimeSubscription] New queue item added, triggering processing');
-              setTimeout(() => callbacks.processQueue(), 1000);
+      // Configure the channel
+      channel.on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'hubspot_sync_queue'
+      }, (payload) => {
+        const newRecord = payload.new as Record<string, any> | null;
+        const recordId = newRecord?.id || 'unknown';
+        
+        console.log('[useRealtimeSubscription] Queue change detected:', payload.eventType, recordId);
+        
+        // Call all subscribers' callbacks
+        const subscribers = this.subscribers.get(userId);
+        if (subscribers) {
+          subscribers.forEach(subscriberId => {
+            const callbacks = this.callbacks.get(`${userId}-${subscriberId}`);
+            if (callbacks) {
+              callbacks.loadSyncData();
+              
+              // Process queue if new items were added
+              if (payload.eventType === 'INSERT') {
+                console.log('[useRealtimeSubscription] New queue item added, triggering processing');
+                setTimeout(() => callbacks.processQueue(), 1000);
+              }
             }
-          }
-        });
-      }
-    });
-
-    // Subscribe to the configured channel
-    channel.subscribe((status) => {
-      console.log(`[useRealtimeSubscription] Channel subscription status: ${status}`);
-      if (status === 'SUBSCRIBED') {
-        console.log('[useRealtimeSubscription] Successfully subscribed to channel');
-      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-        console.log('[useRealtimeSubscription] Channel subscription ended');
-        // Clean up from manager
-        this.activeSubscriptions.delete(userId);
-        this.cleanupCallbacks(userId);
-      }
-    });
+          });
+        }
+      });
+    }
     
-    // Store the subscription
-    this.activeSubscriptions.set(userId, channel);
+    // Only subscribe if not already subscribed
+    if (!this.channelSubscriptionStatus.get(userId)) {
+      console.log(`[useRealtimeSubscription] Subscribing to channel for user ${userId}`);
+      
+      // Subscribe to the configured channel
+      channel.subscribe((status) => {
+        console.log(`[useRealtimeSubscription] Channel subscription status: ${status}`);
+        if (status === 'SUBSCRIBED') {
+          console.log('[useRealtimeSubscription] Successfully subscribed to channel');
+          this.channelSubscriptionStatus.set(userId, true);
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          console.log('[useRealtimeSubscription] Channel subscription ended');
+          // Clean up from manager
+          this.activeChannels.delete(userId);
+          this.channelSubscriptionStatus.delete(userId);
+          this.cleanupCallbacks(userId);
+        }
+      });
+    }
+    
     return channel;
   },
   
@@ -91,7 +101,7 @@ const subscriptionManager = {
       // If no more subscribers, clean up the channel
       if (subscribers.size === 0) {
         console.log(`[useRealtimeSubscription] Last subscriber removed, cleaning up channel for user ${userId}`);
-        const channel = this.activeSubscriptions.get(userId);
+        const channel = this.activeChannels.get(userId);
         if (channel) {
           try {
             channel.unsubscribe();
@@ -100,7 +110,8 @@ const subscriptionManager = {
             console.error('[useRealtimeSubscription] Error cleaning up channel:', error);
           }
         }
-        this.activeSubscriptions.delete(userId);
+        this.activeChannels.delete(userId);
+        this.channelSubscriptionStatus.delete(userId);
         this.subscribers.delete(userId);
         this.cleanupCallbacks(userId);
       }
