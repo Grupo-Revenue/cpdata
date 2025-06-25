@@ -437,6 +437,18 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
       console.log('Presupuesto created successfully:', presupuestoCreado);
 
+      // Create the complete presupuesto object with the correct type
+      let presupuestoCompleto: Presupuesto = {
+        ...presupuestoCreado,
+        // Add legacy properties for backwards compatibility
+        fechaCreacion: presupuestoCreado.created_at,
+        fechaEnvio: presupuestoCreado.fecha_envio,
+        fechaAprobacion: presupuestoCreado.fecha_aprobacion,
+        fechaRechazo: presupuestoCreado.fecha_rechazo,
+        fechaVencimiento: presupuestoCreado.fecha_vencimiento,
+        productos: []
+      };
+
       // Now insert the products if they exist
       if (presupuestoData.productos && presupuestoData.productos.length > 0) {
         console.log('Inserting products:', presupuestoData.productos);
@@ -464,8 +476,13 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
         console.log('Products created successfully:', productosCreados);
         
-        // Add the products to the presupuesto object for the return value
-        presupuestoCreado.productos = productosCreados;
+        // Add the products to the presupuesto object with proper typing
+        presupuestoCompleto.productos = productosCreados.map(producto => ({
+          ...producto,
+          comentarios: '',
+          descuentoPorcentaje: 0,
+          precioUnitario: producto.precio_unitario
+        }));
       }
 
       // Update the local state optimistically
@@ -474,14 +491,14 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
           negocio.id === negocioId
             ? { 
                 ...negocio, 
-                presupuestos: [...(negocio.presupuestos || []), presupuestoCreado as Presupuesto] 
+                presupuestos: [...(negocio.presupuestos || []), presupuestoCompleto] 
               }
             : negocio
         )
       );
 
       console.log('Presupuesto creation completed successfully');
-      return presupuestoCreado as Presupuesto;
+      return presupuestoCompleto;
     } catch (error) {
       console.error("Failed to create presupuesto:", error);
       throw error; // Re-throw to be handled by the calling function
