@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calculator, Users, Percent, DollarSign } from 'lucide-react';
+import { Calculator, Users, Percent, DollarSign, RefreshCw } from 'lucide-react';
 import { usePriceCalculator } from '@/hooks/usePriceCalculator';
 import { formatearPrecio } from '@/utils/formatters';
 
@@ -25,11 +25,13 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
   const {
     inputs,
     result,
+    prices,
+    loading,
     updateInput,
     updateDistributionPercentage,
-    updateAccreditationValue,
     calculatePrice,
-    resetCalculator
+    resetCalculator,
+    refetchPrices
   } = usePriceCalculator();
 
   React.useEffect(() => {
@@ -39,7 +41,11 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
   }, [open, initialAttendees, updateInput]);
 
   const handleCalculate = () => {
-    calculatePrice();
+    try {
+      calculatePrice();
+    } catch (error) {
+      console.error('Error calculating price:', error);
+    }
   };
 
   const handleApplyPrice = () => {
@@ -52,6 +58,16 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
   const handleClose = () => {
     resetCalculator();
     onOpenChange(false);
+  };
+
+  // Auto-adjust percentages when one changes
+  const handlePercentageChange = (type: 'manual' | 'expressQR', value: number) => {
+    const otherType = type === 'manual' ? 'expressQR' : 'manual';
+    const adjustedValue = Math.max(0, Math.min(100, value));
+    const remainingValue = Math.max(0, 100 - adjustedValue);
+    
+    updateDistributionPercentage(type, adjustedValue);
+    updateDistributionPercentage(otherType, remainingValue);
   };
 
   return (
@@ -86,7 +102,7 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
               </CardContent>
             </Card>
 
-            {/* Distribution Percentages - Manual vs Express QR */}
+            {/* Distribution Percentages */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center text-sm">
@@ -101,7 +117,7 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
                     id="manual-percent"
                     type="number"
                     value={inputs.distributionPercentages.manual}
-                    onChange={(e) => updateDistributionPercentage('manual', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => handlePercentageChange('manual', parseFloat(e.target.value) || 0)}
                     min="0"
                     max="100"
                     step="0.1"
@@ -116,7 +132,7 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
                     id="express-percent"
                     type="number"
                     value={inputs.distributionPercentages.expressQR}
-                    onChange={(e) => updateDistributionPercentage('expressQR', parseFloat(e.target.value) || 0)}
+                    onChange={(e) => handlePercentageChange('expressQR', parseFloat(e.target.value) || 0)}
                     min="0"
                     max="100"
                     step="0.1"
@@ -126,53 +142,54 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
                   </p>
                 </div>
                 <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                  Total: {inputs.distributionPercentages.manual + inputs.distributionPercentages.expressQR}%
+                  Total: {(inputs.distributionPercentages.manual + inputs.distributionPercentages.expressQR).toFixed(1)}%
                 </div>
               </CardContent>
             </Card>
 
-            {/* Accreditation Values */}
+            {/* Current Prices Display */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center text-sm">
-                  <DollarSign className="w-4 h-4 mr-2" />
-                  Valores de Acreditación (CLP)
+                <CardTitle className="flex items-center justify-between text-sm">
+                  <span className="flex items-center">
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    Precios Actuales (CLP)
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={refetchPrices}
+                    disabled={loading}
+                    className="h-6 w-6 p-0"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                  </Button>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="credencial-value" className="text-xs">Valor Credencial</Label>
-                  <Input
-                    id="credencial-value"
-                    type="number"
-                    value={inputs.accreditationValues.credencial}
-                    onChange={(e) => updateAccreditationValue('credencial', parseFloat(e.target.value) || 0)}
-                    min="0"
-                    step="1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="cordon-value" className="text-xs">Valor Cordón</Label>
-                  <Input
-                    id="cordon-value"
-                    type="number"
-                    value={inputs.accreditationValues.cordon}
-                    onChange={(e) => updateAccreditationValue('cordon', parseFloat(e.target.value) || 0)}
-                    min="0"
-                    step="1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="porta-value" className="text-xs">Valor Porta Credencial</Label>
-                  <Input
-                    id="porta-value"
-                    type="number"
-                    value={inputs.accreditationValues.portaCredencial}
-                    onChange={(e) => updateAccreditationValue('portaCredencial', parseFloat(e.target.value) || 0)}
-                    min="0"
-                    step="1"
-                  />
-                </div>
+              <CardContent className="space-y-2">
+                {loading ? (
+                  <p className="text-sm text-gray-500">Cargando precios...</p>
+                ) : prices ? (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span>Credencial:</span>
+                      <span>{formatearPrecio(prices.credencial)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Cordón:</span>
+                      <span>{formatearPrecio(prices.cordon)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Porta Credencial:</span>
+                      <span>{formatearPrecio(prices.portaCredencial)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-red-500">Error cargando precios</p>
+                )}
+                <p className="text-xs text-gray-400 mt-2">
+                  Los precios se obtienen automáticamente de la base de datos
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -180,7 +197,11 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
           {/* Result Section */}
           <div className="space-y-6">
             <div className="flex gap-2">
-              <Button onClick={handleCalculate} className="flex-1">
+              <Button 
+                onClick={handleCalculate} 
+                className="flex-1"
+                disabled={loading || !prices}
+              >
                 <Calculator className="w-4 h-4 mr-2" />
                 Calcular Precio
               </Button>
@@ -198,8 +219,8 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
                   {/* Distribution Summary */}
                   <div className="bg-blue-50 p-3 rounded text-sm">
                     <p><strong>Distribución de Asistentes:</strong></p>
-                    <p>Manual: {Math.ceil((inputs.attendees * inputs.distributionPercentages.manual) / 100)} asistentes</p>
-                    <p>Express QR: {Math.ceil((inputs.attendees * inputs.distributionPercentages.expressQR) / 100)} asistentes</p>
+                    <p>Manual: {result.distributionSummary.manualAttendees} asistentes</p>
+                    <p>Express QR: {result.distributionSummary.expressQRAttendees} asistentes</p>
                   </div>
 
                   {/* Breakdown */}
