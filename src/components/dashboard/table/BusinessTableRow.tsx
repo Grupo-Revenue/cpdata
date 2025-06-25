@@ -26,6 +26,23 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegoc
     return 'Sin empresa asignada';
   };
 
+  const handleVerClick = () => {
+    console.log('[BusinessTableRow] Ver button clicked for negocio:', negocio.id);
+    console.log('[BusinessTableRow] Negocio data:', {
+      id: negocio.id,
+      numero: negocio.numero,
+      estado: negocio.estado,
+      contacto: negocio.contacto?.nombre
+    });
+    
+    try {
+      onVerNegocio(negocio.id);
+      console.log('[BusinessTableRow] onVerNegocio called successfully');
+    } catch (error) {
+      console.error('[BusinessTableRow] Error calling onVerNegocio:', error);
+    }
+  };
+
   return (
     <TableRow className="hover:bg-slate-50 transition-colors">
       <TableCell className="font-medium text-slate-800">
@@ -75,7 +92,7 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegoc
         <Button
           variant="outline"
           size="sm"
-          onClick={() => onVerNegocio(negocio.id)}
+          onClick={handleVerClick}
           className="h-8 px-3"
         >
           <Eye className="w-4 h-4 mr-1" />

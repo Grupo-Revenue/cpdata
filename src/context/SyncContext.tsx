@@ -1,6 +1,5 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
-import { useReactiveHubSpotSync } from '@/hooks/sync/reactive/useReactiveHubSpotSync';
 import { SyncQueueItem, SyncStats } from '@/hooks/sync/reactive/types';
 
 interface SyncContextType {
@@ -20,19 +19,33 @@ interface SyncProviderProps {
 }
 
 export const SyncProvider: React.FC<SyncProviderProps> = ({ children }) => {
-  console.log('[SyncProvider] Initializing sync context');
+  console.log('[SyncProvider] Initializing with simplified sync context (no realtime subscriptions)');
   
-  // Direct hook call - no singleton pattern
-  const syncData = useReactiveHubSpotSync();
-
-  console.log('[SyncProvider] Sync data loaded:', {
-    queueCount: syncData.syncQueue.length,
-    isProcessing: syncData.isProcessing,
-    stats: syncData.syncStats
-  });
+  // Simplified sync context without realtime subscriptions
+  const mockSyncData: SyncContextType = {
+    syncQueue: [],
+    syncStats: null,
+    isProcessing: false,
+    triggerSync: async (negocioId: string, operation?: string, priority?: number) => {
+      console.log('[SyncProvider] Mock triggerSync called:', { negocioId, operation, priority });
+      return Promise.resolve(undefined);
+    },
+    retryFailedItems: async () => {
+      console.log('[SyncProvider] Mock retryFailedItems called');
+      return Promise.resolve();
+    },
+    loadSyncData: async () => {
+      console.log('[SyncProvider] Mock loadSyncData called');
+      return Promise.resolve();
+    },
+    processQueue: async () => {
+      console.log('[SyncProvider] Mock processQueue called');
+      return Promise.resolve();
+    }
+  };
 
   return (
-    <SyncContext.Provider value={syncData}>
+    <SyncContext.Provider value={mockSyncData}>
       {children}
     </SyncContext.Provider>
   );

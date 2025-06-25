@@ -19,6 +19,8 @@ interface DetalleNegocioProps {
 }
 
 const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) => {
+  console.log('[DetalleNegocio] Rendering for negocioId:', negocioId);
+  
   const { obtenerNegocio, eliminarPresupuesto, cambiarEstadoPresupuesto, cambiarEstadoNegocio, loading } = useNegocio();
   const { syncConflicts, resolveConflict } = useBidirectionalSync();
   const navigate = useNavigate();
@@ -28,6 +30,13 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
   const [currentConflict, setCurrentConflict] = useState<any>(null);
 
   const negocio = obtenerNegocio(negocioId);
+  
+  console.log('[DetalleNegocio] Negocio data:', {
+    found: !!negocio,
+    id: negocio?.id,
+    numero: negocio?.numero,
+    loading
+  });
 
   // Check for conflicts when component mounts or conflicts change
   useEffect(() => {
@@ -41,11 +50,13 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
   }, [negocio, syncConflicts, conflictDialogOpen]);
 
   const handleRefresh = () => {
+    console.log('[DetalleNegocio] Refresh requested');
     // Trigger a refresh of the data
     window.location.reload();
   };
 
   if (loading && !negocio) {
+    console.log('[DetalleNegocio] Loading state');
     return (
       <div className="flex items-center justify-center min-h-[400px] w-full">
         <div className="text-center">
@@ -57,6 +68,7 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
   }
 
   if (!negocio) {
+    console.log('[DetalleNegocio] Negocio not found');
     return (
       <div className="text-center py-12 w-full">
         <p className="text-gray-600 mb-4">Negocio no encontrado</p>
@@ -66,42 +78,51 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
   }
 
   const handleEliminarPresupuesto = async (presupuestoId: string): Promise<void> => {
+    console.log('[DetalleNegocio] Eliminar presupuesto:', presupuestoId);
     await eliminarPresupuesto(negocioId, presupuestoId);
   };
 
   const handleVerPDF = (presupuestoId: string) => {
+    console.log('[DetalleNegocio] Ver PDF:', presupuestoId);
     navigate(`/presupuesto/${negocioId}/${presupuestoId}/pdf`);
   };
 
   const handleEditarPresupuesto = (presupuestoId: string) => {
+    console.log('[DetalleNegocio] Editar presupuesto:', presupuestoId);
     setPresupuestoEditando(presupuestoId);
     setMostrarCrearPresupuesto(true);
   };
 
   const handleCrearPresupuesto = () => {
+    console.log('[DetalleNegocio] Crear presupuesto');
     setMostrarCrearPresupuesto(true);
   };
 
   const handleCerrarCrearPresupuesto = () => {
+    console.log('[DetalleNegocio] Cerrar crear presupuesto');
     setMostrarCrearPresupuesto(false);
     setPresupuestoEditando(null);
   };
 
   const handleCambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string): Promise<void> => {
+    console.log('[DetalleNegocio] Cambiar estado presupuesto:', { presupuestoId, nuevoEstado, fechaVencimiento });
     await cambiarEstadoPresupuesto(negocioId, presupuestoId, nuevoEstado as EstadoPresupuesto, fechaVencimiento);
   };
 
   const handleCambiarEstadoNegocio = async (negocioId: string, nuevoEstado: string) => {
+    console.log('[DetalleNegocio] Cambiar estado negocio:', { negocioId, nuevoEstado });
     await cambiarEstadoNegocio(negocioId, nuevoEstado as EstadoNegocio);
   };
 
   const handleResolveConflict = async (negocioId: string, resolvedState: string) => {
+    console.log('[DetalleNegocio] Resolve conflict:', { negocioId, resolvedState });
     await resolveConflict(negocioId, resolvedState);
     setCurrentConflict(null);
     setConflictDialogOpen(false);
   };
 
   if (mostrarCrearPresupuesto) {
+    console.log('[DetalleNegocio] Rendering CrearPresupuesto');
     return (
       <div className="w-full">
         <CrearPresupuesto
@@ -113,6 +134,7 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
     );
   }
 
+  console.log('[DetalleNegocio] Rendering main content');
   return (
     <div className="w-full">
       <main className="flex-1 overflow-auto">
@@ -124,10 +146,13 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
             onCambiarEstado={handleCambiarEstadoNegocio}
           />
           
-          {/* Sync Tools Section */}
+          {/* Sync Tools Section - Temporarily simplified */}
           <div className="mb-6 space-y-4">
-            <SyncVerificationPanel negocio={negocio} />
-            <ManualSyncInterface negocio={negocio} />
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                ℹ️ Sync tools temporarily disabled for debugging navigation issues
+              </p>
+            </div>
           </div>
           
           <DetalleNegocioMainContent

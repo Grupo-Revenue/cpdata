@@ -24,27 +24,41 @@ const Index = () => {
     runComprehensiveAudit
   } = useBusinessStateMonitor();
 
-  // Monitor business state consistency on app load with enhanced monitoring
+  // Enhanced monitoring with better error handling
   useEffect(() => {
     if (!loading && negocios.length > 0) {
       console.log('[Index] Performing initial enhanced state validation...');
+      console.log('[Index] Current view:', vistaActual);
+      console.log('[Index] Selected business:', negocioSeleccionado);
+      console.log('[Index] Available businesses:', negocios.length);
       
-      // Run initial validation
+      // Run initial validation with error handling
       setTimeout(() => {
-        validateCurrentStates();
+        try {
+          validateCurrentStates();
+        } catch (error) {
+          console.error('[Index] Error during state validation:', error);
+        }
       }, 1000);
 
-      // Run comprehensive audit if inconsistencies are detected after initial validation
+      // Run comprehensive audit if inconsistencies are detected
       setTimeout(() => {
         if (inconsistencyCount > 0) {
           console.log(`[Index] Found ${inconsistencyCount} inconsistencies, running comprehensive audit...`);
-          runComprehensiveAudit();
+          try {
+            runComprehensiveAudit();
+          } catch (error) {
+            console.error('[Index] Error during comprehensive audit:', error);
+          }
         }
       }, 3000);
     }
   }, [negocios, loading, inconsistencyCount, validateCurrentStates, runComprehensiveAudit]);
 
+  console.log('[Index] Rendering view:', vistaActual);
+
   if (vistaActual === 'crear-negocio') {
+    console.log('[Index] Rendering CreateBusinessView');
     return (
       <CreateBusinessView
         onComplete={completarCreacionNegocio}
@@ -54,6 +68,7 @@ const Index = () => {
   }
 
   if (vistaActual === 'detalle-negocio' && negocioSeleccionado) {
+    console.log('[Index] Rendering BusinessDetailView for:', negocioSeleccionado);
     return (
       <BusinessDetailView
         negocioId={negocioSeleccionado}
@@ -62,6 +77,7 @@ const Index = () => {
     );
   }
 
+  console.log('[Index] Rendering DashboardView (default)');
   return (
     <DashboardView
       onCrearNegocio={navegarACrearNegocio}
