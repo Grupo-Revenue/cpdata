@@ -124,6 +124,12 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
             onCambiarEstado={handleCambiarEstadoNegocio}
           />
           
+          {/* Sync Tools Section */}
+          <div className="mb-6 space-y-4">
+            <SyncVerificationPanel negocio={negocio} />
+            <ManualSyncInterface negocio={negocio} />
+          </div>
+          
           <DetalleNegocioMainContent
             negocio={negocio}
             onCrearPresupuesto={handleCrearPresupuesto}

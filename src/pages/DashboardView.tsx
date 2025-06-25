@@ -33,7 +33,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onCrearNegocio, onVerNego
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onVerNegocio('9b5e61e2-5b5e-4b5e-8b5e-5b5e4b5e61e2')}
+            onClick={() => onVerNegocio('d4e5f6g7-h8i9-j0k1-l2m3-n4o5p6q7r8s9')}
             className="text-xs"
           >
             🔧 Ver Negocio #17662 (Debug)

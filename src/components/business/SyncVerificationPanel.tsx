@@ -178,12 +178,12 @@ const SyncVerificationPanel: React.FC<SyncVerificationPanelProps> = ({ negocio }
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const businessValue = negocio.presupuestos?.reduce((sum, p) => {
-        if (p.estado === 'aprobado') return sum + parseFloat(p.total || '0');
+        if (p.estado === 'aprobado') return sum + parseFloat(String(p.total || '0'));
         return sum;
       }, 0) || 0;
 
       const sentValue = negocio.presupuestos?.reduce((sum, p) => {
-        if (p.estado === 'enviado') return sum + parseFloat(p.total || '0');
+        if (p.estado === 'enviado') return sum + parseFloat(String(p.total || '0'));
         return sum;
       }, 0) || 0;
 
