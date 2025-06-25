@@ -12,22 +12,32 @@ export const useRealtimeSubscription = (
   const { config } = useHubSpotConfig();
   const channelRef = useRef<any>(null);
   const subscriptionActiveRef = useRef(false);
+  const isCleaningUpRef = useRef(false);
 
   // Clean up channel function
   const cleanupChannel = () => {
+    if (isCleaningUpRef.current) {
+      console.log('[useRealtimeSubscription] Cleanup already in progress, skipping');
+      return;
+    }
+
     if (channelRef.current) {
       console.log('[useRealtimeSubscription] Cleaning up existing channel...');
+      isCleaningUpRef.current = true;
+      
       try {
         // Always try to unsubscribe first, then remove
         if (subscriptionActiveRef.current) {
           channelRef.current.unsubscribe();
+          subscriptionActiveRef.current = false;
         }
         supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
       } catch (error) {
         console.error('[useRealtimeSubscription] Error cleaning up channel:', error);
+      } finally {
+        isCleaningUpRef.current = false;
       }
-      channelRef.current = null;
-      subscriptionActiveRef.current = false;
     }
   };
 
@@ -46,17 +56,23 @@ export const useRealtimeSubscription = (
       return;
     }
 
+    // Skip if currently cleaning up
+    if (isCleaningUpRef.current) {
+      console.log('[useRealtimeSubscription] Cleanup in progress, skipping setup');
+      return;
+    }
+
     console.log('[useRealtimeSubscription] Setting up real-time sync listeners...');
 
     // Clean up any existing channel first
     cleanupChannel();
 
-    // Create a unique channel name
-    const channelName = `hubspot-sync-notifications-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Create a unique channel name with user ID to avoid conflicts
+    const channelName = `hubspot-sync-${user.id}-${Date.now()}`;
     const channel = supabase.channel(channelName);
     channelRef.current = channel;
 
-    // Configure the channel but don't subscribe yet
+    // Configure the channel
     channel.on('postgres_changes', {
       event: '*',
       schema: 'public',
@@ -76,13 +92,15 @@ export const useRealtimeSubscription = (
       }
     });
 
-    // Now subscribe to the configured channel
+    // Subscribe to the configured channel
     channel.subscribe((status) => {
       console.log(`[useRealtimeSubscription] Channel subscription status: ${status}`);
       if (status === 'SUBSCRIBED') {
         subscriptionActiveRef.current = true;
+        console.log('[useRealtimeSubscription] Successfully subscribed to channel');
       } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
         subscriptionActiveRef.current = false;
+        console.log('[useRealtimeSubscription] Channel subscription ended');
       }
     });
 
