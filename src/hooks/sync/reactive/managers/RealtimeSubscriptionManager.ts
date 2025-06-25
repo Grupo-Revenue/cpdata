@@ -2,10 +2,11 @@
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionCallbacks, ActiveSubscription } from '../types/subscription';
 
-// Subscription manager that creates fresh channels for each subscription
+// Subscription manager that creates completely independent subscriptions
 export class RealtimeSubscriptionManager {
   private static instance: RealtimeSubscriptionManager;
   private activeSubscriptions = new Map<string, ActiveSubscription>();
+  private subscriptionCounter = 0;
 
   private constructor() {}
 
@@ -19,31 +20,26 @@ export class RealtimeSubscriptionManager {
   subscribe(userId: string, callbacks: SubscriptionCallbacks) {
     console.log(`[RealtimeSubscriptionManager] Subscribe request for user ${userId}`);
     
-    // Use userId as the subscription key to share one channel per user
-    const subscriptionKey = userId;
-    console.log(`[RealtimeSubscriptionManager] Using subscription key: ${subscriptionKey}`);
+    // Create a unique subscription key for each subscription request
+    this.subscriptionCounter++;
+    const subscriptionKey = `${userId}-${this.subscriptionCounter}-${Date.now()}`;
+    console.log(`[RealtimeSubscriptionManager] Using unique subscription key: ${subscriptionKey}`);
     
-    let subscription = this.activeSubscriptions.get(subscriptionKey);
+    // Always create a new subscription for each request
+    console.log(`[RealtimeSubscriptionManager] Creating new independent subscription`);
+    const subscription = this.createAndStartSubscription(userId, subscriptionKey);
+    this.activeSubscriptions.set(subscriptionKey, subscription);
     
-    if (!subscription) {
-      // Create new subscription
-      console.log(`[RealtimeSubscriptionManager] Creating new subscription for user ${userId}`);
-      subscription = this.createAndStartSubscription(userId, subscriptionKey);
-      this.activeSubscriptions.set(subscriptionKey, subscription);
-    } else {
-      console.log(`[RealtimeSubscriptionManager] Reusing existing subscription for user ${userId}`);
-    }
-    
-    // Add callbacks to the existing or new subscription
+    // Add callbacks to the new subscription
     subscription.callbacks.add(callbacks);
-    console.log(`[RealtimeSubscriptionManager] Added callbacks. Total callbacks: ${subscription.callbacks.size}`);
+    console.log(`[RealtimeSubscriptionManager] Added callbacks to new subscription`);
     
     return () => this.unsubscribe(subscriptionKey, callbacks);
   }
 
   private createAndStartSubscription(userId: string, subscriptionKey: string): ActiveSubscription {
     // Create a unique channel name to ensure we get a fresh channel instance
-    const channelName = `hubspot-sync-${userId}-${Date.now()}`;
+    const channelName = `hubspot-sync-${subscriptionKey}`;
     console.log(`[RealtimeSubscriptionManager] Creating fresh channel: ${channelName}`);
     
     const channel = supabase.channel(channelName);
@@ -113,11 +109,9 @@ export class RealtimeSubscriptionManager {
     subscription.callbacks.delete(callbacks);
     console.log(`[RealtimeSubscriptionManager] Removed callbacks for ${subscriptionKey}. Remaining: ${subscription.callbacks.size}`);
 
-    // Only clean up the subscription if no more callbacks are registered
-    if (subscription.callbacks.size === 0) {
-      console.log(`[RealtimeSubscriptionManager] No more callbacks, cleaning up subscription: ${subscriptionKey}`);
-      this.cleanupSubscription(subscriptionKey);
-    }
+    // Always clean up the subscription since each one is independent
+    console.log(`[RealtimeSubscriptionManager] Cleaning up independent subscription: ${subscriptionKey}`);
+    this.cleanupSubscription(subscriptionKey);
   }
 
   private cleanupSubscription(subscriptionKey: string) {
