@@ -6,6 +6,7 @@ export interface SyncQueueItem {
   priority: number;
   status: string;
   attempts: number;
+  max_attempts: number;
   created_at: string;
   error_message?: string;
 }
