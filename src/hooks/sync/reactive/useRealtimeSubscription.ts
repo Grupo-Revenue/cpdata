@@ -57,7 +57,11 @@ export const useRealtimeSubscription = (
       schema: 'public',
       table: 'hubspot_sync_queue'
     }, (payload) => {
-      console.log('[useRealtimeSubscription] Queue change detected:', payload.eventType, payload.new?.id);
+      // Safely access the id property with proper type checking
+      const newRecord = payload.new as Record<string, any> | null;
+      const recordId = newRecord?.id || 'unknown';
+      
+      console.log('[useRealtimeSubscription] Queue change detected:', payload.eventType, recordId);
       loadSyncData();
       
       // Process queue if new items were added
