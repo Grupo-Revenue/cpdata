@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useReactiveHubSpotSync } from '@/hooks/useReactiveHubSpotSync';
+import { useSync } from '@/context/SyncContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { SyncConflict } from './types';
@@ -11,7 +11,7 @@ export const useConflictResolution = (
   loadSyncConflicts: () => Promise<void>
 ) => {
   const { user } = useAuth();
-  const { triggerSync } = useReactiveHubSpotSync();
+  const { triggerSync } = useSync();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 

@@ -4,12 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { useBidirectionalSync } from '@/hooks/useBidirectionalSync';
+import { useEnhancedBidirectionalSync } from '@/hooks/useEnhancedBidirectionalSync';
 import { formatBusinessStateForDisplay } from '@/utils/businessCalculations';
 import ConflictResolutionDialog from './ConflictResolutionDialog';
 
 const ConflictResolutionPanel: React.FC = () => {
-  const { syncConflicts, resolveConflict, loading } = useBidirectionalSync();
+  const { syncConflicts, resolveConflict, loading } = useEnhancedBidirectionalSync();
   const [selectedConflict, setSelectedConflict] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -97,7 +97,7 @@ const ConflictResolutionPanel: React.FC = () => {
                       {conflict.conflict_type.toUpperCase()}
                     </Badge>
                     <span className="text-xs text-gray-500">
-                      {new Date(conflict.timestamp).toLocaleString()}
+                      {new Date(conflict.created_at).toLocaleString()}
                     </span>
                   </div>
                   <p className="text-sm text-gray-700 mt-1">

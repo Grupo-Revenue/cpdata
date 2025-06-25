@@ -2,14 +2,14 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useHubSpotConfig } from '@/hooks/useHubSpotConfig';
-import { useReactiveHubSpotSync } from '@/hooks/useReactiveHubSpotSync';
+import { useSync } from '@/context/SyncContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useSyncOperations = () => {
   const { user } = useAuth();
   const { config } = useHubSpotConfig();
-  const { triggerSync } = useReactiveHubSpotSync();
+  const { triggerSync } = useSync();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
