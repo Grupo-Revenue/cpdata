@@ -19,21 +19,11 @@ interface SyncProviderProps {
   children: ReactNode;
 }
 
-// Single instance to prevent multiple subscriptions
-let syncProviderInstance: any = null;
-
 export const SyncProvider: React.FC<SyncProviderProps> = ({ children }) => {
-  console.log('[SyncProvider] Initializing centralized sync context');
+  console.log('[SyncProvider] Initializing sync context');
   
-  // Use singleton pattern to ensure only one instance
-  if (!syncProviderInstance) {
-    console.log('[SyncProvider] Creating new sync instance');
-    syncProviderInstance = useReactiveHubSpotSync();
-  } else {
-    console.log('[SyncProvider] Reusing existing sync instance');
-  }
-
-  const syncData = syncProviderInstance;
+  // Direct hook call - no singleton pattern
+  const syncData = useReactiveHubSpotSync();
 
   console.log('[SyncProvider] Sync data loaded:', {
     queueCount: syncData.syncQueue.length,

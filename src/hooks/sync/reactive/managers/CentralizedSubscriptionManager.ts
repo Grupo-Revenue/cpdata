@@ -2,12 +2,14 @@
 import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionCallbacks } from '../types/subscription';
 
-// Centralized subscription manager to prevent multiple subscription errors
+// Completely refactored subscription manager to prevent multiple subscriptions
 export class CentralizedSubscriptionManager {
   private static instance: CentralizedSubscriptionManager;
-  private activeChannels = new Map<string, any>();
-  private callbacksMap = new Map<string, Set<SubscriptionCallbacks>>();
-  private subscriptionPromises = new Map<string, Promise<void>>();
+  private activeSubscriptions = new Map<string, {
+    channel: any;
+    callbacks: Set<SubscriptionCallbacks>;
+    subscribed: boolean;
+  }>();
 
   private constructor() {}
 
@@ -20,137 +22,142 @@ export class CentralizedSubscriptionManager {
 
   async subscribe(userId: string, callbacks: SubscriptionCallbacks): Promise<() => void> {
     const channelKey = `hubspot-sync-${userId}`;
-    console.log(`[CentralizedSubscriptionManager] Subscribe request for channel: ${channelKey}`);
+    console.log(`[CentralizedSubscriptionManager] Subscribe request for: ${channelKey}`);
 
-    // Add callbacks to the map
-    if (!this.callbacksMap.has(channelKey)) {
-      this.callbacksMap.set(channelKey, new Set());
+    // Get or create subscription entry
+    if (!this.activeSubscriptions.has(channelKey)) {
+      console.log(`[CentralizedSubscriptionManager] Creating new subscription entry: ${channelKey}`);
+      this.activeSubscriptions.set(channelKey, {
+        channel: null,
+        callbacks: new Set(),
+        subscribed: false
+      });
     }
-    this.callbacksMap.get(channelKey)!.add(callbacks);
 
-    // Create channel if it doesn't exist
-    if (!this.activeChannels.has(channelKey)) {
-      console.log(`[CentralizedSubscriptionManager] Creating new channel: ${channelKey}`);
-      await this.createChannel(channelKey, userId);
-    } else {
-      console.log(`[CentralizedSubscriptionManager] Reusing existing channel: ${channelKey}`);
+    const subscription = this.activeSubscriptions.get(channelKey)!;
+    
+    // Add callbacks
+    subscription.callbacks.add(callbacks);
+    console.log(`[CentralizedSubscriptionManager] Added callbacks. Total: ${subscription.callbacks.size}`);
+
+    // Create channel if it doesn't exist or isn't subscribed
+    if (!subscription.channel || !subscription.subscribed) {
+      await this.createChannel(channelKey, subscription);
     }
 
     // Return cleanup function
     return () => this.unsubscribe(channelKey, callbacks);
   }
 
-  private async createChannel(channelKey: string, userId: string): Promise<void> {
-    // Prevent concurrent channel creation
-    if (this.subscriptionPromises.has(channelKey)) {
-      console.log(`[CentralizedSubscriptionManager] Waiting for existing channel creation: ${channelKey}`);
-      await this.subscriptionPromises.get(channelKey);
-      return;
+  private async createChannel(channelKey: string, subscription: any): Promise<void> {
+    console.log(`[CentralizedSubscriptionManager] Creating channel: ${channelKey}`);
+    
+    // Clean up existing channel if any
+    if (subscription.channel) {
+      try {
+        subscription.channel.unsubscribe();
+        supabase.removeChannel(subscription.channel);
+      } catch (error) {
+        console.error(`[CentralizedSubscriptionManager] Error cleaning up old channel:`, error);
+      }
     }
 
-    const subscriptionPromise = this.doCreateChannel(channelKey, userId);
-    this.subscriptionPromises.set(channelKey, subscriptionPromise);
+    // Create new channel
+    const channel = supabase.channel(channelKey);
+    subscription.channel = channel;
+    subscription.subscribed = false;
 
-    try {
-      await subscriptionPromise;
-    } finally {
-      this.subscriptionPromises.delete(channelKey);
-    }
-  }
-
-  private async doCreateChannel(channelKey: string, userId: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      console.log(`[CentralizedSubscriptionManager] Setting up channel: ${channelKey}`);
+    channel.on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'hubspot_sync_queue'
+    }, (payload) => {
+      console.log(`[CentralizedSubscriptionManager] Queue change received:`, payload.eventType);
       
-      const channel = supabase.channel(channelKey);
-      
-      channel.on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'hubspot_sync_queue'
-      }, (payload) => {
-        console.log(`[CentralizedSubscriptionManager] Queue change received:`, payload.eventType);
-        
-        // Notify all registered callbacks
-        const callbacks = this.callbacksMap.get(channelKey);
-        if (callbacks) {
-          callbacks.forEach(callback => {
-            try {
-              callback.loadSyncData();
-              
-              if (payload.eventType === 'INSERT') {
-                console.log('[CentralizedSubscriptionManager] New queue item, triggering processing');
-                setTimeout(() => callback.processQueue(), 1000);
-              }
-            } catch (error) {
-              console.error(`[CentralizedSubscriptionManager] Error calling callback:`, error);
-            }
-          });
-        }
-      });
-
-      channel.subscribe((status: string) => {
-        console.log(`[CentralizedSubscriptionManager] Channel ${channelKey} status: ${status}`);
-        
-        if (status === 'SUBSCRIBED') {
-          console.log(`[CentralizedSubscriptionManager] Successfully subscribed to ${channelKey}`);
-          this.activeChannels.set(channelKey, channel);
-          resolve();
-        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-          console.log(`[CentralizedSubscriptionManager] Channel ${channelKey} closed or error`);
-          this.cleanupChannel(channelKey);
-          if (status === 'CHANNEL_ERROR') {
-            reject(new Error(`Channel subscription failed: ${channelKey}`));
-          } else {
-            resolve();
+      // Notify all callbacks
+      subscription.callbacks.forEach(callback => {
+        try {
+          callback.loadSyncData();
+          
+          if (payload.eventType === 'INSERT') {
+            setTimeout(() => callback.processQueue(), 1000);
           }
+        } catch (error) {
+          console.error(`[CentralizedSubscriptionManager] Error calling callback:`, error);
         }
       });
     });
+
+    // Subscribe only once
+    try {
+      const status = await new Promise<string>((resolve, reject) => {
+        channel.subscribe((status: string) => {
+          console.log(`[CentralizedSubscriptionManager] Channel ${channelKey} status: ${status}`);
+          
+          if (status === 'SUBSCRIBED') {
+            subscription.subscribed = true;
+            resolve(status);
+          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+            subscription.subscribed = false;
+            if (status === 'CHANNEL_ERROR') {
+              reject(new Error(`Channel subscription failed: ${channelKey}`));
+            } else {
+              resolve(status);
+            }
+          }
+        });
+      });
+
+      console.log(`[CentralizedSubscriptionManager] Successfully subscribed to ${channelKey}`);
+    } catch (error) {
+      console.error(`[CentralizedSubscriptionManager] Failed to subscribe to ${channelKey}:`, error);
+      subscription.subscribed = false;
+    }
   }
 
   private unsubscribe(channelKey: string, callbacks: SubscriptionCallbacks): void {
     console.log(`[CentralizedSubscriptionManager] Unsubscribe request for ${channelKey}`);
     
-    const callbacksSet = this.callbacksMap.get(channelKey);
-    if (callbacksSet) {
-      callbacksSet.delete(callbacks);
-      console.log(`[CentralizedSubscriptionManager] Removed callbacks. Remaining: ${callbacksSet.size}`);
+    const subscription = this.activeSubscriptions.get(channelKey);
+    if (!subscription) return;
 
-      // If no more callbacks, cleanup the channel
-      if (callbacksSet.size === 0) {
-        console.log(`[CentralizedSubscriptionManager] No more callbacks, cleaning up channel: ${channelKey}`);
-        this.cleanupChannel(channelKey);
-      }
+    subscription.callbacks.delete(callbacks);
+    console.log(`[CentralizedSubscriptionManager] Removed callbacks. Remaining: ${subscription.callbacks.size}`);
+
+    // If no more callbacks, cleanup the channel
+    if (subscription.callbacks.size === 0) {
+      console.log(`[CentralizedSubscriptionManager] No more callbacks, cleaning up channel: ${channelKey}`);
+      this.cleanupSubscription(channelKey);
     }
   }
 
-  private cleanupChannel(channelKey: string): void {
-    const channel = this.activeChannels.get(channelKey);
-    if (channel) {
+  private cleanupSubscription(channelKey: string): void {
+    const subscription = this.activeSubscriptions.get(channelKey);
+    if (!subscription) return;
+
+    if (subscription.channel && subscription.subscribed) {
       try {
-        channel.unsubscribe();
-        console.log(`[CentralizedSubscriptionManager] Unsubscribed channel: ${channelKey}`);
-        supabase.removeChannel(channel);
-        console.log(`[CentralizedSubscriptionManager] Removed channel: ${channelKey}`);
+        subscription.channel.unsubscribe();
+        supabase.removeChannel(subscription.channel);
+        console.log(`[CentralizedSubscriptionManager] Cleaned up channel: ${channelKey}`);
       } catch (error) {
         console.error(`[CentralizedSubscriptionManager] Error during cleanup:`, error);
       }
     }
 
-    this.activeChannels.delete(channelKey);
-    this.callbacksMap.delete(channelKey);
+    this.activeSubscriptions.delete(channelKey);
   }
 
   // Debug method
   getDebugInfo() {
     return {
-      activeChannels: Array.from(this.activeChannels.keys()),
-      callbackCounts: Array.from(this.callbacksMap.entries()).map(([key, callbacks]) => ({
+      activeSubscriptions: Array.from(this.activeSubscriptions.keys()),
+      subscriptionDetails: Array.from(this.activeSubscriptions.entries()).map(([key, sub]) => ({
         channel: key,
-        callbackCount: callbacks.size
-      })),
-      pendingSubscriptions: Array.from(this.subscriptionPromises.keys())
+        callbackCount: sub.callbacks.size,
+        subscribed: sub.subscribed,
+        hasChannel: !!sub.channel
+      }))
     };
   }
 }

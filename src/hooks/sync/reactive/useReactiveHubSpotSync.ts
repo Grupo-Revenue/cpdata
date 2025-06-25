@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useHubSpotConfig } from '@/hooks/useHubSpotConfig';
 import { useSyncData } from './useSyncData';
@@ -9,22 +9,11 @@ import { useSyncTrigger } from './useSyncTrigger';
 import { useFailedItemsRetry } from './useFailedItemsRetry';
 import { usePeriodicProcessing } from './usePeriodicProcessing';
 
-// Singleton pattern to prevent multiple instances
-let singletonInstance: any = null;
-let instanceCount = 0;
-
 export const useReactiveHubSpotSync = () => {
   const { user } = useAuth();
   const { config } = useHubSpotConfig();
-  const instanceRef = useRef<number>(++instanceCount);
   
-  // If singleton exists and user hasn't changed, return it
-  if (singletonInstance && singletonInstance.userId === user?.id) {
-    console.log(`[useReactiveHubSpotSync] Returning existing instance for user ${user?.id}`);
-    return singletonInstance.data;
-  }
-
-  console.log(`[useReactiveHubSpotSync] Creating new instance #${instanceRef.current} for user ${user?.id}`);
+  console.log(`[useReactiveHubSpotSync] Initializing for user ${user?.id}`);
   
   const { syncQueue, syncStats, loadSyncData } = useSyncData();
   const { isProcessing, processQueue } = useQueueProcessor(loadSyncData);
@@ -42,7 +31,7 @@ export const useReactiveHubSpotSync = () => {
     }
   }, [user?.id, loadSyncData]);
 
-  const hookData = {
+  return {
     syncQueue,
     syncStats,
     isProcessing,
@@ -51,12 +40,4 @@ export const useReactiveHubSpotSync = () => {
     loadSyncData,
     processQueue
   };
-
-  // Update singleton
-  singletonInstance = {
-    userId: user?.id,
-    data: hookData
-  };
-
-  return hookData;
 };
