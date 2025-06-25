@@ -8,6 +8,7 @@ export interface SyncConflict {
   app_amount: number;
   hubspot_amount: number;
   status: string;
+  created_at: string;
 }
 
 export interface SyncStats {

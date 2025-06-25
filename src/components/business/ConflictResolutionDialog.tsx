@@ -16,15 +16,16 @@ interface ConflictResolutionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   conflict: {
+    id: string;
     negocio_id: string;
     app_state: string;
     hubspot_state: string;
     app_amount?: number;
     hubspot_amount?: number;
     conflict_type: 'state' | 'amount' | 'both';
-    timestamp: string;
+    created_at: string;
   };
-  onResolve: (negocioId: string, resolvedState: string, resolvedAmount?: number) => Promise<void>;
+  onResolve: (conflictId: string, resolution: 'use_app' | 'use_hubspot') => Promise<void>;
   loading?: boolean;
 }
 
@@ -36,12 +37,12 @@ const ConflictResolutionDialog: React.FC<ConflictResolutionDialogProps> = ({
   loading = false
 }) => {
   const handleResolveWithApp = async () => {
-    await onResolve(conflict.negocio_id, conflict.app_state, conflict.app_amount);
+    await onResolve(conflict.id, 'use_app');
     onOpenChange(false);
   };
 
   const handleResolveWithHubSpot = async () => {
-    await onResolve(conflict.negocio_id, conflict.hubspot_state, conflict.hubspot_amount);
+    await onResolve(conflict.id, 'use_hubspot');
     onOpenChange(false);
   };
 
@@ -120,7 +121,7 @@ const ConflictResolutionDialog: React.FC<ConflictResolutionDialogProps> = ({
           )}
           
           <p className="text-xs text-gray-500">
-            Conflicto detectado: {new Date(conflict.timestamp).toLocaleString()}
+            Conflicto detectado: {new Date(conflict.created_at).toLocaleString()}
           </p>
         </div>
 

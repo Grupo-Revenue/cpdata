@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,8 +17,8 @@ const ConflictResolutionPanel: React.FC = () => {
     setDialogOpen(true);
   };
 
-  const handleResolveConflict = async (negocioId: string, resolvedState: string, resolvedAmount?: number) => {
-    await resolveConflict(negocioId, resolvedState, resolvedAmount);
+  const handleResolveConflict = async (conflictId: string, resolution: 'use_app' | 'use_hubspot') => {
+    await resolveConflict(conflictId, resolution);
   };
 
   const formatCurrency = (amount?: number) => {
@@ -85,7 +84,7 @@ const ConflictResolutionPanel: React.FC = () => {
         <CardContent className="space-y-3">
           {syncConflicts.map((conflict) => (
             <div
-              key={conflict.negocio_id}
+              key={conflict.id}
               className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200 hover:border-amber-300 transition-colors cursor-pointer"
               onClick={() => handleConflictClick(conflict)}
             >
