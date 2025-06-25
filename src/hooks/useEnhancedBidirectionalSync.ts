@@ -23,7 +23,10 @@ export const useEnhancedBidirectionalSync = () => {
   // Load conflicts on mount and when config changes
   useEffect(() => {
     if (config?.bidirectional_sync) {
-      loadSyncConflicts();
+      console.log('[useEnhancedBidirectionalSync] Loading sync conflicts...');
+      loadSyncConflicts().catch(error => {
+        console.error('[useEnhancedBidirectionalSync] Error loading conflicts:', error);
+      });
     }
   }, [config?.bidirectional_sync, loadSyncConflicts]);
 

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,13 +13,22 @@ const ConflictResolutionPanel: React.FC = () => {
   const [selectedConflict, setSelectedConflict] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  console.log('[ConflictResolutionPanel] Rendering with conflicts:', syncConflicts?.length || 0);
+
   const handleConflictClick = (conflict: any) => {
+    console.log('[ConflictResolutionPanel] Conflict clicked:', conflict.id);
     setSelectedConflict(conflict);
     setDialogOpen(true);
   };
 
   const handleResolveConflict = async (conflictId: string, resolution: 'use_app' | 'use_hubspot') => {
-    await resolveConflict(conflictId, resolution);
+    console.log('[ConflictResolutionPanel] Resolving conflict:', { conflictId, resolution });
+    try {
+      await resolveConflict(conflictId, resolution);
+      console.log('[ConflictResolutionPanel] Conflict resolved successfully');
+    } catch (error) {
+      console.error('[ConflictResolutionPanel] Error resolving conflict:', error);
+    }
   };
 
   const formatCurrency = (amount?: number) => {
@@ -45,17 +55,39 @@ const ConflictResolutionPanel: React.FC = () => {
   };
 
   const getConflictDescription = (conflict: any) => {
-    switch (conflict.conflict_type) {
-      case 'state':
-        return `Estado diferente: App (${formatBusinessStateForDisplay(conflict.app_state)}) vs HubSpot (${formatBusinessStateForDisplay(conflict.hubspot_state)})`;
-      case 'amount':
-        return `Monto diferente: App (${formatCurrency(conflict.app_amount)}) vs HubSpot (${formatCurrency(conflict.hubspot_amount)})`;
-      case 'both':
-        return `Estado y monto diferentes`;
-      default:
-        return 'Conflicto desconocido';
+    try {
+      switch (conflict.conflict_type) {
+        case 'state':
+          return `Estado diferente: App (${formatBusinessStateForDisplay(conflict.app_state)}) vs HubSpot (${formatBusinessStateForDisplay(conflict.hubspot_state)})`;
+        case 'amount':
+          return `Monto diferente: App (${formatCurrency(conflict.app_amount)}) vs HubSpot (${formatCurrency(conflict.hubspot_amount)})`;
+        case 'both':
+          return `Estado y monto diferentes`;
+        default:
+          return 'Conflicto desconocido';
+      }
+    } catch (error) {
+      console.error('[ConflictResolutionPanel] Error formatting conflict description:', error);
+      return 'Error al mostrar descripción del conflicto';
     }
   };
+
+  // Error boundary for rendering conflicts
+  if (!Array.isArray(syncConflicts)) {
+    console.warn('[ConflictResolutionPanel] syncConflicts is not an array:', syncConflicts);
+    return (
+      <Card className="border-gray-200 bg-gray-50">
+        <CardContent className="pt-6">
+          <div className="flex items-center space-x-2 text-gray-600">
+            <AlertTriangle className="w-5 h-5" />
+            <span className="text-sm">
+              Error cargando conflictos de sincronización
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (syncConflicts.length === 0) {
     return (
@@ -82,41 +114,48 @@ const ConflictResolutionPanel: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {syncConflicts.map((conflict) => (
-            <div
-              key={conflict.id}
-              className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200 hover:border-amber-300 transition-colors cursor-pointer"
-              onClick={() => handleConflictClick(conflict)}
-            >
-              <div className="flex items-center space-x-3">
-                {getConflictIcon(conflict.conflict_type)}
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <Badge variant="outline" className="text-xs">
-                      {conflict.conflict_type.toUpperCase()}
-                    </Badge>
-                    <span className="text-xs text-gray-500">
-                      {new Date(conflict.created_at).toLocaleString()}
-                    </span>
+          {syncConflicts.map((conflict) => {
+            try {
+              return (
+                <div
+                  key={conflict.id}
+                  className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200 hover:border-amber-300 transition-colors cursor-pointer"
+                  onClick={() => handleConflictClick(conflict)}
+                >
+                  <div className="flex items-center space-x-3">
+                    {getConflictIcon(conflict.conflict_type)}
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="outline" className="text-xs">
+                          {conflict.conflict_type.toUpperCase()}
+                        </Badge>
+                        <span className="text-xs text-gray-500">
+                          {new Date(conflict.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700 mt-1">
+                        {getConflictDescription(conflict)}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-700 mt-1">
-                    {getConflictDescription(conflict)}
-                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleConflictClick(conflict);
+                    }}
+                    className="text-xs"
+                  >
+                    Resolver
+                  </Button>
                 </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleConflictClick(conflict);
-                }}
-                className="text-xs"
-              >
-                Resolver
-              </Button>
-            </div>
-          ))}
+              );
+            } catch (error) {
+              console.error('[ConflictResolutionPanel] Error rendering conflict:', error, conflict);
+              return null;
+            }
+          })}
           
           <div className="mt-4 p-3 bg-amber-100 rounded-lg">
             <p className="text-xs text-amber-800">
