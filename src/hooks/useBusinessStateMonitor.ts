@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from 'react';
 import { useNegocio } from '@/context/NegocioContext';
 import { validateAllBusinessStates } from '@/utils/businessCalculations';
@@ -17,6 +16,7 @@ export const useBusinessStateMonitor = () => {
   const { negocios, loading, refreshNegocios } = useNegocio();
   const { toast } = useToast();
   const channelRef = useRef<any>(null);
+  const subscriptionActiveRef = useRef(false);
   const [monitoringState, setMonitoringState] = useState<MonitoringState>({
     inconsistencyCount: 0,
     lastCheck: null,
@@ -68,21 +68,40 @@ export const useBusinessStateMonitor = () => {
     }
   };
 
+  // Clean up channel function
+  const cleanupChannel = () => {
+    if (channelRef.current && subscriptionActiveRef.current) {
+      console.log('[useBusinessStateMonitor] Cleaning up existing channel...');
+      try {
+        supabase.removeChannel(channelRef.current);
+      } catch (error) {
+        console.error('[useBusinessStateMonitor] Error removing channel:', error);
+      }
+      channelRef.current = null;
+      subscriptionActiveRef.current = false;
+    }
+  };
+
   // Monitor en tiempo real con subscripción a cambios en la base de datos
   useEffect(() => {
-    if (loading || negocios.length === 0) return;
+    // Skip if loading or no negocios
+    if (loading || negocios.length === 0) {
+      cleanupChannel();
+      return;
+    }
 
-    // Clean up existing channel first
-    if (channelRef.current) {
-      console.log('[useBusinessStateMonitor] Cleaning up existing channel...');
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
+    // Skip if already subscribed
+    if (subscriptionActiveRef.current) {
+      return;
     }
 
     console.log('[useBusinessStateMonitor] Setting up real-time monitoring...');
     
-    // Create a unique channel name to avoid conflicts
-    const channelName = `business-state-monitor-${Date.now()}`;
+    // Clean up any existing channel first
+    cleanupChannel();
+
+    // Create a unique channel name
+    const channelName = `business-state-monitor-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const channel = supabase.channel(channelName);
     channelRef.current = channel;
     
@@ -114,24 +133,26 @@ export const useBusinessStateMonitor = () => {
       )
       .subscribe((status) => {
         console.log(`[useBusinessStateMonitor] Channel subscription status: ${status}`);
+        if (status === 'SUBSCRIBED') {
+          subscriptionActiveRef.current = true;
+        } else if (status === 'CLOSED') {
+          subscriptionActiveRef.current = false;
+        }
       });
 
     return () => {
       console.log('[useBusinessStateMonitor] Cleaning up real-time monitoring...');
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      cleanupChannel();
     };
-  }, [negocios.length, loading]);
+  }, [loading]); // Only depend on loading state
 
   // Validación inicial
   useEffect(() => {
     if (!loading && negocios.length > 0) {
       console.log('[useBusinessStateMonitor] Performing initial validation...');
-      validateCurrentStates();
+      setTimeout(() => validateCurrentStates(), 500);
     }
-  }, [loading]); // Only depend on loading to avoid multiple validations
+  }, [loading, negocios.length]);
 
   const runComprehensiveAudit = async () => {
     try {

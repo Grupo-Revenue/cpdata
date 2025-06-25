@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -29,6 +28,7 @@ export const useReactiveHubSpotSync = () => {
   const { toast } = useToast();
   const { config } = useHubSpotConfig();
   const channelRef = useRef<any>(null);
+  const subscriptionActiveRef = useRef(false);
   const [syncQueue, setSyncQueue] = useState<SyncQueueItem[]>([]);
   const [syncStats, setSyncStats] = useState<SyncStats | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -182,24 +182,43 @@ export const useReactiveHubSpotSync = () => {
     }
   }, [config, user, isProcessing, loadSyncData]);
 
+  // Clean up channel function
+  const cleanupChannel = () => {
+    if (channelRef.current && subscriptionActiveRef.current) {
+      console.log('[useReactiveHubSpotSync] Cleaning up existing channel...');
+      try {
+        supabase.removeChannel(channelRef.current);
+      } catch (error) {
+        console.error('[useReactiveHubSpotSync] Error removing channel:', error);
+      }
+      channelRef.current = null;
+      subscriptionActiveRef.current = false;
+    }
+  };
+
   // Listen to database notifications for real-time triggers
   useEffect(() => {
-    if (!user || !config?.api_key_set) return;
+    // Skip if no user or config
+    if (!user || !config?.api_key_set) {
+      cleanupChannel();
+      return;
+    }
 
-    // Clean up existing channel first
-    if (channelRef.current) {
-      console.log('[useReactiveHubSpotSync] Cleaning up existing channel...');
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
+    // Skip if already subscribed
+    if (subscriptionActiveRef.current) {
+      return;
     }
 
     console.log('[useReactiveHubSpotSync] Setting up real-time sync listeners...');
 
-    // Create a channel for listening to sync triggers
-    const channel = supabase.channel('hubspot-sync-notifications');
+    // Clean up any existing channel first
+    cleanupChannel();
+
+    // Create a unique channel name
+    const channelName = `hubspot-sync-notifications-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const channel = supabase.channel(channelName);
     channelRef.current = channel;
 
-    // Listen to PostgreSQL notifications
     channel.on('postgres_changes', {
       event: '*',
       schema: 'public',
@@ -214,16 +233,18 @@ export const useReactiveHubSpotSync = () => {
       }
     }).subscribe((status) => {
       console.log(`[useReactiveHubSpotSync] Channel subscription status: ${status}`);
+      if (status === 'SUBSCRIBED') {
+        subscriptionActiveRef.current = true;
+      } else if (status === 'CLOSED') {
+        subscriptionActiveRef.current = false;
+      }
     });
 
     return () => {
       console.log('[useReactiveHubSpotSync] Cleaning up sync listeners...');
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      cleanupChannel();
     };
-  }, [user?.id, config?.api_key_set]); // Simplified dependencies
+  }, [user?.id, config?.api_key_set]);
 
   // Periodic queue processing
   useEffect(() => {
@@ -238,10 +259,11 @@ export const useReactiveHubSpotSync = () => {
 
   // Initial data load
   useEffect(() => {
-    loadSyncData();
-  }, [loadSyncData]);
+    if (user) {
+      loadSyncData();
+    }
+  }, [user?.id]);
 
-  // Manual sync trigger for specific negocio
   const triggerSync = useCallback(async (negocioId: string, operation: string = 'update', priority: number = 5) => {
     if (!user) return;
 
@@ -297,7 +319,6 @@ export const useReactiveHubSpotSync = () => {
     }
   }, [user, toast, processQueue]);
 
-  // Retry failed items
   const retryFailedItems = useCallback(async () => {
     try {
       // First get the user's negocio IDs
