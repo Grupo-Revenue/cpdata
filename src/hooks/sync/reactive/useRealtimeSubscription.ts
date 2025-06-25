@@ -10,7 +10,8 @@ class RealtimeSubscriptionManager {
   private activeSubscriptions = new Map<string, {
     channel: any;
     callbacks: Set<any>;
-    subscribed: boolean;
+    isSubscribed: boolean;
+    isSubscribing: boolean;
   }>();
 
   private constructor() {}
@@ -37,6 +38,11 @@ class RealtimeSubscriptionManager {
     subscription.callbacks.add(callbacks);
     console.log(`[RealtimeSubscriptionManager] Added callbacks for user ${userId}. Total: ${subscription.callbacks.size}`);
     
+    // Start subscription if not already subscribed or subscribing
+    if (!subscription.isSubscribed && !subscription.isSubscribing) {
+      this.startSubscription(userId, subscription);
+    }
+    
     return () => this.unsubscribe(userId, callbacks);
   }
 
@@ -49,7 +55,8 @@ class RealtimeSubscriptionManager {
     const subscription = {
       channel,
       callbacks: new Set<any>(),
-      subscribed: false
+      isSubscribed: false,
+      isSubscribing: false
     };
 
     // Configure the channel BEFORE subscribing
@@ -78,19 +85,32 @@ class RealtimeSubscriptionManager {
       });
     });
 
+    return subscription;
+  }
+
+  private startSubscription(userId: string, subscription: any) {
+    if (subscription.isSubscribing || subscription.isSubscribed) {
+      console.log(`[RealtimeSubscriptionManager] Subscription already in progress or active for user ${userId}`);
+      return;
+    }
+
+    console.log(`[RealtimeSubscriptionManager] Starting subscription for user ${userId}`);
+    subscription.isSubscribing = true;
+
     // Subscribe to the channel only once
-    channel.subscribe((status) => {
+    subscription.channel.subscribe((status: string) => {
       console.log(`[RealtimeSubscriptionManager] Channel status: ${status} for user ${userId}`);
+      
       if (status === 'SUBSCRIBED') {
-        subscription.subscribed = true;
+        subscription.isSubscribed = true;
+        subscription.isSubscribing = false;
         console.log(`[RealtimeSubscriptionManager] Successfully subscribed for user ${userId}`);
       } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-        subscription.subscribed = false;
+        subscription.isSubscribed = false;
+        subscription.isSubscribing = false;
         console.log(`[RealtimeSubscriptionManager] Channel ended for user ${userId}`);
       }
     });
-
-    return subscription;
   }
 
   private unsubscribe(userId: string, callbacks: any) {
@@ -117,7 +137,7 @@ class RealtimeSubscriptionManager {
     if (!subscription) return;
 
     try {
-      if (subscription.subscribed) {
+      if (subscription.isSubscribed) {
         subscription.channel.unsubscribe();
         console.log(`[RealtimeSubscriptionManager] Unsubscribed channel for user ${userId}`);
       }
@@ -143,7 +163,7 @@ export const useRealtimeSubscription = (
   const { user } = useAuth();
   const { config } = useHubSpotConfig();
   const unsubscribeRef = useRef<(() => void) | null>(null);
-  const isSubscribedRef = useRef(false);
+  const hasSetupSubscription = useRef(false);
 
   useEffect(() => {
     // Skip if no user or API key not configured
@@ -152,14 +172,14 @@ export const useRealtimeSubscription = (
       return;
     }
 
-    // Prevent multiple subscriptions
-    if (isSubscribedRef.current) {
-      console.log('[useRealtimeSubscription] Already subscribed, skipping');
+    // Prevent multiple subscriptions from the same hook instance
+    if (hasSetupSubscription.current) {
+      console.log('[useRealtimeSubscription] Already set up subscription, skipping');
       return;
     }
 
     console.log('[useRealtimeSubscription] Setting up subscription...');
-    isSubscribedRef.current = true;
+    hasSetupSubscription.current = true;
 
     const manager = RealtimeSubscriptionManager.getInstance();
     const callbacks = { loadSyncData, processQueue };
@@ -172,7 +192,7 @@ export const useRealtimeSubscription = (
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
-      isSubscribedRef.current = false;
+      hasSetupSubscription.current = false;
     };
   }, [user?.id, config?.api_key_set]); // Only depend on stable values
 
@@ -180,7 +200,7 @@ export const useRealtimeSubscription = (
     if (unsubscribeRef.current) {
       unsubscribeRef.current();
       unsubscribeRef.current = null;
-      isSubscribedRef.current = false;
+      hasSetupSubscription.current = false;
     }
   };
 
