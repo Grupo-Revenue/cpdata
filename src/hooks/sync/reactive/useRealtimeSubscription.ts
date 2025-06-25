@@ -32,16 +32,14 @@ class RealtimeSubscriptionManager {
       console.log(`[RealtimeSubscriptionManager] Creating new subscription for user ${userId}`);
       subscription = this.createSubscription(userId);
       this.activeSubscriptions.set(userId, subscription);
+      
+      // Only start subscription for newly created subscriptions
+      this.startSubscription(userId, subscription);
     }
 
     // Add callbacks to existing subscription
     subscription.callbacks.add(callbacks);
     console.log(`[RealtimeSubscriptionManager] Added callbacks for user ${userId}. Total: ${subscription.callbacks.size}`);
-    
-    // Start subscription if not already subscribed or subscribing
-    if (!subscription.isSubscribed && !subscription.isSubscribing) {
-      this.startSubscription(userId, subscription);
-    }
     
     return () => this.unsubscribe(userId, callbacks);
   }
