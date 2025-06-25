@@ -15,12 +15,16 @@ export const useRealtimeSubscription = (
 
   // Clean up channel function
   const cleanupChannel = () => {
-    if (channelRef.current && subscriptionActiveRef.current) {
+    if (channelRef.current) {
       console.log('[useRealtimeSubscription] Cleaning up existing channel...');
       try {
+        // Always try to unsubscribe first, then remove
+        if (subscriptionActiveRef.current) {
+          channelRef.current.unsubscribe();
+        }
         supabase.removeChannel(channelRef.current);
       } catch (error) {
-        console.error('[useRealtimeSubscription] Error removing channel:', error);
+        console.error('[useRealtimeSubscription] Error cleaning up channel:', error);
       }
       channelRef.current = null;
       subscriptionActiveRef.current = false;
@@ -36,8 +40,8 @@ export const useRealtimeSubscription = (
       return;
     }
 
-    // Skip if already subscribed
-    if (subscriptionActiveRef.current) {
+    // Skip if already subscribed to prevent multiple subscriptions
+    if (subscriptionActiveRef.current && channelRef.current) {
       console.log('[useRealtimeSubscription] Already subscribed, skipping');
       return;
     }
@@ -52,6 +56,7 @@ export const useRealtimeSubscription = (
     const channel = supabase.channel(channelName);
     channelRef.current = channel;
 
+    // Configure the channel but don't subscribe yet
     channel.on('postgres_changes', {
       event: '*',
       schema: 'public',
@@ -69,11 +74,14 @@ export const useRealtimeSubscription = (
         console.log('[useRealtimeSubscription] New queue item added, triggering processing');
         setTimeout(() => processQueue(), 1000);
       }
-    }).subscribe((status) => {
+    });
+
+    // Now subscribe to the configured channel
+    channel.subscribe((status) => {
       console.log(`[useRealtimeSubscription] Channel subscription status: ${status}`);
       if (status === 'SUBSCRIBED') {
         subscriptionActiveRef.current = true;
-      } else if (status === 'CLOSED') {
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
         subscriptionActiveRef.current = false;
       }
     });
@@ -82,7 +90,7 @@ export const useRealtimeSubscription = (
       console.log('[useRealtimeSubscription] Cleaning up sync listeners...');
       cleanupChannel();
     };
-  }, [user?.id, config?.api_key_set, loadSyncData, processQueue]);
+  }, [user?.id, config?.api_key_set]); // Removed loadSyncData and processQueue from dependencies
 
   return { cleanupChannel };
 };
