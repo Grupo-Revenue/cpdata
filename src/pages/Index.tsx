@@ -42,7 +42,7 @@ const Index = () => {
         }
       }, 3000);
     }
-  }, [negocios, loading, inconsistencyCount]);
+  }, [negocios, loading, inconsistencyCount, validateCurrentStates, runComprehensiveAudit]);
 
   if (vistaActual === 'crear-negocio') {
     return (

@@ -11,13 +11,13 @@ import {
   RefreshCw 
 } from 'lucide-react';
 import { useEnhancedBidirectionalSync } from '@/hooks/useEnhancedBidirectionalSync';
-import { useReactiveHubSpotSync } from '@/hooks/useReactiveHubSpotSync';
+import { useSync } from '@/context/SyncContext';
 import { useHubSpotConfig } from '@/hooks/useHubSpotConfig';
 
 const SyncStatusIndicator: React.FC = () => {
   const { config } = useHubSpotConfig();
   const { syncConflicts } = useEnhancedBidirectionalSync();
-  const { syncStats, isProcessing } = useReactiveHubSpotSync();
+  const { syncStats, isProcessing } = useSync();
 
   if (!config?.api_key_set) {
     return null;

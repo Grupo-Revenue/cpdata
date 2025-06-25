@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Upload, Check } from 'lucide-react';
 import { useHubSpotSync } from '@/hooks/useHubSpotSync';
+import { useSync } from '@/context/SyncContext';
 import { Negocio } from '@/types';
 
 interface HubSpotSyncButtonProps {
@@ -18,12 +19,18 @@ const HubSpotSyncButton: React.FC<HubSpotSyncButtonProps> = ({
   size = 'sm',
   showText = true 
 }) => {
-  const { manualSyncNegocio, isSyncing, isBusinessSynced } = useHubSpotSync();
+  const { isSyncing, isBusinessSynced } = useHubSpotSync();
+  const { triggerSync } = useSync();
 
   const handleSync = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    await manualSyncNegocio(negocio.id);
+    
+    try {
+      await triggerSync(negocio.id, 'manual_sync', 1);
+    } catch (error) {
+      console.error('Error triggering sync:', error);
+    }
   };
 
   const syncing = isSyncing(negocio.id);
