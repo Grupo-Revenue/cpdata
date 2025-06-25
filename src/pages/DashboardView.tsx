@@ -28,6 +28,18 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onCrearNegocio, onVerNego
           <CompactDashboardHeader onCrearNegocio={onCrearNegocio} />
         </div>
 
+        {/* Debug Helper - Quick access to problematic business */}
+        <div className="mb-6">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onVerNegocio('9b5e61e2-5b5e-4b5e-8b5e-5b5e4b5e61e2')}
+            className="text-xs"
+          >
+            🔧 Ver Negocio #17662 (Debug)
+          </Button>
+        </div>
+
         {/* Main Content with Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 max-w-md">

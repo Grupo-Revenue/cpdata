@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import BusinessDetailHeader from './negocio/BusinessDetailHeader';
 import DetalleNegocioMainContent from './negocio/DetalleNegocioMainContent';
 import ConflictResolutionDialog from './business/ConflictResolutionDialog';
+import ManualSyncInterface from './business/ManualSyncInterface';
+import SyncVerificationPanel from './business/SyncVerificationPanel';
 import { Button } from '@/components/ui/button';
 import { EstadoPresupuesto, EstadoNegocio } from '@/types';
 

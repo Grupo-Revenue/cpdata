@@ -27,7 +27,7 @@ serve(async (req) => {
     )
 
     const { queueItemId, negocioId, operation, payload } = await req.json()
-    console.log('Processing queue item:', queueItemId, 'Operation:', operation)
+    console.log('Processing queue item:', queueItemId, 'Operation:', operation, 'Business:', negocioId)
 
     // Get the queue item
     const { data: queueItem, error: queueError } = await supabase
@@ -54,6 +54,8 @@ serve(async (req) => {
     if (negocioError || !negocio) {
       throw new Error(`Business not found: ${negocioId}`)
     }
+
+    console.log(`Business ${negocio.numero} - Current state: ${negocio.estado}`)
 
     // Get user's HubSpot configuration
     const { data: hubspotConfig, error: configError } = await supabase
@@ -103,7 +105,7 @@ serve(async (req) => {
         throw new Error(`Unknown operation: ${operation}`)
     }
 
-    // Log the operation
+    // Enhanced logging with more details
     await supabase
       .from('hubspot_sync_log')
       .insert({
@@ -113,7 +115,12 @@ serve(async (req) => {
         success: result.success,
         error_message: result.error,
         sync_direction: result.direction || 'outbound',
-        trigger_source: 'queue'
+        trigger_source: 'queue',
+        old_state: result.oldState,
+        new_state: result.newState,
+        old_amount: result.oldAmount,
+        new_amount: result.newAmount,
+        hubspot_deal_id: result.hubspotDealId
       })
 
     return new Response(
@@ -134,10 +141,12 @@ serve(async (req) => {
 })
 
 async function syncToHubSpot(supabase: any, negocio: any, apiKey: string, config: any, forceAmount: boolean = false) {
-  console.log('=== SYNC TO HUBSPOT ===', negocio.numero, 'Force:', forceAmount)
+  console.log('=== SYNC TO HUBSPOT ===', `Business #${negocio.numero}`, 'Force:', forceAmount)
+  console.log('Current business state:', negocio.estado)
+  console.log('Budget count:', negocio.presupuestos?.length || 0)
 
   try {
-    // Get state mapping
+    // Get state mapping - this is critical for business 17662
     const { data: mapping, error: mappingError } = await supabase
       .from('hubspot_state_mapping')
       .select('*')
@@ -146,12 +155,15 @@ async function syncToHubSpot(supabase: any, negocio: any, apiKey: string, config
       .single()
 
     if (mappingError || !mapping) {
+      console.error('No mapping found for business state:', negocio.estado)
       throw new Error(`No mapping found for business state: ${negocio.estado}`)
     }
 
-    // Calculate business value
+    console.log('Found mapping:', mapping.business_state, '->', mapping.hubspot_stage_id)
+
+    // Calculate business value with enhanced logic
     const currentValue = calculateBusinessValue(negocio)
-    console.log('Business value:', currentValue)
+    console.log('Calculated business value:', currentValue)
 
     // Check if deal exists
     const { data: existingSync } = await supabase
@@ -173,10 +185,27 @@ async function syncToHubSpot(supabase: any, negocio: any, apiKey: string, config
       dealData.closedate = closeDateTimestamp.toString()
     }
 
+    console.log('Deal data to sync:', dealData)
+
     let hubspotDealId = existingSync?.hubspot_deal_id
     let isNewDeal = false
+    let oldAmount = null
 
     if (hubspotDealId) {
+      // Get current HubSpot deal data first
+      const dealResponse = await fetch(`https://api.hubapi.com/crm/v3/objects/deals/${hubspotDealId}?properties=amount,dealstage`, {
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (dealResponse.ok) {
+        const currentDeal = await dealResponse.json()
+        oldAmount = parseFloat(currentDeal.properties.amount || '0')
+        console.log('Current HubSpot deal amount:', oldAmount)
+      }
+
       // Update existing deal
       const updateResponse = await fetch(`https://api.hubapi.com/crm/v3/objects/deals/${hubspotDealId}`, {
         method: 'PATCH',
@@ -189,8 +218,11 @@ async function syncToHubSpot(supabase: any, negocio: any, apiKey: string, config
 
       if (!updateResponse.ok) {
         const errorText = await updateResponse.text()
+        console.error('HubSpot update error:', errorText)
         throw new Error(`HubSpot API error: ${updateResponse.status} - ${errorText}`)
       }
+
+      console.log('Successfully updated HubSpot deal:', hubspotDealId)
     } else {
       // Create new deal
       const createResponse = await fetch('https://api.hubapi.com/crm/v3/objects/deals', {
@@ -204,15 +236,17 @@ async function syncToHubSpot(supabase: any, negocio: any, apiKey: string, config
 
       if (!createResponse.ok) {
         const errorText = await createResponse.text()
+        console.error('HubSpot create error:', errorText)
         throw new Error(`HubSpot API error: ${createResponse.status} - ${errorText}`)
       }
 
       const newDeal = await createResponse.json()
       hubspotDealId = newDeal.id
       isNewDeal = true
+      console.log('Successfully created HubSpot deal:', hubspotDealId)
     }
 
-    // Update sync record
+    // Update sync record with enhanced data
     await supabase
       .from('hubspot_sync')
       .upsert({
@@ -222,16 +256,19 @@ async function syncToHubSpot(supabase: any, negocio: any, apiKey: string, config
         last_sync_at: new Date().toISOString(),
         last_hubspot_sync_at: new Date().toISOString(),
         app_last_modified: negocio.updated_at,
-        sync_direction: 'outbound'
+        sync_direction: 'outbound',
+        error_message: null
       })
-
-    console.log('Successfully synced to HubSpot:', hubspotDealId, 'New deal:', isNewDeal)
 
     return {
       success: true,
       hubspotDealId,
       isNewDeal,
-      direction: 'outbound'
+      direction: 'outbound',
+      oldState: null,
+      newState: negocio.estado,
+      oldAmount,
+      newAmount: currentValue
     }
 
   } catch (error) {
@@ -376,21 +413,35 @@ async function resolveConflictUseHubSpot(supabase: any, negocio: any, apiKey: st
 }
 
 function calculateBusinessValue(negocio: any): number {
+  console.log('Calculating business value for business #' + negocio.numero)
+  
   if (!negocio.presupuestos || negocio.presupuestos.length === 0) {
+    console.log('No budgets found, returning 0')
     return 0
   }
 
-  // Sum all approved budgets
+  console.log('Budget breakdown:')
+  negocio.presupuestos.forEach((p: any, index: number) => {
+    console.log(`  Budget ${index + 1}: ${p.estado} - $${p.total}`)
+  })
+
+  // Sum all approved budgets first
   const approvedTotal = negocio.presupuestos
     .filter((p: any) => p.estado === 'aprobado')
     .reduce((sum: number, p: any) => sum + parseFloat(p.total || '0'), 0)
 
-  // If no approved budgets, use sent budgets
-  if (approvedTotal === 0) {
-    return negocio.presupuestos
-      .filter((p: any) => p.estado === 'enviado')
-      .reduce((sum: number, p: any) => sum + parseFloat(p.total || '0'), 0)
+  console.log('Approved budgets total:', approvedTotal)
+
+  if (approvedTotal > 0) {
+    return approvedTotal
   }
 
-  return approvedTotal
+  // If no approved budgets, use sent budgets
+  const sentTotal = negocio.presupuestos
+    .filter((p: any) => p.estado === 'enviado')
+    .reduce((sum: number, p: any) => sum + parseFloat(p.total || '0'), 0)
+
+  console.log('Sent budgets total:', sentTotal)
+  
+  return sentTotal
 }
