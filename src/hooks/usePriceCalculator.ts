@@ -9,25 +9,31 @@ export interface PriceCalculatorInputs {
     manual: number;
     expressQR: number;
   };
+  accreditationCapacity: {
+    manual: number;
+    expressQR: number;
+  };
 }
 
 export interface PriceCalculatorResult {
   totalPrice: number;
   breakdown: {
-    credencial: { quantity: number; unitPrice: number; total: number };
-    cordon: { quantity: number; unitPrice: number; total: number };
-    portaCredencial: { quantity: number; unitPrice: number; total: number };
+    acreditadores: { quantity: number; unitPrice: number; total: number };
+    supervisores: { quantity: number; unitPrice: number; total: number };
   };
   distributionSummary: {
     manualAttendees: number;
     expressQRAttendees: number;
+    manualAccreditors: number;
+    expressQRAccreditors: number;
+    totalAccreditors: number;
+    supervisors: number;
   };
 }
 
 interface AccreditationPrices {
-  credencial: number;
-  cordon: number;
-  portaCredencial: number;
+  acreditador: number;
+  supervisor: number;
 }
 
 const DEFAULT_VALUES: PriceCalculatorInputs = {
@@ -35,6 +41,10 @@ const DEFAULT_VALUES: PriceCalculatorInputs = {
   distributionPercentages: {
     manual: 50,
     expressQR: 50,
+  },
+  accreditationCapacity: {
+    manual: 100,
+    expressQR: 150,
   },
 };
 
@@ -75,20 +85,17 @@ export const usePriceCalculator = () => {
       
       productos?.forEach(producto => {
         const nombre = producto.nombre.toLowerCase();
-        if (nombre.includes('credencial') && !nombre.includes('porta')) {
-          priceMap.credencial = producto.precio_base;
-        } else if (nombre.includes('cordón') || nombre.includes('cordon')) {
-          priceMap.cordon = producto.precio_base;
-        } else if (nombre.includes('porta')) {
-          priceMap.portaCredencial = producto.precio_base;
+        if (nombre.includes('acreditador')) {
+          priceMap.acreditador = producto.precio_base;
+        } else if (nombre.includes('supervisor')) {
+          priceMap.supervisor = producto.precio_base;
         }
       });
 
       // Use default values if not found in database
       const finalPrices: AccreditationPrices = {
-        credencial: priceMap.credencial || 1500,
-        cordon: priceMap.cordon || 300,
-        portaCredencial: priceMap.portaCredencial || 500,
+        acreditador: priceMap.acreditador || 50000,
+        supervisor: priceMap.supervisor || 70000,
       };
 
       setPrices(finalPrices);
@@ -102,9 +109,8 @@ export const usePriceCalculator = () => {
       
       // Use default prices
       setPrices({
-        credencial: 1500,
-        cordon: 300,
-        portaCredencial: 500,
+        acreditador: 50000,
+        supervisor: 70000,
       });
     } finally {
       setLoading(false);
@@ -135,12 +141,25 @@ export const usePriceCalculator = () => {
     }));
   }, []);
 
+  const updateAccreditationCapacity = useCallback((
+    type: keyof PriceCalculatorInputs['accreditationCapacity'],
+    value: number
+  ) => {
+    setInputs(prev => ({
+      ...prev,
+      accreditationCapacity: {
+        ...prev.accreditationCapacity,
+        [type]: Math.max(1, value)
+      }
+    }));
+  }, []);
+
   const calculatePrice = useCallback((): PriceCalculatorResult => {
     if (!prices) {
       throw new Error('Precios no cargados');
     }
 
-    const { attendees, distributionPercentages } = inputs;
+    const { attendees, distributionPercentages, accreditationCapacity } = inputs;
 
     // Ensure percentages add up to 100%
     const totalPercentage = distributionPercentages.manual + distributionPercentages.expressQR;
@@ -156,47 +175,44 @@ export const usePriceCalculator = () => {
       adjustedPercentages.expressQR = 50;
     }
 
-    // Calculate quantities based on attendees and distribution
+    // Calculate attendees by distribution
     const manualAttendees = Math.ceil((attendees * adjustedPercentages.manual) / 100);
     const expressQRAttendees = Math.ceil((attendees * adjustedPercentages.expressQR) / 100);
 
-    // Based on Excel logic:
-    // - Manual: 1 credencial + 1 cordon + 1 porta per attendee
-    // - Express QR: 1 credencial + 1 cordon per attendee (no porta needed)
-    const credencialQty = manualAttendees + expressQRAttendees;
-    const cordonQty = manualAttendees + expressQRAttendees;
-    const portaCredencialQty = manualAttendees; // Only for manual attendees
+    // Calculate required accreditors based on capacity
+    const manualAccreditors = Math.ceil(manualAttendees / accreditationCapacity.manual);
+    const expressQRAccreditors = Math.ceil(expressQRAttendees / accreditationCapacity.expressQR);
+    const totalAccreditors = manualAccreditors + expressQRAccreditors;
 
-    // Calculate totals for each item
-    const credencialTotal = credencialQty * prices.credencial;
-    const cordonTotal = cordonQty * prices.cordon;
-    const portaCredencialTotal = portaCredencialQty * prices.portaCredencial;
+    // Calculate supervisors (1 supervisor per 5 accreditors, minimum 1)
+    const supervisors = Math.max(1, Math.ceil(totalAccreditors / 5));
 
-    // Calculate final total price
-    const totalPrice = credencialTotal + cordonTotal + portaCredencialTotal;
+    // Calculate totals
+    const acreditadoresTotal = totalAccreditors * prices.acreditador;
+    const supervisoresTotal = supervisors * prices.supervisor;
+    const totalPrice = acreditadoresTotal + supervisoresTotal;
 
     const calculationResult: PriceCalculatorResult = {
       totalPrice,
       breakdown: {
-        credencial: {
-          quantity: credencialQty,
-          unitPrice: prices.credencial,
-          total: credencialTotal
+        acreditadores: {
+          quantity: totalAccreditors,
+          unitPrice: prices.acreditador,
+          total: acreditadoresTotal
         },
-        cordon: {
-          quantity: cordonQty,
-          unitPrice: prices.cordon,
-          total: cordonTotal
-        },
-        portaCredencial: {
-          quantity: portaCredencialQty,
-          unitPrice: prices.portaCredencial,
-          total: portaCredencialTotal
+        supervisores: {
+          quantity: supervisors,
+          unitPrice: prices.supervisor,
+          total: supervisoresTotal
         }
       },
       distributionSummary: {
         manualAttendees,
-        expressQRAttendees
+        expressQRAttendees,
+        manualAccreditors,
+        expressQRAccreditors,
+        totalAccreditors,
+        supervisors
       }
     };
 
@@ -216,6 +232,7 @@ export const usePriceCalculator = () => {
     loading,
     updateInput,
     updateDistributionPercentage,
+    updateAccreditationCapacity,
     calculatePrice,
     resetCalculator,
     refetchPrices: fetchPrices
