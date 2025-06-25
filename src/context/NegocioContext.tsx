@@ -416,30 +416,75 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   const crearPresupuesto = async (negocioId: string, presupuestoData: Omit<Presupuesto, 'id' | 'created_at' | 'updated_at'>): Promise<Presupuesto | null> => {
     try {
-      const { data, error } = await supabase
+      console.log('Creating presupuesto with data:', presupuestoData);
+      
+      // Start a transaction by creating the main presupuesto first
+      const { data: presupuestoCreado, error: presupuestoError } = await supabase
         .from('presupuestos')
-        .insert([{ ...presupuestoData, negocio_id: negocioId }])
+        .insert([{ 
+          ...presupuestoData, 
+          negocio_id: negocioId,
+          // Remove productos from the main insert since it's not a column in presupuestos table
+          productos: undefined
+        }])
         .select('*')
         .single();
 
-      if (error) {
-        console.error("Error creating presupuesto:", error);
-        throw error;
+      if (presupuestoError) {
+        console.error("Error creating presupuesto:", presupuestoError);
+        throw presupuestoError;
       }
 
-      // Optimistically update the negocios state
+      console.log('Presupuesto created successfully:', presupuestoCreado);
+
+      // Now insert the products if they exist
+      if (presupuestoData.productos && presupuestoData.productos.length > 0) {
+        console.log('Inserting products:', presupuestoData.productos);
+        
+        const productosParaInsertar = presupuestoData.productos.map(producto => ({
+          presupuesto_id: presupuestoCreado.id,
+          nombre: producto.nombre,
+          descripcion: producto.descripcion || '',
+          cantidad: producto.cantidad,
+          precio_unitario: producto.precio_unitario,
+          total: producto.cantidad * producto.precio_unitario
+        }));
+
+        const { data: productosCreados, error: productosError } = await supabase
+          .from('productos_presupuesto')
+          .insert(productosParaInsertar)
+          .select('*');
+
+        if (productosError) {
+          console.error("Error creating productos:", productosError);
+          // If products fail to insert, we should clean up the presupuesto
+          await supabase.from('presupuestos').delete().eq('id', presupuestoCreado.id);
+          throw new Error(`Error al guardar los productos del presupuesto: ${productosError.message}`);
+        }
+
+        console.log('Products created successfully:', productosCreados);
+        
+        // Add the products to the presupuesto object for the return value
+        presupuestoCreado.productos = productosCreados;
+      }
+
+      // Update the local state optimistically
       setNegocios(prevNegocios =>
         prevNegocios.map(negocio =>
           negocio.id === negocioId
-            ? { ...negocio, presupuestos: [...(negocio.presupuestos || []), data as Presupuesto] }
+            ? { 
+                ...negocio, 
+                presupuestos: [...(negocio.presupuestos || []), presupuestoCreado as Presupuesto] 
+              }
             : negocio
         )
       );
 
-      return data as Presupuesto;
+      console.log('Presupuesto creation completed successfully');
+      return presupuestoCreado as Presupuesto;
     } catch (error) {
       console.error("Failed to create presupuesto:", error);
-      return null;
+      throw error; // Re-throw to be handled by the calling function
     }
   };
 

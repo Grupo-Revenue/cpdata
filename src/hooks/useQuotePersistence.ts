@@ -26,6 +26,8 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
       return;
     }
 
+    console.log('Saving presupuesto with products:', productos);
+
     // Calculate total from products
     const total = productos.reduce((sum, producto) => {
       return sum + (producto.cantidad * producto.precio_unitario);
@@ -50,25 +52,38 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
 
     try {
       if (presupuestoId) {
+        console.log('Updating existing presupuesto:', presupuestoId);
         await actualizarPresupuesto(negocioId, presupuestoId, presupuestoData);
         toast({
           title: "Presupuesto actualizado",
           description: "El presupuesto ha sido actualizado exitosamente",
         });
       } else {
+        console.log('Creating new presupuesto for negocio:', negocioId);
         await crearPresupuesto(negocioId, presupuestoData);
         toast({
           title: "Presupuesto creado",
-          description: "El presupuesto ha sido creado exitosamente",
+          description: "El presupuesto y sus productos han sido guardados exitosamente",
         });
       }
 
       onCerrar();
     } catch (error) {
       console.error('Error saving presupuesto:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = "No se pudo guardar el presupuesto";
+      if (error instanceof Error) {
+        if (error.message.includes('productos')) {
+          errorMessage = "Error al guardar los productos del presupuesto";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Error",
-        description: "No se pudo guardar el presupuesto",
+        description: errorMessage,
         variant: "destructive"
       });
     }
