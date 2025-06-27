@@ -418,15 +418,25 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     try {
       console.log('Creating presupuesto with data:', presupuestoData);
       
+      // Clean the presupuesto data to only include database columns
+      const cleanPresupuestoData = {
+        nombre: presupuestoData.nombre,
+        estado: presupuestoData.estado,
+        total: presupuestoData.total,
+        facturado: presupuestoData.facturado || false,
+        negocio_id: negocioId,
+        fecha_envio: presupuestoData.fecha_envio,
+        fecha_aprobacion: presupuestoData.fecha_aprobacion,
+        fecha_rechazo: presupuestoData.fecha_rechazo,
+        fecha_vencimiento: presupuestoData.fecha_vencimiento
+      };
+
+      console.log('Clean presupuesto data for database:', cleanPresupuestoData);
+      
       // Start a transaction by creating the main presupuesto first
       const { data: presupuestoCreado, error: presupuestoError } = await supabase
         .from('presupuestos')
-        .insert([{ 
-          ...presupuestoData, 
-          negocio_id: negocioId,
-          // Remove productos from the main insert since it's not a column in presupuestos table
-          productos: undefined
-        }])
+        .insert([cleanPresupuestoData])
         .select('*')
         .single();
 
@@ -461,6 +471,8 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
           precio_unitario: producto.precio_unitario,
           total: producto.cantidad * producto.precio_unitario
         }));
+
+        console.log('Products to insert:', productosParaInsertar);
 
         const { data: productosCreados, error: productosError } = await supabase
           .from('productos_presupuesto')

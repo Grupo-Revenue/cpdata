@@ -33,6 +33,7 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
       return sum + (producto.cantidad * producto.precio_unitario);
     }, 0);
 
+    // Create clean presupuesto data with only database-compatible properties
     const presupuestoData = {
       nombre: `Presupuesto ${new Date().toLocaleDateString()}`,
       estado: 'borrador' as const,
@@ -43,17 +44,28 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
       fecha_aprobacion: null,
       fecha_rechazo: null,
       fecha_vencimiento: null,
-      fechaCreacion: new Date().toISOString(),
-      fechaEnvio: undefined,
-      fechaAprobacion: undefined,
-      fechaRechazo: undefined,
-      productos
+      // Convert products to the format expected by the database
+      productos: productos.map(producto => ({
+        nombre: producto.nombre,
+        descripcion: producto.descripcion || '',
+        cantidad: producto.cantidad,
+        precio_unitario: producto.precio_unitario
+      }))
     };
 
     try {
       if (presupuestoId) {
         console.log('Updating existing presupuesto:', presupuestoId);
-        await actualizarPresupuesto(negocioId, presupuestoId, presupuestoData);
+        
+        // For updates, we need to handle products separately
+        const updateData = {
+          nombre: presupuestoData.nombre,
+          estado: presupuestoData.estado,
+          total: presupuestoData.total,
+          facturado: presupuestoData.facturado
+        };
+        
+        await actualizarPresupuesto(negocioId, presupuestoId, updateData);
         toast({
           title: "Presupuesto actualizado",
           description: "El presupuesto ha sido actualizado exitosamente",
@@ -74,8 +86,11 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
       // Provide more specific error messages
       let errorMessage = "No se pudo guardar el presupuesto";
       if (error instanceof Error) {
+        console.error('Detailed error:', error.message);
         if (error.message.includes('productos')) {
           errorMessage = "Error al guardar los productos del presupuesto";
+        } else if (error.message.includes('column') || error.message.includes('does not exist')) {
+          errorMessage = "Error de estructura de datos. Contacte al administrador.";
         } else {
           errorMessage = error.message;
         }
