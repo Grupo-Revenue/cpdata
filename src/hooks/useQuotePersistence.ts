@@ -48,12 +48,20 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
       fechaEnvio: null,
       fechaAprobacion: null,
       fechaRechazo: null,
-      // Convert products to the format expected by the database
+      // Convert products to the basic format expected by the service
       productos: productos.map(producto => ({
+        id: producto.id || `temp-${Date.now()}-${Math.random()}`,
         nombre: producto.nombre,
         descripcion: producto.descripcion || '',
         cantidad: producto.cantidad,
-        precio_unitario: producto.precio_unitario
+        precio_unitario: producto.precio_unitario,
+        total: producto.cantidad * producto.precio_unitario,
+        created_at: new Date().toISOString(),
+        presupuesto_id: presupuestoId || '',
+        // Add extended properties for compatibility
+        comentarios: producto.comentarios || '',
+        descuentoPorcentaje: producto.descuentoPorcentaje || 0,
+        precioUnitario: producto.precio_unitario
       }))
     };
 
