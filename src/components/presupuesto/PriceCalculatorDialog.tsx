@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calculator, Users, Percent, UserCheck, Settings, Edit } from 'lucide-react';
+import ProductNumberInput from './components/ProductNumberInput';
 import { usePriceCalculator } from '@/hooks/usePriceCalculator';
 import { formatearPrecio } from '@/utils/formatters';
 
@@ -131,12 +132,13 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Input
-                  type="number"
+                <ProductNumberInput
                   value={inputs.attendees}
-                  onChange={(e) => updateInput('attendees', parseInt(e.target.value) || 0)}
+                  onChange={(value) => updateInput('attendees', value)}
+                  min={0}
                   placeholder="Número de asistentes"
-                  min="0"
+                  className="w-full h-10 px-3 py-2 text-left"
+                  allowEmpty={true}
                 />
               </CardContent>
             </Card>
@@ -152,26 +154,24 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
               <CardContent className="space-y-4">
                 <div>
                   <Label htmlFor="manual-percent" className="text-xs">Manual (%)</Label>
-                  <Input
-                    id="manual-percent"
-                    type="number"
+                  <ProductNumberInput
                     value={inputs.distributionPercentages.manual}
-                    onChange={(e) => handlePercentageChange('manual', parseFloat(e.target.value) || 0)}
-                    min="0"
-                    max="100"
-                    step="0.1"
+                    onChange={(value) => handlePercentageChange('manual', value)}
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    className="w-full h-10 px-3 py-2 text-left"
                   />
                 </div>
                 <div>
                   <Label htmlFor="express-percent" className="text-xs">Express QR (%)</Label>
-                  <Input
-                    id="express-percent"
-                    type="number"
+                  <ProductNumberInput
                     value={inputs.distributionPercentages.expressQR}
-                    onChange={(e) => handlePercentageChange('expressQR', parseFloat(e.target.value) || 0)}
-                    min="0"
-                    max="100"
-                    step="0.1"
+                    onChange={(value) => handlePercentageChange('expressQR', value)}
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    className="w-full h-10 px-3 py-2 text-left"
                   />
                 </div>
                 <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
@@ -191,22 +191,20 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
               <CardContent className="space-y-4">
                 <div>
                   <Label htmlFor="manual-capacity" className="text-xs">Manual (asistentes por acreditador)</Label>
-                  <Input
-                    id="manual-capacity"
-                    type="number"
+                  <ProductNumberInput
                     value={inputs.accreditationCapacity.manual}
-                    onChange={(e) => updateAccreditationCapacity('manual', parseInt(e.target.value) || 1)}
-                    min="1"
+                    onChange={(value) => updateAccreditationCapacity('manual', value)}
+                    min={1}
+                    className="w-full h-10 px-3 py-2 text-left"
                   />
                 </div>
                 <div>
                   <Label htmlFor="express-capacity" className="text-xs">Express QR (asistentes por acreditador)</Label>
-                  <Input
-                    id="express-capacity"
-                    type="number"
+                  <ProductNumberInput
                     value={inputs.accreditationCapacity.expressQR}
-                    onChange={(e) => updateAccreditationCapacity('expressQR', parseInt(e.target.value) || 1)}
-                    min="1"
+                    onChange={(value) => updateAccreditationCapacity('expressQR', value)}
+                    min={1}
+                    className="w-full h-10 px-3 py-2 text-left"
                   />
                 </div>
                 <p className="text-xs text-gray-500">
@@ -263,28 +261,26 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label className="text-xs">Costo por Acreditador</Label>
-                        <Input
-                          type="number"
+                        <ProductNumberInput
                           value={editableUnitPrices.acreditador}
-                          onChange={(e) => setEditableUnitPrices(prev => ({
+                          onChange={(value) => setEditableUnitPrices(prev => ({
                             ...prev,
-                            acreditador: parseInt(e.target.value) || 0
+                            acreditador: value
                           }))}
-                          min="0"
-                          className="text-sm"
+                          min={0}
+                          className="w-full h-9 px-2 py-1 text-sm text-left"
                         />
                       </div>
                       <div>
                         <Label className="text-xs">Costo por Supervisor</Label>
-                        <Input
-                          type="number"
+                        <ProductNumberInput
                           value={editableUnitPrices.supervisor}
-                          onChange={(e) => setEditableUnitPrices(prev => ({
+                          onChange={(value) => setEditableUnitPrices(prev => ({
                             ...prev,
-                            supervisor: parseInt(e.target.value) || 0
+                            supervisor: value
                           }))}
-                          min="0"
-                          className="text-sm"
+                          min={0}
+                          className="w-full h-9 px-2 py-1 text-sm text-left"
                         />
                       </div>
                     </div>
@@ -299,28 +295,26 @@ const PriceCalculatorDialog: React.FC<PriceCalculatorDialogProps> = ({
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label className="text-xs">Número de Acreditadores</Label>
-                        <Input
-                          type="number"
+                        <ProductNumberInput
                           value={editableQuantities.acreditadores}
-                          onChange={(e) => setEditableQuantities(prev => ({
+                          onChange={(value) => setEditableQuantities(prev => ({
                             ...prev,
-                            acreditadores: parseInt(e.target.value) || 0
+                            acreditadores: value
                           }))}
-                          min="0"
-                          className="text-sm"
+                          min={0}
+                          className="w-full h-9 px-2 py-1 text-sm text-left"
                         />
                       </div>
                       <div>
                         <Label className="text-xs">Número de Supervisores</Label>
-                        <Input
-                          type="number"
+                        <ProductNumberInput
                           value={editableQuantities.supervisores}
-                          onChange={(e) => setEditableQuantities(prev => ({
+                          onChange={(value) => setEditableQuantities(prev => ({
                             ...prev,
-                            supervisores: parseInt(e.target.value) || 0
+                            supervisores: value
                           }))}
-                          min="0"
-                          className="text-sm"
+                          min={0}
+                          className="w-full h-9 px-2 py-1 text-sm text-left"
                         />
                       </div>
                     </div>

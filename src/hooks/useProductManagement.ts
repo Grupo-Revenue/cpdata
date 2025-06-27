@@ -70,23 +70,27 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
         
         // Recalcular total cuando cambie precio, cantidad o descuento
         if (campo === 'precioUnitario' || campo === 'precio_unitario' || campo === 'cantidad' || campo === 'descuentoPorcentaje') {
+          let precio = productoActualizado.precioUnitario || productoActualizado.precio_unitario;
+          let cantidad = productoActualizado.cantidad;
+          let descuento = productoActualizado.descuentoPorcentaje || 0;
+          
+          // Handle the specific field being updated with proper type conversion and validation
           if (campo === 'precioUnitario' || campo === 'precio_unitario') {
-            const precio = typeof valor === 'number' ? valor : parseFloat(valor) || 0;
+            // Convert to number, ensure it's not negative, default to 0 if invalid
+            precio = typeof valor === 'number' ? Math.max(0, valor) : Math.max(0, parseFloat(valor) || 0);
             productoActualizado.precioUnitario = precio;
             productoActualizado.precio_unitario = precio;
           } else if (campo === 'cantidad') {
-            const cantidad = typeof valor === 'number' ? valor : parseInt(valor) || 1;
+            // Convert to integer, ensure it's at least 1, default to 1 if invalid
+            cantidad = typeof valor === 'number' ? Math.max(1, Math.floor(valor)) : Math.max(1, parseInt(valor) || 1);
             productoActualizado.cantidad = cantidad;
           } else if (campo === 'descuentoPorcentaje') {
-            const descuento = typeof valor === 'number' ? valor : parseFloat(valor) || 0;
-            productoActualizado.descuentoPorcentaje = Math.max(0, Math.min(100, descuento));
+            // Convert to number, clamp between 0-100, default to 0 if invalid
+            descuento = typeof valor === 'number' ? Math.max(0, Math.min(100, valor)) : Math.max(0, Math.min(100, parseFloat(valor) || 0));
+            productoActualizado.descuentoPorcentaje = descuento;
           }
           
-          productoActualizado.total = calcularTotalProducto(
-            productoActualizado.cantidad,
-            productoActualizado.precioUnitario || productoActualizado.precio_unitario,
-            productoActualizado.descuentoPorcentaje || 0
-          );
+          productoActualizado.total = calcularTotalProducto(cantidad, precio, descuento);
         }
         
         console.log('Product updated', { original: producto, updated: productoActualizado });

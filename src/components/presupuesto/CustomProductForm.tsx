@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import RichTextEditor from '@/components/ui/rich-text-editor';
+import ProductNumberInput from './components/ProductNumberInput';
 import { Plus, Package } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -70,17 +71,14 @@ const CustomProductForm: React.FC<CustomProductFormProps> = ({ onAgregarProducto
           </div>
           <div>
             <Label htmlFor="precio">Precio Unitario (CLP) *</Label>
-            <Input
-              id="precio"
-              type="number"
-              step="1"
-              min="0"
+            <ProductNumberInput
               value={producto.precioUnitario}
-              onChange={(e) => setProducto({ 
-                ...producto, 
-                precioUnitario: parseFloat(e.target.value) || 0 
-              })}
+              onChange={(value) => setProducto({ ...producto, precioUnitario: value })}
+              min={0}
+              step={1}
               placeholder="Ej: 15000"
+              className="w-full h-10 px-3 py-2 text-left"
+              allowEmpty={true}
             />
           </div>
         </div>
@@ -97,15 +95,12 @@ const CustomProductForm: React.FC<CustomProductFormProps> = ({ onAgregarProducto
         
         <div>
           <Label htmlFor="cantidad">Cantidad</Label>
-          <Input
-            id="cantidad"
-            type="number"
-            min="1"
+          <ProductNumberInput
             value={producto.cantidad}
-            onChange={(e) => setProducto({ 
-              ...producto, 
-              cantidad: parseInt(e.target.value) || 1 
-            })}
+            onChange={(value) => setProducto({ ...producto, cantidad: value })}
+            min={1}
+            placeholder="1"
+            className="w-full h-10 px-3 py-2 text-left"
           />
         </div>
         
