@@ -1,6 +1,19 @@
+
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
 import { Negocio, Presupuesto, EstadoNegocio, EstadoPresupuesto } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
+import { obtenerNegociosDesdeSupabase } from '@/services/negocioService';
+import { 
+  crearNegocioEnSupabase, 
+  actualizarNegocioEnSupabase, 
+  eliminarNegocioEnSupabase, 
+  cambiarEstadoNegocioEnSupabase 
+} from '@/services/negocioCrudService';
+import {
+  crearPresupuestoEnSupabase,
+  actualizarPresupuestoEnSupabase,
+  eliminarPresupuestoEnSupabase,
+  cambiarEstadoPresupuestoEnSupabase
+} from '@/services/presupuestoService';
 
 interface NegocioContextProps {
   negocios: Negocio[];
@@ -19,99 +32,6 @@ interface NegocioContextProps {
 }
 
 const NegocioContext = createContext<NegocioContextProps | undefined>(undefined);
-
-const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
-  try {
-    console.log('[NegocioContext] ==> FETCHING NEGOCIOS FROM DATABASE <==');
-    
-    const { data, error } = await supabase
-      .from('negocios')
-      .select(`
-        *,
-        contacto: contactos (id, nombre, apellido, email, telefono, cargo, created_at, updated_at, user_id),
-        productora: empresas!productora_id (id, nombre, tipo, rut, sitio_web, direccion, created_at, updated_at, user_id),
-        clienteFinal: empresas!cliente_final_id (id, nombre, tipo, rut, sitio_web, direccion, created_at, updated_at, user_id),
-        presupuestos (
-          id,
-          estado,
-          facturado,
-          total,
-          created_at,
-          fecha_envio,
-          fecha_aprobacion,
-          fecha_rechazo,
-          fecha_vencimiento,
-          nombre,
-          negocio_id,
-          updated_at
-        )
-      `)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error("[NegocioContext] Error fetching negocios:", error);
-      throw error;
-    }
-    
-    console.log('[NegocioContext] Raw data from database:', {
-      count: data?.length || 0,
-      sample: data?.[0] ? {
-        id: data[0].id,
-        numero: data[0].numero,
-        contacto: data[0].contacto?.nombre
-      } : 'No data'
-    });
-    
-    // Transform the data to match ExtendedNegocio type
-    const transformedData = data.map((negocio, index) => {
-      const transformed = {
-        ...negocio,
-        // Add required legacy properties for backwards compatibility
-        evento: {
-          tipoEvento: negocio.tipo_evento,
-          nombreEvento: negocio.nombre_evento,
-          fechaEvento: negocio.fecha_evento,
-          horasAcreditacion: negocio.horas_acreditacion,
-          cantidadAsistentes: negocio.cantidad_asistentes || 0,
-          cantidadInvitados: negocio.cantidad_invitados || 0,
-          locacion: negocio.locacion
-        },
-        fechaCreacion: negocio.created_at,
-        fechaCierre: negocio.fecha_cierre,
-        presupuestos: negocio.presupuestos?.map(p => ({
-          ...p,
-          fechaCreacion: p.created_at,
-          fechaEnvio: p.fecha_envio,
-          fechaAprobacion: p.fecha_aprobacion,
-          fechaRechazo: p.fecha_rechazo,
-          fechaVencimiento: p.fecha_vencimiento
-        })) || []
-      };
-      
-      console.log(`[NegocioContext] Transformed negocio ${index}:`, {
-        originalId: negocio.id,
-        transformedId: transformed.id,
-        numero: transformed.numero,
-        contacto: transformed.contacto?.nombre,
-        evento: transformed.evento?.nombreEvento,
-        idMatch: negocio.id === transformed.id
-      });
-      
-      return transformed;
-    });
-    
-    console.log('[NegocioContext] ==> TRANSFORMATION COMPLETE <==');
-    console.log('[NegocioContext] Final transformed data:', {
-      count: transformedData.length,
-      ids: transformedData.map(n => ({ id: n.id, numero: n.numero }))
-    });
-    
-    return transformedData as Negocio[];
-  } catch (error) {
-    console.error("[NegocioContext] Failed to fetch negocios:", error);
-    throw error;
-  }
-};
 
 const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [negocios, setNegocios] = useState<Negocio[]>([]);
@@ -143,7 +63,6 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     obtenerNegocios();
   }, [obtenerNegocios]);
 
-  // Nueva función para refrescar negocios manualmente
   const refreshNegocios = async () => {
     console.log('[NegocioContext] ==> MANUAL REFRESH REQUESTED <==');
     setLoading(true);
@@ -184,353 +103,52 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   };
 
   const crearNegocio = async (negocioData: any): Promise<Negocio | null> => {
-    try {
-      // First create contact if provided
-      let contactoId = null;
-      if (negocioData.contacto) {
-        const { data: contactoData, error: contactoError } = await supabase
-          .from('contactos')
-          .insert([{
-            ...negocioData.contacto,
-            user_id: (await supabase.auth.getUser()).data.user?.id
-          }])
-          .select('id')
-          .single();
-
-        if (contactoError) throw contactoError;
-        contactoId = contactoData.id;
-      }
-
-      // Create productora if provided
-      let productoraId = null;
-      if (negocioData.productora) {
-        const { data: productoraData, error: productoraError } = await supabase
-          .from('empresas')
-          .insert([{
-            ...negocioData.productora,
-            user_id: (await supabase.auth.getUser()).data.user?.id
-          }])
-          .select('id')
-          .single();
-
-        if (productoraError) throw productoraError;
-        productoraId = productoraData.id;
-      }
-
-      // Create cliente final if provided
-      let clienteFinalId = null;
-      if (negocioData.clienteFinal) {
-        const { data: clienteData, error: clienteError } = await supabase
-          .from('empresas')
-          .insert([{
-            ...negocioData.clienteFinal,
-            user_id: (await supabase.auth.getUser()).data.user?.id
-          }])
-          .select('id')
-          .single();
-
-        if (clienteError) throw clienteError;
-        clienteFinalId = clienteData.id;
-      }
-
-      // Get next business number
-      const userId = (await supabase.auth.getUser()).data.user?.id;
-      const { data: counterData, error: counterError } = await supabase
-        .from('contadores_usuario')
-        .select('contador_negocio')
-        .eq('user_id', userId)
-        .single();
-
-      if (counterError) throw counterError;
-
-      // Create the negocio
-      const { data, error } = await supabase
-        .from('negocios')
-        .insert([{
-          user_id: userId,
-          numero: counterData.contador_negocio,
-          contacto_id: contactoId,
-          productora_id: productoraId,
-          cliente_final_id: clienteFinalId,
-          tipo_evento: negocioData.tipo_evento,
-          nombre_evento: negocioData.nombre_evento,
-          fecha_evento: negocioData.fecha_evento,
-          horas_acreditacion: negocioData.horas_acreditacion,
-          cantidad_asistentes: negocioData.cantidad_asistentes || 0,
-          cantidad_invitados: negocioData.cantidad_invitados || 0,
-          locacion: negocioData.locacion,
-          fecha_cierre: negocioData.fecha_cierre,
-          estado: 'oportunidad_creada'
-        }])
-        .select(`
-          *,
-          contacto: contactos (id, nombre, apellido, email, telefono, cargo, created_at, updated_at, user_id),
-          productora: empresas!productora_id (id, nombre, tipo, rut, sitio_web, direccion, created_at, updated_at, user_id),
-          clienteFinal: empresas!cliente_final_id (id, nombre, tipo, rut, sitio_web, direccion, created_at, updated_at, user_id),
-          presupuestos (
-            id,
-            estado,
-            facturado,
-            total,
-            created_at,
-            fecha_envio,
-            fecha_aprobacion,
-            fecha_rechazo,
-            fecha_vencimiento,
-            nombre,
-            negocio_id,
-            updated_at
-          )
-        `)
-        .single();
-
-      if (error) {
-        console.error("Error creating negocio:", error);
-        throw error;
-      }
-
-      // Update counter
-      await supabase
-        .from('contadores_usuario')
-        .update({ contador_negocio: counterData.contador_negocio + 1 })
-        .eq('user_id', userId);
-
-      // Transform the data to match ExtendedNegocio type
-      const transformedNegocio = {
-        ...data,
-        evento: {
-          tipoEvento: data.tipo_evento,
-          nombreEvento: data.nombre_evento,
-          fechaEvento: data.fecha_evento,
-          horasAcreditacion: data.horas_acreditacion,
-          cantidadAsistentes: data.cantidad_asistentes,
-          cantidadInvitados: data.cantidad_invitados,
-          locacion: data.locacion
-        },
-        fechaCreacion: data.created_at,
-        fechaCierre: data.fecha_cierre,
-        presupuestos: data.presupuestos?.map(p => ({
-          ...p,
-          fechaCreacion: p.created_at,
-          fechaEnvio: p.fecha_envio,
-          fechaAprobacion: p.fecha_aprobacion,
-          fechaRechazo: p.fecha_rechazo,
-          fechaVencimiento: p.fecha_vencimiento
-        })) || []
-      };
-
-      setNegocios(prevNegocios => [transformedNegocio as Negocio, ...prevNegocios]);
-      return transformedNegocio as Negocio;
-    } catch (error) {
-      console.error("Failed to create negocio:", error);
-      return null;
+    const nuevoNegocio = await crearNegocioEnSupabase(negocioData);
+    if (nuevoNegocio) {
+      setNegocios(prevNegocios => [nuevoNegocio, ...prevNegocios]);
     }
+    return nuevoNegocio;
   };
 
   const actualizarNegocio = async (id: string, updates: Partial<Negocio>): Promise<Negocio | null> => {
-    try {
-      const { data, error } = await supabase
-        .from('negocios')
-        .update(updates)
-        .eq('id', id)
-        .select(`
-          *,
-          contacto: contactos (id, nombre, apellido, email, telefono, cargo, created_at, updated_at, user_id),
-          productora: empresas!productora_id (id, nombre, tipo, rut, sitio_web, direccion, created_at, updated_at, user_id),
-          clienteFinal: empresas!cliente_final_id (id, nombre, tipo, rut, sitio_web, direccion, created_at, updated_at, user_id),
-          presupuestos (
-            id,
-            estado,
-            facturado,
-            total,
-            created_at,
-            fecha_envio,
-            fecha_aprobacion,
-            fecha_rechazo,
-            fecha_vencimiento,
-            nombre,
-            negocio_id,
-            updated_at
-          )
-        `)
-        .single();
-
-      if (error) {
-        console.error("Error updating negocio:", error);
-        throw error;
-      }
-
-      // Transform the data
-      const transformedNegocio = {
-        ...data,
-        evento: {
-          tipoEvento: data.tipo_evento,
-          nombreEvento: data.nombre_evento,
-          fechaEvento: data.fecha_evento,
-          horasAcreditacion: data.horas_acreditacion,
-          cantidadAsistentes: data.cantidad_asistentes || 0,
-          cantidadInvitados: data.cantidad_invitados || 0,
-          locacion: data.locacion
-        },
-        fechaCreacion: data.created_at,
-        fechaCierre: data.fecha_cierre,
-        presupuestos: data.presupuestos?.map(p => ({
-          ...p,
-          fechaCreacion: p.created_at,
-          fechaEnvio: p.fecha_envio,
-          fechaAprobacion: p.fecha_aprobacion,
-          fechaRechazo: p.fecha_rechazo,
-          fechaVencimiento: p.fecha_vencimiento
-        })) || []
-      };
-
+    const negocioActualizado = await actualizarNegocioEnSupabase(id, updates);
+    if (negocioActualizado) {
       setNegocios(prevNegocios =>
-        prevNegocios.map(negocio => (negocio.id === id ? transformedNegocio as Negocio : negocio))
+        prevNegocios.map(negocio => (negocio.id === id ? negocioActualizado : negocio))
       );
-      return transformedNegocio as Negocio;
-    } catch (error) {
-      console.error("Failed to update negocio:", error);
-      return null;
     }
+    return negocioActualizado;
   };
 
   const eliminarNegocio = async (id: string): Promise<boolean> => {
-    try {
-      const { error } = await supabase
-        .from('negocios')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error("Error deleting negocio:", error);
-        throw error;
-      }
-
+    const eliminado = await eliminarNegocioEnSupabase(id);
+    if (eliminado) {
       setNegocios(prevNegocios => prevNegocios.filter(negocio => negocio.id !== id));
-      return true;
-    } catch (error) {
-      console.error("Failed to delete negocio:", error);
-      return false;
     }
+    return eliminado;
   };
 
   const crearPresupuesto = async (negocioId: string, presupuestoData: Omit<Presupuesto, 'id' | 'created_at' | 'updated_at'>): Promise<Presupuesto | null> => {
-    try {
-      console.log('Creating presupuesto with data:', presupuestoData);
-      
-      // Clean the presupuesto data to only include database columns
-      const cleanPresupuestoData = {
-        nombre: presupuestoData.nombre,
-        estado: presupuestoData.estado,
-        total: presupuestoData.total,
-        facturado: presupuestoData.facturado || false,
-        negocio_id: negocioId,
-        fecha_envio: presupuestoData.fecha_envio,
-        fecha_aprobacion: presupuestoData.fecha_aprobacion,
-        fecha_rechazo: presupuestoData.fecha_rechazo,
-        fecha_vencimiento: presupuestoData.fecha_vencimiento
-      };
-
-      console.log('Clean presupuesto data for database:', cleanPresupuestoData);
-      
-      // Start a transaction by creating the main presupuesto first
-      const { data: presupuestoCreado, error: presupuestoError } = await supabase
-        .from('presupuestos')
-        .insert([cleanPresupuestoData])
-        .select('*')
-        .single();
-
-      if (presupuestoError) {
-        console.error("Error creating presupuesto:", presupuestoError);
-        throw presupuestoError;
-      }
-
-      console.log('Presupuesto created successfully:', presupuestoCreado);
-
-      // Create the complete presupuesto object with the correct type
-      let presupuestoCompleto: Presupuesto = {
-        ...presupuestoCreado,
-        // Add legacy properties for backwards compatibility
-        fechaCreacion: presupuestoCreado.created_at,
-        fechaEnvio: presupuestoCreado.fecha_envio,
-        fechaAprobacion: presupuestoCreado.fecha_aprobacion,
-        fechaRechazo: presupuestoCreado.fecha_rechazo,
-        fechaVencimiento: presupuestoCreado.fecha_vencimiento,
-        productos: []
-      };
-
-      // Now insert the products if they exist
-      if (presupuestoData.productos && presupuestoData.productos.length > 0) {
-        console.log('Inserting products:', presupuestoData.productos);
-        
-        const productosParaInsertar = presupuestoData.productos.map(producto => ({
-          presupuesto_id: presupuestoCreado.id,
-          nombre: producto.nombre,
-          descripcion: producto.descripcion || '',
-          cantidad: producto.cantidad,
-          precio_unitario: producto.precio_unitario,
-          total: producto.cantidad * producto.precio_unitario
-        }));
-
-        console.log('Products to insert:', productosParaInsertar);
-
-        const { data: productosCreados, error: productosError } = await supabase
-          .from('productos_presupuesto')
-          .insert(productosParaInsertar)
-          .select('*');
-
-        if (productosError) {
-          console.error("Error creating productos:", productosError);
-          // If products fail to insert, we should clean up the presupuesto
-          await supabase.from('presupuestos').delete().eq('id', presupuestoCreado.id);
-          throw new Error(`Error al guardar los productos del presupuesto: ${productosError.message}`);
-        }
-
-        console.log('Products created successfully:', productosCreados);
-        
-        // Add the products to the presupuesto object with proper typing
-        presupuestoCompleto.productos = productosCreados.map(producto => ({
-          ...producto,
-          comentarios: '',
-          descuentoPorcentaje: 0,
-          precioUnitario: producto.precio_unitario
-        }));
-      }
-
+    const nuevoPresupuesto = await crearPresupuestoEnSupabase(negocioId, presupuestoData);
+    if (nuevoPresupuesto) {
       // Update the local state optimistically
       setNegocios(prevNegocios =>
         prevNegocios.map(negocio =>
           negocio.id === negocioId
             ? { 
                 ...negocio, 
-                presupuestos: [...(negocio.presupuestos || []), presupuestoCompleto] 
+                presupuestos: [...(negocio.presupuestos || []), nuevoPresupuesto] 
               }
             : negocio
         )
       );
-
-      console.log('Presupuesto creation completed successfully');
-      return presupuestoCompleto;
-    } catch (error) {
-      console.error("Failed to create presupuesto:", error);
-      throw error; // Re-throw to be handled by the calling function
     }
+    return nuevoPresupuesto;
   };
 
   const actualizarPresupuesto = async (negocioId: string, presupuestoId: string, updates: Partial<Presupuesto>): Promise<Presupuesto | null> => {
-    try {
-      const { data, error } = await supabase
-        .from('presupuestos')
-        .update(updates)
-        .eq('id', presupuestoId)
-        .select('*')
-        .single();
-
-      if (error) {
-        console.error("Error updating presupuesto:", error);
-        throw error;
-      }
-
+    const presupuestoActualizado = await actualizarPresupuestoEnSupabase(presupuestoId, updates);
+    if (presupuestoActualizado) {
       // Optimistically update the negocios state
       setNegocios(prevNegocios =>
         prevNegocios.map(negocio =>
@@ -538,32 +156,19 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
             ? {
                 ...negocio,
                 presupuestos: negocio.presupuestos.map(presupuesto =>
-                  presupuesto.id === presupuestoId ? { ...presupuesto, ...data } : presupuesto
+                  presupuesto.id === presupuestoId ? { ...presupuesto, ...presupuestoActualizado } : presupuesto
                 )
               }
             : negocio
         )
       );
-
-      return data as Presupuesto;
-    } catch (error) {
-      console.error("Failed to update presupuesto:", error);
-      return null;
     }
+    return presupuestoActualizado;
   };
 
   const eliminarPresupuesto = async (negocioId: string, presupuestoId: string): Promise<boolean> => {
-    try {
-      const { error } = await supabase
-        .from('presupuestos')
-        .delete()
-        .eq('id', presupuestoId);
-
-      if (error) {
-        console.error("Error deleting presupuesto:", error);
-        throw error;
-      }
-
+    const eliminado = await eliminarPresupuestoEnSupabase(presupuestoId);
+    if (eliminado) {
       // Optimistically update the negocios state
       setNegocios(prevNegocios =>
         prevNegocios.map(negocio =>
@@ -575,45 +180,27 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
             : negocio
         )
       );
-
-      return true;
-    } catch (error) {
-      console.error("Failed to delete presupuesto:", error);
-      return false;
     }
+    return eliminado;
   };
 
   const cambiarEstadoPresupuesto = async (negocioId: string, presupuestoId: string, nuevoEstado: EstadoPresupuesto, fechaVencimiento?: string): Promise<void> => {
     try {
-      const updates: { estado: EstadoPresupuesto; fecha_vencimiento?: string } = { estado: nuevoEstado };
-      if (fechaVencimiento) {
-        updates.fecha_vencimiento = fechaVencimiento;
+      const presupuestoActualizado = await cambiarEstadoPresupuestoEnSupabase(presupuestoId, nuevoEstado, fechaVencimiento);
+      if (presupuestoActualizado) {
+        setNegocios(prevNegocios =>
+          prevNegocios.map(negocio =>
+            negocio.id === negocioId
+              ? {
+                  ...negocio,
+                  presupuestos: negocio.presupuestos.map(presupuesto =>
+                    presupuesto.id === presupuestoId ? { ...presupuesto, ...presupuestoActualizado } : presupuesto
+                  )
+                }
+              : negocio
+          )
+        );
       }
-
-      const { data, error } = await supabase
-        .from('presupuestos')
-        .update(updates)
-        .eq('id', presupuestoId)
-        .select('*')
-        .single();
-
-      if (error) {
-        console.error("Error updating presupuesto state:", error);
-        throw error;
-      }
-
-      setNegocios(prevNegocios =>
-        prevNegocios.map(negocio =>
-          negocio.id === negocioId
-            ? {
-                ...negocio,
-                presupuestos: negocio.presupuestos.map(presupuesto =>
-                  presupuesto.id === presupuestoId ? { ...presupuesto, ...data } : presupuesto
-                )
-              }
-            : negocio
-        )
-      );
     } catch (error) {
       console.error("Failed to update presupuesto state:", error);
     }
@@ -621,66 +208,14 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   const cambiarEstadoNegocio = async (negocioId: string, nuevoEstado: EstadoNegocio): Promise<void> => {
     try {
-      const { data, error } = await supabase
-        .from('negocios')
-        .update({ estado: nuevoEstado })
-        .eq('id', negocioId)
-        .select(`
-          *,
-          contacto: contactos (id, nombre, apellido, email, telefono, cargo, created_at, updated_at, user_id),
-          productora: empresas!productora_id (id, nombre, tipo, rut, sitio_web, direccion, created_at, updated_at, user_id),
-          clienteFinal: empresas!cliente_final_id (id, nombre, tipo, rut, sitio_web, direccion, created_at, updated_at, user_id),
-          presupuestos (
-            id,
-            estado,
-            facturado,
-            total,
-            created_at,
-            fecha_envio,
-            fecha_aprobacion,
-            fecha_rechazo,
-            fecha_vencimiento,
-            nombre,
-            negocio_id,
-            updated_at
+      const negocioActualizado = await cambiarEstadoNegocioEnSupabase(negocioId, nuevoEstado);
+      if (negocioActualizado) {
+        setNegocios(prevNegocios =>
+          prevNegocios.map(negocio =>
+            negocio.id === negocioId ? negocioActualizado : negocio
           )
-        `)
-        .single();
-
-      if (error) {
-        console.error("Error updating negocio state:", error);
-        throw error;
+        );
       }
-
-      // Transform the data properly to match ExtendedNegocio
-      const transformedNegocio = {
-        ...data,
-        evento: {
-          tipoEvento: data.tipo_evento,
-          nombreEvento: data.nombre_evento,
-          fechaEvento: data.fecha_evento,
-          horasAcreditacion: data.horas_acreditacion,
-          cantidadAsistentes: data.cantidad_asistentes || 0,
-          cantidadInvitados: data.cantidad_invitados || 0,
-          locacion: data.locacion
-        },
-        fechaCreacion: data.created_at,
-        fechaCierre: data.fecha_cierre,
-        presupuestos: data.presupuestos?.map(p => ({
-          ...p,
-          fechaCreacion: p.created_at,
-          fechaEnvio: p.fecha_envio,
-          fechaAprobacion: p.fecha_aprobacion,
-          fechaRechazo: p.fecha_rechazo,
-          fechaVencimiento: p.fecha_vencimiento
-        })) || []
-      };
-
-      setNegocios(prevNegocios =>
-        prevNegocios.map(negocio =>
-          negocio.id === negocioId ? transformedNegocio as Negocio : negocio
-        )
-      );
     } catch (error) {
       console.error("Failed to update negocio state:", error);
     }

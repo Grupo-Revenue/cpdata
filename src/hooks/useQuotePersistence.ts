@@ -44,6 +44,10 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
       fecha_aprobacion: null,
       fecha_rechazo: null,
       fecha_vencimiento: null,
+      fechaCreacion: new Date().toISOString(),
+      fechaEnvio: null,
+      fechaAprobacion: null,
+      fechaRechazo: null,
       // Convert products to the format expected by the database
       productos: productos.map(producto => ({
         nombre: producto.nombre,
