@@ -38,17 +38,28 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const obtenerNegocios = useCallback(async () => {
+  const obtenerNegocios = useCallback(async (forceRefresh = false) => {
     console.log('[NegocioContext] ==> LOADING NEGOCIOS <==');
+    console.log('[NegocioContext] Force refresh:', forceRefresh);
     setLoading(true);
     try {
       const negociosData = await obtenerNegociosDesdeSupabase();
-      console.log('[NegocioContext] Setting negocios state:', {
+      console.log('[NegocioContext] Received negocios data:', {
         count: negociosData.length,
-        firstFew: negociosData.slice(0, 3).map(n => ({ id: n.id, numero: n.numero }))
+        timestamp: new Date().toISOString(),
+        firstFew: negociosData.slice(0, 3).map(n => ({ 
+          id: n.id, 
+          numero: n.numero,
+          quotesCount: n.presupuestos?.length || 0,
+          quoteNames: n.presupuestos?.map(p => p.nombre) || []
+        }))
       });
+      
+      // Always update state to ensure UI refresh
       setNegocios(negociosData);
       setError(null);
+      
+      console.log('[NegocioContext] State updated successfully');
     } catch (e: any) {
       console.error('[NegocioContext] Error loading negocios:', e);
       setError(e.message || "Error al cargar los negocios");
@@ -65,39 +76,38 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   const refreshNegocios = async () => {
     console.log('[NegocioContext] ==> MANUAL REFRESH REQUESTED <==');
-    setLoading(true);
+    console.log('[NegocioContext] Current state before refresh:', {
+      negociosCount: negocios.length,
+      timestamp: new Date().toISOString()
+    });
+    
     try {
-      await obtenerNegocios();
+      // Force a complete refresh
+      await obtenerNegocios(true);
+      console.log('[NegocioContext] Manual refresh completed successfully');
     } catch (error) {
       console.error('[NegocioContext] Error during manual refresh:', error);
-    } finally {
-      setLoading(false);
+      throw error; // Re-throw to allow caller to handle
     }
   };
 
   const obtenerNegocio = (id: string): Negocio | undefined => {
     console.log('[NegocioContext] ==> SEARCHING FOR NEGOCIO <==');
     console.log('[NegocioContext] Searching for ID:', id);
-    console.log('[NegocioContext] ID type:', typeof id);
     console.log('[NegocioContext] Available negocios:', negocios.length);
     
-    // Log all available IDs for debugging
-    console.log('[NegocioContext] All available IDs:');
-    negocios.forEach((negocio, index) => {
-      console.log(`[NegocioContext] - ${index}: ${negocio.id} (${typeof negocio.id})`);
-    });
+    const found = negocios.find(negocio => negocio.id === id);
     
-    const found = negocios.find(negocio => {
-      const match = negocio.id === id;
-      console.log(`[NegocioContext] Comparing ${negocio.id} === ${id}: ${match}`);
-      return match;
-    });
-    
-    console.log('[NegocioContext] Search result:', {
-      found: !!found,
-      foundId: found?.id,
-      foundNumero: found?.numero
-    });
+    if (found) {
+      console.log('[NegocioContext] Found negocio:', {
+        id: found.id,
+        numero: found.numero,
+        quotesCount: found.presupuestos?.length || 0,
+        quoteNames: found.presupuestos?.map(p => p.nombre) || []
+      });
+    } else {
+      console.log('[NegocioContext] Negocio not found');
+    }
     
     return found;
   };

@@ -16,18 +16,48 @@ const UpdateQuoteNamesButton: React.FC = () => {
     }
 
     setIsUpdating(true);
+    console.log('[UpdateQuoteNamesButton] Starting quote name update process');
+    console.log('[UpdateQuoteNamesButton] Current negocios count:', negocios.length);
     
     try {
+      // Log current state before update
+      console.log('[UpdateQuoteNamesButton] Current negocios with quotes:');
+      negocios.forEach(negocio => {
+        if (negocio.presupuestos && negocio.presupuestos.length > 0) {
+          console.log(`[UpdateQuoteNamesButton] Business ${negocio.numero}:`, {
+            id: negocio.id,
+            quotes: negocio.presupuestos.map(p => ({ id: p.id, name: p.nombre }))
+          });
+        }
+      });
+
       const result = await updateAllExistingQuoteNames(negocios);
+      console.log('[UpdateQuoteNamesButton] Update result:', result);
       
       if (result.success > 0) {
         toast({
-          title: "Actualización completada",
-          description: `Se actualizaron exitosamente ${result.success} negocios. ${result.failed > 0 ? `${result.failed} fallaron.` : ''}`,
+          title: "Actualización en progreso",
+          description: `Actualizando ${result.success} negocios. Refrescando datos...`,
         });
         
-        // Refresh the data to show updated names
-        await refreshNegocios();
+        console.log('[UpdateQuoteNamesButton] Triggering data refresh...');
+        
+        // Force a complete refresh with a small delay to ensure database writes are complete
+        setTimeout(async () => {
+          console.log('[UpdateQuoteNamesButton] Executing refresh...');
+          await refreshNegocios();
+          
+          // Wait for refresh to complete and log the results
+          setTimeout(() => {
+            console.log('[UpdateQuoteNamesButton] Refresh completed. New state:');
+            console.log('[UpdateQuoteNamesButton] Total negocios after refresh:', negocios.length);
+            
+            toast({
+              title: "Actualización completada",
+              description: `Se actualizaron exitosamente ${result.success} negocios. ${result.failed > 0 ? `${result.failed} fallaron.` : ''}`,
+            });
+          }, 1000);
+        }, 2000);
       } else {
         toast({
           title: "Sin cambios",
@@ -35,7 +65,7 @@ const UpdateQuoteNamesButton: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error during bulk update:', error);
+      console.error('[UpdateQuoteNamesButton] Error during bulk update:', error);
       toast({
         title: "Error",
         description: "Ocurrió un error al actualizar los nombres de presupuestos",

@@ -5,6 +5,11 @@ import { Negocio } from '@/types';
 export const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
   try {
     console.log('[NegocioService] ==> FETCHING NEGOCIOS FROM DATABASE <==');
+    console.log('[NegocioService] Timestamp:', new Date().toISOString());
+    
+    // Add cache-busting parameter to ensure fresh data
+    const cacheKey = Date.now();
+    console.log('[NegocioService] Cache key:', cacheKey);
     
     const { data, error } = await supabase
       .from('negocios')
@@ -35,12 +40,18 @@ export const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
       throw error;
     }
     
-    console.log('[NegocioService] Raw data from database:', {
+    console.log('[NegocioService] Raw data received:', {
       count: data?.length || 0,
-      sample: data?.[0] ? {
-        id: data[0].id,
-        numero: data[0].numero,
-        contacto: data[0].contacto?.nombre
+      timestamp: new Date().toISOString(),
+      firstBusinessQuotes: data?.[0] ? {
+        businessId: data[0].id,
+        businessNumber: data[0].numero,
+        quotesCount: data[0].presupuestos?.length || 0,
+        quotes: data[0].presupuestos?.map(p => ({ 
+          id: p.id, 
+          name: p.nombre, 
+          updated_at: p.updated_at 
+        })) || []
       } : 'No data'
     });
     
@@ -70,22 +81,23 @@ export const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
         })) || []
       };
       
-      console.log(`[NegocioService] Transformed negocio ${index}:`, {
-        originalId: negocio.id,
-        transformedId: transformed.id,
+      console.log(`[NegocioService] Transformed negocio ${index + 1}/${data.length}:`, {
+        id: transformed.id,
         numero: transformed.numero,
-        contacto: transformed.contacto?.nombre,
-        evento: transformed.evento?.nombreEvento,
-        idMatch: negocio.id === transformed.id
+        quotesCount: transformed.presupuestos.length,
+        quoteNames: transformed.presupuestos.map(p => p.nombre),
+        lastUpdated: transformed.updated_at
       });
       
       return transformed;
     });
     
     console.log('[NegocioService] ==> TRANSFORMATION COMPLETE <==');
-    console.log('[NegocioService] Final transformed data:', {
-      count: transformedData.length,
-      ids: transformedData.map(n => ({ id: n.id, numero: n.numero }))
+    console.log('[NegocioService] Final summary:', {
+      totalBusinesses: transformedData.length,
+      totalQuotes: transformedData.reduce((sum, n) => sum + n.presupuestos.length, 0),
+      businessesWithQuotes: transformedData.filter(n => n.presupuestos.length > 0).length,
+      timestamp: new Date().toISOString()
     });
     
     return transformedData as Negocio[];
