@@ -1,107 +1,161 @@
-
 import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, Users, Package, Palette, Settings, Database } from 'lucide-react';
-import AdminUsuarios from '@/components/admin/AdminUsuarios';
-import AdminProductos from '@/components/admin/AdminProductos';
-import AdminMarca from '@/components/admin/AdminMarca';
-import AdminLineasProducto from '@/components/admin/AdminLineasProducto';
-import BusinessStateManager from '@/components/admin/BusinessStateManager';
-import { useAuth } from '@/context/AuthContext';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { UserTable } from '@/components/UserTable';
+import { ProductTable } from '@/components/ProductTable';
+import { useToast } from "@/hooks/use-toast"
+import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useRouter } from 'next/navigation';
+import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
+import { useEffect } from 'react';
+import { validate } from 'uuid';
+import UpdateQuoteNamesButton from '@/components/admin/UpdateQuoteNamesButton';
 
 const Admin = () => {
-  const { isAdmin } = useAuth();
-  const [activeTab, setActiveTab] = useState('estados');
+  const [activeTab, setActiveTab] = useState("usuarios");
+  const [open, setOpen] = React.useState(false)
+  const [email, setEmail] = React.useState("")
+  const [password, setPassword] = React.useState("")
+  const { toast } = useToast()
+	const router = useRouter()
+	const session = useSession()
+	const supabase = useSupabaseClient()
 
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-red-600">
-              <Shield className="w-5 h-5" />
-              <span>Acceso Denegado</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600">
-              No tienes permisos para acceder al panel de administración.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+	useEffect(() => {
+		const checkAdmin = async () => {
+			if (session && session.user) {
+				const { data: isAdmin, error } = await supabase
+					.from('profiles')
+					.select('is_admin')
+					.eq('id', session.user.id)
+					.single();
+
+				if (error) {
+					console.error('Error fetching admin status:', error);
+					return;
+				}
+
+				if (!isAdmin?.is_admin) {
+					router.push('/');
+				}
+			}
+		};
+
+		checkAdmin();
+	}, [session, supabase, router]);
+
+  const handleCreateUser = async () => {
+    if (!email || !password) {
+      toast({
+        title: "Error",
+        description: "Por favor, complete todos los campos.",
+        variant: "destructive",
+      })
+      return;
+    }
+
+    try {
+      const supabase = createClientComponentClient()
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: {
+            is_admin: false,
+          }
+        }
+      })
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        })
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Usuario creado exitosamente.",
+      })
+      setOpen(false)
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      })
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Panel de Administración</h1>
-          <p className="text-gray-600">Gestiona usuarios, productos y configuración del sistema</p>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="estados" className="flex items-center space-x-2">
-              <Database className="w-4 h-4" />
-              <span>Estados</span>
-            </TabsTrigger>
-            <TabsTrigger value="usuarios" className="flex items-center space-x-2">
-              <Users className="w-4 h-4" />
-              <span>Usuarios</span>
-            </TabsTrigger>
-            <TabsTrigger value="productos" className="flex items-center space-x-2">
-              <Package className="w-4 h-4" />
-              <span>Productos</span>
-            </TabsTrigger>
-            <TabsTrigger value="lineas" className="flex items-center space-x-2">
-              <Settings className="w-4 h-4" />
-              <span>Líneas</span>
-            </TabsTrigger>
-            <TabsTrigger value="marca" className="flex items-center space-x-2">
-              <Palette className="w-4 h-4" />
-              <span>Marca</span>
-            </TabsTrigger>
-            <TabsTrigger value="config" className="flex items-center space-x-2">
-              <Settings className="w-4 h-4" />
-              <span>Config</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="estados" className="mt-6">
-            <BusinessStateManager />
-          </TabsContent>
-
-          <TabsContent value="usuarios" className="mt-6">
-            <AdminUsuarios />
-          </TabsContent>
-
-          <TabsContent value="productos" className="mt-6">
-            <AdminProductos />
-          </TabsContent>
-
-          <TabsContent value="lineas" className="mt-6">
-            <AdminLineasProducto />
-          </TabsContent>
-
-          <TabsContent value="marca" className="mt-6">
-            <AdminMarca />
-          </TabsContent>
-
-          <TabsContent value="config" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configuración del Sistema</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">Configuraciones adicionales del sistema (próximamente)</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+    <div className="container mx-auto px-6 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Panel de Administración</h1>
+        <p className="text-gray-600">Gestiona usuarios, productos y configuración del sistema</p>
       </div>
+
+      <div className="mb-6 flex gap-4 flex-wrap">
+        <UpdateQuoteNamesButton />
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline">Crear Usuario</Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Crear un nuevo usuario</AlertDialogTitle>
+              <AlertDialogDescription>
+                Ingrese el correo electrónico y la contraseña del nuevo usuario.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="email" className="text-right">
+                  Email
+                </Label>
+                <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" type="email" />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="password" className="text-right">
+                  Password
+                </Label>
+                <Input id="password" value={password} onChange={(e) => setPassword(e.target.value)} className="col-span-3" type="password" />
+              </div>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleCreateUser}>Continue</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList>
+          <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
+          <TabsTrigger value="productos">Productos</TabsTrigger>
+        </TabsList>
+        <TabsContent value="usuarios">
+          <UserTable />
+        </TabsContent>
+        <TabsContent value="productos">
+          <ProductTable />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
