@@ -1,7 +1,7 @@
-
 import { useNegocio } from '@/context/NegocioContext';
 import { ProductoPresupuesto } from '@/types';
 import { toast } from '@/hooks/use-toast';
+import { generateQuoteName } from '@/utils/quoteNameGenerator';
 
 interface UseQuotePersistenceProps {
   negocioId: string;
@@ -33,9 +33,23 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
       return sum + (producto.cantidad * producto.precio_unitario);
     }, 0);
 
+    // Generate quote name using business number + sequential letter format
+    let quoteName: string;
+    if (presupuestoId) {
+      // For updates, keep the existing name
+      quoteName = presupuestoExistente?.nombre || `Presupuesto ${new Date().toLocaleDateString()}`;
+    } else {
+      // For new quotes, generate name using business number + letter
+      if (negocio) {
+        quoteName = generateQuoteName(negocio, negocio.presupuestos || []);
+      } else {
+        quoteName = `Presupuesto ${new Date().toLocaleDateString()}`;
+      }
+    }
+
     // Create clean presupuesto data with only database-compatible properties
     const presupuestoData = {
-      nombre: `Presupuesto ${new Date().toLocaleDateString()}`,
+      nombre: quoteName,
       estado: 'borrador' as const,
       total,
       facturado: false,
@@ -87,7 +101,7 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
         await crearPresupuesto(negocioId, presupuestoData);
         toast({
           title: "Presupuesto creado",
-          description: "El presupuesto y sus productos han sido guardados exitosamente",
+          description: `El presupuesto ${quoteName} ha sido guardado exitosamente`,
         });
       }
 
