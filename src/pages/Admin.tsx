@@ -1,7 +1,6 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { UserTable } from '@/components/UserTable';
-import { ProductTable } from '@/components/ProductTable';
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import {
@@ -17,45 +16,42 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { useRouter } from 'next/navigation';
-import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { validate } from 'uuid';
 import UpdateQuoteNamesButton from '@/components/admin/UpdateQuoteNamesButton';
+import { UserTable } from '@/components/admin/UserTable';
+import { ProductTable } from '@/components/admin/ProductTable';
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState("usuarios");
-  const [open, setOpen] = React.useState(false)
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
   const { toast } = useToast()
-	const router = useRouter()
-	const session = useSession()
-	const supabase = useSupabaseClient()
+  const navigate = useNavigate()
 
-	useEffect(() => {
-		const checkAdmin = async () => {
-			if (session && session.user) {
-				const { data: isAdmin, error } = await supabase
-					.from('profiles')
-					.select('is_admin')
-					.eq('id', session.user.id)
-					.single();
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const { data: userRole, error } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .single();
 
-				if (error) {
-					console.error('Error fetching admin status:', error);
-					return;
-				}
+        if (error || !userRole) {
+          navigate('/');
+        }
+      } else {
+        navigate('/');
+      }
+    };
 
-				if (!isAdmin?.is_admin) {
-					router.push('/');
-				}
-			}
-		};
-
-		checkAdmin();
-	}, [session, supabase, router]);
+    checkAdmin();
+  }, [navigate]);
 
   const handleCreateUser = async () => {
     if (!email || !password) {
@@ -68,7 +64,6 @@ const Admin = () => {
     }
 
     try {
-      const supabase = createClientComponentClient()
       const { data, error } = await supabase.auth.signUp({
         email: email,
         password: password,
@@ -92,7 +87,8 @@ const Admin = () => {
         title: "Success",
         description: "Usuario creado exitosamente.",
       })
-      setOpen(false)
+      setEmail("")
+      setPassword("")
     } catch (error: any) {
       toast({
         title: "Error",
