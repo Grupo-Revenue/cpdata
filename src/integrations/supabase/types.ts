@@ -141,6 +141,382 @@ export type Database = {
         }
         Relationships: []
       }
+      hubspot_api_keys: {
+        Row: {
+          api_key: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      hubspot_config: {
+        Row: {
+          api_key_set: boolean
+          auto_sync: boolean
+          bidirectional_sync: boolean
+          conflict_resolution_strategy: string
+          created_at: string
+          default_deal_stage: string | null
+          default_pipeline_id: string | null
+          id: string
+          last_poll_at: string | null
+          polling_interval_minutes: number
+          updated_at: string
+          user_id: string
+          webhook_enabled: boolean
+        }
+        Insert: {
+          api_key_set?: boolean
+          auto_sync?: boolean
+          bidirectional_sync?: boolean
+          conflict_resolution_strategy?: string
+          created_at?: string
+          default_deal_stage?: string | null
+          default_pipeline_id?: string | null
+          id?: string
+          last_poll_at?: string | null
+          polling_interval_minutes?: number
+          updated_at?: string
+          user_id: string
+          webhook_enabled?: boolean
+        }
+        Update: {
+          api_key_set?: boolean
+          auto_sync?: boolean
+          bidirectional_sync?: boolean
+          conflict_resolution_strategy?: string
+          created_at?: string
+          default_deal_stage?: string | null
+          default_pipeline_id?: string | null
+          id?: string
+          last_poll_at?: string | null
+          polling_interval_minutes?: number
+          updated_at?: string
+          user_id?: string
+          webhook_enabled?: boolean
+        }
+        Relationships: []
+      }
+      hubspot_state_mapping: {
+        Row: {
+          business_state: string
+          created_at: string
+          hubspot_pipeline_id: string
+          hubspot_stage_id: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_state: string
+          created_at?: string
+          hubspot_pipeline_id: string
+          hubspot_stage_id: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_state?: string
+          created_at?: string
+          hubspot_pipeline_id?: string
+          hubspot_stage_id?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      hubspot_sync: {
+        Row: {
+          app_last_modified: string | null
+          created_at: string
+          error_message: string | null
+          hubspot_deal_id: string | null
+          hubspot_last_modified: string | null
+          id: string
+          last_conflict_at: string | null
+          last_hubspot_sync_at: string | null
+          last_sync_at: string | null
+          negocio_id: string
+          sync_conflicts: number
+          sync_direction: string | null
+          sync_status: string
+          updated_at: string
+        }
+        Insert: {
+          app_last_modified?: string | null
+          created_at?: string
+          error_message?: string | null
+          hubspot_deal_id?: string | null
+          hubspot_last_modified?: string | null
+          id?: string
+          last_conflict_at?: string | null
+          last_hubspot_sync_at?: string | null
+          last_sync_at?: string | null
+          negocio_id: string
+          sync_conflicts?: number
+          sync_direction?: string | null
+          sync_status?: string
+          updated_at?: string
+        }
+        Update: {
+          app_last_modified?: string | null
+          created_at?: string
+          error_message?: string | null
+          hubspot_deal_id?: string | null
+          hubspot_last_modified?: string | null
+          id?: string
+          last_conflict_at?: string | null
+          last_hubspot_sync_at?: string | null
+          last_sync_at?: string | null
+          negocio_id?: string
+          sync_conflicts?: number
+          sync_direction?: string | null
+          sync_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hubspot_sync_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: true
+            referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hubspot_sync_conflicts: {
+        Row: {
+          app_amount: number | null
+          app_state: string
+          conflict_type: string
+          created_at: string | null
+          hubspot_amount: number | null
+          hubspot_state: string
+          id: string
+          negocio_id: string
+          resolution_strategy: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          app_amount?: number | null
+          app_state: string
+          conflict_type: string
+          created_at?: string | null
+          hubspot_amount?: number | null
+          hubspot_state: string
+          id?: string
+          negocio_id: string
+          resolution_strategy?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          app_amount?: number | null
+          app_state?: string
+          conflict_type?: string
+          created_at?: string | null
+          hubspot_amount?: number | null
+          hubspot_state?: string
+          id?: string
+          negocio_id?: string
+          resolution_strategy?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hubspot_sync_conflicts_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hubspot_sync_log: {
+        Row: {
+          batch_id: string | null
+          conflict_resolved: boolean | null
+          created_at: string
+          error_message: string | null
+          force_sync: boolean | null
+          hubspot_deal_id: string | null
+          hubspot_new_stage: string | null
+          hubspot_old_stage: string | null
+          id: string
+          negocio_id: string
+          new_amount: number | null
+          new_state: string | null
+          old_amount: number | null
+          old_state: string | null
+          operation_type: string
+          queue_id: string | null
+          success: boolean
+          sync_direction: string
+          trigger_source: string | null
+        }
+        Insert: {
+          batch_id?: string | null
+          conflict_resolved?: boolean | null
+          created_at?: string
+          error_message?: string | null
+          force_sync?: boolean | null
+          hubspot_deal_id?: string | null
+          hubspot_new_stage?: string | null
+          hubspot_old_stage?: string | null
+          id?: string
+          negocio_id: string
+          new_amount?: number | null
+          new_state?: string | null
+          old_amount?: number | null
+          old_state?: string | null
+          operation_type: string
+          queue_id?: string | null
+          success?: boolean
+          sync_direction: string
+          trigger_source?: string | null
+        }
+        Update: {
+          batch_id?: string | null
+          conflict_resolved?: boolean | null
+          created_at?: string
+          error_message?: string | null
+          force_sync?: boolean | null
+          hubspot_deal_id?: string | null
+          hubspot_new_stage?: string | null
+          hubspot_old_stage?: string | null
+          id?: string
+          negocio_id?: string
+          new_amount?: number | null
+          new_state?: string | null
+          old_amount?: number | null
+          old_state?: string | null
+          operation_type?: string
+          queue_id?: string | null
+          success?: boolean
+          sync_direction?: string
+          trigger_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hubspot_sync_log_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "negocios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hubspot_sync_log_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "hubspot_sync_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hubspot_sync_queue: {
+        Row: {
+          attempts: number | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          max_attempts: number | null
+          negocio_id: string
+          operation_type: string
+          payload: Json
+          priority: number | null
+          processed_at: string | null
+          scheduled_at: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          max_attempts?: number | null
+          negocio_id: string
+          operation_type: string
+          payload: Json
+          priority?: number | null
+          processed_at?: string | null
+          scheduled_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          max_attempts?: number | null
+          negocio_id?: string
+          operation_type?: string
+          payload?: Json
+          priority?: number | null
+          processed_at?: string | null
+          scheduled_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      hubspot_webhooks: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          last_received_at: string | null
+          updated_at: string
+          user_id: string
+          webhook_secret: string
+          webhook_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_received_at?: string | null
+          updated_at?: string
+          user_id: string
+          webhook_secret: string
+          webhook_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_received_at?: string | null
+          updated_at?: string
+          user_id?: string
+          webhook_secret?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
       lineas_producto: {
         Row: {
           activo: boolean
@@ -465,6 +841,29 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      create_hubspot_keys_table_if_not_exists: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      enqueue_hubspot_sync: {
+        Args: {
+          p_negocio_id: string
+          p_operation_type: string
+          p_payload: Json
+          p_priority?: number
+        }
+        Returns: string
+      }
+      get_hubspot_sync_stats: {
+        Args: { p_user_id?: string }
+        Returns: {
+          total_pending: number
+          total_processing: number
+          total_failed: number
+          total_completed_today: number
+          avg_processing_time_minutes: number
+        }[]
+      }
       has_role: {
         Args: {
           _user_id: string
@@ -479,6 +878,12 @@ export type Database = {
       marcar_presupuesto_facturado: {
         Args: { presupuesto_id_param: string }
         Returns: undefined
+      }
+      process_hubspot_sync_queue: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          processed_count: number
+        }[]
       }
       recalcular_todos_estados_negocios: {
         Args: Record<PropertyKey, never>

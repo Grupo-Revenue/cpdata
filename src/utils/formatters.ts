@@ -21,16 +21,3 @@ export const parsearPrecio = (precioString: string): number => {
   const numeroLimpio = precioString.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');
   return parseFloat(numeroLimpio) || 0;
 };
-
-export const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-};
-
-export const formatCurrency = (amount: number): string => {
-  return formatearPrecio(amount);
-};
