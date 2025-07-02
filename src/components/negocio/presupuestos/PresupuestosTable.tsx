@@ -11,7 +11,7 @@ import { formatearPrecio } from '@/utils/formatters';
 import { calcularValorNegocio } from '@/utils/businessCalculations';
 import PresupuestoTableActions from './PresupuestoTableActions';
 import PresupuestoEstadoDialog from './PresupuestoEstadoDialog';
-import { useBidirectionalSync } from '@/hooks/useBidirectionalSync';
+
 
 interface PresupuestosTableProps {
   negocio: Negocio;
@@ -64,7 +64,7 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
   onCambiarEstado,
   onRefresh
 }) => {
-  const { syncOnBudgetUpdate } = useBidirectionalSync();
+  
   const [eliminandoPresupuesto, setEliminandoPresupuesto] = useState<string | null>(null);
   const [mostrarDialogoEnvio, setMostrarDialogoEnvio] = useState(false);
   const [presupuestoSeleccionado, setPresupuestoSeleccionado] = useState<string | null>(null);
@@ -80,13 +80,7 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
     if (confirm('¿Está seguro de que desea eliminar este presupuesto?')) {
       setEliminandoPresupuesto(presupuestoId);
       try {
-        console.log('Deleting budget and triggering amount sync for business:', negocio.id);
         await onEliminarPresupuesto(presupuestoId);
-        
-        // Trigger amount sync after budget deletion with a small delay
-        setTimeout(async () => {
-          await syncOnBudgetUpdate(negocio.id);
-        }, 1000);
         
         onRefresh();
       } catch (error) {
@@ -111,13 +105,7 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
 
     setProcesandoEstado(presupuestoSeleccionado);
     try {
-      console.log('Sending budget and triggering sync for business:', negocio.id);
       await onCambiarEstado(presupuestoSeleccionado, 'enviado', fechaVencimiento);
-      
-      // Trigger amount sync after state change with a small delay
-      setTimeout(async () => {
-        await syncOnBudgetUpdate(negocio.id);
-      }, 1000);
       
       setMostrarDialogoEnvio(false);
       setPresupuestoSeleccionado(null);
@@ -135,13 +123,7 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
 
     setProcesandoEstado(presupuestoId);
     try {
-      console.log('Changing budget state and triggering sync for business:', negocio.id, 'New state:', nuevoEstado);
       await onCambiarEstado(presupuestoId, nuevoEstado);
-      
-      // Trigger amount sync after state change with a small delay
-      setTimeout(async () => {
-        await syncOnBudgetUpdate(negocio.id);
-      }, 1000);
       
       onRefresh();
     } catch (error) {
