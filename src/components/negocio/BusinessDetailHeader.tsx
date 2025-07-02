@@ -19,8 +19,8 @@ import {
 } from 'lucide-react';
 import { Negocio } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
-import { calcularValorNegocio, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { calcularValorNegocio, formatBusinessStateForDisplay, getBusinessStateColors } from '@/utils/businessCalculations';
+
 
 interface BusinessDetailHeaderProps {
   negocio: Negocio;
@@ -96,24 +96,14 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
           </div>
         </div>
 
-        {/* State Control */}
+        {/* State Display */}
         <div className="flex items-end">
-          <Select
-            value={negocio.estado}
-            onValueChange={(value) => onCambiarEstado && onCambiarEstado(negocio.id, value)}
+          <Badge 
+            variant="outline"
+            className={getBusinessStateColors(negocio.estado)}
           >
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="oportunidad_creada">{formatBusinessStateForDisplay("oportunidad_creada")}</SelectItem>
-              <SelectItem value="presupuesto_enviado">{formatBusinessStateForDisplay("presupuesto_enviado")}</SelectItem>
-              <SelectItem value="parcialmente_aceptado">{formatBusinessStateForDisplay("parcialmente_aceptado")}</SelectItem>
-              <SelectItem value="negocio_aceptado">{formatBusinessStateForDisplay("negocio_aceptado")}</SelectItem>
-              <SelectItem value="negocio_cerrado">{formatBusinessStateForDisplay("negocio_cerrado")}</SelectItem>
-              <SelectItem value="negocio_perdido">{formatBusinessStateForDisplay("negocio_perdido")}</SelectItem>
-            </SelectContent>
-          </Select>
+            {formatBusinessStateForDisplay(negocio.estado)}
+          </Badge>
         </div>
       </div>
 
