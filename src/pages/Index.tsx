@@ -1,5 +1,6 @@
 
 import React, { useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useNegocio } from '@/context/NegocioContext';
 
@@ -8,6 +9,7 @@ import CreateBusinessView from '@/pages/CreateBusinessView';
 import BusinessDetailView from '@/pages/BusinessDetailView';
 
 const Index = () => {
+  const { negocioId } = useParams<{ negocioId: string }>();
   const {
     vistaActual,
     negocioSeleccionado,
@@ -18,6 +20,16 @@ const Index = () => {
   } = useNavigation();
   
   const { negocios, loading, obtenerNegocio } = useNegocio();
+
+  // Navigate to business detail if negocioId is in URL
+  useEffect(() => {
+    if (negocioId && !loading && negocios.length > 0) {
+      const negocio = obtenerNegocio(negocioId);
+      if (negocio && vistaActual !== 'detalle-negocio') {
+        navegarADetalleNegocio(negocioId);
+      }
+    }
+  }, [negocioId, negocios, loading, obtenerNegocio, navegarADetalleNegocio, vistaActual]);
 
   console.log('[Index] ==> RENDERING INDEX COMPONENT <==');
   console.log('[Index] Current state:', {

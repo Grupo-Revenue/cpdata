@@ -43,6 +43,11 @@ const App = () => {
                       <Admin />
                     </ProtectedRoute>
                   } />
+                  <Route path="/negocio/:negocioId" element={
+                    <ProtectedRoute>
+                      <Index />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/presupuesto/:negocioId/:presupuestoId/pdf" element={
                     <ProtectedRoute>
                       <PresupuestoPDFView />
