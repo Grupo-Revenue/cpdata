@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { Negocio } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
-import { calcularValorNegocio } from '@/utils/businessCalculations';
+import { calcularValorNegocio, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface BusinessDetailHeaderProps {
@@ -106,9 +106,12 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="activo">Activo</SelectItem>
-              <SelectItem value="cerrado">Cerrado</SelectItem>
-              <SelectItem value="cancelado">Cancelado</SelectItem>
+              <SelectItem value="oportunidad_creada">{formatBusinessStateForDisplay("oportunidad_creada")}</SelectItem>
+              <SelectItem value="presupuesto_enviado">{formatBusinessStateForDisplay("presupuesto_enviado")}</SelectItem>
+              <SelectItem value="parcialmente_aceptado">{formatBusinessStateForDisplay("parcialmente_aceptado")}</SelectItem>
+              <SelectItem value="negocio_aceptado">{formatBusinessStateForDisplay("negocio_aceptado")}</SelectItem>
+              <SelectItem value="negocio_cerrado">{formatBusinessStateForDisplay("negocio_cerrado")}</SelectItem>
+              <SelectItem value="negocio_perdido">{formatBusinessStateForDisplay("negocio_perdido")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
