@@ -63,7 +63,7 @@ const PresupuestoPDFView: React.FC = () => {
   }
 
   const handleBack = () => {
-    navigate(`/negocio/${negocioId}`);
+    navigate('/');
   };
 
   return (
