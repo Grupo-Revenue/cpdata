@@ -10,10 +10,13 @@ import { usePDFGeneration } from '@/hooks/usePDFGeneration';
 const PresupuestoPDFView: React.FC = () => {
   const { negocioId, presupuestoId } = useParams<{ negocioId: string; presupuestoId: string }>();
   const navigate = useNavigate();
-  const { obtenerNegocio } = useNegocio();
+  const { obtenerNegocio, loading } = useNegocio();
   const { componentRef, generatePDF } = usePDFGeneration();
 
+  console.log('[PresupuestoPDFView] Params:', { negocioId, presupuestoId });
+
   if (!negocioId || !presupuestoId) {
+    console.log('[PresupuestoPDFView] Missing params');
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -27,11 +30,32 @@ const PresupuestoPDFView: React.FC = () => {
   const negocio = obtenerNegocio(negocioId);
   const presupuesto = negocio?.presupuestos.find(p => p.id === presupuestoId);
 
+  console.log('[PresupuestoPDFView] Data:', { 
+    negocio: negocio ? 'found' : 'not found', 
+    presupuesto: presupuesto ? 'found' : 'not found',
+    presupuestosCount: negocio?.presupuestos.length || 0,
+    loading
+  });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h1 className="text-xl text-gray-600">Cargando...</h1>
+        </div>
+      </div>
+    );
+  }
+
   if (!negocio || !presupuesto) {
+    console.log('[PresupuestoPDFView] Data not found');
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Presupuesto no encontrado</h1>
+          <p className="text-gray-600 mb-4">
+            {!negocio ? 'Negocio no encontrado' : 'Presupuesto no encontrado'}
+          </p>
           <Button onClick={() => navigate('/')}>Volver al Dashboard</Button>
         </div>
       </div>

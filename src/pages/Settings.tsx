@@ -11,8 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 import { User, Save, Loader2, ArrowLeft, Settings as SettingsIcon, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
-import HubSpotSettings from '@/components/settings/HubSpotSettings';
-import SyncMonitorDashboard from '@/components/business/SyncMonitorDashboard';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -221,11 +219,15 @@ const Settings = () => {
             </TabsContent>
 
             <TabsContent value="hubspot">
-              <HubSpotSettings />
+              <div className="text-center text-gray-500 py-8">
+                <p>Configuraciones de HubSpot disponibles próximamente</p>
+              </div>
             </TabsContent>
 
             <TabsContent value="sync">
-              <SyncMonitorDashboard />
+              <div className="text-center text-gray-500 py-8">
+                <p>Monitor de sincronización disponible próximamente</p>
+              </div>
             </TabsContent>
           </Tabs>
         </div>

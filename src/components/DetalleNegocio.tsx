@@ -6,7 +6,7 @@ import BusinessDetailHeader from './negocio/BusinessDetailHeader';
 import DetalleNegocioMainContent from './negocio/DetalleNegocioMainContent';
 import LoadingState from './negocio/LoadingState';
 import BusinessNotFound from './negocio/BusinessNotFound';
-import ConflictHandler from './negocio/ConflictHandler';
+
 import { useBusinessDetailActions } from './negocio/BusinessDetailActions';
 
 interface DetalleNegocioProps {
@@ -87,8 +87,6 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
         </div>
       </main>
 
-      {/* Conflict Resolution Handler */}
-      <ConflictHandler negocio={negocio} />
     </div>
   );
 };

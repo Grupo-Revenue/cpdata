@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useNegocio } from '@/context/NegocioContext';
-import { useBusinessStateMonitor } from '@/hooks/useBusinessStateMonitor';
+
 import DashboardView from '@/pages/DashboardView';
 import CreateBusinessView from '@/pages/CreateBusinessView';
 import BusinessDetailView from '@/pages/BusinessDetailView';
@@ -18,11 +18,6 @@ const Index = () => {
   } = useNavigation();
   
   const { negocios, loading, obtenerNegocio } = useNegocio();
-  const { 
-    inconsistencyCount, 
-    validateCurrentStates,
-    runComprehensiveAudit
-  } = useBusinessStateMonitor();
 
   console.log('[Index] ==> RENDERING INDEX COMPONENT <==');
   console.log('[Index] Current state:', {
@@ -32,36 +27,14 @@ const Index = () => {
     loading
   });
 
-  // Enhanced monitoring with better error handling
+  // Basic monitoring
   useEffect(() => {
     if (!loading && negocios.length > 0) {
-      console.log('[Index] Performing initial enhanced state validation...');
+      console.log('[Index] Loaded businesses:', negocios.length);
       console.log('[Index] Current view:', vistaActual);
       console.log('[Index] Selected business:', negocioSeleccionado);
-      console.log('[Index] Available businesses:', negocios.length);
-      
-      // Run initial validation with error handling
-      setTimeout(() => {
-        try {
-          validateCurrentStates();
-        } catch (error) {
-          console.error('[Index] Error during state validation:', error);
-        }
-      }, 1000);
-
-      // Run comprehensive audit if inconsistencies are detected
-      setTimeout(() => {
-        if (inconsistencyCount > 0) {
-          console.log(`[Index] Found ${inconsistencyCount} inconsistencies, running comprehensive audit...`);
-          try {
-            runComprehensiveAudit();
-          } catch (error) {
-            console.error('[Index] Error during comprehensive audit:', error);
-          }
-        }
-      }, 3000);
     }
-  }, [negocios, loading, inconsistencyCount, validateCurrentStates, runComprehensiveAudit]);
+  }, [negocios, loading, vistaActual, negocioSeleccionado]);
 
   // Verify business data when navigating to detail view
   useEffect(() => {

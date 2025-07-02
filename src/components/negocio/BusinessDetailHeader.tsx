@@ -19,8 +19,7 @@ import {
 import { Negocio } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
 import { calcularValorNegocio } from '@/utils/businessCalculations';
-import BusinessStateSelect from '@/components/business/BusinessStateSelect';
-import { useHubSpotSync } from '@/hooks/useHubSpotSync';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface BusinessDetailHeaderProps {
   negocio: Negocio;
@@ -36,7 +35,7 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
   onCambiarEstado
 }) => {
   const valorTotal = calcularValorNegocio(negocio);
-  const { manualSyncNegocio, isSyncing } = useHubSpotSync();
+  
   
   // Get company name for the title
   const empresaDisplay = negocio.productora?.nombre || negocio.clienteFinal?.nombre || 'Sin empresa';
@@ -47,9 +46,6 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
     }
   };
 
-  const handleHubSpotSync = () => {
-    manualSyncNegocio(negocio.id);
-  };
 
   return (
     <div className="space-y-4 mb-6">
@@ -98,23 +94,21 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
           </div>
         </div>
 
-        {/* State Control and Sync */}
-        <div className="flex flex-col items-end space-y-2">
-          <BusinessStateSelect
-            negocio={negocio}
-            onStateChange={handleStateChange}
-            size="default"
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleHubSpotSync}
-            disabled={isSyncing(negocio.id)}
-            className="h-8 px-3 text-xs"
+        {/* State Control */}
+        <div className="flex items-end">
+          <Select
+            value={negocio.estado}
+            onValueChange={(value) => onCambiarEstado && onCambiarEstado(negocio.id, value)}
           >
-            <RefreshCw className={`h-3 w-3 mr-1 ${isSyncing(negocio.id) ? 'animate-spin' : ''}`} />
-            {isSyncing(negocio.id) ? 'Sincronizando...' : 'HubSpot Sync'}
-          </Button>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="activo">Activo</SelectItem>
+              <SelectItem value="cerrado">Cerrado</SelectItem>
+              <SelectItem value="cancelado">Cancelado</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
