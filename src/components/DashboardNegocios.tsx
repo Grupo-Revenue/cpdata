@@ -28,26 +28,19 @@ const DashboardNegocios: React.FC<DashboardProps> = ({ onCrearNegocio, onVerNego
   const obtenerIconoEstado = (estado: string) => {
     switch (estado) {
       case 'oportunidad_creada':
-        return <Target className="w-4 h-4 text-slate-600" />;
+        return <Target className="w-4 h-4 text-business-oportunidad-foreground" />;
       case 'presupuesto_enviado':
-        return <Clock className="w-4 h-4 text-blue-600" />;
+        return <Clock className="w-4 h-4 text-business-presupuesto-foreground" />;
       case 'parcialmente_aceptado':
-        return <TrendingUp className="w-4 h-4 text-yellow-600" />;
+        return <TrendingUp className="w-4 h-4 text-business-parcial-foreground" />;
       case 'negocio_aceptado':
-        return <CheckCircle className="w-4 h-4 text-emerald-600" />;
+        return <CheckCircle className="w-4 h-4 text-business-aceptado-foreground" />;
       case 'negocio_cerrado':
-        return <TrendingUp className="w-4 h-4 text-green-600" />;
+        return <TrendingUp className="w-4 h-4 text-business-cerrado-foreground" />;
       case 'negocio_perdido':
-        return <TrendingDown className="w-4 h-4 text-red-600" />;
-      // Legacy states fallback
-      case 'ganado':
-        return <TrendingUp className="w-4 h-4 text-green-600" />;
-      case 'perdido':
-        return <TrendingDown className="w-4 h-4 text-red-600" />;
-      case 'prospecto':
-        return <Target className="w-4 h-4 text-yellow-600" />;
+        return <TrendingDown className="w-4 h-4 text-business-perdido-foreground" />;
       default:
-        return <Building2 className="w-4 h-4 text-blue-600" />;
+        return <Building2 className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
@@ -184,7 +177,7 @@ const DashboardNegocios: React.FC<DashboardProps> = ({ onCrearNegocio, onVerNego
                         {obtenerIconoEstado(negocio.estado)}
                         <CardTitle className="text-lg">Negocio #{negocio.numero}</CardTitle>
                       </div>
-                      <Badge className={`${colorEstado} border`}>
+                      <Badge className={colorEstado}>
                         {formatBusinessStateForDisplay(negocio.estado)}
                       </Badge>
                     </div>

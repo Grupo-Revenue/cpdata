@@ -68,8 +68,8 @@ const StatsCards: React.FC = () => {
       color: 'blue' as const
     },
     {
-      title: "Negocios Activos",
-      value: negocios.filter(n => n.estado === 'activo').length.toString(),
+      title: "Negocios en Proceso",
+      value: negocios.filter(n => n.estado === 'presupuesto_enviado').length.toString(),
       icon: Users,
       color: 'green' as const
     },

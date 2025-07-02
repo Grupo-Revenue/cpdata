@@ -174,14 +174,14 @@ const BusinessStateManager: React.FC = () => {
 
   const getStateColor = (state: string) => {
     const colors = {
-      'oportunidad_creada': 'bg-slate-100 text-slate-700',
-      'presupuesto_enviado': 'bg-blue-100 text-blue-700',
-      'parcialmente_aceptado': 'bg-yellow-100 text-yellow-700',
-      'negocio_aceptado': 'bg-emerald-100 text-emerald-700',
-      'negocio_cerrado': 'bg-green-100 text-green-700',
-      'negocio_perdido': 'bg-red-100 text-red-700'
+      'oportunidad_creada': 'bg-business-oportunidad text-business-oportunidad-foreground',
+      'presupuesto_enviado': 'bg-business-presupuesto text-business-presupuesto-foreground',
+      'parcialmente_aceptado': 'bg-business-parcial text-business-parcial-foreground',
+      'negocio_aceptado': 'bg-business-aceptado text-business-aceptado-foreground',
+      'negocio_cerrado': 'bg-business-cerrado text-business-cerrado-foreground',
+      'negocio_perdido': 'bg-business-perdido text-business-perdido-foreground'
     };
-    return colors[state] || 'bg-gray-100 text-gray-700';
+    return colors[state] || 'bg-slate-100 text-slate-700';
   };
 
   return (

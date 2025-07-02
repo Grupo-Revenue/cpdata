@@ -62,6 +62,30 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				'business-oportunidad': {
+					DEFAULT: 'hsl(var(--business-oportunidad))',
+					foreground: 'hsl(var(--business-oportunidad-foreground))'
+				},
+				'business-presupuesto': {
+					DEFAULT: 'hsl(var(--business-presupuesto))',
+					foreground: 'hsl(var(--business-presupuesto-foreground))'
+				},
+				'business-parcial': {
+					DEFAULT: 'hsl(var(--business-parcial))',
+					foreground: 'hsl(var(--business-parcial-foreground))'
+				},
+				'business-aceptado': {
+					DEFAULT: 'hsl(var(--business-aceptado))',
+					foreground: 'hsl(var(--business-aceptado-foreground))'
+				},
+				'business-cerrado': {
+					DEFAULT: 'hsl(var(--business-cerrado))',
+					foreground: 'hsl(var(--business-cerrado-foreground))'
+				},
+				'business-perdido': {
+					DEFAULT: 'hsl(var(--business-perdido))',
+					foreground: 'hsl(var(--business-perdido-foreground))'
 				}
 			},
 			borderRadius: {

@@ -63,6 +63,20 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 210 98% 48%;
+
+    /* Business State Colors */
+    --business-oportunidad: 220 13% 91%;
+    --business-oportunidad-foreground: 215 16% 47%;
+    --business-presupuesto: 214 95% 93%;
+    --business-presupuesto-foreground: 214 84% 56%;
+    --business-parcial: 48 96% 89%;
+    --business-parcial-foreground: 25 95% 53%;
+    --business-aceptado: 142 76% 94%;
+    --business-aceptado-foreground: 142 71% 45%;
+    --business-cerrado: 140 60% 88%;
+    --business-cerrado-foreground: 140 84% 39%;
+    --business-perdido: 0 93% 94%;
+    --business-perdido-foreground: 0 84% 60%;
   }
 
   .dark {
@@ -102,6 +116,20 @@
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 215 27.9% 16.9%;
     --sidebar-ring: 210 98% 48%;
+
+    /* Business State Colors - Dark Mode */
+    --business-oportunidad: 220 13% 18%;
+    --business-oportunidad-foreground: 220 9% 75%;
+    --business-presupuesto: 214 32% 25%;
+    --business-presupuesto-foreground: 214 95% 88%;
+    --business-parcial: 48 32% 25%;
+    --business-parcial-foreground: 48 96% 89%;
+    --business-aceptado: 142 32% 25%;
+    --business-aceptado-foreground: 142 76% 88%;
+    --business-cerrado: 140 32% 25%;
+    --business-cerrado-foreground: 140 60% 88%;
+    --business-perdido: 0 32% 25%;
+    --business-perdido-foreground: 0 93% 88%;
   }
 }
 

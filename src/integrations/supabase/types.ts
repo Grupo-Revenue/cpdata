@@ -488,15 +488,6 @@ export type Database = {
     Enums: {
       app_role: "admin" | "user"
       estado_negocio:
-        | "activo"
-        | "cerrado"
-        | "cancelado"
-        | "prospecto"
-        | "perdido"
-        | "ganado"
-        | "parcialmente_ganado"
-        | "en_negociacion"
-        | "revision_pendiente"
         | "oportunidad_creada"
         | "presupuesto_enviado"
         | "parcialmente_aceptado"
@@ -628,15 +619,6 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "user"],
       estado_negocio: [
-        "activo",
-        "cerrado",
-        "cancelado",
-        "prospecto",
-        "perdido",
-        "ganado",
-        "parcialmente_ganado",
-        "en_negociacion",
-        "revision_pendiente",
         "oportunidad_creada",
         "presupuesto_enviado",
         "parcialmente_aceptado",

@@ -3,24 +3,19 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Building2, FileText, TrendingUp, Target, CheckCircle, Clock } from 'lucide-react';
 import { useNegocio } from '@/context/NegocioContext';
-import { calcularValorNegocio, mapLegacyBusinessState } from '@/utils/businessCalculations';
+import { calcularValorNegocio } from '@/utils/businessCalculations';
 import { formatearPrecio } from '@/utils/formatters';
 
 const MetricsWidget: React.FC = () => {
   const { negocios } = useNegocio();
 
-  // Calculate enhanced metrics with new business states
-  const negociosConEstadoNormalizado = negocios.map(negocio => ({
-    ...negocio,
-    estadoNormalizado: mapLegacyBusinessState(negocio.estado)
-  }));
-
-  const oportunidades = negociosConEstadoNormalizado.filter(n => n.estadoNormalizado === 'oportunidad_creada').length;
-  const presupuestosEnviados = negociosConEstadoNormalizado.filter(n => n.estadoNormalizado === 'presupuesto_enviado').length;
-  const negociosAceptados = negociosConEstadoNormalizado.filter(n => 
-    ['negocio_aceptado', 'parcialmente_aceptado'].includes(n.estadoNormalizado)
+  // Calculate enhanced metrics with current business states
+  const oportunidades = negocios.filter(n => n.estado === 'oportunidad_creada').length;
+  const presupuestosEnviados = negocios.filter(n => n.estado === 'presupuesto_enviado').length;
+  const negociosAceptados = negocios.filter(n => 
+    ['negocio_aceptado', 'parcialmente_aceptado'].includes(n.estado)
   ).length;
-  const negociosCerrados = negociosConEstadoNormalizado.filter(n => n.estadoNormalizado === 'negocio_cerrado').length;
+  const negociosCerrados = negocios.filter(n => n.estado === 'negocio_cerrado').length;
 
   // Calculate total value of all businesses
   const valorTotal = negocios.reduce((total, negocio) => total + calcularValorNegocio(negocio), 0);
