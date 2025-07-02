@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -34,6 +35,7 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
   onCrearPresupuesto,
   onCambiarEstado
 }) => {
+  const navigate = useNavigate();
   const valorTotal = calcularValorNegocio(negocio);
   
   
@@ -54,7 +56,7 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
         <Button
           variant="outline"
           size="sm"
-          onClick={onVolver}
+          onClick={() => navigate('/')}
           className="h-8 px-3"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
