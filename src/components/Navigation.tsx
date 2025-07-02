@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useBrandConfig } from '@/hooks/useBrandConfig';
+
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
@@ -16,7 +16,6 @@ import { LogOut, User, Settings, Shield, Building2 } from 'lucide-react';
 
 const Navigation = () => {
   const { user, signOut, isAdmin } = useAuth();
-  const { config: brandConfig, loading: configLoading } = useBrandConfig();
 
   if (!user) return null;
 
@@ -51,47 +50,17 @@ const Navigation = () => {
         <div className="flex h-16 items-center justify-between">
           {/* Logo y título */}
           <div className="flex items-center space-x-3">
-            {brandConfig?.logo_url && !configLoading ? (
-              <div className="flex items-center">
-                <img 
-                  src={brandConfig.logo_url} 
-                  alt={brandConfig.nombre_empresa || 'Logo'} 
-                  className="h-10 w-auto max-w-[200px] object-contain"
-                  onError={(e) => {
-                    console.error('Error loading logo:', e);
-                    e.currentTarget.style.display = 'none';
-                    const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
-                    if (nextElement) {
-                      nextElement.style.display = 'flex';
-                    }
-                  }}
-                />
-                {/* Fallback icon if logo fails to load */}
-                <div className="hidden items-center space-x-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
-                    <Building2 className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="hidden sm:block">
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                      {brandConfig?.nombre_empresa || 'BusinessFlow'}
-                    </h1>
-                    <p className="text-xs text-muted-foreground">Sistema de Gestión</p>
-                  </div>
-                </div>
+            <div className="flex items-center space-x-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
+                <Building2 className="h-6 w-6 text-white" />
               </div>
-            ) : (
-              <div className="flex items-center space-x-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
-                  <Building2 className="h-6 w-6 text-white" />
-                </div>
-                <div className="hidden sm:block">
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    {brandConfig?.nombre_empresa || 'BusinessFlow'}
-                  </h1>
-                  <p className="text-xs text-muted-foreground">Sistema de Gestión</p>
-                </div>
+              <div className="hidden sm:block">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  BusinessFlow
+                </h1>
+                <p className="text-xs text-muted-foreground">Sistema de Gestión</p>
               </div>
-            )}
+            </div>
           </div>
           
           {/* Botones de acción y perfil */}
