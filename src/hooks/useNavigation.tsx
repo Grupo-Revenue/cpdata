@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 
-type Vista = 'dashboard' | 'crear-negocio' | 'detalle-negocio' | 'presupuesto-pdf';
+type Vista = 'dashboard' | 'crear-negocio' | 'detalle-negocio' | 'presupuesto-pdf' | 'contactos' | 'empresas' | 'productos';
 
 export const useNavigation = () => {
   const [vistaActual, setVistaActual] = useState<Vista>('dashboard');
@@ -53,6 +53,21 @@ export const useNavigation = () => {
     setVistaActual('detalle-negocio');
   };
 
+  const navegarAContactos = () => {
+    console.log('[useNavigation] ==> NAVIGATING TO contactos <==');
+    setVistaActual('contactos');
+  };
+
+  const navegarAEmpresas = () => {
+    console.log('[useNavigation] ==> NAVIGATING TO empresas <==');
+    setVistaActual('empresas');
+  };
+
+  const navegarAProductos = () => {
+    console.log('[useNavigation] ==> NAVIGATING TO productos <==');
+    setVistaActual('productos');
+  };
+
   // Debug logging for current state
   console.log('[useNavigation] Current state:', {
     vistaActual,
@@ -68,6 +83,9 @@ export const useNavigation = () => {
     navegarADetalleNegocio,
     navegarAPresupuestoPDF,
     volverADashboard,
-    completarCreacionNegocio
+    completarCreacionNegocio,
+    navegarAContactos,
+    navegarAEmpresas,
+    navegarAProductos
   };
 };

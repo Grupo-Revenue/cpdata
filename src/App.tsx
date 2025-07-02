@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Auth from "./pages/Auth";
-
+import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
 
@@ -25,7 +25,7 @@ const App = () => {
               <Route path="/auth" element={<Auth />} />
               <Route path="/" element={
                 <ProtectedRoute>
-                  <div>Dashboard placeholder</div>
+                  <Dashboard />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
