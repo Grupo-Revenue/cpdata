@@ -40,7 +40,7 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
   };
 
   // Calculate totals with IVA breakdown
-  const totales = calcularTotalesPresupuesto(presupuesto.productos);
+  const totales = calcularTotalesPresupuesto(presupuesto.productos || []);
   return <div ref={ref} className="bg-white p-8 max-w-4xl mx-auto text-black" style={{
     fontFamily: 'Arial, sans-serif'
   }}>
@@ -150,7 +150,7 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
               </tr>
             </thead>
             <tbody>
-              {presupuesto.productos.map((producto, index) => <tr key={producto.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+              {(presupuesto.productos || []).map((producto, index) => <tr key={producto.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                   <td className="border border-gray-300 p-3">
                     <div className="font-medium">{producto.nombre}</div>
                     {producto.descripcion && renderHtmlContent(producto.descripcion)}
