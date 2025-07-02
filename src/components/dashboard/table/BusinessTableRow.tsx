@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Eye, Calendar, Building2, User } from 'lucide-react';
 import { Negocio } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
-import { calcularValorNegocio } from '@/utils/businessCalculations';
+import { calcularValorNegocio, getBusinessStateColors, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
 import { Badge } from '@/components/ui/badge';
 
 interface BusinessTableRowProps {
@@ -105,7 +105,12 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegoc
       </TableCell>
       
       <TableCell>
-        <Badge variant="outline">{negocio.estado}</Badge>
+        <Badge 
+          variant="outline"
+          className={getBusinessStateColors(negocio.estado)}
+        >
+          {formatBusinessStateForDisplay(negocio.estado)}
+        </Badge>
       </TableCell>
       
       <TableCell>
