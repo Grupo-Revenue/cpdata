@@ -33,6 +33,7 @@ export type ExtendedProductoPresupuesto = Database['public']['Tables']['producto
   precio_unitario: number;
   linea_producto_id?: string; // Add this field for product line identification
   sessions?: SessionAcreditacion[]; // Add sessions for accreditation products
+  originalLibraryDescription?: string; // Store original description from library for reference
 }
 
 export type ExtendedNegocio = Database['public']['Tables']['negocios']['Row'] & {

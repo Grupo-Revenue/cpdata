@@ -34,6 +34,7 @@ const ProductEditRow: React.FC<ProductEditRowProps> = ({
         <ProductExpandedDetails
           producto={producto}
           onActualizarProducto={onActualizarProducto}
+          originalLibraryDescription={producto.originalLibraryDescription}
         />
       )}
     </>

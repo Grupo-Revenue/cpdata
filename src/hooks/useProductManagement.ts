@@ -23,7 +23,8 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
       total: productoBiblioteca.precio_base,
       created_at: new Date().toISOString(),
       presupuesto_id: '',
-      sessions: isAccreditationProduct ? [] : undefined
+      sessions: isAccreditationProduct ? [] : undefined,
+      originalLibraryDescription: productoBiblioteca.descripcion || ''
     };
 
     setProductos(prev => [...prev, nuevoProducto]);
@@ -190,7 +191,8 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
         comentarios: producto.comentarios || '',
         descuentoPorcentaje: producto.descuentoPorcentaje || 0,
         precioUnitario: producto.precioUnitario || producto.precio_unitario,
-        sessions: producto.sessions || (isAccreditationProduct ? [] : undefined)
+        sessions: producto.sessions || (isAccreditationProduct ? [] : undefined),
+        originalLibraryDescription: producto.originalLibraryDescription || producto.descripcion || ''
       };
     });
     
