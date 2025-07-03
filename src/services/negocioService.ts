@@ -72,13 +72,45 @@ export const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
           fechaAprobacion: p.fecha_aprobacion,
           fechaRechazo: p.fecha_rechazo,
           fechaVencimiento: p.fecha_vencimiento,
-          productos: p.productos?.map(producto => ({
-            ...producto,
-            comentarios: '',
-            descuentoPorcentaje: 0,
-            precioUnitario: producto.precio_unitario,
-            sessions: producto.sessions ? (typeof producto.sessions === 'string' ? JSON.parse(producto.sessions) : producto.sessions) : undefined
-          })) || []
+          productos: p.productos?.map(producto => {
+            console.log(`Loading product ${producto.nombre}:`, {
+              sessions: producto.sessions,
+              sessionType: typeof producto.sessions,
+              sessionLength: Array.isArray(producto.sessions) ? producto.sessions.length : 'not array'
+            });
+            
+            let parsedSessions;
+            try {
+              // Handle different session data formats
+              if (producto.sessions) {
+                if (typeof producto.sessions === 'string') {
+                  parsedSessions = JSON.parse(producto.sessions);
+                } else if (Array.isArray(producto.sessions)) {
+                  parsedSessions = producto.sessions;
+                } else if (typeof producto.sessions === 'object') {
+                  parsedSessions = producto.sessions;
+                } else {
+                  console.warn('Unknown sessions format:', typeof producto.sessions);
+                  parsedSessions = undefined;
+                }
+              } else {
+                parsedSessions = undefined;
+              }
+              
+              console.log(`Parsed sessions for ${producto.nombre}:`, parsedSessions);
+            } catch (error) {
+              console.error(`Error parsing sessions for product ${producto.nombre}:`, error);
+              parsedSessions = undefined;
+            }
+            
+            return {
+              ...producto,
+              comentarios: '',
+              descuentoPorcentaje: 0,
+              precioUnitario: producto.precio_unitario,
+              sessions: parsedSessions
+            };
+          }) || []
         })) || []
       };
       

@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Presupuesto, EstadoPresupuesto } from '@/types';
+import { Presupuesto, EstadoPresupuesto, ProductoPresupuesto } from '@/types';
 
 export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoData: Omit<Presupuesto, 'id' | 'created_at' | 'updated_at'>): Promise<Presupuesto | null> => {
   try {
@@ -95,8 +95,16 @@ export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoD
   }
 };
 
-export const actualizarPresupuestoEnSupabase = async (presupuestoId: string, updates: Partial<Presupuesto>): Promise<Presupuesto | null> => {
+export const actualizarPresupuestoEnSupabase = async (
+  presupuestoId: string, 
+  updates: Partial<Presupuesto>,
+  productos?: ProductoPresupuesto[]
+): Promise<Presupuesto | null> => {
   try {
+    console.log('Updating presupuesto:', presupuestoId, 'with data:', updates);
+    console.log('Products to update:', productos);
+
+    // Update the presupuesto basic data
     const { data, error } = await supabase
       .from('presupuestos')
       .update(updates)
@@ -107,6 +115,47 @@ export const actualizarPresupuestoEnSupabase = async (presupuestoId: string, upd
     if (error) {
       console.error("Error updating presupuesto:", error);
       throw error;
+    }
+
+    console.log('Presupuesto updated successfully:', data);
+
+    // If products are provided, update them as well
+    if (productos && productos.length > 0) {
+      console.log('Updating products for presupuesto:', presupuestoId);
+      
+      // Delete existing products
+      const { error: deleteError } = await supabase
+        .from('productos_presupuesto')
+        .delete()
+        .eq('presupuesto_id', presupuestoId);
+
+      if (deleteError) {
+        console.error('Error deleting existing products:', deleteError);
+        throw deleteError;
+      }
+
+      // Insert updated products
+      const productosParaInsertar = productos.map(producto => ({
+        presupuesto_id: presupuestoId,
+        nombre: producto.nombre,
+        descripcion: producto.descripcion || '',
+        cantidad: producto.cantidad,
+        precio_unitario: producto.precio_unitario,
+        total: producto.cantidad * producto.precio_unitario,
+        sessions: producto.sessions ? JSON.stringify(producto.sessions) : null
+      }));
+
+      const { data: productosCreados, error: productosError } = await supabase
+        .from('productos_presupuesto')
+        .insert(productosParaInsertar)
+        .select('*');
+
+      if (productosError) {
+        console.error('Error inserting updated products:', productosError);
+        throw productosError;
+      }
+
+      console.log('Products updated successfully:', productosCreados);
     }
 
     return data as Presupuesto;

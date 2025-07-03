@@ -2,6 +2,7 @@ import { useNegocio } from '@/context/NegocioContext';
 import { ProductoPresupuesto } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { generateQuoteName } from '@/utils/quoteNameGenerator';
+import { actualizarPresupuestoEnSupabase } from '@/services/presupuestoService';
 
 interface UseQuotePersistenceProps {
   negocioId: string;
@@ -83,8 +84,13 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
     try {
       if (presupuestoId) {
         console.log('Updating existing presupuesto:', presupuestoId);
+        console.log('Products with sessions to update:', productos.map(p => ({ 
+          nombre: p.nombre, 
+          sessions: p.sessions, 
+          sessionCount: p.sessions?.length || 0 
+        })));
         
-        // For updates, we need to handle products separately
+        // For updates, update presupuesto and products with sessions
         const updateData = {
           nombre: presupuestoData.nombre,
           estado: presupuestoData.estado,
@@ -92,7 +98,7 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
           facturado: presupuestoData.facturado
         };
         
-        await actualizarPresupuesto(negocioId, presupuestoId, updateData);
+        await actualizarPresupuestoEnSupabase(presupuestoId, updateData, productos);
         toast({
           title: "Presupuesto actualizado",
           description: "El presupuesto ha sido actualizado exitosamente",
