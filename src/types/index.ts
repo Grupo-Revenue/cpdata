@@ -21,7 +21,7 @@ export type SessionAcreditacion = {
   acreditadores: number;
   supervisor: number;
   observacion?: string;
-  cantidad: number;
+  precio: number;
   monto: number;
 }
 

@@ -7,11 +7,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Edit2, Trash2, Calendar } from 'lucide-react';
+import { Plus, Edit2, Trash2, Calendar, Calculator } from 'lucide-react';
 import { SessionAcreditacion } from '@/types';
 import { useAccreditationSessions } from '@/hooks/useAccreditationSessions';
 import { formatearPrecio } from '@/utils/formatters';
 import { useToast } from '@/hooks/use-toast';
+import SessionPriceCalculatorDialog from './SessionPriceCalculatorDialog';
 
 interface AccreditationSessionsManagerProps {
   sessions: SessionAcreditacion[];
@@ -37,11 +38,12 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
     updateSession,
     removeSession,
     getTotalAmount,
-    getTotalQuantity,
+    getTotalAccreditors,
     setSessions
   } = useAccreditationSessions(externalSessions);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<SessionAcreditacion | null>(null);
   const [formData, setFormData] = useState({
     fecha: '',
@@ -49,7 +51,7 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
     acreditadores: 0,
     supervisor: 0,
     observacion: '',
-    cantidad: 1
+    precio: 0
   });
 
   // Sync internal sessions with external changes
@@ -69,7 +71,7 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
       acreditadores: 0,
       supervisor: 0,
       observacion: '',
-      cantidad: 1
+      precio: 0
     });
     setEditingSession(null);
   };
@@ -120,9 +122,22 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
       acreditadores: session.acreditadores,
       supervisor: session.supervisor,
       observacion: session.observacion || '',
-      cantidad: session.cantidad
+      precio: session.precio
     });
     setIsDialogOpen(true);
+  };
+
+  const handleCalculatorResult = (result: {
+    precio: number;
+    acreditadores: number;
+    supervisor: number;
+  }) => {
+    setFormData({
+      ...formData,
+      precio: result.precio,
+      acreditadores: result.acreditadores,
+      supervisor: result.supervisor
+    });
   };
 
   const handleDelete = (sessionId: string) => {
@@ -176,15 +191,25 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
                       />
                     </div>
                     <div>
-                      <Label htmlFor="cantidad">Cantidad *</Label>
-                      <Input
-                        id="cantidad"
-                        type="number"
-                        min="1"
-                        value={formData.cantidad}
-                        onChange={(e) => setFormData({ ...formData, cantidad: parseInt(e.target.value) || 1 })}
-                        required
-                      />
+                      <Label htmlFor="precio">Precio *</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="precio"
+                          type="number"
+                          min="0"
+                          value={formData.precio}
+                          onChange={(e) => setFormData({ ...formData, precio: parseFloat(e.target.value) || 0 })}
+                          required
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsCalculatorOpen(true)}
+                        >
+                          <Calculator className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
@@ -264,9 +289,9 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
                     <TableHead>Servicio</TableHead>
                     <TableHead className="text-center">Acred.</TableHead>
                     <TableHead className="text-center">Sup.</TableHead>
-                    <TableHead className="text-center">Cant.</TableHead>
+                    <TableHead className="text-right">Precio</TableHead>
                     <TableHead className="text-right">Monto</TableHead>
-                    <TableHead className="w-[80px]">Acciones</TableHead>
+                    <TableHead className="w-[100px]">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -278,12 +303,22 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
                       <TableCell>{session.servicio}</TableCell>
                       <TableCell className="text-center">{session.acreditadores}</TableCell>
                       <TableCell className="text-center">{session.supervisor}</TableCell>
-                      <TableCell className="text-center">{session.cantidad}</TableCell>
+                      <TableCell className="text-right">
+                        {formatearPrecio(session.precio)}
+                      </TableCell>
                       <TableCell className="text-right font-medium">
                         {formatearPrecio(session.monto)}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setIsCalculatorOpen(true)}
+                            title="Usar calculadora"
+                          >
+                            <Calculator className="h-3 w-3" />
+                          </Button>
                           <Button
                             size="sm"
                             variant="ghost"
@@ -308,7 +343,7 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
 
             <div className="flex justify-end space-x-4 text-sm border-t pt-3">
               <div className="text-muted-foreground">
-                Total Cantidad: <span className="font-medium">{getTotalQuantity()}</span>
+                Total Acreditadores: <span className="font-medium">{getTotalAccreditors()}</span>
               </div>
               <div className="text-muted-foreground">
                 Total Monto: <span className="font-medium">{formatearPrecio(getTotalAmount())}</span>
@@ -323,6 +358,12 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
           </div>
         )}
       </CardContent>
+
+      <SessionPriceCalculatorDialog
+        isOpen={isCalculatorOpen}
+        onClose={() => setIsCalculatorOpen(false)}
+        onApplyCalculation={handleCalculatorResult}
+      />
     </Card>
   );
 };

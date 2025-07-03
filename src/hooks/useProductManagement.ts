@@ -83,15 +83,15 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
           // If sessions exist, update the total price based on sessions total
           if (valor && Array.isArray(valor) && valor.length > 0) {
             const sessionsTotalAmount = valor.reduce((sum: number, session: any) => sum + (session.monto || 0), 0);
-            const sessionsTotalQuantity = valor.reduce((sum: number, session: any) => sum + (session.cantidad || 0), 0);
+            const sessionsTotalAccreditors = valor.reduce((sum: number, session: any) => sum + (session.acreditadores || 0), 0);
             
             // Update product totals based on sessions
             productoActualizado.total = sessionsTotalAmount;
-            productoActualizado.cantidad = sessionsTotalQuantity;
+            productoActualizado.cantidad = sessionsTotalAccreditors;
             // Keep the original unit price or calculate average
-            if (sessionsTotalQuantity > 0) {
-              productoActualizado.precio_unitario = sessionsTotalAmount / sessionsTotalQuantity;
-              productoActualizado.precioUnitario = sessionsTotalAmount / sessionsTotalQuantity;
+            if (sessionsTotalAccreditors > 0) {
+              productoActualizado.precio_unitario = sessionsTotalAmount / sessionsTotalAccreditors;
+              productoActualizado.precioUnitario = sessionsTotalAmount / sessionsTotalAccreditors;
             }
           }
         }
