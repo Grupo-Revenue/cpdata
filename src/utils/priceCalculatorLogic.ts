@@ -4,7 +4,10 @@ export const calculateAccreditationPrice = (
   inputs: PriceCalculatorInputs,
   prices: AccreditationPrices
 ): PriceCalculatorResult => {
-  const { attendees, distributionPercentages, accreditationCapacity } = inputs;
+  const { attendees, distributionPercentages, accreditationCapacity, customPrices } = inputs;
+  
+  // Use custom prices if provided, otherwise use default prices
+  const effectivePrices = customPrices || prices;
 
   // Ensure percentages add up to 100%
   const totalPercentage = distributionPercentages.manual + distributionPercentages.expressQR;
@@ -33,8 +36,8 @@ export const calculateAccreditationPrice = (
   const supervisors = Math.max(1, Math.ceil(totalAccreditors / 5));
 
   // Calculate totals
-  const acreditadoresTotal = totalAccreditors * prices.acreditador;
-  const supervisoresTotal = supervisors * prices.supervisor;
+  const acreditadoresTotal = totalAccreditors * effectivePrices.acreditador;
+  const supervisoresTotal = supervisors * effectivePrices.supervisor;
   const totalPrice = acreditadoresTotal + supervisoresTotal;
 
   return {
@@ -42,12 +45,12 @@ export const calculateAccreditationPrice = (
     breakdown: {
       acreditadores: {
         quantity: totalAccreditors,
-        unitPrice: prices.acreditador,
+        unitPrice: effectivePrices.acreditador,
         total: acreditadoresTotal
       },
       supervisores: {
         quantity: supervisors,
-        unitPrice: prices.supervisor,
+        unitPrice: effectivePrices.supervisor,
         total: supervisoresTotal
       }
     },

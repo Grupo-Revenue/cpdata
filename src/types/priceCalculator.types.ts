@@ -8,6 +8,10 @@ export interface PriceCalculatorInputs {
     manual: number;
     expressQR: number;
   };
+  customPrices?: {
+    acreditador: number;
+    supervisor: number;
+  };
 }
 
 export interface PriceCalculatorResult {

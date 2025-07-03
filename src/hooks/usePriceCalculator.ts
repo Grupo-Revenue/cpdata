@@ -74,6 +74,21 @@ export const usePriceCalculator = () => {
     }));
   }, []);
 
+  const updateCustomPrice = useCallback((
+    type: keyof AccreditationPrices,
+    value: number
+  ) => {
+    setInputs(prev => ({
+      ...prev,
+      customPrices: {
+        ...prev.customPrices,
+        acreditador: prev.customPrices?.acreditador || prices?.acreditador || DEFAULT_PRICES.acreditador,
+        supervisor: prev.customPrices?.supervisor || prices?.supervisor || DEFAULT_PRICES.supervisor,
+        [type]: Math.max(0, value)
+      }
+    }));
+  }, [prices]);
+
   const calculatePrice = useCallback((): PriceCalculatorResult => {
     if (!prices) {
       throw new Error('Precios no cargados');
@@ -97,6 +112,7 @@ export const usePriceCalculator = () => {
     updateInput,
     updateDistributionPercentage,
     updateAccreditationCapacity,
+    updateCustomPrice,
     calculatePrice,
     resetCalculator,
     refetchPrices: fetchPrices

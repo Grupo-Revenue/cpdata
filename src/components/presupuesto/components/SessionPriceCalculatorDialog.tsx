@@ -27,9 +27,11 @@ const SessionPriceCalculatorDialog: React.FC<SessionPriceCalculatorDialogProps> 
   const {
     inputs,
     result,
+    prices,
     updateInput,
     updateDistributionPercentage,
     updateAccreditationCapacity,
+    updateCustomPrice,
     calculatePrice,
     loading
   } = usePriceCalculator();
@@ -180,6 +182,39 @@ const SessionPriceCalculatorDialog: React.FC<SessionPriceCalculatorDialogProps> 
                         min="1"
                         value={inputs.accreditationCapacity.expressQR}
                         onChange={(e) => updateAccreditationCapacity('expressQR', parseInt(e.target.value) || 1)}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Precios Unitarios</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Deja vacío para usar precios por defecto
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="price-acreditador" className="text-xs">Acreditador</Label>
+                      <Input
+                        id="price-acreditador"
+                        type="number"
+                        min="0"
+                        value={inputs.customPrices?.acreditador || ''}
+                        placeholder={prices ? `${prices.acreditador}` : '50000'}
+                        onChange={(e) => updateCustomPrice('acreditador', parseInt(e.target.value) || 0)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="price-supervisor" className="text-xs">Supervisor</Label>
+                      <Input
+                        id="price-supervisor"
+                        type="number"
+                        min="0"
+                        value={inputs.customPrices?.supervisor || ''}
+                        placeholder={prices ? `${prices.supervisor}` : '70000'}
+                        onChange={(e) => updateCustomPrice('supervisor', parseInt(e.target.value) || 0)}
                         className="mt-1"
                       />
                     </div>
