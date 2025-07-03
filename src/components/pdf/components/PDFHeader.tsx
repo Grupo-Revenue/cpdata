@@ -25,37 +25,66 @@ const PDFHeader: React.FC<PDFHeaderProps> = ({ presupuesto, negocio, totales }) 
   };
 
   return (
-    <div className="border-b-3 border-blue-600 pb-8 mb-8 bg-gradient-to-r from-blue-50 to-white rounded-lg p-6">
-      <div className="flex justify-between items-start">
-        <div className="flex items-start space-x-6">
+    <div className="border-b-2 border-primary pb-6 mb-8 bg-gradient-to-r from-secondary to-background rounded-xl p-8 shadow-soft">
+      <div className="flex justify-between items-start gap-8">
+        {/* Left Section - Company Info */}
+        <div className="flex items-start gap-4 flex-1">
           {brandConfig?.logo_url && (
             <div className="flex-shrink-0">
               <img 
                 src={brandConfig.logo_url} 
                 alt={`${brandConfig.nombre_empresa} Logo`} 
-                className="h-20 w-auto object-contain border border-gray-200 rounded-lg p-2 bg-white shadow-sm" 
+                className="h-12 w-auto object-contain border border-border rounded-lg p-2 bg-card shadow-sm" 
               />
             </div>
           )}
-          <div className="space-y-2">
-            <h1 className="text-xl font-bold text-gray-800">
-              {brandConfig?.nombre_empresa || 'CP Data SpA'}
-            </h1>
-            <p className="text-sm text-gray-600 font-medium">Soluciones Profesionales en Acreditación Digital</p>
-            <div className="text-sm text-gray-500 space-y-1">
-              <p><span className="font-semibold">Fecha de Emisión:</span> {fechaActual}</p>
-              <p><span className="font-semibold">Válido hasta:</span> {formatearFechaVencimiento()}</p>
-              <p><span className="font-semibold">Moneda:</span> Pesos Chilenos (CLP)</p>
+          <div className="space-y-3 flex-1">
+            <div>
+              <h1 className="text-lg font-bold text-foreground leading-tight">
+                {brandConfig?.nombre_empresa || 'CP Data SpA'}
+              </h1>
+              <p className="text-sm text-muted-foreground font-medium mt-1">
+                Soluciones Profesionales en Acreditación Digital
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-1 text-xs text-muted-foreground">
+              <div className="flex justify-between">
+                <span className="font-semibold">Fecha de Emisión:</span>
+                <span>{fechaActual}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-semibold">Válido hasta:</span>
+                <span>{formatearFechaVencimiento()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-semibold">Moneda:</span>
+                <span>Pesos Chilenos (CLP)</span>
+              </div>
             </div>
           </div>
         </div>
-        <div className="text-right bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-3xl font-bold text-blue-600 mb-2">PRESUPUESTO</h2>
-          <p className="text-xl font-semibold text-gray-800 mb-3">{presupuesto.nombre}</p>
-          <div className="text-sm text-gray-600 space-y-1">
-            <p><span className="font-semibold">Negocio:</span> #{negocio.numero}</p>
-            <p><span className="font-semibold">Estado:</span> {presupuesto.estado.charAt(0).toUpperCase() + presupuesto.estado.slice(1)}</p>
-            <p><span className="font-semibold">Total:</span> <span className="text-blue-600 font-bold">{formatearPrecio(totales.total)}</span></p>
+
+        {/* Right Section - Quote Info */}
+        <div className="text-right bg-card p-6 rounded-xl shadow-soft border border-border min-w-[280px]">
+          <div className="space-y-3">
+            <h2 className="text-2xl font-bold text-primary tracking-tight">PRESUPUESTO</h2>
+            <div className="border-t border-border pt-3">
+              <p className="text-lg font-semibold text-foreground mb-2 leading-tight">{presupuesto.nombre}</p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Negocio:</span>
+                  <span className="font-semibold text-foreground">#{negocio.numero}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Estado:</span>
+                  <span className="font-semibold text-foreground capitalize">{presupuesto.estado}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-border">
+                  <span className="text-muted-foreground font-medium">Total:</span>
+                  <span className="text-lg font-bold text-primary">{formatearPrecio(totales.total)}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
