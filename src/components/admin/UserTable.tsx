@@ -149,7 +149,7 @@ export const UserTable: React.FC<UserTableProps> = ({
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline">
+              <Button>
                 <UserPlus className="h-4 w-4 mr-2" />
                 Crear Usuario
               </Button>
