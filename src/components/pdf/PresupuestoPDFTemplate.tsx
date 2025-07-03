@@ -32,6 +32,7 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
     if (!html) return '';
     return html.replace(/<[^>]*>/g, '');
   };
+  
   const renderHtmlContent = (html: string) => {
     if (!html) return null;
     return <div className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{
@@ -39,30 +40,69 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
     }} />;
   };
 
+  const formatearFechaVencimiento = () => {
+    const fechaEmision = new Date();
+    const fechaVencimiento = new Date(fechaEmision);
+    fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
+    return format(fechaVencimiento, 'dd/MM/yyyy', { locale: es });
+  };
+
+  const renderSessionDetails = (sessions: any[]) => {
+    if (!sessions || sessions.length === 0) return null;
+    
+    return (
+      <div className="mt-2 pt-2 border-t border-gray-200">
+        <div className="text-xs font-semibold text-gray-700 mb-2">Detalle de Sesiones:</div>
+        <div className="space-y-1">
+          {sessions.map((session, index) => (
+            <div key={session.id || index} className="text-xs text-gray-600 flex justify-between">
+              <span>{session.fecha} - {session.servicio}</span>
+              <span>{session.acreditadores} acred. + {session.supervisor} super.</span>
+              <span className="font-medium">{formatearPrecio(session.monto)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   // Calculate totals with IVA breakdown
   const totales = calcularTotalesPresupuesto(presupuesto.productos || []);
   return <div ref={ref} className="bg-white p-8 max-w-4xl mx-auto text-black" style={{
     fontFamily: 'Arial, sans-serif'
   }}>
-        {/* Header with logo and company info */}
-        <div className="border-b-2 border-blue-600 pb-6 mb-8">
+        {/* Enhanced Header with logo and company info */}
+        <div className="border-b-3 border-blue-600 pb-8 mb-8 bg-gradient-to-r from-blue-50 to-white rounded-lg p-6">
           <div className="flex justify-between items-start">
-            <div className="flex items-center space-x-4">
-              {brandConfig?.logo_url && <img src={brandConfig.logo_url} alt={`${brandConfig.nombre_empresa} Logo`} className="h-16 w-auto object-contain" />}
-              <div>
-                
-                
-                <div className="mt-2 text-sm text-gray-500">
-                  <p>Fecha de Emisión: {fechaActual}</p>
+            <div className="flex items-start space-x-6">
+              {brandConfig?.logo_url && (
+                <div className="flex-shrink-0">
+                  <img 
+                    src={brandConfig.logo_url} 
+                    alt={`${brandConfig.nombre_empresa} Logo`} 
+                    className="h-20 w-auto object-contain border border-gray-200 rounded-lg p-2 bg-white shadow-sm" 
+                  />
+                </div>
+              )}
+              <div className="space-y-2">
+                <h1 className="text-xl font-bold text-gray-800">
+                  {brandConfig?.nombre_empresa || 'CP Data SpA'}
+                </h1>
+                <p className="text-sm text-gray-600 font-medium">Soluciones Profesionales en Acreditación Digital</p>
+                <div className="text-sm text-gray-500 space-y-1">
+                  <p><span className="font-semibold">Fecha de Emisión:</span> {fechaActual}</p>
+                  <p><span className="font-semibold">Válido hasta:</span> {formatearFechaVencimiento()}</p>
+                  <p><span className="font-semibold">Moneda:</span> Pesos Chilenos (CLP)</p>
                 </div>
               </div>
             </div>
-            <div className="text-right">
-              <h2 className="text-2xl font-bold text-gray-800">PRESUPUESTO</h2>
-              <p className="text-lg font-semibold text-blue-600">{presupuesto.nombre}</p>
-              <div className="mt-2 text-sm text-gray-600">
-                <p>Negocio: #{negocio.numero}</p>
-                <p>Estado: {presupuesto.estado.charAt(0).toUpperCase() + presupuesto.estado.slice(1)}</p>
+            <div className="text-right bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+              <h2 className="text-3xl font-bold text-blue-600 mb-2">PRESUPUESTO</h2>
+              <p className="text-xl font-semibold text-gray-800 mb-3">{presupuesto.nombre}</p>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p><span className="font-semibold">Negocio:</span> #{negocio.numero}</p>
+                <p><span className="font-semibold">Estado:</span> {presupuesto.estado.charAt(0).toUpperCase() + presupuesto.estado.slice(1)}</p>
+                <p><span className="font-semibold">Total:</span> <span className="text-blue-600 font-bold">{formatearPrecio(totales.total)}</span></p>
               </div>
             </div>
           </div>
@@ -150,19 +190,41 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
               </tr>
             </thead>
             <tbody>
-              {(presupuesto.productos || []).map((producto, index) => <tr key={producto.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+              {(presupuesto.productos || []).map((producto, index) => (
+                <tr key={producto.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                   <td className="border border-gray-300 p-3">
-                    <div className="font-medium">{producto.nombre}</div>
-                    {producto.descripcion && renderHtmlContent(producto.descripcion)}
-                    {producto.comentarios && <div className="mt-2 pt-2 border-t border-gray-200">
+                    <div className="font-medium text-gray-800 mb-1">{producto.nombre}</div>
+                    {producto.descripcion && (
+                      <div className="text-sm text-gray-600 mb-2">
+                        {renderHtmlContent(producto.descripcion)}
+                      </div>
+                    )}
+                    
+                    {/* Session Details */}
+                    {producto.sessions && producto.sessions.length > 0 && renderSessionDetails(producto.sessions)}
+                    
+                    {/* Comments */}
+                    {producto.comentarios && (
+                      <div className="mt-2 pt-2 border-t border-gray-200">
                         <div className="text-xs font-semibold text-gray-700 mb-1">Comentarios:</div>
-                        {renderHtmlContent(producto.comentarios)}
-                      </div>}
+                        <div className="text-xs text-gray-600">
+                          {renderHtmlContent(producto.comentarios)}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Discount if applicable */}
+                    {producto.descuentoPorcentaje && producto.descuentoPorcentaje > 0 && (
+                      <div className="mt-1 text-xs text-green-600 font-medium">
+                        Descuento aplicado: {producto.descuentoPorcentaje}%
+                      </div>
+                    )}
                   </td>
-                  <td className="border border-gray-300 p-3 text-center">{producto.cantidad}</td>
-                  <td className="border border-gray-300 p-3 text-right">{formatearPrecio(producto.precioUnitario)}</td>
-                  <td className="border border-gray-300 p-3 text-right font-medium">{formatearPrecio(producto.total)}</td>
-                </tr>)}
+                  <td className="border border-gray-300 p-3 text-center font-medium">{producto.cantidad}</td>
+                  <td className="border border-gray-300 p-3 text-right font-medium">{formatearPrecio(producto.precioUnitario || producto.precio_unitario)}</td>
+                  <td className="border border-gray-300 p-3 text-right font-bold text-blue-600">{formatearPrecio(producto.total)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
