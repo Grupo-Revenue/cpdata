@@ -105,41 +105,6 @@ const Admin = () => {
         <p className="text-gray-600">Gestiona usuarios, productos y configuración del sistema</p>
       </div>
 
-      <div className="mb-6 flex gap-4 flex-wrap">
-        
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="outline">Crear Usuario</Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Crear un nuevo usuario</AlertDialogTitle>
-              <AlertDialogDescription>
-                Ingrese el correo electrónico y la contraseña del nuevo usuario.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="email" className="text-right">
-                  Email
-                </Label>
-                <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" type="email" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="password" className="text-right">
-                  Password
-                </Label>
-                <Input id="password" value={password} onChange={(e) => setPassword(e.target.value)} className="col-span-3" type="password" />
-              </div>
-            </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleCreateUser}>Continue</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
           <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
@@ -149,7 +114,13 @@ const Admin = () => {
           <UserTable />
         </TabsContent>
         <TabsContent value="productos">
-          <ProductTable />
+          <ProductTable 
+            email={email}
+            password={password}
+            setEmail={setEmail}
+            setPassword={setPassword}
+            handleCreateUser={handleCreateUser}
+          />
         </TabsContent>
       </Tabs>
     </div>

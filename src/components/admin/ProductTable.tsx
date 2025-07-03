@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { Pencil, Trash2, Plus } from "lucide-react"
+import { Pencil, Trash2, Plus, RefreshCw, UserPlus } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -39,7 +50,21 @@ interface Product {
   };
 }
 
-export const ProductTable = () => {
+interface ProductTableProps {
+  email: string;
+  password: string;
+  setEmail: (email: string) => void;
+  setPassword: (password: string) => void;
+  handleCreateUser: () => void;
+}
+
+export const ProductTable: React.FC<ProductTableProps> = ({
+  email,
+  password,
+  setEmail,
+  setPassword,
+  handleCreateUser
+}) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -228,8 +253,43 @@ export const ProductTable = () => {
         <h2 className="text-2xl font-bold">Productos</h2>
         <div className="flex gap-2">
           <Button onClick={fetchProducts} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar
           </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Crear Usuario
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Crear un nuevo usuario</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Ingrese el correo electrónico y la contraseña del nuevo usuario.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="email" className="text-right">
+                    Email
+                  </Label>
+                  <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" type="email" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="password" className="text-right">
+                    Password
+                  </Label>
+                  <Input id="password" value={password} onChange={(e) => setPassword(e.target.value)} className="col-span-3" type="password" />
+                </div>
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleCreateUser}>Continue</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={resetForm}>
