@@ -75,7 +75,8 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
         // Add extended properties for compatibility
         comentarios: producto.comentarios || '',
         descuentoPorcentaje: producto.descuentoPorcentaje || 0,
-        precioUnitario: producto.precio_unitario
+        precioUnitario: producto.precio_unitario,
+        sessions: producto.sessions || undefined
       }))
     };
 

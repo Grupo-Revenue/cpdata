@@ -26,7 +26,18 @@ export const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
           fecha_vencimiento,
           nombre,
           negocio_id,
-          updated_at
+          updated_at,
+          productos: productos_presupuesto (
+            id,
+            nombre,
+            descripcion,
+            cantidad,
+            precio_unitario,
+            total,
+            created_at,
+            presupuesto_id,
+            sessions
+          )
         )
       `)
       .order('created_at', { ascending: false });
@@ -60,7 +71,14 @@ export const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
           fechaEnvio: p.fecha_envio,
           fechaAprobacion: p.fecha_aprobacion,
           fechaRechazo: p.fecha_rechazo,
-          fechaVencimiento: p.fecha_vencimiento
+          fechaVencimiento: p.fecha_vencimiento,
+          productos: p.productos?.map(producto => ({
+            ...producto,
+            comentarios: '',
+            descuentoPorcentaje: 0,
+            precioUnitario: producto.precio_unitario,
+            sessions: producto.sessions ? (typeof producto.sessions === 'string' ? JSON.parse(producto.sessions) : producto.sessions) : undefined
+          })) || []
         })) || []
       };
       

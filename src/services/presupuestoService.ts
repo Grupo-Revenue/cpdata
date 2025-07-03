@@ -57,7 +57,8 @@ export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoD
         descripcion: producto.descripcion || '',
         cantidad: producto.cantidad,
         precio_unitario: producto.precio_unitario,
-        total: producto.cantidad * producto.precio_unitario
+        total: producto.cantidad * producto.precio_unitario,
+        sessions: producto.sessions ? JSON.stringify(producto.sessions) : null
       }));
 
       console.log('Products to insert:', productosParaInsertar);
@@ -81,7 +82,8 @@ export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoD
         ...producto,
         comentarios: '',
         descuentoPorcentaje: 0,
-        precioUnitario: producto.precio_unitario
+        precioUnitario: producto.precio_unitario,
+        sessions: producto.sessions ? (typeof producto.sessions === 'string' ? JSON.parse(producto.sessions) : producto.sessions) : undefined
       }));
     }
 

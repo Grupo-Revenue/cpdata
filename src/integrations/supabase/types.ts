@@ -359,6 +359,7 @@ export type Database = {
           nombre: string
           precio_unitario: number
           presupuesto_id: string
+          sessions: Json | null
           total: number
         }
         Insert: {
@@ -369,6 +370,7 @@ export type Database = {
           nombre: string
           precio_unitario: number
           presupuesto_id: string
+          sessions?: Json | null
           total: number
         }
         Update: {
@@ -379,6 +381,7 @@ export type Database = {
           nombre?: string
           precio_unitario?: number
           presupuesto_id?: string
+          sessions?: Json | null
           total?: number
         }
         Relationships: [
