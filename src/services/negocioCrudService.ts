@@ -2,58 +2,91 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Negocio, EstadoNegocio } from '@/types';
 
+// Helper function to find or create contact
+const findOrCreateContact = async (contactData: any, userId: string) => {
+  // First try to find existing contact
+  const { data: existingContact, error: findError } = await supabase
+    .from('contactos')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('email', contactData.email)
+    .maybeSingle();
+
+  if (findError) throw findError;
+  
+  if (existingContact) {
+    return existingContact.id;
+  }
+
+  // Create new contact if not found
+  const { data: newContact, error: createError } = await supabase
+    .from('contactos')
+    .insert([{
+      ...contactData,
+      user_id: userId
+    }])
+    .select('id')
+    .single();
+
+  if (createError) throw createError;
+  return newContact.id;
+};
+
+// Helper function to find or create company
+const findOrCreateCompany = async (companyData: any, userId: string) => {
+  // First try to find existing company
+  const { data: existingCompany, error: findError } = await supabase
+    .from('empresas')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('nombre', companyData.nombre)
+    .eq('tipo', companyData.tipo)
+    .maybeSingle();
+
+  if (findError) throw findError;
+  
+  if (existingCompany) {
+    return existingCompany.id;
+  }
+
+  // Create new company if not found
+  const { data: newCompany, error: createError } = await supabase
+    .from('empresas')
+    .insert([{
+      ...companyData,
+      user_id: userId
+    }])
+    .select('id')
+    .single();
+
+  if (createError) throw createError;
+  return newCompany.id;
+};
+
 export const crearNegocioEnSupabase = async (negocioData: any): Promise<Negocio | null> => {
   try {
-    // First create contact if provided
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+
+    // Handle contact - find or create
     let contactoId = null;
     if (negocioData.contacto) {
-      const { data: contactoData, error: contactoError } = await supabase
-        .from('contactos')
-        .insert([{
-          ...negocioData.contacto,
-          user_id: (await supabase.auth.getUser()).data.user?.id
-        }])
-        .select('id')
-        .single();
-
-      if (contactoError) throw contactoError;
-      contactoId = contactoData.id;
+      contactoId = await findOrCreateContact(negocioData.contacto, userId);
     }
 
-    // Create productora if provided
+    // Handle productora - find or create
     let productoraId = null;
     if (negocioData.productora) {
-      const { data: productoraData, error: productoraError } = await supabase
-        .from('empresas')
-        .insert([{
-          ...negocioData.productora,
-          user_id: (await supabase.auth.getUser()).data.user?.id
-        }])
-        .select('id')
-        .single();
-
-      if (productoraError) throw productoraError;
-      productoraId = productoraData.id;
+      productoraId = await findOrCreateCompany(negocioData.productora, userId);
     }
 
-    // Create cliente final if provided
+    // Handle cliente final - find or create
     let clienteFinalId = null;
     if (negocioData.clienteFinal) {
-      const { data: clienteData, error: clienteError } = await supabase
-        .from('empresas')
-        .insert([{
-          ...negocioData.clienteFinal,
-          user_id: (await supabase.auth.getUser()).data.user?.id
-        }])
-        .select('id')
-        .single();
-
-      if (clienteError) throw clienteError;
-      clienteFinalId = clienteData.id;
+      clienteFinalId = await findOrCreateCompany(negocioData.clienteFinal, userId);
     }
 
     // Get next business number
-    const userId = (await supabase.auth.getUser()).data.user?.id;
     const { data: counterData, error: counterError } = await supabase
       .from('contadores_usuario')
       .select('contador_negocio')
