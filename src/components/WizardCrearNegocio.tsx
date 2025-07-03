@@ -10,6 +10,7 @@ import { useNegocio } from '@/context/NegocioContext';
 import { TIPOS_EVENTO, CrearNegocioData } from '@/types';
 import { ArrowLeft, ArrowRight, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useChileanPhoneValidator } from '@/hooks/useChileanPhoneValidator';
 
 interface WizardProps {
   onComplete: (negocioId: string) => void;
@@ -21,12 +22,15 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
   const [paso, setPaso] = useState(1);
   const [creando, setCreando] = useState(false);
   
+  // Validador de teléfono chileno
+  const phoneValidator = useChileanPhoneValidator('+56');
+  
   // Paso 1: Información de Contacto
   const [contacto, setContacto] = useState({
     nombre: '',
     apellido: '',
     email: '',
-    telefono: '',
+    telefono: '+56',
     cargo: ''
   });
 
@@ -61,7 +65,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
   const [fechaCierre, setFechaCierre] = useState('');
 
   const validarPaso1 = () => {
-    return contacto.nombre && contacto.apellido && contacto.email && contacto.telefono;
+    return contacto.nombre && contacto.apellido && contacto.email && phoneValidator.isValid;
   };
 
   const validarPaso2 = () => {
@@ -235,10 +239,17 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                 <Label htmlFor="telefono">Teléfono *</Label>
                 <Input
                   id="telefono"
-                  value={contacto.telefono}
-                  onChange={(e) => setContacto({...contacto, telefono: e.target.value})}
+                  value={phoneValidator.value}
+                  onChange={(e) => {
+                    const result = phoneValidator.handleChange(e.target.value);
+                    setContacto({...contacto, telefono: result.formattedValue});
+                  }}
                   placeholder="+56 9 1234 5678"
+                  className={phoneValidator.error ? 'border-destructive' : ''}
                 />
+                {phoneValidator.error && (
+                  <p className="text-sm text-destructive mt-1">{phoneValidator.error}</p>
+                )}
               </div>
               <div className="md:col-span-2">
                 <Label htmlFor="cargo">Cargo (opcional)</Label>
