@@ -12,6 +12,7 @@ import { ArrowLeft, ArrowRight, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useChileanPhoneValidator } from '@/hooks/useChileanPhoneValidator';
 import { useEmailValidator } from '@/hooks/useEmailValidator';
+import { useChileanRutValidator } from '@/hooks/useChileanRutValidator';
 
 interface WizardProps {
   onComplete: (negocioId: string) => void;
@@ -26,6 +27,8 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
   // Validadores
   const phoneValidator = useChileanPhoneValidator('+56');
   const emailValidator = useEmailValidator();
+  const rutValidator = useChileanRutValidator();
+  const rutProductoraValidator = useChileanRutValidator();
   
   // Paso 1: Información de Contacto
   const [contacto, setContacto] = useState({
@@ -304,10 +307,17 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                       <Label htmlFor="productoraRut">RUT (opcional)</Label>
                       <Input
                         id="productoraRut"
-                        value={productora.rut}
-                        onChange={(e) => setProductora({...productora, rut: e.target.value})}
+                        value={rutProductoraValidator.value}
+                        onChange={(e) => {
+                          const result = rutProductoraValidator.handleChange(e.target.value);
+                          setProductora({...productora, rut: result.formattedValue});
+                        }}
                         placeholder="12.345.678-9"
+                        className={rutProductoraValidator.error ? 'border-destructive' : ''}
                       />
+                      {rutProductoraValidator.error && (
+                        <p className="text-sm text-destructive mt-1">{rutProductoraValidator.error}</p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="productoraWeb">Sitio Web (opcional)</Label>
@@ -359,10 +369,17 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                       <Label htmlFor="clienteRut">RUT (opcional)</Label>
                       <Input
                         id="clienteRut"
-                        value={clienteFinal.rut}
-                        onChange={(e) => setClienteFinal({...clienteFinal, rut: e.target.value})}
+                        value={rutValidator.value}
+                        onChange={(e) => {
+                          const result = rutValidator.handleChange(e.target.value);
+                          setClienteFinal({...clienteFinal, rut: result.formattedValue});
+                        }}
                         placeholder="12.345.678-9"
+                        className={rutValidator.error ? 'border-destructive' : ''}
                       />
+                      {rutValidator.error && (
+                        <p className="text-sm text-destructive mt-1">{rutValidator.error}</p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="clienteWeb">Sitio Web (opcional)</Label>
