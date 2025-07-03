@@ -11,6 +11,7 @@ import { TIPOS_EVENTO, CrearNegocioData } from '@/types';
 import { ArrowLeft, ArrowRight, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useChileanPhoneValidator } from '@/hooks/useChileanPhoneValidator';
+import { useEmailValidator } from '@/hooks/useEmailValidator';
 
 interface WizardProps {
   onComplete: (negocioId: string) => void;
@@ -22,8 +23,9 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
   const [paso, setPaso] = useState(1);
   const [creando, setCreando] = useState(false);
   
-  // Validador de teléfono chileno
+  // Validadores
   const phoneValidator = useChileanPhoneValidator('+56');
+  const emailValidator = useEmailValidator();
   
   // Paso 1: Información de Contacto
   const [contacto, setContacto] = useState({
@@ -65,7 +67,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
   const [fechaCierre, setFechaCierre] = useState('');
 
   const validarPaso1 = () => {
-    return contacto.nombre && contacto.apellido && contacto.email && phoneValidator.isValid;
+    return contacto.nombre && contacto.apellido && emailValidator.isValid && phoneValidator.isValid;
   };
 
   const validarPaso2 = () => {
@@ -230,10 +232,17 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                 <Input
                   id="email"
                   type="email"
-                  value={contacto.email}
-                  onChange={(e) => setContacto({...contacto, email: e.target.value})}
+                  value={emailValidator.value}
+                  onChange={(e) => {
+                    const result = emailValidator.handleChange(e.target.value);
+                    setContacto({...contacto, email: e.target.value});
+                  }}
                   placeholder="contacto@empresa.com"
+                  className={emailValidator.error ? 'border-destructive' : ''}
                 />
+                {emailValidator.error && (
+                  <p className="text-sm text-destructive mt-1">{emailValidator.error}</p>
+                )}
               </div>
               <div>
                 <Label htmlFor="telefono">Teléfono *</Label>
