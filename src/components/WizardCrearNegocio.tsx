@@ -60,9 +60,11 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
     tipo_evento: '',
     nombre_evento: '',
     fecha_evento: '',
-    horario_evento: '',
-    cantidad_asistentes: 0,
-    cantidad_invitados: 0,
+    fecha_evento_fin: '', // Para rango de fechas
+    horario_inicio: '',
+    horario_fin: '',
+    cantidad_asistentes: '',
+    cantidad_invitados: '',
     locacion: ''
   });
 
@@ -142,9 +144,11 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
         tipo_evento: evento.tipo_evento,
         nombre_evento: evento.nombre_evento,
         fecha_evento: evento.fecha_evento,
-        horas_acreditacion: evento.horario_evento || '00:00 - 00:00',
-        cantidad_asistentes: evento.cantidad_asistentes,
-        cantidad_invitados: evento.cantidad_invitados,
+        horas_acreditacion: evento.horario_inicio && evento.horario_fin 
+          ? `${evento.horario_inicio} - ${evento.horario_fin}` 
+          : '00:00 - 00:00',
+        cantidad_asistentes: parseInt(evento.cantidad_asistentes) || 0,
+        cantidad_invitados: parseInt(evento.cantidad_invitados) || 0,
         locacion: evento.locacion,
         fecha_cierre: fechaCierre || undefined
       };
@@ -430,21 +434,49 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
               </div>
               <div>
                 <Label htmlFor="fechaEvento">Fecha del Evento *</Label>
-                <Input
-                  id="fechaEvento"
-                  type="date"
-                  value={evento.fecha_evento}
-                  onChange={(e) => setEvento({...evento, fecha_evento: e.target.value})}
-                />
+                <div className="space-y-2">
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      id="fechaEvento"
+                      type="date"
+                      value={evento.fecha_evento}
+                      onChange={(e) => setEvento({...evento, fecha_evento: e.target.value})}
+                      placeholder="Fecha inicio"
+                    />
+                    <span className="text-muted-foreground text-sm">hasta</span>
+                    <Input
+                      id="fechaEventoFin"
+                      type="date"
+                      value={evento.fecha_evento_fin}
+                      onChange={(e) => setEvento({...evento, fecha_evento_fin: e.target.value})}
+                      placeholder="Fecha fin (opcional)"
+                      min={evento.fecha_evento}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Deja la segunda fecha vacía para eventos de un solo día
+                  </p>
+                </div>
               </div>
               <div>
                 <Label htmlFor="horarioEvento">Horario del Evento</Label>
-                <Input
-                  id="horarioEvento"
-                  value={evento.horario_evento}
-                  onChange={(e) => setEvento({...evento, horario_evento: e.target.value})}
-                  placeholder="Ej: 08:00 - 18:00"
-                />
+                <div className="flex gap-2 items-center">
+                  <Input
+                    id="horarioInicio"
+                    type="time"
+                    value={evento.horario_inicio}
+                    onChange={(e) => setEvento({...evento, horario_inicio: e.target.value})}
+                    placeholder="Hora inicio"
+                  />
+                  <span className="text-muted-foreground">-</span>
+                  <Input
+                    id="horarioFin"
+                    type="time"
+                    value={evento.horario_fin}
+                    onChange={(e) => setEvento({...evento, horario_fin: e.target.value})}
+                    placeholder="Hora fin"
+                  />
+                </div>
               </div>
               <div>
                 <Label htmlFor="cantidadAsistentes">Cantidad de Asistentes Esperados</Label>
@@ -452,8 +484,9 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                   id="cantidadAsistentes"
                   type="number"
                   value={evento.cantidad_asistentes}
-                  onChange={(e) => setEvento({...evento, cantidad_asistentes: parseInt(e.target.value) || 0})}
+                  onChange={(e) => setEvento({...evento, cantidad_asistentes: e.target.value})}
                   placeholder="0"
+                  min="0"
                 />
               </div>
               <div>
@@ -462,8 +495,9 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                   id="cantidadInvitados"
                   type="number"
                   value={evento.cantidad_invitados}
-                  onChange={(e) => setEvento({...evento, cantidad_invitados: parseInt(e.target.value) || 0})}
+                  onChange={(e) => setEvento({...evento, cantidad_invitados: e.target.value})}
                   placeholder="0"
+                  min="0"
                 />
               </div>
               <div className="md:col-span-2">
