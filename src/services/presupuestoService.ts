@@ -58,7 +58,7 @@ export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoD
         cantidad: producto.cantidad,
         precio_unitario: producto.precio_unitario,
         total: producto.cantidad * producto.precio_unitario,
-        sessions: producto.sessions ? JSON.stringify(producto.sessions) : null
+        sessions: producto.sessions && producto.sessions.length > 0 ? JSON.stringify(producto.sessions) : null
       }));
 
       console.log('Products to insert:', productosParaInsertar);
@@ -142,7 +142,7 @@ export const actualizarPresupuestoEnSupabase = async (
         cantidad: producto.cantidad,
         precio_unitario: producto.precio_unitario,
         total: producto.cantidad * producto.precio_unitario,
-        sessions: producto.sessions ? JSON.stringify(producto.sessions) : null
+        sessions: producto.sessions && producto.sessions.length > 0 ? JSON.stringify(producto.sessions) : null
       }));
 
       const { data: productosCreados, error: productosError } = await supabase

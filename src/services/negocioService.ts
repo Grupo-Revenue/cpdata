@@ -83,30 +83,21 @@ export const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
             try {
               // Handle different session data formats
               if (producto.sessions === null || producto.sessions === undefined) {
-                // If sessions is null or undefined, set to undefined for consistency
                 parsedSessions = undefined;
-                console.log(`No sessions data for ${producto.nombre}`);
               } else if (typeof producto.sessions === 'string') {
                 parsedSessions = JSON.parse(producto.sessions);
-                console.log(`Parsed string sessions for ${producto.nombre}:`, parsedSessions);
               } else if (Array.isArray(producto.sessions)) {
                 parsedSessions = producto.sessions;
-                console.log(`Array sessions for ${producto.nombre}:`, parsedSessions);
               } else if (typeof producto.sessions === 'object') {
-                // Check if it's a valid session object or a malformed object
-                if (producto.sessions._type === 'undefined') {
-                  console.log(`Malformed session object for ${producto.nombre}, setting to undefined`);
+                // Check for malformed objects and treat them as undefined
+                if (producto.sessions._type === 'undefined' || Object.keys(producto.sessions).length === 0) {
                   parsedSessions = undefined;
                 } else {
                   parsedSessions = producto.sessions;
-                  console.log(`Object sessions for ${producto.nombre}:`, parsedSessions);
                 }
               } else {
-                console.warn('Unknown sessions format:', typeof producto.sessions);
                 parsedSessions = undefined;
               }
-              
-              console.log(`Final sessions for ${producto.nombre}:`, parsedSessions);
             } catch (error) {
               console.error(`Error parsing sessions for product ${producto.nombre}:`, error);
               parsedSessions = undefined;
