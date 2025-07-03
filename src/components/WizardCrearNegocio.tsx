@@ -60,7 +60,6 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
     tipo_evento: '',
     nombre_evento: '',
     fecha_evento: '',
-    horas_acreditacion: '',
     cantidad_asistentes: 0,
     cantidad_invitados: 0,
     locacion: ''
@@ -86,8 +85,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
   };
 
   const validarPaso3 = () => {
-    return evento.tipo_evento && evento.nombre_evento && evento.fecha_evento && 
-           evento.horas_acreditacion && evento.locacion;
+    return evento.tipo_evento && evento.nombre_evento && evento.fecha_evento && evento.locacion;
   };
 
   const siguientePaso = () => {
@@ -143,7 +141,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
         tipo_evento: evento.tipo_evento,
         nombre_evento: evento.nombre_evento,
         fecha_evento: evento.fecha_evento,
-        horas_acreditacion: evento.horas_acreditacion,
+        horas_acreditacion: '00:00 - 00:00', // Default value since field was removed
         cantidad_asistentes: evento.cantidad_asistentes,
         cantidad_invitados: evento.cantidad_invitados,
         locacion: evento.locacion,
@@ -436,15 +434,6 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                   type="date"
                   value={evento.fecha_evento}
                   onChange={(e) => setEvento({...evento, fecha_evento: e.target.value})}
-                />
-              </div>
-              <div>
-                <Label htmlFor="horasAcreditacion">Horas de Acreditación *</Label>
-                <Input
-                  id="horasAcreditacion"
-                  value={evento.horas_acreditacion}
-                  onChange={(e) => setEvento({...evento, horas_acreditacion: e.target.value})}
-                  placeholder="Ej: 08:00 - 18:00"
                 />
               </div>
               <div>
