@@ -16,6 +16,15 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
   presupuesto,
   negocio
 }, ref) => {
+  // Debug: log the products and their sessions
+  console.log('PDF Template - Presupuesto productos:', presupuesto.productos);
+  presupuesto.productos?.forEach((producto, index) => {
+    console.log(`Producto ${index + 1} (${producto.nombre}):`, {
+      sessions: producto.sessions,
+      sessionCount: producto.sessions?.length || 0
+    });
+  });
+
   // Calculate totals with IVA breakdown
   const totales = calcularTotalesPresupuesto(presupuesto.productos || []);
 

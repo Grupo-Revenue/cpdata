@@ -15,17 +15,21 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
   };
 
   const renderSessionDetails = (sessions: any[]) => {
-    if (!sessions || sessions.length === 0) return null;
+    console.log('Rendering session details:', sessions);
+    if (!sessions || sessions.length === 0) {
+      console.log('No sessions found or empty array');
+      return null;
+    }
     
     return (
       <div className="mt-2 pt-2 border-t border-gray-200">
         <div className="text-xs font-semibold text-gray-700 mb-2">Detalle de Sesiones:</div>
         <div className="space-y-1">
           {sessions.map((session, index) => (
-            <div key={session.id || index} className="text-xs text-gray-600 flex justify-between">
-              <span>{session.fecha} - {session.servicio}</span>
+            <div key={session.id || index} className="text-xs text-gray-600 grid grid-cols-3 gap-2">
+              <span className="font-medium">{session.fecha} - {session.servicio}</span>
               <span>{session.acreditadores} acred. + {session.supervisor} super.</span>
-              <span className="font-medium">{formatearPrecio(session.monto)}</span>
+              <span className="font-bold text-right">{formatearPrecio(session.monto)}</span>
             </div>
           ))}
         </div>
