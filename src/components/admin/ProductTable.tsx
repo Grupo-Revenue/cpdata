@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { formatearPrecio } from '@/utils/formatters'
 
 interface Product {
   id: string;
@@ -342,7 +343,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
               <TableRow key={product.id}>
                 <TableCell className="font-medium">{product.nombre}</TableCell>
                 <TableCell>{product.descripcion || '-'}</TableCell>
-                <TableCell>${product.precio_base.toLocaleString()}</TableCell>
+                <TableCell>{formatearPrecio(product.precio_base)}</TableCell>
                 <TableCell>{product.categoria}</TableCell>
                 <TableCell>
                   <Badge variant={product.activo ? 'default' : 'secondary'}>
