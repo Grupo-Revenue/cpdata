@@ -4,8 +4,9 @@ import { useParams } from 'react-router-dom';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useNegocio } from '@/context/NegocioContext';
 import { logger } from '@/utils/logger';
-
-import { DashboardView, CreateBusinessView, BusinessDetailView } from '@/pages/LazyPages';
+import DashboardView from '@/pages/DashboardView';
+import CreateBusinessView from '@/pages/CreateBusinessView';
+import BusinessDetailView from '@/pages/BusinessDetailView';
 
 const Index = () => {
   const { negocioId } = useParams<{ negocioId: string }>();
@@ -48,33 +49,27 @@ const Index = () => {
 
   if (vistaActual === 'crear-negocio') {
     return (
-      <Suspense fallback={<LoadingFallback />}>
-        <CreateBusinessView
-          onComplete={completarCreacionNegocio}
-          onCancel={volverADashboard}
-        />
-      </Suspense>
+      <CreateBusinessView
+        onComplete={completarCreacionNegocio}
+        onCancel={volverADashboard}
+      />
     );
   }
 
   if (vistaActual === 'detalle-negocio' && negocioSeleccionado) {
     return (
-      <Suspense fallback={<LoadingFallback />}>
-        <BusinessDetailView
-          negocioId={negocioSeleccionado}
-          onVolver={volverADashboard}
-        />
-      </Suspense>
+      <BusinessDetailView
+        negocioId={negocioSeleccionado}
+        onVolver={volverADashboard}
+      />
     );
   }
   
   return (
-    <Suspense fallback={<LoadingFallback />}>
-      <DashboardView
-        onCrearNegocio={navegarACrearNegocio}
-        onVerNegocio={navegarADetalleNegocio}
-      />
-    </Suspense>
+    <DashboardView
+      onCrearNegocio={navegarACrearNegocio}
+      onVerNegocio={navegarADetalleNegocio}
+    />
   );
 };
 
