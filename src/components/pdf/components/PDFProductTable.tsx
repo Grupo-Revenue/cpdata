@@ -26,13 +26,28 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
         <div className="text-xs font-semibold text-gray-700 mb-2">Detalle de Sesiones:</div>
         <div className="space-y-1">
           {sessions.map((session, index) => (
-            <div key={session.id || index} className="text-xs text-gray-600 grid grid-cols-3 gap-2">
+            <div key={session.id || index} className="text-xs text-gray-600 grid grid-cols-2 gap-2">
               <span className="font-medium">{session.fecha} - {session.servicio}</span>
               <span>{session.acreditadores} acred. + {session.supervisor} super.</span>
-              <span className="font-bold text-right">{formatearPrecio(session.monto)}</span>
             </div>
           ))}
         </div>
+      </div>
+    );
+  };
+
+  const renderSessionPrices = (sessions: any[]) => {
+    if (!sessions || sessions.length === 0) {
+      return null;
+    }
+    
+    return (
+      <div className="space-y-1">
+        {sessions.map((session, index) => (
+          <div key={session.id || index} className="text-xs text-gray-600 text-right">
+            {formatearPrecio(session.precio)} x {(session.acreditadores || 0) + (session.supervisor || 0)}
+          </div>
+        ))}
       </div>
     );
   };
@@ -83,7 +98,16 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
                 )}
               </td>
               <td className="border border-gray-300 p-3 text-center font-medium">{producto.cantidad}</td>
-              <td className="border border-gray-300 p-3 text-right font-medium">{formatearPrecio(producto.precioUnitario || producto.precio_unitario)}</td>
+              <td className="border border-gray-300 p-3 text-right font-medium">
+                {producto.sessions && producto.sessions.length > 0 ? (
+                  <div>
+                    <div className="font-medium text-gray-800 mb-1">Precios por sesión:</div>
+                    {renderSessionPrices(producto.sessions)}
+                  </div>
+                ) : (
+                  formatearPrecio(producto.precioUnitario || producto.precio_unitario)
+                )}
+              </td>
               <td className="border border-gray-300 p-3 text-right font-bold text-blue-600">{formatearPrecio(producto.total)}</td>
             </tr>
           ))}
