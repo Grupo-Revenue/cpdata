@@ -73,7 +73,7 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
                 <div className="font-medium text-gray-800 mb-1">{producto.nombre}</div>
                 {producto.descripcion && (
                   <div className="text-sm text-gray-600 mb-2">
-                    {renderHtmlContent(producto.descripcion)}
+                    <div dangerouslySetInnerHTML={{ __html: producto.descripcion }} />
                   </div>
                 )}
                 
