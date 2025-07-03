@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react';
-import { ExtendedProductoPresupuesto } from '@/types';
+import { ExtendedProductoPresupuesto, SessionAcreditacion } from '@/types';
 import { ProductoBiblioteca } from '@/hooks/useProductosBiblioteca';
 import { calcularTotalProducto } from '@/utils/quoteCalculations';
 
@@ -65,62 +65,108 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
     
     setProductos(prev => prev.map(producto => {
       if (producto.id === id) {
-        const productoActualizado = { ...producto, [campo]: valor };
+        const productoActualizado = { ...producto };
         
+        // Handle sessions updates for accreditation products
+        if (campo === 'sessions') {
+          console.log('Updating sessions for product', id, 'with sessions:', valor);
+          
+          // Ensure we have a clean array of sessions
+          if (Array.isArray(valor) && valor.length > 0) {
+            // Deep clone sessions to avoid circular references and ensure proper typing
+            productoActualizado.sessions = (valor as SessionAcreditacion[]).map(session => ({
+              id: session.id,
+              fecha: session.fecha,
+              servicio: session.servicio,
+              acreditadores: session.acreditadores || 0,
+              supervisor: session.supervisor || 0,
+              precio: session.precio || 0,
+              monto: session.monto || ((session.acreditadores || 0) + (session.supervisor || 0)) * (session.precio || 0),
+              observacion: session.observacion || ''
+            }));
+            
+            // Calculate totals based on sessions
+            const sessionsTotalAmount = productoActualizado.sessions.reduce((sum: number, session: SessionAcreditacion) => sum + (session.monto || 0), 0);
+            const sessionsTotalAccreditors = productoActualizado.sessions.reduce((sum: number, session: SessionAcreditacion) => sum + (session.acreditadores || 0), 0);
+            
+            // Update product totals based on sessions
+            productoActualizado.total = sessionsTotalAmount as any;
+            productoActualizado.cantidad = sessionsTotalAccreditors as any;
+            
+            // Calculate average price per accreditor
+            if (Number(sessionsTotalAccreditors) > 0) {
+              const avgPrice = Number(sessionsTotalAmount) / Number(sessionsTotalAccreditors);
+              productoActualizado.precio_unitario = avgPrice as any;
+              productoActualizado.precioUnitario = avgPrice;
+            }
+            
+            console.log('Sessions updated successfully:', {
+              sessionsCount: productoActualizado.sessions.length,
+              totalAmount: sessionsTotalAmount,
+              totalAccreditors: sessionsTotalAccreditors
+            });
+          } else {
+            // Clear sessions if empty or invalid
+            productoActualizado.sessions = undefined;
+            console.log('Sessions cleared for product', id);
+          }
+        }
         // Handle legacy property name mapping
-        if (campo === 'precioUnitario') {
+        else if (campo === 'precioUnitario') {
           productoActualizado.precio_unitario = valor;
           productoActualizado.precioUnitario = valor;
         } else if (campo === 'precio_unitario') {
           productoActualizado.precioUnitario = valor;
           productoActualizado.precio_unitario = valor;
+        } else if (campo === 'comentarios') {
+          productoActualizado.comentarios = valor;
+        } else if (campo === 'cantidad') {
+          productoActualizado.cantidad = valor;
+        } else if (campo === 'descuentoPorcentaje') {
+          productoActualizado.descuentoPorcentaje = valor;
+        } else if (campo === 'total') {
+          productoActualizado.total = valor;
+        } else if (campo === 'nombre') {
+          productoActualizado.nombre = valor;
+        } else if (campo === 'descripcion') {
+          productoActualizado.descripcion = valor;
         }
         
-        // Handle sessions updates for accreditation products
-        if (campo === 'sessions') {
-          productoActualizado.sessions = valor;
+        // Recalculate total for price/quantity/discount changes (but not for sessions as they're handled above)
+        if (campo !== 'sessions' && ['precioUnitario', 'precio_unitario', 'cantidad', 'descuentoPorcentaje'].includes(campo)) {
+          const currentPrecio = typeof productoActualizado.precio_unitario === 'number' ? productoActualizado.precio_unitario : (productoActualizado.precioUnitario || 0);
+          const currentCantidad = typeof productoActualizado.cantidad === 'number' ? productoActualizado.cantidad : 1;
+          const currentDescuento = productoActualizado.descuentoPorcentaje || 0;
           
-          // If sessions exist, update the total price based on sessions total
-          if (valor && Array.isArray(valor) && valor.length > 0) {
-            const sessionsTotalAmount = valor.reduce((sum: number, session: any) => sum + (session.monto || 0), 0);
-            const sessionsTotalAccreditors = valor.reduce((sum: number, session: any) => sum + (session.acreditadores || 0), 0);
-            
-            // Update product totals based on sessions
-            productoActualizado.total = sessionsTotalAmount;
-            productoActualizado.cantidad = sessionsTotalAccreditors;
-            // Keep the original unit price or calculate average
-            if (sessionsTotalAccreditors > 0) {
-              productoActualizado.precio_unitario = sessionsTotalAmount / sessionsTotalAccreditors;
-              productoActualizado.precioUnitario = sessionsTotalAmount / sessionsTotalAccreditors;
-            }
-          }
-        }
-        // Recalcular total cuando cambie precio, cantidad o descuento (but not for sessions)
-        else if (campo === 'precioUnitario' || campo === 'precio_unitario' || campo === 'cantidad' || campo === 'descuentoPorcentaje') {
-          let precio = productoActualizado.precioUnitario || productoActualizado.precio_unitario;
-          let cantidad = productoActualizado.cantidad;
-          let descuento = productoActualizado.descuentoPorcentaje || 0;
+          let precio = currentPrecio;
+          let cantidad = currentCantidad;
+          let descuento = currentDescuento;
           
           // Handle the specific field being updated with proper type conversion and validation
           if (campo === 'precioUnitario' || campo === 'precio_unitario') {
-            // Convert to number, ensure it's not negative, default to 0 if invalid
             precio = typeof valor === 'number' ? Math.max(0, valor) : Math.max(0, parseFloat(valor) || 0);
             productoActualizado.precioUnitario = precio;
-            productoActualizado.precio_unitario = precio;
+            productoActualizado.precio_unitario = precio as any;
           } else if (campo === 'cantidad') {
-            // Convert to integer, ensure it's at least 1, default to 1 if invalid
             cantidad = typeof valor === 'number' ? Math.max(1, Math.floor(valor)) : Math.max(1, parseInt(valor) || 1);
-            productoActualizado.cantidad = cantidad;
+            productoActualizado.cantidad = cantidad as any;
           } else if (campo === 'descuentoPorcentaje') {
-            // Convert to number, clamp between 0-100, default to 0 if invalid
             descuento = typeof valor === 'number' ? Math.max(0, Math.min(100, valor)) : Math.max(0, Math.min(100, parseFloat(valor) || 0));
             productoActualizado.descuentoPorcentaje = descuento;
           }
           
-          productoActualizado.total = calcularTotalProducto(cantidad, precio, descuento);
+          const newTotal = calcularTotalProducto(cantidad, precio, descuento);
+          productoActualizado.total = newTotal as any;
         }
         
-        console.log('Product updated', { original: producto, updated: productoActualizado });
+        console.log('Product updated', { 
+          id, 
+          campo, 
+          hasSessionsAfterUpdate: !!productoActualizado.sessions,
+          sessionsCount: productoActualizado.sessions?.length || 0,
+          totalAmount: productoActualizado.total
+        });
+        
         return productoActualizado;
       }
       return producto;

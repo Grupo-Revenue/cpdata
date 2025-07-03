@@ -61,6 +61,7 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
 
   // Notify parent of changes
   React.useEffect(() => {
+    console.log('AccreditationSessionsManager: Notifying parent of sessions change:', sessions);
     onSessionsChange(sessions);
   }, [sessions, onSessionsChange]);
 
