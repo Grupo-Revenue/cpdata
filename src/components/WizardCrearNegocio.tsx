@@ -60,6 +60,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
     tipo_evento: '',
     nombre_evento: '',
     fecha_evento: '',
+    horario_evento: '',
     cantidad_asistentes: 0,
     cantidad_invitados: 0,
     locacion: ''
@@ -141,7 +142,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
         tipo_evento: evento.tipo_evento,
         nombre_evento: evento.nombre_evento,
         fecha_evento: evento.fecha_evento,
-        horas_acreditacion: '00:00 - 00:00', // Default value since field was removed
+        horas_acreditacion: evento.horario_evento || '00:00 - 00:00',
         cantidad_asistentes: evento.cantidad_asistentes,
         cantidad_invitados: evento.cantidad_invitados,
         locacion: evento.locacion,
@@ -434,6 +435,15 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                   type="date"
                   value={evento.fecha_evento}
                   onChange={(e) => setEvento({...evento, fecha_evento: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="horarioEvento">Horario del Evento</Label>
+                <Input
+                  id="horarioEvento"
+                  value={evento.horario_evento}
+                  onChange={(e) => setEvento({...evento, horario_evento: e.target.value})}
+                  placeholder="Ej: 08:00 - 18:00"
                 />
               </div>
               <div>
