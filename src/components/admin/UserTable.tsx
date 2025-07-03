@@ -60,21 +60,14 @@ export const UserTable: React.FC<UserTableProps> = ({
     try {
       setLoading(true);
       
-      // Fetch profiles with user roles
-      const { data: profiles, error } = await supabase
+      // Fetch profiles
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          email,
-          nombre,
-          apellido,
-          empresa,
-          created_at,
-          user_roles!inner(role)
-        `);
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching users:', error);
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
         toast({
           title: "Error",
           description: "No se pudieron cargar los usuarios",
@@ -83,7 +76,33 @@ export const UserTable: React.FC<UserTableProps> = ({
         return;
       }
 
-      setUsers(profiles || []);
+      // Fetch user roles
+      const { data: roles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      if (rolesError) {
+        console.error('Error fetching roles:', rolesError);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los roles",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Combine data
+      const usersWithRoles = profiles?.map(profile => ({
+        id: profile.id,
+        email: profile.email,
+        nombre: profile.nombre,
+        apellido: profile.apellido,
+        empresa: profile.empresa,
+        created_at: profile.created_at,
+        roles: roles?.filter(r => r.user_id === profile.id) || []
+      })) || [];
+
+      setUsers(usersWithRoles);
     } catch (error) {
       console.error('Error:', error);
       toast({
