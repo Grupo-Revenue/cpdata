@@ -13,7 +13,7 @@ interface StatCardProps {
   color: 'blue' | 'green' | 'purple';
 }
 
-const StatCard: React.FC<StatCardProps> = ({ 
+const StatCard: React.FC<StatCardProps> = React.memo(({ 
   title, 
   value, 
   change, 
@@ -53,12 +53,14 @@ const StatCard: React.FC<StatCardProps> = ({
       </CardContent>
     </Card>
   );
-};
+});
 
-const StatsCards: React.FC = () => {
+StatCard.displayName = 'StatCard';
+
+const StatsCards: React.FC = React.memo(() => {
   const { negocios } = useNegocio();
 
-  const stats = [
+  const stats = React.useMemo(() => [
     {
       title: "Total Negocios",
       value: negocios.length.toString(),
@@ -79,7 +81,7 @@ const StatsCards: React.FC = () => {
       icon: FileText,
       color: 'purple' as const
     }
-  ];
+  ], [negocios]);
 
   return (
     <div className="grid gap-6 md:grid-cols-3">
@@ -94,6 +96,8 @@ const StatsCards: React.FC = () => {
       ))}
     </div>
   );
-};
+});
+
+StatsCards.displayName = 'StatsCards';
 
 export default StatsCards;

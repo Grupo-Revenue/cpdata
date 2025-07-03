@@ -5,28 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Eye, Calendar, Building2, User } from 'lucide-react';
 import { Negocio } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
-import { calcularValorNegocio, getBusinessStateColors, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
+import { useCalcularValorNegocio, getBusinessStateColors, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
 import { Badge } from '@/components/ui/badge';
+import { logger } from '@/utils/logger';
 
 interface BusinessTableRowProps {
   negocio: Negocio;
   onVerNegocio: (id: string) => void;
 }
 
-const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegocio }) => {
-  const valorTotal = calcularValorNegocio(negocio);
+const BusinessTableRow: React.FC<BusinessTableRowProps> = React.memo(({ negocio, onVerNegocio }) => {
+  const valorTotal = useCalcularValorNegocio(negocio);
   
-  console.log('[BusinessTableRow] Rendering row for negocio:', {
-    id: negocio.id,
-    numero: negocio.numero,
-    nombre: negocio.evento?.nombreEvento,
-    contacto: negocio.contacto?.nombre,
-    hasId: !!negocio.id,
-    idType: typeof negocio.id,
-    idLength: negocio.id?.length
-  });
-  
-  const obtenerNombreEmpresa = () => {
+  const obtenerNombreEmpresa = React.useMemo(() => {
     if (negocio.productora) {
       return negocio.productora.nombre;
     }
@@ -34,32 +25,20 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegoc
       return negocio.clienteFinal.nombre;
     }
     return 'Sin empresa asignada';
-  };
+  }, [negocio.productora, negocio.clienteFinal]);
 
-  const handleVerClick = () => {
-    console.log('[BusinessTableRow] ==> VER BUTTON CLICKED <==');
-    console.log('[BusinessTableRow] Negocio ID:', negocio.id);
-    console.log('[BusinessTableRow] Negocio full data:', JSON.stringify({
-      id: negocio.id,
-      numero: negocio.numero,
-      estado: negocio.estado,
-      contacto: negocio.contacto?.nombre,
-      evento: negocio.evento?.nombreEvento
-    }, null, 2));
-    
+  const handleVerClick = React.useCallback(() => {
     if (!negocio.id) {
-      console.error('[BusinessTableRow] ERROR: Negocio ID is missing!');
+      logger.error('BusinessTableRow: Negocio ID is missing');
       return;
     }
     
     try {
-      console.log('[BusinessTableRow] Calling onVerNegocio with ID:', negocio.id);
       onVerNegocio(negocio.id);
-      console.log('[BusinessTableRow] onVerNegocio called successfully');
     } catch (error) {
-      console.error('[BusinessTableRow] Error calling onVerNegocio:', error);
+      logger.error('BusinessTableRow: Error calling onVerNegocio', error);
     }
-  };
+  }, [negocio.id, onVerNegocio]);
 
   return (
     <TableRow className="hover:bg-slate-50 transition-colors">
@@ -79,7 +58,7 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegoc
       <TableCell>
         <div className="flex items-center space-x-2">
           <Building2 className="w-4 h-4 text-slate-400" />
-          <span className="text-sm">{obtenerNombreEmpresa()}</span>
+          <span className="text-sm">{obtenerNombreEmpresa}</span>
         </div>
       </TableCell>
       
@@ -126,6 +105,8 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = ({ negocio, onVerNegoc
       </TableCell>
     </TableRow>
   );
-};
+});
+
+BusinessTableRow.displayName = 'BusinessTableRow';
 
 export default BusinessTableRow;

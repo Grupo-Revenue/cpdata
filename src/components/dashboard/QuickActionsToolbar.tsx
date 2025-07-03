@@ -8,17 +8,17 @@ const QuickActionsToolbar: React.FC = () => {
     {
       icon: BarChart3,
       label: 'Reportes',
-      action: () => console.log('Ver reportes')
+      action: () => {} // TODO: Implement reports action
     },
     {
       icon: Users,
       label: 'Contactos',
-      action: () => console.log('Ver contactos')
+      action: () => {} // TODO: Implement contacts action
     },
     {
       icon: FileText,
       label: 'Plantillas',
-      action: () => console.log('Ver plantillas')
+      action: () => {} // TODO: Implement templates action
     },
     {
       icon: Settings,

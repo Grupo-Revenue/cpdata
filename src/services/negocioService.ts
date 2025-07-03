@@ -1,15 +1,11 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Negocio } from '@/types';
+import { logger } from '@/utils/logger';
 
 export const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
   try {
-    console.log('[NegocioService] ==> FETCHING NEGOCIOS FROM DATABASE <==');
-    console.log('[NegocioService] Timestamp:', new Date().toISOString());
-    
-    // Add cache-busting parameter to ensure fresh data
-    const cacheKey = Date.now();
-    console.log('[NegocioService] Cache key:', cacheKey);
+    logger.debug('Fetching negocios from database');
     
     const { data, error } = await supabase
       .from('negocios')
@@ -36,24 +32,11 @@ export const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error("[NegocioService] Error fetching negocios:", error);
+      logger.error('Error fetching negocios from Supabase', error);
       throw error;
     }
     
-    console.log('[NegocioService] Raw data received:', {
-      count: data?.length || 0,
-      timestamp: new Date().toISOString(),
-      firstBusinessQuotes: data?.[0] ? {
-        businessId: data[0].id,
-        businessNumber: data[0].numero,
-        quotesCount: data[0].presupuestos?.length || 0,
-        quotes: data[0].presupuestos?.map(p => ({ 
-          id: p.id, 
-          name: p.nombre, 
-          updated_at: p.updated_at 
-        })) || []
-      } : 'No data'
-    });
+    logger.debug('Successfully fetched negocios', { count: data?.length || 0 });
     
     // Transform the data to match ExtendedNegocio type
     const transformedData = data.map((negocio, index) => {
@@ -81,28 +64,17 @@ export const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
         })) || []
       };
       
-      console.log(`[NegocioService] Transformed negocio ${index + 1}/${data.length}:`, {
-        id: transformed.id,
-        numero: transformed.numero,
-        quotesCount: transformed.presupuestos.length,
-        quoteNames: transformed.presupuestos.map(p => p.nombre),
-        lastUpdated: transformed.updated_at
-      });
-      
       return transformed;
     });
     
-    console.log('[NegocioService] ==> TRANSFORMATION COMPLETE <==');
-    console.log('[NegocioService] Final summary:', {
+    logger.debug('Transformation complete', {
       totalBusinesses: transformedData.length,
-      totalQuotes: transformedData.reduce((sum, n) => sum + n.presupuestos.length, 0),
-      businessesWithQuotes: transformedData.filter(n => n.presupuestos.length > 0).length,
-      timestamp: new Date().toISOString()
+      totalQuotes: transformedData.reduce((sum, n) => sum + n.presupuestos.length, 0)
     });
     
     return transformedData as Negocio[];
   } catch (error) {
-    console.error("[NegocioService] Failed to fetch negocios:", error);
+    logger.error('Failed to fetch negocios', error);
     throw error;
   }
 };

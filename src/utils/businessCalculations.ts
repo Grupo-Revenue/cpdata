@@ -1,13 +1,17 @@
 
 import { Negocio } from '@/types';
+import { useMemo } from 'react';
 
 /**
  * Calcula el valor total del negocio sumando todos los presupuestos
  */
 export const calcularValorNegocio = (negocio: Negocio): number => {
-  const total = negocio.presupuestos.reduce((total, presupuesto) => total + presupuesto.total, 0);
-  console.log(`[businessCalculations] Calculated business value for ${negocio.id}: ${total} (from ${negocio.presupuestos.length} budgets)`);
-  return total;
+  return negocio.presupuestos.reduce((total, presupuesto) => total + presupuesto.total, 0);
+};
+
+// Memoized version for use in components
+export const useCalcularValorNegocio = (negocio: Negocio): number => {
+  return useMemo(() => calcularValorNegocio(negocio), [negocio.presupuestos]);
 };
 
 /**
@@ -23,7 +27,7 @@ export const obtenerInfoPresupuestos = (negocio: Negocio) => {
   const presupuestosFacturados = negocio.presupuestos.filter(p => p.estado === 'aprobado' && p.facturado === true).length;
   const presupuestosPendientes = negocio.presupuestos.filter(p => ['enviado', 'borrador'].includes(p.estado)).length;
   
-  const info = {
+  return {
     totalPresupuestos,
     presupuestosAprobados,
     presupuestosEnviados,
@@ -33,10 +37,6 @@ export const obtenerInfoPresupuestos = (negocio: Negocio) => {
     presupuestosFacturados,
     presupuestosPendientes
   };
-  
-  console.log(`[businessCalculations] Budget info for ${negocio.id}:`, info);
-  
-  return info;
 };
 
 /**
@@ -62,38 +62,25 @@ export const analyzeBusinessState = (negocio: Negocio) => {
   const info = obtenerInfoPresupuestos(negocio);
   let expectedState = '';
   
-  console.log(`[businessCalculations] Analyzing business state for ${negocio.id}:`);
-  console.log(`[businessCalculations] Current state: ${negocio.estado}`);
-  console.log(`[businessCalculations] Budget breakdown:`, info);
-  
   // Determine expected state based on business rules
   if (info.totalPresupuestos === 0) {
     expectedState = 'oportunidad_creada';
-    console.log(`[businessCalculations] No budgets → oportunidad_creada`);
   } else if (info.presupuestosAprobados > 0 && info.presupuestosFacturados === info.presupuestosAprobados) {
     expectedState = 'negocio_cerrado';
-    console.log(`[businessCalculations] All approved budgets invoiced → negocio_cerrado`);
   } else if (info.presupuestosAprobados === info.totalPresupuestos) {
     expectedState = 'negocio_aceptado';
-    console.log(`[businessCalculations] All budgets approved → negocio_aceptado`);
   } else if (info.presupuestosAprobados > 0 && info.presupuestosAprobados < info.totalPresupuestos) {
     expectedState = 'parcialmente_aceptado';
-    console.log(`[businessCalculations] Some budgets approved (${info.presupuestosAprobados}/${info.totalPresupuestos}) → parcialmente_aceptado`);
   } else if ((info.presupuestosRechazados + info.presupuestosVencidos) === info.totalPresupuestos) {
     expectedState = 'negocio_perdido';
-    console.log(`[businessCalculations] All budgets rejected/expired → negocio_perdido`);
   } else if (info.presupuestosEnviados > 0 || info.presupuestosBorrador > 0) {
     expectedState = 'presupuesto_enviado';
-    console.log(`[businessCalculations] Has sent or draft budgets → presupuesto_enviado`);
   } else {
     expectedState = 'oportunidad_creada';
-    console.log(`[businessCalculations] Default case → oportunidad_creada`);
   }
   
   const stateMatches = negocio.estado === expectedState;
   const hasInconsistency = !stateMatches;
-  
-  console.log(`[businessCalculations] State analysis result: expected "${expectedState}", actual "${negocio.estado}", matches: ${stateMatches}`);
   
   return {
     currentState: negocio.estado,
@@ -178,13 +165,6 @@ export const obtenerEstadisticasDashboard = (negocios: Negocio[]) => {
 
   const totalPresupuestos = negocios.reduce((total, negocio) => total + negocio.presupuestos.length, 0);
   
-  console.log(`[businessCalculations] Dashboard statistics:`, {
-    totalNegocios,
-    valorTotalCartera,
-    estadisticasPorEstado,
-    totalPresupuestos
-  });
-  
   return {
     totalNegocios,
     valorTotalCartera,
@@ -197,8 +177,6 @@ export const obtenerEstadisticasDashboard = (negocios: Negocio[]) => {
  * Validates all business states and returns inconsistencies
  */
 export const validateAllBusinessStates = (negocios: Negocio[]) => {
-  console.log(`[businessCalculations] Validating states for ${negocios.length} businesses...`);
-  
   const inconsistencies = [];
   const validStates = [];
   
@@ -217,12 +195,6 @@ export const validateAllBusinessStates = (negocios: Negocio[]) => {
     } else {
       validStates.push(negocio.id);
     }
-  }
-  
-  console.log(`[businessCalculations] Validation complete: ${inconsistencies.length} inconsistencies found, ${validStates.length} valid states`);
-  
-  if (inconsistencies.length > 0) {
-    console.warn(`[businessCalculations] State inconsistencies found:`, inconsistencies);
   }
   
   return {

@@ -18,7 +18,7 @@ interface BusinessesTableProps {
   onVerNegocio: (negocioId: string) => void;
 }
 
-const BusinessesTable: React.FC<BusinessesTableProps> = ({ onCrearNegocio, onVerNegocio }) => {
+const BusinessesTable: React.FC<BusinessesTableProps> = React.memo(({ onCrearNegocio, onVerNegocio }) => {
   const {
     negocios,
     loading,
@@ -104,6 +104,8 @@ const BusinessesTable: React.FC<BusinessesTableProps> = ({ onCrearNegocio, onVer
       </CardContent>
     </Card>
   );
-};
+});
+
+BusinessesTable.displayName = 'BusinessesTable';
 
 export default BusinessesTable;

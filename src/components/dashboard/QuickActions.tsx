@@ -22,14 +22,14 @@ const QuickActions: React.FC<QuickActionProps> = ({ onCrearNegocio }) => {
       title: "Nuevo Presupuesto",
       description: "Generar presupuesto",
       icon: FileText,
-      action: () => console.log("Crear presupuesto"),
+      action: () => {}, // TODO: Implement create quote action
       color: "from-green-500 to-emerald-500"
     },
     {
       title: "Ver Reportes",
       description: "Analíticas y métricas",
       icon: BarChart3,
-      action: () => console.log("Ver analíticas"),
+      action: () => {}, // TODO: Implement analytics action
       color: "from-purple-500 to-pink-500"
     }
   ];

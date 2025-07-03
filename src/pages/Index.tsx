@@ -1,12 +1,11 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import { useNavigation } from '@/hooks/useNavigation';
 import { useNegocio } from '@/context/NegocioContext';
+import { logger } from '@/utils/logger';
 
-import DashboardView from '@/pages/DashboardView';
-import CreateBusinessView from '@/pages/CreateBusinessView';
-import BusinessDetailView from '@/pages/BusinessDetailView';
+import { DashboardView, CreateBusinessView, BusinessDetailView } from '@/pages/LazyPages';
 
 const Index = () => {
   const { negocioId } = useParams<{ negocioId: string }>();
@@ -31,79 +30,51 @@ const Index = () => {
     }
   }, [negocioId, negocios, loading, obtenerNegocio, navegarADetalleNegocio, vistaActual]);
 
-  console.log('[Index] ==> RENDERING INDEX COMPONENT <==');
-  console.log('[Index] Current state:', {
-    vistaActual,
-    negocioSeleccionado,
-    negociosCount: negocios.length,
-    loading
-  });
-
-  // Basic monitoring
-  useEffect(() => {
-    if (!loading && negocios.length > 0) {
-      console.log('[Index] Loaded businesses:', negocios.length);
-      console.log('[Index] Current view:', vistaActual);
-      console.log('[Index] Selected business:', negocioSeleccionado);
-    }
-  }, [negocios, loading, vistaActual, negocioSeleccionado]);
-
   // Verify business data when navigating to detail view
   useEffect(() => {
     if (vistaActual === 'detalle-negocio' && negocioSeleccionado) {
-      console.log('[Index] ==> VERIFYING BUSINESS DATA FOR DETAIL VIEW <==');
-      console.log('[Index] Looking for negocioId:', negocioSeleccionado);
-      
       const negocio = obtenerNegocio(negocioSeleccionado);
-      console.log('[Index] Found negocio:', !!negocio);
-      
-      if (negocio) {
-        console.log('[Index] Negocio details:', {
-          id: negocio.id,
-          numero: negocio.numero,
-          contacto: negocio.contacto?.nombre,
-          evento: negocio.evento?.nombreEvento
-        });
-      } else {
-        console.error('[Index] ERROR: Negocio not found for ID:', negocioSeleccionado);
-        console.log('[Index] Available negocios IDs:', negocios.map(n => n.id));
+      if (!negocio) {
+        logger.error('Negocio not found for ID', null, { negocioSeleccionado, availableIds: negocios.map(n => n.id) });
       }
     }
   }, [vistaActual, negocioSeleccionado, obtenerNegocio, negocios]);
 
-  console.log('[Index] Deciding which view to render...');
+  const LoadingFallback = () => (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    </div>
+  );
 
   if (vistaActual === 'crear-negocio') {
-    console.log('[Index] ==> RENDERING CreateBusinessView <==');
     return (
-      <CreateBusinessView
-        onComplete={completarCreacionNegocio}
-        onCancel={volverADashboard}
-      />
+      <Suspense fallback={<LoadingFallback />}>
+        <CreateBusinessView
+          onComplete={completarCreacionNegocio}
+          onCancel={volverADashboard}
+        />
+      </Suspense>
     );
   }
 
   if (vistaActual === 'detalle-negocio' && negocioSeleccionado) {
-    console.log('[Index] ==> RENDERING BusinessDetailView <==');
-    console.log('[Index] BusinessDetailView props:', {
-      negocioId: negocioSeleccionado,
-      hasOnVolver: !!volverADashboard
-    });
-    
     return (
-      <BusinessDetailView
-        negocioId={negocioSeleccionado}
-        onVolver={volverADashboard}
-      />
+      <Suspense fallback={<LoadingFallback />}>
+        <BusinessDetailView
+          negocioId={negocioSeleccionado}
+          onVolver={volverADashboard}
+        />
+      </Suspense>
     );
   }
-
-  console.log('[Index] ==> RENDERING DashboardView (default) <==');
+  
   return (
-    <DashboardView
-      onCrearNegocio={navegarACrearNegocio}
-      onVerNegocio={navegarADetalleNegocio}
-    />
+    <Suspense fallback={<LoadingFallback />}>
+      <DashboardView
+        onCrearNegocio={navegarACrearNegocio}
+        onVerNegocio={navegarADetalleNegocio}
+      />
+    </Suspense>
   );
 };
 
