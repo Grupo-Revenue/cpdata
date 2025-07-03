@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label"
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import UpdateQuoteNamesButton from '@/components/admin/UpdateQuoteNamesButton';
+
 import { UserTable } from '@/components/admin/UserTable';
 import { ProductTable } from '@/components/admin/ProductTable';
 
@@ -106,7 +106,7 @@ const Admin = () => {
       </div>
 
       <div className="mb-6 flex gap-4 flex-wrap">
-        <UpdateQuoteNamesButton />
+        
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="outline">Crear Usuario</Button>
