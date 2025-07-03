@@ -13,6 +13,18 @@ export type ConfiguracionMarca = Database['public']['Tables']['configuracion_mar
 // Constants
 export const IVA_PERCENTAGE = 19;
 
+// Session type for accreditation products
+export type SessionAcreditacion = {
+  id: string;
+  fecha: string;
+  servicio: string;
+  acreditadores: number;
+  supervisor: number;
+  observacion?: string;
+  cantidad: number;
+  monto: number;
+}
+
 // Extended types for application use
 export type ExtendedProductoPresupuesto = Database['public']['Tables']['productos_presupuesto']['Row'] & {
   comentarios?: string;
@@ -20,6 +32,7 @@ export type ExtendedProductoPresupuesto = Database['public']['Tables']['producto
   precioUnitario?: number; // Legacy property name mapping
   precio_unitario: number;
   linea_producto_id?: string; // Add this field for product line identification
+  sessions?: SessionAcreditacion[]; // Add sessions for accreditation products
 }
 
 export type ExtendedNegocio = Database['public']['Tables']['negocios']['Row'] & {

@@ -8,6 +8,9 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
   const [productos, setProductos] = useState<ExtendedProductoPresupuesto[]>(initialProducts);
 
   const agregarProductoBiblioteca = useCallback((productoBiblioteca: ProductoBiblioteca) => {
+    const isAccreditationProduct = productoBiblioteca.nombre.toLowerCase().includes('acreditación') ||
+      productoBiblioteca.descripcion?.toLowerCase().includes('acreditación');
+
     const nuevoProducto: ExtendedProductoPresupuesto = {
       id: `producto-${Date.now()}-${productoBiblioteca.id}`,
       nombre: productoBiblioteca.nombre,
@@ -19,7 +22,8 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
       descuentoPorcentaje: 0,
       total: productoBiblioteca.precio_base,
       created_at: new Date().toISOString(),
-      presupuesto_id: ''
+      presupuesto_id: '',
+      sessions: isAccreditationProduct ? [] : undefined
     };
 
     setProductos(prev => [...prev, nuevoProducto]);
@@ -35,6 +39,9 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
     cantidad: number;
     precioUnitario: number;
   }) => {
+    const isAccreditationProduct = productoData.nombre.toLowerCase().includes('acreditación') ||
+      productoData.descripcion?.toLowerCase().includes('acreditación');
+
     const nuevoProducto: ExtendedProductoPresupuesto = {
       id: `producto-${Date.now()}`,
       nombre: productoData.nombre,
@@ -46,7 +53,8 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
       descuentoPorcentaje: 0,
       total: calcularTotalProducto(productoData.cantidad, productoData.precioUnitario, 0),
       created_at: new Date().toISOString(),
-      presupuesto_id: ''
+      presupuesto_id: '',
+      sessions: isAccreditationProduct ? [] : undefined
     };
 
     setProductos(prev => [...prev, nuevoProducto]);
@@ -68,8 +76,27 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
           productoActualizado.precio_unitario = valor;
         }
         
-        // Recalcular total cuando cambie precio, cantidad o descuento
-        if (campo === 'precioUnitario' || campo === 'precio_unitario' || campo === 'cantidad' || campo === 'descuentoPorcentaje') {
+        // Handle sessions updates for accreditation products
+        if (campo === 'sessions') {
+          productoActualizado.sessions = valor;
+          
+          // If sessions exist, update the total price based on sessions total
+          if (valor && Array.isArray(valor) && valor.length > 0) {
+            const sessionsTotalAmount = valor.reduce((sum: number, session: any) => sum + (session.monto || 0), 0);
+            const sessionsTotalQuantity = valor.reduce((sum: number, session: any) => sum + (session.cantidad || 0), 0);
+            
+            // Update product totals based on sessions
+            productoActualizado.total = sessionsTotalAmount;
+            productoActualizado.cantidad = sessionsTotalQuantity;
+            // Keep the original unit price or calculate average
+            if (sessionsTotalQuantity > 0) {
+              productoActualizado.precio_unitario = sessionsTotalAmount / sessionsTotalQuantity;
+              productoActualizado.precioUnitario = sessionsTotalAmount / sessionsTotalQuantity;
+            }
+          }
+        }
+        // Recalcular total cuando cambie precio, cantidad o descuento (but not for sessions)
+        else if (campo === 'precioUnitario' || campo === 'precio_unitario' || campo === 'cantidad' || campo === 'descuentoPorcentaje') {
           let precio = productoActualizado.precioUnitario || productoActualizado.precio_unitario;
           let cantidad = productoActualizado.cantidad;
           let descuento = productoActualizado.descuentoPorcentaje || 0;
@@ -108,12 +135,18 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
     console.log('setProductosFromExternal called with', newProductos);
     
     // Ensure backward compatibility by adding missing fields
-    const productosExtendidos = newProductos.map(producto => ({
-      ...producto,
-      comentarios: producto.comentarios || '',
-      descuentoPorcentaje: producto.descuentoPorcentaje || 0,
-      precioUnitario: producto.precioUnitario || producto.precio_unitario
-    }));
+    const productosExtendidos = newProductos.map(producto => {
+      const isAccreditationProduct = producto.nombre.toLowerCase().includes('acreditación') ||
+        producto.descripcion?.toLowerCase().includes('acreditación');
+
+      return {
+        ...producto,
+        comentarios: producto.comentarios || '',
+        descuentoPorcentaje: producto.descuentoPorcentaje || 0,
+        precioUnitario: producto.precioUnitario || producto.precio_unitario,
+        sessions: producto.sessions || (isAccreditationProduct ? [] : undefined)
+      };
+    });
     
     setProductos(productosExtendidos);
   }, []);
