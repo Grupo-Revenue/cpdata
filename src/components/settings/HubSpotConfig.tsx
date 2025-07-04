@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Key } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Key, Unplug } from 'lucide-react';
 
 const HubSpotConfig = () => {
   const { user } = useAuth();
@@ -15,6 +14,7 @@ const HubSpotConfig = () => {
   const [apiKey, setApiKey] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [isConfigured, setIsConfigured] = useState(false);
   const [isConnectionTested, setIsConnectionTested] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
@@ -49,6 +49,54 @@ const HubSpotConfig = () => {
       }
     } catch (error) {
       console.error('Error loading HubSpot config:', error);
+    }
+  };
+
+  const disconnectFromHubSpot = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "No se pudo obtener la información del usuario",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setIsDisconnecting(true);
+
+      // Deactivate all active tokens for this user
+      const { error } = await supabase
+        .from('hubspot_api_keys')
+        .update({ activo: false })
+        .eq('user_id', user.id)
+        .eq('activo', true);
+
+      if (error) {
+        console.error('Error disconnecting from HubSpot:', error);
+        throw new Error(error.message || 'Error al desconectar de HubSpot');
+      }
+
+      // Update local state
+      setIsConfigured(false);
+      setApiKey('');
+      setIsConnectionTested(false);
+      setLastTestedAt(null);
+
+      toast({
+        title: "Desconectado exitosamente",
+        description: "Tu cuenta ha sido desconectada de HubSpot. Los tokens se han desactivado pero no eliminado."
+      });
+
+    } catch (error) {
+      console.error('Error disconnecting from HubSpot:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo desconectar de HubSpot. Inténtalo de nuevo.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDisconnecting(false);
     }
   };
 
@@ -191,6 +239,7 @@ const HubSpotConfig = () => {
                 onChange={(e) => handleApiKeyChange(e.target.value)}
                 placeholder="pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                 className="pr-10"
+                disabled={isConfigured}
               />
               <Button
                 type="button"
@@ -212,34 +261,56 @@ const HubSpotConfig = () => {
           </div>
 
           <div className="flex space-x-3">
-            <Button
-              variant="outline"
-              onClick={testConnection}
-              disabled={isTesting || !apiKey.trim() || apiKey === '••••••••••••••••'}
-            >
-              {isTesting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Probando...
-                </>
-              ) : (
-                'Probar Conexión'
-              )}
-            </Button>
+            {!isConfigured ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={testConnection}
+                  disabled={isTesting || !apiKey.trim() || apiKey === '••••••••••••••••'}
+                >
+                  {isTesting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Probando...
+                    </>
+                  ) : (
+                    'Probar Conexión'
+                  )}
+                </Button>
 
-            <Button 
-              onClick={saveApiKey} 
-              disabled={isLoading || !apiKey.trim() || apiKey === '••••••••••••••••' || !isConnectionTested}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Guardando...
-                </>
-              ) : (
-                'Guardar Token'
-              )}
-            </Button>
+                <Button 
+                  onClick={saveApiKey} 
+                  disabled={isLoading || !apiKey.trim() || apiKey === '••••••••••••••••' || !isConnectionTested}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    'Guardar Token'
+                  )}
+                </Button>
+              </>
+            ) : (
+              <Button 
+                variant="destructive"
+                onClick={disconnectFromHubSpot}
+                disabled={isDisconnecting}
+              >
+                {isDisconnecting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Desconectando...
+                  </>
+                ) : (
+                  <>
+                    <Unplug className="w-4 h-4 mr-2" />
+                    Desconectar de HubSpot
+                  </>
+                )}
+              </Button>
+            )}
           </div>
 
           {isConnectionTested && !isConfigured && (
