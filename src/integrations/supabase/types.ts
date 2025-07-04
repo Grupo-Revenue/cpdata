@@ -143,6 +143,7 @@ export type Database = {
       }
       hubspot_api_keys: {
         Row: {
+          activo: boolean
           api_key: string
           created_at: string
           id: string
@@ -150,6 +151,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          activo?: boolean
           api_key: string
           created_at?: string
           id?: string
@@ -157,6 +159,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          activo?: boolean
           api_key?: string
           created_at?: string
           id?: string

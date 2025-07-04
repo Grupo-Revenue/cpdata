@@ -28,10 +28,12 @@ const HubSpotConfig = () => {
     if (!user) return;
 
     try {
+      // Load only the active token for the user
       const { data, error } = await supabase
         .from('hubspot_api_keys')
         .select('*')
         .eq('user_id', user.id)
+        .eq('activo', true)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -144,7 +146,7 @@ const HubSpotConfig = () => {
         setLastTestedAt(new Date().toISOString());
         toast({
           title: "Token guardado",
-          description: "El token de acceso de HubSpot se ha guardado correctamente"
+          description: "El token de acceso de HubSpot se ha guardado correctamente y está ahora activo"
         });
       } else {
         throw new Error(result.error || 'Error al guardar el token');
@@ -253,7 +255,7 @@ const HubSpotConfig = () => {
             <div className="flex items-center space-x-2 p-3 bg-green-50 rounded-md">
               <CheckCircle className="w-4 h-4 text-green-600" />
               <span className="text-sm text-green-700">
-                Token configurado correctamente
+                Token configurado y activo correctamente
                 {lastTestedAt && (
                   <span className="block text-xs text-green-600">
                     Última verificación: {new Date(lastTestedAt).toLocaleDateString('es-ES', {
@@ -288,10 +290,11 @@ const HubSpotConfig = () => {
               <li>Pégalo en el campo de arriba</li>
             </ol>
             <div className="flex items-start space-x-2 p-3 bg-amber-50 rounded-md mt-4">
-              <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="w-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
               <div className="text-sm text-amber-700">
                 <p className="font-medium">Importante:</p>
                 <p>Asegúrate de que tu Private App tenga los permisos necesarios para acceder a los deals y pipelines de HubSpot.</p>
+                <p className="mt-1">El último token guardado será el token activo para tu cuenta.</p>
               </div>
             </div>
           </div>

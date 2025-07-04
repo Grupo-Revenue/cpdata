@@ -123,7 +123,7 @@ serve(async (req) => {
       }
     }
 
-    // Handle saving API key with improved duplicate logic
+    // Handle saving API key with active token management
     if (action === 'save_api_key') {
       if (!apiKey) {
         return new Response(JSON.stringify({ 
@@ -141,7 +141,7 @@ serve(async (req) => {
         // Check if this user already has this exact API key
         const { data: existingUserToken, error: userSearchError } = await supabase
           .from('hubspot_api_keys')
-          .select('id')
+          .select('id, activo')
           .eq('user_id', user.id)
           .eq('api_key', apiKey)
           .maybeSingle();
@@ -152,28 +152,55 @@ serve(async (req) => {
         }
 
         if (existingUserToken) {
-          // Token already exists for current user, just update timestamp
-          console.log('Token already exists for current user, updating timestamp');
+          // Token already exists for current user
+          console.log('Token already exists for current user, updating as active');
+          
+          // First deactivate all other tokens for this user
+          const { error: deactivateError } = await supabase
+            .from('hubspot_api_keys')
+            .update({ activo: false })
+            .eq('user_id', user.id);
+
+          if (deactivateError) {
+            console.error('Error deactivating other tokens:', deactivateError);
+            throw new Error(`Failed to deactivate other tokens: ${deactivateError.message}`);
+          }
+
+          // Then activate this token and update timestamp
           const { error: updateError } = await supabase
             .from('hubspot_api_keys')
             .update({
+              activo: true,
               updated_at: new Date().toISOString()
             })
             .eq('id', existingUserToken.id);
 
           if (updateError) {
-            console.error('Error updating timestamp:', updateError);
-            throw new Error(`Failed to update timestamp: ${updateError.message}`);
+            console.error('Error updating token:', updateError);
+            throw new Error(`Failed to update token: ${updateError.message}`);
           }
         } else {
           // Token doesn't exist for current user, create new record
-          // (even if it exists for other users, we allow multiple users to have the same token)
-          console.log('Creating new token record for user');
+          console.log('Creating new active token record for user');
+          
+          // First deactivate all other tokens for this user
+          const { error: deactivateError } = await supabase
+            .from('hubspot_api_keys')
+            .update({ activo: false })
+            .eq('user_id', user.id);
+
+          if (deactivateError) {
+            console.error('Error deactivating existing tokens:', deactivateError);
+            throw new Error(`Failed to deactivate existing tokens: ${deactivateError.message}`);
+          }
+
+          // Then create new active token
           const { error: insertError } = await supabase
             .from('hubspot_api_keys')
             .insert({
               user_id: user.id,
               api_key: apiKey,
+              activo: true,
               updated_at: new Date().toISOString()
             });
 
@@ -183,11 +210,11 @@ serve(async (req) => {
           }
         }
 
-        console.log('API key saved successfully to database');
+        console.log('API key saved successfully and set as active');
         
         return new Response(JSON.stringify({ 
           success: true,
-          message: 'API key saved successfully'
+          message: 'API key saved successfully and set as active'
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -203,15 +230,16 @@ serve(async (req) => {
       }
     }
 
-    // Get the user's API key from our table
+    // Get the user's active API key from our table
     const { data: apiKeyData, error: keyError } = await supabase
       .from('hubspot_api_keys')
       .select('api_key')
       .eq('user_id', user.id)
+      .eq('activo', true)
       .single();
 
     if (keyError || !apiKeyData?.api_key) {
-      console.log('HubSpot API key not found for user:', user.id);
+      console.log('Active HubSpot API key not found for user:', user.id);
       
       // Only update sync status for negocio-related actions
       if (negocioData?.id) {
@@ -220,21 +248,21 @@ serve(async (req) => {
           .upsert({
             negocio_id: negocioData.id,
             sync_status: 'error',
-            error_message: 'HubSpot API key not configured',
+            error_message: 'HubSpot API key not configured or not active',
             last_sync_at: new Date().toISOString()
           });
       }
 
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'HubSpot API key not configured. Please configure your API key in settings.' 
+        error: 'HubSpot API key not configured or not active. Please configure your API key in settings.' 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const hubspotApiKey = apiKeyData.api_key;
-    console.log('Found API key for user:', user.id);
+    console.log('Found active API key for user:', user.id);
 
     // Handle test connection
     if (action === 'test_connection') {
