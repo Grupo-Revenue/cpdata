@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useBrandConfig } from '@/hooks/useBrandConfig';
 import { Button } from '@/components/ui/button';
@@ -13,10 +13,45 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { LogOut, Settings, Shield, Building2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Navigation = () => {
   const { user, signOut, isAdmin } = useAuth();
   const { config: brandConfig, loading: configLoading } = useBrandConfig();
+  const [hubspotConnected, setHubspotConnected] = useState(false);
+  const [checkingConnection, setCheckingConnection] = useState(true);
+
+  useEffect(() => {
+    checkHubSpotConnection();
+  }, [user]);
+
+  const checkHubSpotConnection = async () => {
+    if (!user) {
+      setCheckingConnection(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('hubspot_api_keys')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('activo', true)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking HubSpot connection:', error);
+        setHubspotConnected(false);
+      } else {
+        setHubspotConnected(!!data);
+      }
+    } catch (error) {
+      console.error('Error checking HubSpot connection:', error);
+      setHubspotConnected(false);
+    } finally {
+      setCheckingConnection(false);
+    }
+  };
 
   if (!user) return null;
 
@@ -96,6 +131,25 @@ const Navigation = () => {
           
           {/* Botones de acción y perfil */}
           <div className="flex items-center space-x-3">
+            {/* Indicador de conexión HubSpot */}
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1">
+                {checkingConnection ? (
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
+                ) : (
+                  <div 
+                    className={`w-2 h-2 rounded-full ${
+                      hubspotConnected ? 'bg-green-500' : 'bg-red-500'
+                    }`}
+                    title={hubspotConnected ? 'HubSpot conectado' : 'HubSpot desconectado'}
+                  ></div>
+                )}
+                <span className="text-xs text-muted-foreground hidden sm:inline">
+                  HubSpot
+                </span>
+              </div>
+            </div>
+
             {/* Menú de usuario */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
