@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -67,6 +66,62 @@ serve(async (req) => {
     const { action, negocioData, pipelineId, apiKey } = requestBody;
 
     console.log('HubSpot Sync Action:', action);
+
+    // Handle temporary connection test (without saving)
+    if (action === 'test_connection_temp') {
+      if (!apiKey) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'API key is required' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      try {
+        console.log('Testing HubSpot connection with provided API key...');
+        const testResponse = await fetch('https://api.hubapi.com/integrations/v1/me', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!testResponse.ok) {
+          const errorText = await testResponse.text();
+          console.error('HubSpot API test failed:', errorText);
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: `HubSpot API connection failed: ${errorText}` 
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const responseData = await testResponse.json();
+        console.log('HubSpot connection test successful:', responseData);
+        
+        return new Response(JSON.stringify({ 
+          success: true,
+          message: 'Connection test successful',
+          data: responseData
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (error) {
+        console.error('Error testing connection:', error);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: `Connection test failed: ${error.message}` 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     // Handle saving API key
     if (action === 'save_api_key') {

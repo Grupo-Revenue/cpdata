@@ -16,6 +16,7 @@ const HubSpotConfig = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [isConfigured, setIsConfigured] = useState(false);
+  const [isConnectionTested, setIsConnectionTested] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [lastTestedAt, setLastTestedAt] = useState<string | null>(null);
 
@@ -42,17 +43,69 @@ const HubSpotConfig = () => {
         setIsConfigured(true);
         setApiKey('••••••••••••••••'); // Masked token display
         setLastTestedAt(data.updated_at);
+        setIsConnectionTested(true); // If already saved, consider it tested
       }
     } catch (error) {
       console.error('Error loading HubSpot config:', error);
     }
   };
 
-  const saveApiKey = async () => {
-    if (!user || !apiKey.trim()) {
+  const testConnection = async () => {
+    if (!user || !apiKey.trim() || apiKey === '••••••••••••••••') {
       toast({
         title: "Error",
         description: "Por favor ingresa un token de acceso válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setIsTesting(true);
+
+      const response = await fetch('/api/hubspot-sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({
+          action: 'test_connection_temp',
+          apiKey: apiKey.trim()
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setIsConnectionTested(true);
+        toast({
+          title: "Conexión exitosa",
+          description: "El token de HubSpot es válido. Ya puedes guardarlo.",
+          duration: 5000
+        });
+      } else {
+        setIsConnectionTested(false);
+        throw new Error(result.error || 'Error en la conexión');
+      }
+    } catch (error) {
+      console.error('Error testing connection:', error);
+      setIsConnectionTested(false);
+      toast({
+        title: "Error de conexión",
+        description: "No se pudo conectar con HubSpot. Verifica que el token sea válido.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const saveApiKey = async () => {
+    if (!user || !apiKey.trim() || !isConnectionTested) {
+      toast({
+        title: "Error",
+        description: "Debes probar la conexión antes de guardar el token",
         variant: "destructive"
       });
       return;
@@ -108,49 +161,9 @@ const HubSpotConfig = () => {
     }
   };
 
-  const testConnection = async () => {
-    if (!user) return;
-
-    try {
-      setIsTesting(true);
-
-      const response = await fetch('/api/hubspot-sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-        },
-        body: JSON.stringify({
-          action: 'test_connection'
-        })
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        toast({
-          title: "Conexión exitosa",
-          description: "El token de HubSpot es válido y la conexión funciona correctamente",
-          duration: 5000
-        });
-        setLastTestedAt(new Date().toISOString());
-      } else {
-        throw new Error(result.error || 'Error en la conexión');
-      }
-    } catch (error) {
-      console.error('Error testing connection:', error);
-      toast({
-        title: "Error de conexión",
-        description: "No se pudo conectar con HubSpot. Verifica que el token sea válido.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsTesting(false);
-    }
-  };
-
   const handleApiKeyChange = (value: string) => {
     setApiKey(value);
+    setIsConnectionTested(false); // Reset connection test when token changes
     if (isConfigured && value !== '••••••••••••••••') {
       setIsConfigured(false); // Mark as not configured if user changes the masked value
     }
@@ -197,24 +210,10 @@ const HubSpotConfig = () => {
           </div>
 
           <div className="flex space-x-3">
-            <Button 
-              onClick={saveApiKey} 
-              disabled={isLoading || !apiKey.trim() || apiKey === '••••••••••••••••'}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Guardando...
-                </>
-              ) : (
-                'Guardar Token'
-              )}
-            </Button>
-
             <Button
               variant="outline"
               onClick={testConnection}
-              disabled={isTesting || !isConfigured}
+              disabled={isTesting || !apiKey.trim() || apiKey === '••••••••••••••••'}
             >
               {isTesting ? (
                 <>
@@ -225,7 +224,30 @@ const HubSpotConfig = () => {
                 'Probar Conexión'
               )}
             </Button>
+
+            <Button 
+              onClick={saveApiKey} 
+              disabled={isLoading || !apiKey.trim() || apiKey === '••••••••••••••••' || !isConnectionTested}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                'Guardar Token'
+              )}
+            </Button>
           </div>
+
+          {isConnectionTested && !isConfigured && (
+            <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-md">
+              <CheckCircle className="w-4 h-4 text-blue-600" />
+              <span className="text-sm text-blue-700">
+                Conexión exitosa. El token está listo para guardarse.
+              </span>
+            </div>
+          )}
 
           {isConfigured && (
             <div className="flex items-center space-x-2 p-3 bg-green-50 rounded-md">
