@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,11 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useNegocio } from '@/context/NegocioContext';
 import { TIPOS_EVENTO, CrearNegocioData } from '@/types';
-import { ArrowLeft, ArrowRight, CheckCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Loader2, AlertCircle, Search } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useChileanPhoneValidator } from '@/hooks/useChileanPhoneValidator';
 import { useEmailValidator } from '@/hooks/useEmailValidator';
 import { useChileanRutValidator } from '@/hooks/useChileanRutValidator';
+import { useHubSpotContactValidation } from '@/hooks/useHubSpotContactValidation';
 
 interface WizardProps {
   onComplete: (negocioId: string) => void;
@@ -29,6 +29,16 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
   const emailValidator = useEmailValidator();
   const rutValidator = useChileanRutValidator();
   const rutProductoraValidator = useChileanRutValidator();
+  
+  // HubSpot validation hook
+  const {
+    validateEmail,
+    createContactInHubSpot,
+    clearValidation,
+    isValidating,
+    validationMessage,
+    isContactFound
+  } = useHubSpotContactValidation();
   
   // Paso 1: Información de Contacto
   const [contacto, setContacto] = useState({
@@ -60,7 +70,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
     tipo_evento: '',
     nombre_evento: '',
     fecha_evento: '',
-    fecha_evento_fin: '', // Para rango de fechas
+    fecha_evento_fin: '',
     horario_inicio: '',
     horario_fin: '',
     cantidad_asistentes: '',
@@ -70,6 +80,34 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
 
   // New field for close date
   const [fechaCierre, setFechaCierre] = useState('');
+
+  // Handle email validation
+  const handleEmailValidation = async (email: string) => {
+    const result = await validateEmail(email);
+    
+    if (result && result.found && result.contact) {
+      // Auto-fill contact information
+      setContacto(prev => ({
+        ...prev,
+        nombre: result.contact!.firstname || prev.nombre,
+        apellido: result.contact!.lastname || prev.apellido,
+        telefono: result.contact!.phone || prev.telefono
+      }));
+    }
+  };
+
+  // Handle email change with debounced validation
+  useEffect(() => {
+    if (contacto.email && emailValidator.isValid) {
+      const timeoutId = setTimeout(() => {
+        handleEmailValidation(contacto.email);
+      }, 1000); // 1 second delay
+
+      return () => clearTimeout(timeoutId);
+    } else {
+      clearValidation();
+    }
+  }, [contacto.email, emailValidator.isValid]);
 
   const validarPaso1 = () => {
     return contacto.nombre && contacto.apellido && emailValidator.isValid && phoneValidator.isValid;
@@ -129,6 +167,11 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
 
     setCreando(true);
     try {
+      // If contact was not found in HubSpot, create it
+      if (isContactFound === false) {
+        await createContactInHubSpot(contacto);
+      }
+
       // Create the data object with the proper structure expected by the crearNegocio function
       const negocioData = {
         contacto,
@@ -233,21 +276,46 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                   placeholder="Ingrese el apellido"
                 />
               </div>
-              <div>
+              <div className="md:col-span-2">
                 <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={emailValidator.value}
-                  onChange={(e) => {
-                    const result = emailValidator.handleChange(e.target.value);
-                    setContacto({...contacto, email: e.target.value});
-                  }}
-                  placeholder="contacto@empresa.com"
-                  className={emailValidator.error ? 'border-destructive' : ''}
-                />
+                <div className="relative">
+                  <Input
+                    id="email"
+                    type="email"
+                    value={emailValidator.value}
+                    onChange={(e) => {
+                      const result = emailValidator.handleChange(e.target.value);
+                      setContacto({...contacto, email: e.target.value});
+                    }}
+                    placeholder="contacto@empresa.com"
+                    className={emailValidator.error ? 'border-destructive' : ''}
+                  />
+                  {isValidating && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <Search className="w-4 h-4 animate-spin text-blue-500" />
+                    </div>
+                  )}
+                </div>
                 {emailValidator.error && (
                   <p className="text-sm text-destructive mt-1">{emailValidator.error}</p>
+                )}
+                {validationMessage && (
+                  <div className={`flex items-start space-x-2 p-3 rounded-md mt-2 ${
+                    isContactFound 
+                      ? 'bg-green-50 border border-green-200' 
+                      : 'bg-blue-50 border border-blue-200'
+                  }`}>
+                    {isContactFound ? (
+                      <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    )}
+                    <p className={`text-sm ${
+                      isContactFound ? 'text-green-700' : 'text-blue-700'
+                    }`}>
+                      {validationMessage}
+                    </p>
+                  </div>
                 )}
               </div>
               <div>
@@ -266,7 +334,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                   <p className="text-sm text-destructive mt-1">{phoneValidator.error}</p>
                 )}
               </div>
-              <div className="md:col-span-2">
+              <div>
                 <Label htmlFor="cargo">Cargo (opcional)</Label>
                 <Input
                   id="cargo"
@@ -567,4 +635,3 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
 };
 
 export default WizardCrearNegocio;
-
