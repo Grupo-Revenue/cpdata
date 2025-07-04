@@ -141,6 +141,30 @@ export type Database = {
         }
         Relationships: []
       }
+      hubspot_api_keys: {
+        Row: {
+          api_key: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lineas_producto: {
         Row: {
           activo: boolean
