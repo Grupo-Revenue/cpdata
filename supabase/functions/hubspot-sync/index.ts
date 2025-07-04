@@ -123,7 +123,7 @@ serve(async (req) => {
       }
     }
 
-    // Handle saving API key with duplicate validation
+    // Handle saving API key with improved duplicate logic
     if (action === 'save_api_key') {
       if (!apiKey) {
         return new Response(JSON.stringify({ 
@@ -138,64 +138,40 @@ serve(async (req) => {
       try {
         console.log('Saving API key for user:', user.id);
         
-        // First, check if this API key already exists for any user
-        const { data: existingToken, error: searchError } = await supabase
+        // Check if this user already has this exact API key
+        const { data: existingUserToken, error: userSearchError } = await supabase
           .from('hubspot_api_keys')
-          .select('user_id')
+          .select('id')
+          .eq('user_id', user.id)
           .eq('api_key', apiKey)
           .maybeSingle();
 
-        if (searchError) {
-          console.error('Error searching for existing token:', searchError);
-          throw new Error(`Failed to search for existing token: ${searchError.message}`);
+        if (userSearchError) {
+          console.error('Error searching for existing user token:', userSearchError);
+          throw new Error(`Failed to search for existing user token: ${userSearchError.message}`);
         }
 
-        if (existingToken) {
-          // Token already exists
-          if (existingToken.user_id === user.id) {
-            // Token already belongs to current user, just update timestamp
-            console.log('Token already exists for current user, updating timestamp');
-            const { error: updateError } = await supabase
-              .from('hubspot_api_keys')
-              .update({
-                updated_at: new Date().toISOString()
-              })
-              .eq('user_id', user.id);
+        if (existingUserToken) {
+          // Token already exists for current user, just update timestamp
+          console.log('Token already exists for current user, updating timestamp');
+          const { error: updateError } = await supabase
+            .from('hubspot_api_keys')
+            .update({
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingUserToken.id);
 
-            if (updateError) {
-              console.error('Error updating timestamp:', updateError);
-              throw new Error(`Failed to update timestamp: ${updateError.message}`);
-            }
-          } else {
-            // Token exists for another user, associate it with current user
-            console.log('Token exists for another user, transferring to current user');
-            
-            // Delete any existing token for current user first
-            await supabase
-              .from('hubspot_api_keys')
-              .delete()
-              .eq('user_id', user.id);
-
-            // Update the existing token to belong to current user
-            const { error: transferError } = await supabase
-              .from('hubspot_api_keys')
-              .update({
-                user_id: user.id,
-                updated_at: new Date().toISOString()
-              })
-              .eq('api_key', apiKey);
-
-            if (transferError) {
-              console.error('Error transferring token:', transferError);
-              throw new Error(`Failed to transfer token: ${transferError.message}`);
-            }
+          if (updateError) {
+            console.error('Error updating timestamp:', updateError);
+            throw new Error(`Failed to update timestamp: ${updateError.message}`);
           }
         } else {
-          // Token doesn't exist, create new record
-          console.log('Creating new token record');
+          // Token doesn't exist for current user, create new record
+          // (even if it exists for other users, we allow multiple users to have the same token)
+          console.log('Creating new token record for user');
           const { error: insertError } = await supabase
             .from('hubspot_api_keys')
-            .upsert({
+            .insert({
               user_id: user.id,
               api_key: apiKey,
               updated_at: new Date().toISOString()
