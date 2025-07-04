@@ -123,7 +123,7 @@ serve(async (req) => {
       }
     }
 
-    // Handle saving API key
+    // Handle saving API key with duplicate validation
     if (action === 'save_api_key') {
       if (!apiKey) {
         return new Response(JSON.stringify({ 
@@ -138,18 +138,73 @@ serve(async (req) => {
       try {
         console.log('Saving API key for user:', user.id);
         
-        // Store the API key in our database table
-        const { error: insertError } = await supabase
+        // First, check if this API key already exists for any user
+        const { data: existingToken, error: searchError } = await supabase
           .from('hubspot_api_keys')
-          .upsert({
-            user_id: user.id,
-            api_key: apiKey,
-            updated_at: new Date().toISOString()
-          });
+          .select('user_id')
+          .eq('api_key', apiKey)
+          .maybeSingle();
 
-        if (insertError) {
-          console.error('Error storing API key:', insertError);
-          throw new Error(`Failed to store API key: ${insertError.message}`);
+        if (searchError) {
+          console.error('Error searching for existing token:', searchError);
+          throw new Error(`Failed to search for existing token: ${searchError.message}`);
+        }
+
+        if (existingToken) {
+          // Token already exists
+          if (existingToken.user_id === user.id) {
+            // Token already belongs to current user, just update timestamp
+            console.log('Token already exists for current user, updating timestamp');
+            const { error: updateError } = await supabase
+              .from('hubspot_api_keys')
+              .update({
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', user.id);
+
+            if (updateError) {
+              console.error('Error updating timestamp:', updateError);
+              throw new Error(`Failed to update timestamp: ${updateError.message}`);
+            }
+          } else {
+            // Token exists for another user, associate it with current user
+            console.log('Token exists for another user, transferring to current user');
+            
+            // Delete any existing token for current user first
+            await supabase
+              .from('hubspot_api_keys')
+              .delete()
+              .eq('user_id', user.id);
+
+            // Update the existing token to belong to current user
+            const { error: transferError } = await supabase
+              .from('hubspot_api_keys')
+              .update({
+                user_id: user.id,
+                updated_at: new Date().toISOString()
+              })
+              .eq('api_key', apiKey);
+
+            if (transferError) {
+              console.error('Error transferring token:', transferError);
+              throw new Error(`Failed to transfer token: ${transferError.message}`);
+            }
+          }
+        } else {
+          // Token doesn't exist, create new record
+          console.log('Creating new token record');
+          const { error: insertError } = await supabase
+            .from('hubspot_api_keys')
+            .upsert({
+              user_id: user.id,
+              api_key: apiKey,
+              updated_at: new Date().toISOString()
+            });
+
+          if (insertError) {
+            console.error('Error storing API key:', insertError);
+            throw new Error(`Failed to store API key: ${insertError.message}`);
+          }
         }
 
         console.log('API key saved successfully to database');
