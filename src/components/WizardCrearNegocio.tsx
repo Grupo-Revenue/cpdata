@@ -95,13 +95,19 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
     const result = await validateEmail(contacto.email);
     
     if (result && result.found && result.contact) {
-      // Auto-fill contact information
+      // Auto-fill contact information with proper phone handling
       setContacto(prev => ({
         ...prev,
         nombre: result.contact!.firstname || prev.nombre,
         apellido: result.contact!.lastname || prev.apellido,
-        telefono: result.contact!.phone || prev.telefono
+        telefono: result.contact!.phone ? (result.contact!.phone.startsWith('+56') ? result.contact!.phone : `+56${result.contact!.phone.replace(/[^\d]/g, '')}`) : prev.telefono
       }));
+      
+      // Update the phone validator with the new value
+      if (result.contact!.phone) {
+        const formattedPhone = result.contact!.phone.startsWith('+56') ? result.contact!.phone : `+56${result.contact!.phone.replace(/[^\d]/g, '')}`;
+        phoneValidator.handleChange(formattedPhone);
+      }
     }
   };
 
@@ -115,8 +121,14 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
               ...prev,
               nombre: result.contact!.firstname || prev.nombre,
               apellido: result.contact!.lastname || prev.apellido,
-              telefono: result.contact!.phone || prev.telefono
+              telefono: result.contact!.phone ? (result.contact!.phone.startsWith('+56') ? result.contact!.phone : `+56${result.contact!.phone.replace(/[^\d]/g, '')}`) : prev.telefono
             }));
+            
+            // Update the phone validator with the new value
+            if (result.contact!.phone) {
+              const formattedPhone = result.contact!.phone.startsWith('+56') ? result.contact!.phone : `+56${result.contact!.phone.replace(/[^\d]/g, '')}`;
+              phoneValidator.handleChange(formattedPhone);
+            }
           }
         });
       }, 1000); // 1 second delay
