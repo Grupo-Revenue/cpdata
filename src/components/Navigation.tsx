@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, User, Settings, Shield, Building2 } from 'lucide-react';
+import { LogOut, Settings, Shield, Building2 } from 'lucide-react';
 
 const Navigation = () => {
   const { user, signOut, isAdmin } = useAuth();
@@ -126,14 +126,6 @@ const Navigation = () => {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                
-                <DropdownMenuItem className="cursor-pointer p-3 rounded-lg hover:bg-accent/10 transition-colors">
-                  <User className="mr-3 h-4 w-4 text-muted-foreground" />
-                  <div className="flex flex-col">
-                    <span className="text-sm">Mi Perfil</span>
-                    <span className="text-xs text-muted-foreground">Gestionar información personal</span>
-                  </div>
-                </DropdownMenuItem>
                 
                 <DropdownMenuItem className="cursor-pointer p-3 rounded-lg hover:bg-accent/10 transition-colors" onClick={navigateToSettings}>
                   <Settings className="mr-3 h-4 w-4 text-muted-foreground" />
