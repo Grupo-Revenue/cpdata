@@ -138,63 +138,48 @@ serve(async (req) => {
       try {
         console.log('Saving API key for user:', user.id);
         
-        // Check if this user already has this exact API key
-        const { data: existingUserToken, error: userSearchError } = await supabase
+        // First, deactivate all existing tokens for this user
+        const { error: deactivateError } = await supabase
           .from('hubspot_api_keys')
-          .select('id, activo')
+          .update({ activo: false })
+          .eq('user_id', user.id);
+
+        if (deactivateError) {
+          console.error('Error deactivating existing tokens:', deactivateError);
+          throw new Error(`Failed to deactivate existing tokens: ${deactivateError.message}`);
+        }
+
+        // Check if this exact API key already exists for this user
+        const { data: existingToken, error: searchError } = await supabase
+          .from('hubspot_api_keys')
+          .select('id')
           .eq('user_id', user.id)
           .eq('api_key', apiKey)
           .maybeSingle();
 
-        if (userSearchError) {
-          console.error('Error searching for existing user token:', userSearchError);
-          throw new Error(`Failed to search for existing user token: ${userSearchError.message}`);
+        if (searchError) {
+          console.error('Error searching for existing token:', searchError);
+          throw new Error(`Failed to search for existing token: ${searchError.message}`);
         }
 
-        if (existingUserToken) {
-          // Token already exists for current user
-          console.log('Token already exists for current user, updating as active');
-          
-          // First deactivate all other tokens for this user
-          const { error: deactivateError } = await supabase
-            .from('hubspot_api_keys')
-            .update({ activo: false })
-            .eq('user_id', user.id);
-
-          if (deactivateError) {
-            console.error('Error deactivating other tokens:', deactivateError);
-            throw new Error(`Failed to deactivate other tokens: ${deactivateError.message}`);
-          }
-
-          // Then activate this token and update timestamp
+        if (existingToken) {
+          // Token exists, just activate it and update timestamp
           const { error: updateError } = await supabase
             .from('hubspot_api_keys')
             .update({
               activo: true,
               updated_at: new Date().toISOString()
             })
-            .eq('id', existingUserToken.id);
+            .eq('id', existingToken.id);
 
           if (updateError) {
-            console.error('Error updating token:', updateError);
-            throw new Error(`Failed to update token: ${updateError.message}`);
+            console.error('Error updating existing token:', updateError);
+            throw new Error(`Failed to update existing token: ${updateError.message}`);
           }
+
+          console.log('Existing token updated and activated successfully');
         } else {
-          // Token doesn't exist for current user, create new record
-          console.log('Creating new active token record for user');
-          
-          // First deactivate all other tokens for this user
-          const { error: deactivateError } = await supabase
-            .from('hubspot_api_keys')
-            .update({ activo: false })
-            .eq('user_id', user.id);
-
-          if (deactivateError) {
-            console.error('Error deactivating existing tokens:', deactivateError);
-            throw new Error(`Failed to deactivate existing tokens: ${deactivateError.message}`);
-          }
-
-          // Then create new active token
+          // Token doesn't exist, create new one
           const { error: insertError } = await supabase
             .from('hubspot_api_keys')
             .insert({
@@ -205,13 +190,13 @@ serve(async (req) => {
             });
 
           if (insertError) {
-            console.error('Error storing API key:', insertError);
-            throw new Error(`Failed to store API key: ${insertError.message}`);
+            console.error('Error inserting new token:', insertError);
+            throw new Error(`Failed to insert new token: ${insertError.message}`);
           }
+
+          console.log('New token created and activated successfully');
         }
 
-        console.log('API key saved successfully and set as active');
-        
         return new Response(JSON.stringify({ 
           success: true,
           message: 'API key saved successfully and set as active'
