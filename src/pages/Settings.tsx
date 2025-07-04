@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { User, Save, Loader2, ArrowLeft, Settings as SettingsIcon, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
+import HubSpotConfig from '@/components/settings/HubSpotConfig';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -219,9 +219,7 @@ const Settings = () => {
             </TabsContent>
 
             <TabsContent value="hubspot">
-              <div className="text-center text-gray-500 py-8">
-                <p>Configuraciones de HubSpot disponibles próximamente</p>
-              </div>
+              <HubSpotConfig />
             </TabsContent>
 
             <TabsContent value="sync">

@@ -154,7 +154,7 @@ serve(async (req) => {
     if (action === 'test_connection') {
       try {
         console.log('Testing HubSpot connection...');
-        const testResponse = await fetch('https://api.hubapi.com/crm/v3/pipelines/deals', {
+        const testResponse = await fetch('https://api.hubapi.com/integrations/v1/me', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${hubspotApiKey}`,
@@ -174,10 +174,13 @@ serve(async (req) => {
           });
         }
 
-        console.log('HubSpot connection test successful');
+        const responseData = await testResponse.json();
+        console.log('HubSpot connection test successful:', responseData);
+        
         return new Response(JSON.stringify({ 
           success: true,
-          message: 'Connection test successful'
+          message: 'Connection test successful',
+          data: responseData
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
