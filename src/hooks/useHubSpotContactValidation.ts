@@ -39,30 +39,22 @@ export const useHubSpotContactValidation = () => {
     setIsContactFound(null);
 
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        throw new Error('No hay sesión activa');
-      }
-
-      const response = await fetch('/supabase/functions/v1/hubspot-contact-validation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.data.session.access_token}`
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('hubspot-contact-validation', {
+        body: {
           action: 'search',
           email: email.trim()
-        })
+        }
       });
 
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Error al validar el correo');
+      if (error) {
+        throw error;
       }
 
-      if (result.found) {
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'Error al validar el correo');
+      }
+
+      if (data.found) {
         setValidationMessage('El contacto fue encontrado en HubSpot y sus datos han sido completados automáticamente.');
         setIsContactFound(true);
         toast({
@@ -79,7 +71,7 @@ export const useHubSpotContactValidation = () => {
         });
       }
 
-      return result;
+      return data;
 
     } catch (error) {
       console.error('Error validating email:', error);
@@ -98,27 +90,19 @@ export const useHubSpotContactValidation = () => {
 
   const createContactInHubSpot = async (contactData: ContactData): Promise<boolean> => {
     try {
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
-        throw new Error('No hay sesión activa');
-      }
-
-      const response = await fetch('/supabase/functions/v1/hubspot-contact-validation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.data.session.access_token}`
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('hubspot-contact-validation', {
+        body: {
           action: 'create',
           contactData
-        })
+        }
       });
 
-      const result = await response.json();
+      if (error) {
+        throw error;
+      }
 
-      if (!result.success) {
-        throw new Error(result.error || 'Error al crear el contacto');
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'Error al crear el contacto');
       }
 
       toast({

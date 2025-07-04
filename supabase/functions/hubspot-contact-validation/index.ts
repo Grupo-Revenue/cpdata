@@ -8,6 +8,8 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  console.log(`Method: ${req.method}, URL: ${req.url}`)
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -19,20 +21,48 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { email, action, contactData } = await req.json()
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (e) {
+      console.error('Error parsing JSON:', e);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Invalid JSON in request body'
+      }), { 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const { email, action, contactData } = requestBody;
     console.log(`Processing ${action} for email: ${email}`)
 
     // Get user from auth header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      throw new Error('No authorization header')
+      console.error('No authorization header')
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'No authorization header'
+      }), { 
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     const token = authHeader.replace('Bearer ', '')
     const { data: { user }, error: userError } = await supabase.auth.getUser(token)
     
     if (userError || !user) {
-      throw new Error('Unauthorized')
+      console.error('User authentication failed:', userError)
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Unauthorized'
+      }), { 
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     // Get user's HubSpot API key
@@ -44,12 +74,21 @@ serve(async (req) => {
       .single()
 
     if (configError || !hubspotConfig) {
-      throw new Error('HubSpot API key not found or inactive')
+      console.error('HubSpot API key not found:', configError)
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'HubSpot API key not found or inactive'
+      }), { 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     const hubspotApiKey = hubspotConfig.api_key
 
     if (action === 'search') {
+      console.log('Searching for contact with email:', email)
+      
       // Search for contact by email using the correct contacts API
       const searchResponse = await fetch('https://api.hubapi.com/crm/v3/objects/contacts/search', {
         method: 'POST',
@@ -76,12 +115,18 @@ serve(async (req) => {
 
       if (!searchResponse.ok) {
         const errorText = await searchResponse.text()
-        console.error('HubSpot search error:', errorText)
-        throw new Error(`HubSpot API error: ${searchResponse.status}`)
+        console.error('HubSpot search error:', searchResponse.status, errorText)
+        return new Response(JSON.stringify({
+          success: false,
+          error: `HubSpot API error: ${searchResponse.status} - ${errorText}`
+        }), { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
 
       const searchResult = await searchResponse.json()
-      console.log('HubSpot search result:', searchResult)
+      console.log('HubSpot search result:', JSON.stringify(searchResult, null, 2))
 
       if (searchResult.results && searchResult.results.length > 0) {
         const contact = searchResult.results[0]
@@ -107,6 +152,8 @@ serve(async (req) => {
         })
       }
     } else if (action === 'create') {
+      console.log('Creating contact with data:', contactData)
+      
       // Create new contact in HubSpot using the correct contacts API
       const createResponse = await fetch('https://api.hubapi.com/crm/v3/objects/contacts', {
         method: 'POST',
@@ -126,8 +173,14 @@ serve(async (req) => {
 
       if (!createResponse.ok) {
         const errorText = await createResponse.text()
-        console.error('HubSpot create error:', errorText)
-        throw new Error(`Failed to create contact in HubSpot: ${createResponse.status}`)
+        console.error('HubSpot create error:', createResponse.status, errorText)
+        return new Response(JSON.stringify({
+          success: false,
+          error: `Failed to create contact in HubSpot: ${createResponse.status} - ${errorText}`
+        }), { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
 
       const createdContact = await createResponse.json()
@@ -143,13 +196,19 @@ serve(async (req) => {
       })
     }
 
-    throw new Error('Invalid action')
+    return new Response(JSON.stringify({
+      success: false,
+      error: 'Invalid action'
+    }), { 
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
 
   } catch (error) {
     console.error('Error in hubspot-contact-validation:', error)
     return new Response(JSON.stringify({
       success: false,
-      error: error.message
+      error: error.message || 'Internal server error'
     }), { 
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
