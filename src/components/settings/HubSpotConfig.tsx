@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -355,25 +357,71 @@ const HubSpotConfig = () => {
       </Card>
 
       {isConfigured && (
-        <div className="flex justify-center">
-          <Button 
-            variant="destructive"
-            onClick={disconnectFromHubSpot}
-            disabled={isDisconnecting}
-          >
-            {isDisconnecting ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Desconectando...
-              </>
-            ) : (
-              <>
-                <Unplug className="w-4 h-4 mr-2" />
-                Desconectar de HubSpot
-              </>
-            )}
-          </Button>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Unplug className="w-5 h-5" />
+              <span>Información sobre la desconexión de HubSpot</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 text-sm text-gray-600">
+              <p>
+                Al desconectar tu cuenta de HubSpot:
+              </p>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>El token activo pasará a estado inactivo</li>
+                <li>La integración dejará de funcionar hasta que se conecte un nuevo token</li>
+                <li>No se eliminará el historial ni los registros existentes</li>
+                <li>Podrás volver a conectar en cualquier momento</li>
+              </ul>
+              <div className="flex items-start space-x-2 p-3 bg-red-50 rounded-md mt-4">
+                <AlertCircle className="w-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-red-700">
+                  <p className="font-medium">Atención:</p>
+                  <p>Esta acción desactivará inmediatamente la sincronización con HubSpot. Los negocios ya sincronizados permanecerán en HubSpot, pero no se sincronizarán nuevos cambios.</p>
+                </div>
+              </div>
+              
+              <div className="flex justify-center pt-4">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="destructive"
+                      disabled={isDisconnecting}
+                    >
+                      {isDisconnecting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Desconectando...
+                        </>
+                      ) : (
+                        <>
+                          <Unplug className="w-4 h-4 mr-2" />
+                          Desconectar de HubSpot
+                        </>
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Desconectar de HubSpot?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        ¿Estás seguro de que deseas desconectar tu cuenta de HubSpot? Esta acción desactivará la integración y dejará de sincronizar información entre ambas plataformas.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={disconnectFromHubSpot}>
+                        Sí, desconectar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
