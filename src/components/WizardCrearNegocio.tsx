@@ -81,9 +81,18 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
   // New field for close date
   const [fechaCierre, setFechaCierre] = useState('');
 
-  // Handle email validation
-  const handleEmailValidation = async (email: string) => {
-    const result = await validateEmail(email);
+  // Handle manual email validation
+  const handleManualEmailValidation = async () => {
+    if (!contacto.email || !emailValidator.isValid) {
+      toast({
+        title: "Email inválido",
+        description: "Por favor ingrese un email válido antes de validar.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const result = await validateEmail(contacto.email);
     
     if (result && result.found && result.contact) {
       // Auto-fill contact information
@@ -100,7 +109,16 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
   useEffect(() => {
     if (contacto.email && emailValidator.isValid) {
       const timeoutId = setTimeout(() => {
-        handleEmailValidation(contacto.email);
+        validateEmail(contacto.email).then(result => {
+          if (result && result.found && result.contact) {
+            setContacto(prev => ({
+              ...prev,
+              nombre: result.contact!.firstname || prev.nombre,
+              apellido: result.contact!.lastname || prev.apellido,
+              telefono: result.contact!.phone || prev.telefono
+            }));
+          }
+        });
       }, 1000); // 1 second delay
 
       return () => clearTimeout(timeoutId);
@@ -278,23 +296,38 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
               </div>
               <div className="md:col-span-2">
                 <Label htmlFor="email">Email *</Label>
-                <div className="relative">
-                  <Input
-                    id="email"
-                    type="email"
-                    value={emailValidator.value}
-                    onChange={(e) => {
-                      const result = emailValidator.handleChange(e.target.value);
-                      setContacto({...contacto, email: e.target.value});
-                    }}
-                    placeholder="contacto@empresa.com"
-                    className={emailValidator.error ? 'border-destructive' : ''}
-                  />
-                  {isValidating && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <Search className="w-4 h-4 animate-spin text-blue-500" />
-                    </div>
-                  )}
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      id="email"
+                      type="email"
+                      value={emailValidator.value}
+                      onChange={(e) => {
+                        const result = emailValidator.handleChange(e.target.value);
+                        setContacto({...contacto, email: e.target.value});
+                      }}
+                      placeholder="contacto@empresa.com"
+                      className={emailValidator.error ? 'border-destructive' : ''}
+                    />
+                    {isValidating && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <Search className="w-4 h-4 animate-spin text-blue-500" />
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleManualEmailValidation}
+                    disabled={isValidating || !emailValidator.isValid}
+                    className="px-3"
+                  >
+                    {isValidating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Search className="w-4 h-4" />
+                    )}
+                  </Button>
                 </div>
                 {emailValidator.error && (
                   <p className="text-sm text-destructive mt-1">{emailValidator.error}</p>

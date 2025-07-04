@@ -50,7 +50,7 @@ serve(async (req) => {
     const hubspotApiKey = hubspotConfig.api_key
 
     if (action === 'search') {
-      // Search for contact by email
+      // Search for contact by email using the correct contacts API
       const searchResponse = await fetch('https://api.hubapi.com/crm/v3/objects/contacts/search', {
         method: 'POST',
         headers: {
@@ -107,7 +107,7 @@ serve(async (req) => {
         })
       }
     } else if (action === 'create') {
-      // Create new contact in HubSpot
+      // Create new contact in HubSpot using the correct contacts API
       const createResponse = await fetch('https://api.hubapi.com/crm/v3/objects/contacts', {
         method: 'POST',
         headers: {
