@@ -138,18 +138,7 @@ serve(async (req) => {
       try {
         console.log('Saving API key for user:', user.id);
         
-        // First, deactivate all existing tokens for this user
-        const { error: deactivateError } = await supabase
-          .from('hubspot_api_keys')
-          .update({ activo: false })
-          .eq('user_id', user.id);
-
-        if (deactivateError) {
-          console.error('Error deactivating existing tokens:', deactivateError);
-          throw new Error(`Failed to deactivate existing tokens: ${deactivateError.message}`);
-        }
-
-        // Check if this exact API key already exists for this user
+        // Check if this exact API key already exists for this user BEFORE deactivating
         const { data: existingToken, error: searchError } = await supabase
           .from('hubspot_api_keys')
           .select('id')
@@ -160,6 +149,17 @@ serve(async (req) => {
         if (searchError) {
           console.error('Error searching for existing token:', searchError);
           throw new Error(`Failed to search for existing token: ${searchError.message}`);
+        }
+
+        // Now deactivate all existing tokens for this user
+        const { error: deactivateError } = await supabase
+          .from('hubspot_api_keys')
+          .update({ activo: false })
+          .eq('user_id', user.id);
+
+        if (deactivateError) {
+          console.error('Error deactivating existing tokens:', deactivateError);
+          throw new Error(`Failed to deactivate existing tokens: ${deactivateError.message}`);
         }
 
         if (existingToken) {
