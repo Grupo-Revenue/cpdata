@@ -261,7 +261,7 @@ const HubSpotConfig = () => {
           </div>
 
           <div className="flex space-x-3">
-            {!isConfigured ? (
+            {!isConfigured && (
               <>
                 <Button
                   variant="outline"
@@ -292,24 +292,6 @@ const HubSpotConfig = () => {
                   )}
                 </Button>
               </>
-            ) : (
-              <Button 
-                variant="destructive"
-                onClick={disconnectFromHubSpot}
-                disabled={isDisconnecting}
-              >
-                {isDisconnecting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Desconectando...
-                  </>
-                ) : (
-                  <>
-                    <Unplug className="w-4 h-4 mr-2" />
-                    Desconectar de HubSpot
-                  </>
-                )}
-              </Button>
             )}
           </div>
 
@@ -371,6 +353,28 @@ const HubSpotConfig = () => {
           </div>
         </CardContent>
       </Card>
+
+      {isConfigured && (
+        <div className="flex justify-center">
+          <Button 
+            variant="destructive"
+            onClick={disconnectFromHubSpot}
+            disabled={isDisconnecting}
+          >
+            {isDisconnecting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Desconectando...
+              </>
+            ) : (
+              <>
+                <Unplug className="w-4 h-4 mr-2" />
+                Desconectar de HubSpot
+              </>
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
