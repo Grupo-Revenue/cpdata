@@ -1,89 +1,111 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Negocio, EstadoNegocio } from '@/types';
-
-// Helper function to find or create contact
-const findOrCreateContact = async (contactData: any, userId: string) => {
-  // First try to find existing contact
-  const { data: existingContact, error: findError } = await supabase
-    .from('contactos')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('email', contactData.email)
-    .maybeSingle();
-
-  if (findError) throw findError;
-  
-  if (existingContact) {
-    return existingContact.id;
-  }
-
-  // Create new contact if not found
-  const { data: newContact, error: createError } = await supabase
-    .from('contactos')
-    .insert([{
-      ...contactData,
-      user_id: userId
-    }])
-    .select('id')
-    .single();
-
-  if (createError) throw createError;
-  return newContact.id;
-};
-
-// Helper function to find or create company
-const findOrCreateCompany = async (companyData: any, userId: string) => {
-  // First try to find existing company
-  const { data: existingCompany, error: findError } = await supabase
-    .from('empresas')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('nombre', companyData.nombre)
-    .eq('tipo', companyData.tipo)
-    .maybeSingle();
-
-  if (findError) throw findError;
-  
-  if (existingCompany) {
-    return existingCompany.id;
-  }
-
-  // Create new company if not found
-  const { data: newCompany, error: createError } = await supabase
-    .from('empresas')
-    .insert([{
-      ...companyData,
-      user_id: userId
-    }])
-    .select('id')
-    .single();
-
-  if (createError) throw createError;
-  return newCompany.id;
-};
 
 export const crearNegocioEnSupabase = async (negocioData: any): Promise<Negocio | null> => {
   try {
     const userId = (await supabase.auth.getUser()).data.user?.id;
     if (!userId) throw new Error('Usuario no autenticado');
 
-    // Handle contact - find or create
-    let contactoId = null;
-    if (negocioData.contacto) {
-      contactoId = await findOrCreateContact(negocioData.contacto, userId);
+    // Handle contact ID - use processed contact ID if provided
+    let contactoId = negocioData.contactoId;
+    
+    // Legacy support: if contacto object is provided instead of contactoId
+    if (!contactoId && negocioData.contacto) {
+      const { data: existingContact, error: findError } = await supabase
+        .from('contactos')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('email', negocioData.contacto.email.toLowerCase())
+        .maybeSingle();
+
+      if (findError) throw findError;
+      
+      if (existingContact) {
+        contactoId = existingContact.id;
+      } else {
+        const { data: newContact, error: createError } = await supabase
+          .from('contactos')
+          .insert([{
+            ...negocioData.contacto,
+            email: negocioData.contacto.email.toLowerCase(),
+            user_id: userId
+          }])
+          .select('id')
+          .single();
+
+        if (createError) throw createError;
+        contactoId = newContact.id;
+      }
     }
 
-    // Handle productora - find or create
+    // Handle productora
     let productoraId = null;
     if (negocioData.productora) {
-      productoraId = await findOrCreateCompany(negocioData.productora, userId);
+      if (negocioData.productora.id) {
+        // Use existing productora ID
+        productoraId = negocioData.productora.id;
+      } else {
+        const { data: existingCompany, error: findError } = await supabase
+          .from('empresas')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('nombre', negocioData.productora.nombre)
+          .eq('tipo', 'productora')
+          .maybeSingle();
+
+        if (findError) throw findError;
+        
+        if (existingCompany) {
+          productoraId = existingCompany.id;
+        } else {
+          const { data: newCompany, error: createError } = await supabase
+            .from('empresas')
+            .insert([{
+              ...negocioData.productora,
+              user_id: userId
+            }])
+            .select('id')
+            .single();
+
+          if (createError) throw createError;
+          productoraId = newCompany.id;
+        }
+      }
     }
 
-    // Handle cliente final - find or create
+    // Handle cliente final
     let clienteFinalId = null;
     if (negocioData.clienteFinal) {
-      clienteFinalId = await findOrCreateCompany(negocioData.clienteFinal, userId);
+      if (negocioData.clienteFinal.id) {
+        // Use existing cliente final ID
+        clienteFinalId = negocioData.clienteFinal.id;
+      } else {
+        const { data: existingCompany, error: findError } = await supabase
+          .from('empresas')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('nombre', negocioData.clienteFinal.nombre)
+          .eq('tipo', 'cliente_final')
+          .maybeSingle();
+
+        if (findError) throw findError;
+        
+        if (existingCompany) {
+          clienteFinalId = existingCompany.id;
+        } else {
+          const { data: newCompany, error: createError } = await supabase
+            .from('empresas')
+            .insert([{
+              ...negocioData.clienteFinal,
+              user_id: userId
+            }])
+            .select('id')
+            .single();
+
+          if (createError) throw createError;
+          clienteFinalId = newCompany.id;
+        }
+      }
     }
 
     // Get next business number
@@ -147,7 +169,6 @@ export const crearNegocioEnSupabase = async (negocioData: any): Promise<Negocio 
       .update({ contador_negocio: counterData.contador_negocio + 1 })
       .eq('user_id', userId);
 
-    // Transform the data to match ExtendedNegocio type
     const transformedNegocio = {
       ...data,
       evento: {

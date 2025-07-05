@@ -9,17 +9,30 @@ interface ContactData {
   email: string;
   telefono: string;
   cargo?: string;
+  hubspotId?: string;
+}
+
+interface HubSpotContact {
+  hubspotId: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  phone: string;
 }
 
 interface ValidationResult {
   found: boolean;
-  contact?: {
-    firstname: string;
-    lastname: string;
-    email: string;
-    phone: string;
-  };
+  contact?: HubSpotContact;
   message?: string;
+}
+
+interface CreateUpdateResult {
+  success: boolean;
+  contact?: HubSpotContact;
+  created?: boolean;
+  updated?: boolean;
+  message?: string;
+  error?: string;
 }
 
 export const useHubSpotContactValidation = () => {
@@ -27,7 +40,7 @@ export const useHubSpotContactValidation = () => {
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const [isContactFound, setIsContactFound] = useState<boolean | null>(null);
 
-  const validateEmail = async (email: string): Promise<ValidationResult | null> => {
+  const searchContactInHubSpot = async (email: string): Promise<ValidationResult | null> => {
     if (!email || !email.includes('@')) {
       setValidationMessage(null);
       setIsContactFound(null);
@@ -42,7 +55,7 @@ export const useHubSpotContactValidation = () => {
       const { data, error } = await supabase.functions.invoke('hubspot-contact-validation', {
         body: {
           action: 'search',
-          email: email.trim()
+          email: email.trim().toLowerCase()
         }
       });
 
@@ -51,7 +64,7 @@ export const useHubSpotContactValidation = () => {
       }
 
       if (!data || !data.success) {
-        throw new Error(data?.error || 'Error al validar el correo');
+        throw new Error(data?.error || 'Error al buscar el contacto');
       }
 
       if (data.found) {
@@ -62,11 +75,11 @@ export const useHubSpotContactValidation = () => {
           description: "Los datos del contacto han sido completados automáticamente desde HubSpot.",
         });
       } else {
-        setValidationMessage('El contacto no existe en HubSpot. Por favor ingrese los datos restantes para crearlo.');
+        setValidationMessage('El contacto no existe en HubSpot. Se creará uno nuevo al finalizar.');
         setIsContactFound(false);
         toast({
           title: "Contacto no encontrado",
-          description: "Complete los datos para crear un nuevo contacto.",
+          description: "Se creará un nuevo contacto en HubSpot al finalizar el proceso.",
           variant: "default"
         });
       }
@@ -74,12 +87,12 @@ export const useHubSpotContactValidation = () => {
       return data;
 
     } catch (error) {
-      console.error('Error validating email:', error);
-      setValidationMessage('No se pudo validar el correo electrónico. Verifique su conexión con HubSpot.');
+      console.error('Error searching contact:', error);
+      setValidationMessage('No se pudo buscar el contacto en HubSpot. Verifique su conexión.');
       setIsContactFound(null);
       toast({
-        title: "Error de validación",
-        description: "No se pudo validar el correo electrónico. Verifique su conexión con HubSpot.",
+        title: "Error de búsqueda",
+        description: "No se pudo buscar el contacto en HubSpot. Verifique su conexión.",
         variant: "destructive"
       });
       return null;
@@ -88,12 +101,15 @@ export const useHubSpotContactValidation = () => {
     }
   };
 
-  const createContactInHubSpot = async (contactData: ContactData): Promise<boolean> => {
+  const createContactInHubSpot = async (contactData: ContactData): Promise<CreateUpdateResult> => {
     try {
       const { data, error } = await supabase.functions.invoke('hubspot-contact-validation', {
         body: {
           action: 'create',
-          contactData
+          contactData: {
+            ...contactData,
+            email: contactData.email.toLowerCase()
+          }
         }
       });
 
@@ -110,18 +126,67 @@ export const useHubSpotContactValidation = () => {
         description: "El contacto ha sido creado exitosamente en HubSpot.",
       });
 
-      return true;
+      return {
+        success: true,
+        created: true,
+        contact: data.contact,
+        message: data.message
+      };
 
     } catch (error) {
       console.error('Error creating contact in HubSpot:', error);
-      toast({
-        title: "Error al crear contacto",
-        description: "No se pudo crear el contacto en HubSpot. El negocio se guardará sin sincronizar.",
-        variant: "destructive"
-      });
-      return false;
+      
+      return {
+        success: false,
+        error: error.message || 'Error al crear el contacto en HubSpot'
+      };
     }
   };
+
+  const updateContactInHubSpot = async (contactData: ContactData): Promise<CreateUpdateResult> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('hubspot-contact-validation', {
+        body: {
+          action: 'update',
+          contactData: {
+            ...contactData,
+            email: contactData.email.toLowerCase()
+          }
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data || !data.success) {
+        throw new Error(data?.error || 'Error al actualizar el contacto');
+      }
+
+      toast({
+        title: "Contacto actualizado",
+        description: "El contacto ha sido actualizado exitosamente en HubSpot.",
+      });
+
+      return {
+        success: true,
+        updated: true,
+        contact: data.contact,
+        message: data.message
+      };
+
+    } catch (error) {
+      console.error('Error updating contact in HubSpot:', error);
+      
+      return {
+        success: false,
+        error: error.message || 'Error al actualizar el contacto en HubSpot'
+      };
+    }
+  };
+
+  // Legacy method for backwards compatibility
+  const validateEmail = searchContactInHubSpot;
 
   const clearValidation = () => {
     setValidationMessage(null);
@@ -129,8 +194,16 @@ export const useHubSpotContactValidation = () => {
   };
 
   return {
-    validateEmail,
+    // New methods
+    searchContactInHubSpot,
     createContactInHubSpot,
+    updateContactInHubSpot,
+    
+    // Legacy methods for backwards compatibility
+    validateEmail,
+    createContactInHubSpot: createContactInHubSpot,
+    
+    // State
     clearValidation,
     isValidating,
     validationMessage,

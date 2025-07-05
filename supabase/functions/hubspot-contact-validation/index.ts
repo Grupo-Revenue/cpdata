@@ -103,7 +103,7 @@ serve(async (req) => {
                 {
                   propertyName: "email",
                   operator: "EQ",
-                  value: email
+                  value: email.toLowerCase()
                 }
               ]
             }
@@ -134,6 +134,7 @@ serve(async (req) => {
           success: true,
           found: true,
           contact: {
+            hubspotId: contact.id,
             firstname: contact.properties.firstname || '',
             lastname: contact.properties.lastname || '',
             email: contact.properties.email || '',
@@ -165,7 +166,7 @@ serve(async (req) => {
           properties: {
             firstname: contactData.nombre || '',
             lastname: contactData.apellido || '',
-            email: contactData.email || '',
+            email: contactData.email.toLowerCase() || '',
             phone: contactData.telefono || ''
           }
         })
@@ -189,8 +190,73 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         success: true,
         created: true,
-        hubspotId: createdContact.id,
+        contact: {
+          hubspotId: createdContact.id,
+          firstname: contactData.nombre || '',
+          lastname: contactData.apellido || '',
+          email: contactData.email.toLowerCase() || '',
+          phone: contactData.telefono || ''
+        },
         message: 'Contact created successfully in HubSpot'
+      }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    } else if (action === 'update') {
+      console.log('Updating contact with data:', contactData)
+      
+      if (!contactData.hubspotId) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'HubSpot ID is required for update operation'
+        }), { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Update contact in HubSpot
+      const updateResponse = await fetch(`https://api.hubapi.com/crm/v3/objects/contacts/${contactData.hubspotId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${hubspotApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          properties: {
+            firstname: contactData.nombre || '',
+            lastname: contactData.apellido || '',
+            email: contactData.email.toLowerCase() || '',
+            phone: contactData.telefono || ''
+          }
+        })
+      })
+
+      if (!updateResponse.ok) {
+        const errorText = await updateResponse.text()
+        console.error('HubSpot update error:', updateResponse.status, errorText)
+        return new Response(JSON.stringify({
+          success: false,
+          error: `Failed to update contact in HubSpot: ${updateResponse.status} - ${errorText}`
+        }), { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const updatedContact = await updateResponse.json()
+      console.log('Contact updated in HubSpot:', updatedContact.id)
+
+      return new Response(JSON.stringify({
+        success: true,
+        updated: true,
+        contact: {
+          hubspotId: updatedContact.id,
+          firstname: contactData.nombre || '',
+          lastname: contactData.apellido || '',
+          email: contactData.email.toLowerCase() || '',
+          phone: contactData.telefono || ''
+        },
+        message: 'Contact updated successfully in HubSpot'
       }), { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })

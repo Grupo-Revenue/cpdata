@@ -32,7 +32,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
   
   // HubSpot validation hook
   const {
-    validateEmail,
+    searchContactInHubSpot,
     createContactInHubSpot,
     clearValidation,
     isValidating,
@@ -92,7 +92,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
       return;
     }
 
-    const result = await validateEmail(contacto.email);
+    const result = await searchContactInHubSpot(contacto.email);
     
     if (result && result.found && result.contact) {
       // Auto-fill contact information with proper phone handling
@@ -115,7 +115,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
   useEffect(() => {
     if (contacto.email && emailValidator.isValid) {
       const timeoutId = setTimeout(() => {
-        validateEmail(contacto.email).then(result => {
+        searchContactInHubSpot(contacto.email).then(result => {
           if (result && result.found && result.contact) {
             setContacto(prev => ({
               ...prev,
@@ -197,19 +197,120 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
 
     setCreando(true);
     try {
-      // If contact was not found in HubSpot, create it
-      if (isContactFound === false) {
-        await createContactInHubSpot(contacto);
+      console.log('Starting business creation process...');
+      
+      // Import the contact processing service
+      const { processContactForBusiness } = await import('@/services/contactService');
+      
+      // Step 1: Process contact with robust logic
+      console.log('Processing contact:', contacto.email);
+      const contactResult = await processContactForBusiness(contacto);
+      
+      if (!contactResult.success) {
+        throw new Error(`Error procesando contacto: ${contactResult.error}`);
       }
 
-      // Create the data object with the proper structure expected by the crearNegocio function
+      console.log('Contact processed successfully:', {
+        contactId: contactResult.contactId,
+        wasCreated: contactResult.wasCreated,
+        wasUpdated: contactResult.wasUpdated
+      });
+
+      // Show appropriate feedback to user
+      if (contactResult.wasCreated) {
+        toast({
+          title: "Contacto creado",
+          description: "El contacto ha sido creado y sincronizado con HubSpot.",
+        });
+      } else if (contactResult.wasUpdated) {
+        toast({
+          title: "Contacto actualizado",
+          description: "La información del contacto ha sido actualizada.",
+        });
+      }
+
+      // Step 2: Handle productora - find or create
+      let productoraId = null;
+      if (tipoCliente === 'productora' && productora.nombre) {
+        const userId = (await supabase.auth.getUser()).data.user?.id;
+        if (!userId) throw new Error('Usuario no autenticado');
+
+        // Try to find existing productora
+        const { data: existingProductora, error: searchError } = await supabase
+          .from('empresas')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('nombre', productora.nombre)
+          .eq('tipo', 'productora')
+          .maybeSingle();
+
+        if (searchError) throw searchError;
+
+        if (existingProductora) {
+          productoraId = existingProductora.id;
+        } else {
+          // Create new productora
+          const { data: newProductora, error: createError } = await supabase
+            .from('empresas')
+            .insert([{
+              ...productora,
+              tipo: 'productora',
+              user_id: userId
+            }])
+            .select('id')
+            .single();
+
+          if (createError) throw createError;
+          productoraId = newProductora.id;
+        }
+      }
+
+      // Step 3: Handle cliente final - find or create
+      let clienteFinalId = null;
+      if ((tipoCliente === 'cliente_final' || tieneClienteFinal) && clienteFinal.nombre) {
+        const userId = (await supabase.auth.getUser()).data.user?.id;
+        if (!userId) throw new Error('Usuario no autenticado');
+
+        // Try to find existing cliente final
+        const { data: existingCliente, error: searchError } = await supabase
+          .from('empresas')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('nombre', clienteFinal.nombre)
+          .eq('tipo', 'cliente_final')
+          .maybeSingle();
+
+        if (searchError) throw searchError;
+
+        if (existingCliente) {
+          clienteFinalId = existingCliente.id;
+        } else {
+          // Create new cliente final
+          const { data: newCliente, error: createError } = await supabase
+            .from('empresas')
+            .insert([{
+              ...clienteFinal,
+              tipo: 'cliente_final',
+              user_id: userId
+            }])
+            .select('id')
+            .single();
+
+          if (createError) throw createError;
+          clienteFinalId = newCliente.id;
+        }
+      }
+
+      // Step 4: Create the business using the processed contact ID
       const negocioData = {
-        contacto,
-        productora: tipoCliente === 'productora' ? {
+        contactoId: contactResult.contactId, // Use the processed contact ID
+        productora: tipoCliente === 'productora' && productoraId ? {
+          id: productoraId,
           ...productora,
           tipo: 'productora' as const
         } : undefined,
-        clienteFinal: (tipoCliente === 'cliente_final' || tieneClienteFinal) ? {
+        clienteFinal: ((tipoCliente === 'cliente_final' || tieneClienteFinal) && clienteFinalId) ? {
+          id: clienteFinalId,
           ...clienteFinal,
           tipo: 'cliente_final' as const
         } : undefined,
@@ -226,12 +327,14 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
         fecha_cierre: fechaCierre || undefined
       };
 
+      console.log('Creating business with data:', negocioData);
+      
       const negocioCreado = await crearNegocio(negocioData);
       
       if (negocioCreado) {
         toast({
           title: "Negocio creado exitosamente",
-          description: "El negocio ha sido creado. Ahora puede agregar presupuestos.",
+          description: "El negocio ha sido creado y el contacto sincronizado correctamente.",
         });
 
         onComplete(negocioCreado.id);
@@ -242,7 +345,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
       console.error('Error creando negocio:', error);
       toast({
         title: "Error",
-        description: "No se pudo crear el negocio. Intente nuevamente.",
+        description: `No se pudo crear el negocio: ${error.message}`,
         variant: "destructive"
       });
     } finally {
