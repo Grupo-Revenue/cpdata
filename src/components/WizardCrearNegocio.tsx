@@ -13,6 +13,7 @@ import { useChileanPhoneValidator } from '@/hooks/useChileanPhoneValidator';
 import { useEmailValidator } from '@/hooks/useEmailValidator';
 import { useChileanRutValidator } from '@/hooks/useChileanRutValidator';
 import { useHubSpotContactValidation } from '@/hooks/useHubSpotContactValidation';
+import { supabase } from '@/integrations/supabase/client';
 
 interface WizardProps {
   onComplete: (negocioId: string) => void;
