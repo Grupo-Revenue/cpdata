@@ -288,24 +288,6 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
           
           {paso === 1 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="nombre">Nombre *</Label>
-                <Input
-                  id="nombre"
-                  value={contacto.nombre}
-                  onChange={(e) => setContacto({...contacto, nombre: e.target.value})}
-                  placeholder="Ingrese el nombre"
-                />
-              </div>
-              <div>
-                <Label htmlFor="apellido">Apellido *</Label>
-                <Input
-                  id="apellido"
-                  value={contacto.apellido}
-                  onChange={(e) => setContacto({...contacto, apellido: e.target.value})}
-                  placeholder="Ingrese el apellido"
-                />
-              </div>
               <div className="md:col-span-2">
                 <Label htmlFor="email">Email *</Label>
                 <div className="flex gap-2">
@@ -362,6 +344,24 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
                     </p>
                   </div>
                 )}
+              </div>
+              <div>
+                <Label htmlFor="nombre">Nombre *</Label>
+                <Input
+                  id="nombre"
+                  value={contacto.nombre}
+                  onChange={(e) => setContacto({...contacto, nombre: e.target.value})}
+                  placeholder="Ingrese el nombre"
+                />
+              </div>
+              <div>
+                <Label htmlFor="apellido">Apellido *</Label>
+                <Input
+                  id="apellido"
+                  value={contacto.apellido}
+                  onChange={(e) => setContacto({...contacto, apellido: e.target.value})}
+                  placeholder="Ingrese el apellido"
+                />
               </div>
               <div>
                 <Label htmlFor="telefono">Teléfono *</Label>
