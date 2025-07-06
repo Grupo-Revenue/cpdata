@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { useHubSpotContactValidation } from '@/hooks/useHubSpotContactValidation';
 
 interface ContactData {
   nombre: string;
@@ -26,6 +25,12 @@ interface ProcessContactResult {
   wasUpdated?: boolean;
 }
 
+interface HubSpotOperations {
+  searchContactInHubSpot: (email: string) => Promise<any>;
+  createContactInHubSpot: (contactData: ContactData) => Promise<any>;
+  updateContactInHubSpot: (contactData: ContactData & { hubspotId: string }) => Promise<any>;
+}
+
 // Helper function to compare contact data and detect changes
 const hasContactChanges = (localContact: any, hubspotContact: HubSpotContact): boolean => {
   if (!localContact || !hubspotContact) return false;
@@ -46,7 +51,10 @@ const hasContactChanges = (localContact: any, hubspotContact: HubSpotContact): b
 };
 
 // Main function to process contact with robust logic
-export const processContactForBusiness = async (contactData: ContactData): Promise<ProcessContactResult> => {
+export const processContactForBusiness = async (
+  contactData: ContactData, 
+  hubspotOps: HubSpotOperations
+): Promise<ProcessContactResult> => {
   try {
     console.log('Starting contact processing for:', contactData.email);
     
@@ -55,14 +63,11 @@ export const processContactForBusiness = async (contactData: ContactData): Promi
       throw new Error('Usuario no autenticado');
     }
 
-    // Create HubSpot validation instance
-    const hubspotValidation = useHubSpotContactValidation();
-    
     // Step 1: Search for contact in HubSpot (email normalized to lowercase)
     const normalizedEmail = contactData.email.toLowerCase().trim();
     console.log('Searching in HubSpot for:', normalizedEmail);
     
-    const hubspotSearchResult = await hubspotValidation.searchContactInHubSpot(normalizedEmail);
+    const hubspotSearchResult = await hubspotOps.searchContactInHubSpot(normalizedEmail);
     let hubspotContact: HubSpotContact | null = null;
     let hubspotContactExists = false;
 
@@ -77,7 +82,7 @@ export const processContactForBusiness = async (contactData: ContactData): Promi
     // Step 2: If contact doesn't exist in HubSpot, create it
     if (!hubspotContactExists) {
       console.log('Creating new contact in HubSpot...');
-      const createResult = await hubspotValidation.createContactInHubSpot(contactData);
+      const createResult = await hubspotOps.createContactInHubSpot(contactData);
       
       if (!createResult.success) {
         throw new Error(`Error creating contact in HubSpot: ${createResult.error}`);
@@ -171,7 +176,7 @@ export const processContactForBusiness = async (contactData: ContactData): Promi
       })) {
         console.log('Updating HubSpot contact with local data...');
         
-        const updateResult = await hubspotValidation.updateContactInHubSpot({
+        const updateResult = await hubspotOps.updateContactInHubSpot({
           ...contactData,
           email: normalizedEmail,
           hubspotId: hubspotContact.hubspotId

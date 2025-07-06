@@ -35,6 +35,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
   const {
     searchContactInHubSpot,
     createContactInHubSpot,
+    updateContactInHubSpot,
     clearValidation,
     isValidating,
     validationMessage,
@@ -205,7 +206,11 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
       
       // Step 1: Process contact with robust logic
       console.log('Processing contact:', contacto.email);
-      const contactResult = await processContactForBusiness(contacto);
+      const contactResult = await processContactForBusiness(contacto, {
+        searchContactInHubSpot,
+        createContactInHubSpot,
+        updateContactInHubSpot
+      });
       
       if (!contactResult.success) {
         throw new Error(`Error procesando contacto: ${contactResult.error}`);
