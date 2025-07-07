@@ -5,6 +5,7 @@ import { logger } from '@/utils/logger';
 
 export const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
   try {
+    console.log('[negocioService] ==> STARTING FETCH FROM SUPABASE <==');
     logger.debug('Fetching negocios from database');
     
     const { data, error } = await supabase
@@ -42,15 +43,26 @@ export const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
       `)
       .order('created_at', { ascending: false });
 
+    console.log('[negocioService] Raw Supabase response:', { data, error, dataCount: data?.length });
+
     if (error) {
+      console.error('[negocioService] Supabase error:', error);
       logger.error('Error fetching negocios from Supabase', error);
       throw error;
     }
     
+    console.log('[negocioService] Successfully fetched negocios', { count: data?.length || 0 });
     logger.debug('Successfully fetched negocios', { count: data?.length || 0 });
     
     // Transform the data to match ExtendedNegocio type
     const transformedData = data.map((negocio, index) => {
+      console.log(`[negocioService] Transforming negocio ${index + 1}:`, {
+        id: negocio.id,
+        numero: negocio.numero,
+        nombre_evento: negocio.nombre_evento,
+        contacto: negocio.contacto?.nombre
+      });
+      
       const transformed = {
         ...negocio,
         // Add required legacy properties for backwards compatibility
@@ -117,6 +129,16 @@ export const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
       return transformed;
     });
     
+    console.log('[negocioService] ==> TRANSFORMATION COMPLETE <==', {
+      totalBusinesses: transformedData.length,
+      totalQuotes: transformedData.reduce((sum, n) => sum + n.presupuestos.length, 0),
+      firstBusiness: transformedData[0] ? {
+        id: transformedData[0].id,
+        numero: transformedData[0].numero,
+        evento: transformedData[0].evento?.nombreEvento
+      } : 'none'
+    });
+    
     logger.debug('Transformation complete', {
       totalBusinesses: transformedData.length,
       totalQuotes: transformedData.reduce((sum, n) => sum + n.presupuestos.length, 0)
@@ -124,6 +146,7 @@ export const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
     
     return transformedData as Negocio[];
   } catch (error) {
+    console.error('[negocioService] ==> FAILED TO FETCH NEGOCIOS <==', error);
     logger.error('Failed to fetch negocios', error);
     throw error;
   }

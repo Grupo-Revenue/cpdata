@@ -12,6 +12,17 @@ export const useBusinessTableLogic = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showInconsistenciesOnly, setShowInconsistenciesOnly] = useState(false);
 
+  console.log('[useBusinessTableLogic] ==> HOOK CALLED <==');
+  console.log('[useBusinessTableLogic] Current state:', {
+    negociosCount: negocios.length,
+    loading,
+    searchTerm,
+    statusFilter,
+    sortBy,
+    sortOrder,
+    showInconsistenciesOnly
+  });
+
   const obtenerNombreEmpresa = (negocio: Negocio) => {
     if (negocio.productora) {
       return negocio.productora.nombre;
@@ -24,16 +35,33 @@ export const useBusinessTableLogic = () => {
 
   // Analyze all businesses for state consistency
   const businessesWithAnalysis = useMemo(() => {
-    return negocios.map(negocio => {
+    console.log('[useBusinessTableLogic] ==> ANALYZING BUSINESSES <==');
+    console.log('[useBusinessTableLogic] Raw negocios:', negocios.length);
+    
+    const analyzed = negocios.map(negocio => {
       const analysis = analyzeBusinessState(negocio);
       return {
         ...negocio,
         stateAnalysis: analysis
       };
     });
+    
+    console.log('[useBusinessTableLogic] Analyzed businesses:', {
+      count: analyzed.length,
+      firstFew: analyzed.slice(0, 3).map(n => ({
+        id: n.id,
+        numero: n.numero,
+        hasInconsistency: n.stateAnalysis?.hasInconsistency
+      }))
+    });
+    
+    return analyzed;
   }, [negocios]);
 
   const filteredAndSortedNegocios = useMemo(() => {
+    console.log('[useBusinessTableLogic] ==> FILTERING AND SORTING <==');
+    console.log('[useBusinessTableLogic] Input businesses:', businessesWithAnalysis.length);
+    
     let filtered = businessesWithAnalysis.filter(negocio => {
       const matchesSearch = 
         negocio.numero.toString().includes(searchTerm.toLowerCase()) ||
@@ -46,6 +74,13 @@ export const useBusinessTableLogic = () => {
       const matchesInconsistencyFilter = !showInconsistenciesOnly || negocio.stateAnalysis.hasInconsistency;
 
       return matchesSearch && matchesStatus && matchesInconsistencyFilter;
+    });
+
+    console.log('[useBusinessTableLogic] After filtering:', {
+      count: filtered.length,
+      searchTerm,
+      statusFilter,
+      showInconsistenciesOnly
     });
 
     // Ordenar
@@ -67,10 +102,22 @@ export const useBusinessTableLogic = () => {
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
+    console.log('[useBusinessTableLogic] Final filtered and sorted:', {
+      count: filtered.length,
+      sortBy,
+      sortOrder,
+      firstFew: filtered.slice(0, 3).map(n => ({
+        id: n.id,
+        numero: n.numero,
+        evento: n.evento?.nombreEvento
+      }))
+    });
+
     return filtered;
   }, [businessesWithAnalysis, searchTerm, statusFilter, sortBy, sortOrder, showInconsistenciesOnly]);
 
   const handleSortChange = (newSortBy: 'numero' | 'fecha' | 'valor', newSortOrder: 'asc' | 'desc') => {
+    console.log('[useBusinessTableLogic] Sort change requested:', { newSortBy, newSortOrder });
     setSortBy(newSortBy);
     setSortOrder(newSortOrder);
   };
@@ -81,12 +128,16 @@ export const useBusinessTableLogic = () => {
     const inconsistent = businessesWithAnalysis.filter(n => n.stateAnalysis.hasInconsistency).length;
     const consistent = total - inconsistent;
     
-    return {
+    const stats = {
       total,
       consistent,
       inconsistent,
       consistencyRate: total > 0 ? ((consistent / total) * 100).toFixed(1) : '0'
     };
+    
+    console.log('[useBusinessTableLogic] State stats:', stats);
+    
+    return stats;
   }, [businessesWithAnalysis]);
 
   return {

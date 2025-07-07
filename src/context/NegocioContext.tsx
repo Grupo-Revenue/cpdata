@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
 import { Negocio, Presupuesto, EstadoNegocio, EstadoPresupuesto } from '@/types';
 import { obtenerNegociosDesdeSupabase } from '@/services/negocioService';
@@ -41,6 +40,12 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const obtenerNegocios = useCallback(async (forceRefresh = false) => {
     console.log('[NegocioContext] ==> LOADING NEGOCIOS <==');
     console.log('[NegocioContext] Force refresh:', forceRefresh);
+    console.log('[NegocioContext] Current state before fetch:', {
+      negociosCount: negocios.length,
+      loading,
+      error
+    });
+    
     setLoading(true);
     try {
       const negociosData = await obtenerNegociosDesdeSupabase();
@@ -71,6 +76,7 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   }, []);
 
   useEffect(() => {
+    console.log('[NegocioContext] ==> COMPONENT MOUNTED, TRIGGERING INITIAL LOAD <==');
     obtenerNegocios();
   }, [obtenerNegocios]);
 
