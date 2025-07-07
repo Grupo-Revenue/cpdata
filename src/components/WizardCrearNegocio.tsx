@@ -161,13 +161,75 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
     return evento.tipo_evento && evento.nombre_evento && evento.fecha_evento && evento.locacion;
   };
 
-  const siguientePaso = () => {
-    if (paso === 1 && !validarPaso1()) {
-      toast({
-        title: "Campos requeridos",
-        description: "Por favor complete todos los campos obligatorios",
-        variant: "destructive"
-      });
+  const siguientePaso = async () => {
+    if (paso === 1) {
+      // Validar campos obligatorios primero
+      if (!validarPaso1()) {
+        toast({
+          title: "Campos requeridos",
+          description: "Por favor complete todos los campos obligatorios",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Implementar lógica de sincronización de contactos
+      try {
+        console.log('Starting contact synchronization process...');
+        setCreando(true);
+
+        // Import the contact processing service
+        const { processContactForBusiness } = await import('@/services/contactService');
+        
+        // Process contact with the robust logic that handles all 4 scenarios
+        console.log('Processing contact for synchronization:', contacto.email);
+        const contactResult = await processContactForBusiness(contacto, {
+          searchContactInHubSpot,
+          createContactInHubSpot,
+          updateContactInHubSpot
+        });
+        
+        if (!contactResult.success) {
+          throw new Error(`Error procesando contacto: ${contactResult.error}`);
+        }
+
+        console.log('Contact synchronization completed:', {
+          contactId: contactResult.contactId,
+          wasCreated: contactResult.wasCreated,
+          wasUpdated: contactResult.wasUpdated
+        });
+
+        // Show appropriate feedback to user
+        if (contactResult.wasCreated) {
+          toast({
+            title: "Contacto procesado",
+            description: "El contacto ha sido creado y sincronizado con HubSpot.",
+          });
+        } else if (contactResult.wasUpdated) {
+          toast({
+            title: "Contacto actualizado",
+            description: "La información del contacto ha sido actualizada en ambos sistemas.",
+          });
+        } else {
+          toast({
+            title: "Contacto sincronizado",
+            description: "El contacto ha sido procesado y sincronizado correctamente.",
+          });
+        }
+
+        // Proceed to next step
+        setPaso(paso + 1);
+
+      } catch (error) {
+        console.error('Error synchronizing contact:', error);
+        toast({
+          title: "Error",
+          description: `No se pudo sincronizar el contacto: ${error.message}`,
+          variant: "destructive"
+        });
+      } finally {
+        setCreando(false);
+      }
       return;
     }
     
