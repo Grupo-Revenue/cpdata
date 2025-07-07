@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -124,7 +123,7 @@ serve(async (req) => {
       }
     }
 
-    // Handle saving API key with improved active token management
+    // Handle saving API key with new logic: delete existing and insert new
     if (action === 'save_api_key') {
       if (!apiKey) {
         return new Response(JSON.stringify({ 
@@ -139,69 +138,39 @@ serve(async (req) => {
       try {
         console.log('Saving API key for user:', user.id);
         
-        // First, deactivate all existing tokens for this user
-        const { error: deactivateError } = await supabase
+        // Delete ALL existing tokens for this user (active and inactive)
+        const { error: deleteError } = await supabase
           .from('hubspot_api_keys')
-          .update({ activo: false })
-          .eq('user_id', user.id)
-          .eq('activo', true);
+          .delete()
+          .eq('user_id', user.id);
 
-        if (deactivateError) {
-          console.error('Error deactivating existing tokens:', deactivateError);
-          throw new Error(`Failed to deactivate existing tokens: ${deactivateError.message}`);
+        if (deleteError) {
+          console.error('Error deleting existing tokens:', deleteError);
+          throw new Error(`Failed to delete existing tokens: ${deleteError.message}`);
         }
 
-        // Check if this exact API key already exists for this user
-        const { data: existingToken, error: searchError } = await supabase
+        console.log('All existing tokens deleted for user:', user.id);
+
+        // Insert the new token as active
+        const { error: insertError } = await supabase
           .from('hubspot_api_keys')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('api_key', apiKey)
-          .maybeSingle();
+          .insert({
+            user_id: user.id,
+            api_key: apiKey,
+            activo: true,
+            updated_at: new Date().toISOString()
+          });
 
-        if (searchError) {
-          console.error('Error searching for existing token:', searchError);
-          throw new Error(`Failed to search for existing token: ${searchError.message}`);
+        if (insertError) {
+          console.error('Error inserting new token:', insertError);
+          throw new Error(`Failed to insert new token: ${insertError.message}`);
         }
 
-        if (existingToken) {
-          // Token exists, just activate it and update timestamp
-          const { error: updateError } = await supabase
-            .from('hubspot_api_keys')
-            .update({
-              activo: true,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', existingToken.id);
-
-          if (updateError) {
-            console.error('Error updating existing token:', updateError);
-            throw new Error(`Failed to update existing token: ${updateError.message}`);
-          }
-
-          console.log('Existing token updated and activated successfully');
-        } else {
-          // Token doesn't exist, create new one
-          const { error: insertError } = await supabase
-            .from('hubspot_api_keys')
-            .insert({
-              user_id: user.id,
-              api_key: apiKey,
-              activo: true,
-              updated_at: new Date().toISOString()
-            });
-
-          if (insertError) {
-            console.error('Error inserting new token:', insertError);
-            throw new Error(`Failed to insert new token: ${insertError.message}`);
-          }
-
-          console.log('New token created and activated successfully');
-        }
+        console.log('New token created and activated successfully');
 
         return new Response(JSON.stringify({ 
           success: true,
-          message: 'API key saved successfully and set as active'
+          message: 'API key saved successfully. Previous token has been replaced.'
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -210,6 +179,42 @@ serve(async (req) => {
         return new Response(JSON.stringify({ 
           success: false, 
           error: `Failed to save API key: ${error.message}` 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // Handle disconnection by deleting the token completely
+    if (action === 'disconnect') {
+      try {
+        console.log('Disconnecting user from HubSpot:', user.id);
+
+        // Delete ALL tokens for this user
+        const { error: deleteError } = await supabase
+          .from('hubspot_api_keys')
+          .delete()
+          .eq('user_id', user.id);
+
+        if (deleteError) {
+          console.error('Error deleting tokens on disconnect:', deleteError);
+          throw new Error(`Failed to delete tokens: ${deleteError.message}`);
+        }
+
+        console.log('All tokens deleted for user on disconnect:', user.id);
+
+        return new Response(JSON.stringify({ 
+          success: true,
+          message: 'Successfully disconnected from HubSpot. Token has been deleted.'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (error) {
+        console.error('Error disconnecting from HubSpot:', error);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: `Failed to disconnect: ${error.message}` 
         }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

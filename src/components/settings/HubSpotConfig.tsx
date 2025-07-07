@@ -67,28 +67,33 @@ const HubSpotConfig = () => {
     try {
       setIsDisconnecting(true);
 
-      // Deactivate all active tokens for this user
-      const { error } = await supabase
-        .from('hubspot_api_keys')
-        .update({ activo: false })
-        .eq('user_id', user.id)
-        .eq('activo', true);
-
-      if (error) {
-        console.error('Error disconnecting from HubSpot:', error);
-        throw new Error(error.message || 'Error al desconectar de HubSpot');
-      }
-
-      // Update local state
-      setIsConfigured(false);
-      setApiKey('');
-      setIsConnectionTested(false);
-      setLastTestedAt(null);
-
-      toast({
-        title: "Desconectado exitosamente",
-        description: "Tu cuenta ha sido desconectada de HubSpot. Los tokens se han desactivado pero no eliminado."
+      const response = await fetch('/api/hubspot-sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({
+          action: 'disconnect'
+        })
       });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update local state
+        setIsConfigured(false);
+        setApiKey('');
+        setIsConnectionTested(false);
+        setLastTestedAt(null);
+
+        toast({
+          title: "Desconectado exitosamente",
+          description: "Tu token de HubSpot ha sido eliminado completamente."
+        });
+      } else {
+        throw new Error(result.error || 'Error al desconectar de HubSpot');
+      }
 
     } catch (error) {
       console.error('Error disconnecting from HubSpot:', error);
@@ -196,7 +201,7 @@ const HubSpotConfig = () => {
         setLastTestedAt(new Date().toISOString());
         toast({
           title: "Token guardado",
-          description: "El token de acceso de HubSpot se ha guardado correctamente y está ahora activo"
+          description: "El token de acceso de HubSpot se ha guardado correctamente. El token anterior ha sido reemplazado."
         });
       } else {
         throw new Error(result.error || 'Error al guardar el token');
@@ -349,7 +354,7 @@ const HubSpotConfig = () => {
               <div className="text-sm text-amber-700">
                 <p className="font-medium">Importante:</p>
                 <p>Asegúrate de que tu Private App tenga los permisos necesarios para acceder a los deals y pipelines de HubSpot.</p>
-                <p className="mt-1">El último token guardado será el token activo para tu cuenta.</p>
+                <p className="mt-1">Cada nuevo token reemplazará completamente al anterior.</p>
               </div>
             </div>
           </div>
@@ -361,7 +366,7 @@ const HubSpotConfig = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Unplug className="w-5 h-5" />
-              <span>Información sobre la desconexión de HubSpot</span>
+              <span>Desconectar de HubSpot</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -370,16 +375,16 @@ const HubSpotConfig = () => {
                 Al desconectar tu cuenta de HubSpot:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>El token activo pasará a estado inactivo</li>
-                <li>La integración dejará de funcionar hasta que se conecte un nuevo token</li>
-                <li>No se eliminará el historial ni los registros existentes</li>
-                <li>Podrás volver a conectar en cualquier momento</li>
+                <li>El token se eliminará completamente de la base de datos</li>
+                <li>La integración dejará de funcionar inmediatamente</li>
+                <li>Para volver a conectar, deberás ingresar un nuevo token</li>
+                <li>Los datos ya sincronizados en HubSpot permanecerán intactos</li>
               </ul>
               <div className="flex items-start space-x-2 p-3 bg-red-50 rounded-md mt-4">
                 <AlertCircle className="w-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-red-700">
                   <p className="font-medium">Atención:</p>
-                  <p>Esta acción desactivará inmediatamente la sincronización con HubSpot. Los negocios ya sincronizados permanecerán en HubSpot, pero no se sincronizarán nuevos cambios.</p>
+                  <p>Esta acción eliminará permanentemente el token y desactivará la sincronización con HubSpot.</p>
                 </div>
               </div>
               
@@ -407,7 +412,7 @@ const HubSpotConfig = () => {
                     <AlertDialogHeader>
                       <AlertDialogTitle>¿Desconectar de HubSpot?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        ¿Estás seguro de que deseas desconectar tu cuenta de HubSpot? Esta acción desactivará la integración y dejará de sincronizar información entre ambas plataformas.
+                        ¿Estás seguro de que deseas desconectar tu cuenta de HubSpot? Esta acción eliminará permanentemente el token y desactivará la integración.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
