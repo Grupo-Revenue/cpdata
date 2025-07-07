@@ -88,7 +88,9 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     });
     
     try {
-      // Force a complete refresh
+      // Force a complete refresh - clear state first to ensure re-render
+      setNegocios([]);
+      setLoading(true);
       await obtenerNegocios(true);
       console.log('[NegocioContext] Manual refresh completed successfully');
     } catch (error) {
