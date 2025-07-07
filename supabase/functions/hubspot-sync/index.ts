@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -123,7 +124,7 @@ serve(async (req) => {
       }
     }
 
-    // Handle saving API key with active token management
+    // Handle saving API key with improved active token management
     if (action === 'save_api_key') {
       if (!apiKey) {
         return new Response(JSON.stringify({ 
@@ -138,7 +139,19 @@ serve(async (req) => {
       try {
         console.log('Saving API key for user:', user.id);
         
-        // Check if this exact API key already exists for this user BEFORE deactivating
+        // First, deactivate all existing tokens for this user
+        const { error: deactivateError } = await supabase
+          .from('hubspot_api_keys')
+          .update({ activo: false })
+          .eq('user_id', user.id)
+          .eq('activo', true);
+
+        if (deactivateError) {
+          console.error('Error deactivating existing tokens:', deactivateError);
+          throw new Error(`Failed to deactivate existing tokens: ${deactivateError.message}`);
+        }
+
+        // Check if this exact API key already exists for this user
         const { data: existingToken, error: searchError } = await supabase
           .from('hubspot_api_keys')
           .select('id')
@@ -149,17 +162,6 @@ serve(async (req) => {
         if (searchError) {
           console.error('Error searching for existing token:', searchError);
           throw new Error(`Failed to search for existing token: ${searchError.message}`);
-        }
-
-        // Now deactivate all existing tokens for this user
-        const { error: deactivateError } = await supabase
-          .from('hubspot_api_keys')
-          .update({ activo: false })
-          .eq('user_id', user.id);
-
-        if (deactivateError) {
-          console.error('Error deactivating existing tokens:', deactivateError);
-          throw new Error(`Failed to deactivate existing tokens: ${deactivateError.message}`);
         }
 
         if (existingToken) {
