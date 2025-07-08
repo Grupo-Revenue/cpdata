@@ -71,16 +71,22 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
         
         // Only auto-fill if the company type matches what we're looking for
         if (mappedTipoCliente === 'productora') {
-          setProductora({
-            nombre: company.name,
-            rut: company.rut,
-            direccion: company.address,
-            sitio_web: productora.sitio_web // Keep existing value
-          });
-          
-          // Update RUT validator
+          // Update RUT validator with the found RUT first
           if (company.rut) {
-            rutProductoraValidator.handleChange(company.rut);
+            const result = rutProductoraValidator.handleChange(company.rut);
+            setProductora({
+              nombre: company.name,
+              rut: result.formattedValue,
+              direccion: company.address,
+              sitio_web: productora.sitio_web // Keep existing value
+            });
+          } else {
+            setProductora({
+              nombre: company.name,
+              rut: company.rut,
+              direccion: company.address,
+              sitio_web: productora.sitio_web // Keep existing value
+            });
           }
         }
       }
