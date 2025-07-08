@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNegocio } from '@/context/NegocioContext';
 import { useHubSpotContactValidation } from '@/hooks/useHubSpotContactValidation';
+import { useHubSpotCompanyValidation } from '@/hooks/useHubSpotCompanyValidation';
 import { toast } from '@/hooks/use-toast';
 import { processContactForBusiness } from '@/services/contactService';
 import { createBusinessFromWizard } from '@/services/wizardBusinessService';
@@ -21,6 +22,12 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
     createContactInHubSpot,
     updateContactInHubSpot
   } = useHubSpotContactValidation();
+
+  const {
+    searchCompanyInHubSpot,
+    createCompanyInHubSpot,
+    updateCompanyInHubSpot
+  } = useHubSpotCompanyValidation();
 
   const [wizardState, setWizardState] = useState<WizardState>({
     paso: 1,
@@ -116,7 +123,10 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
         hubspotOperations: {
           searchContactInHubSpot,
           createContactInHubSpot,
-          updateContactInHubSpot
+          updateContactInHubSpot,
+          searchCompanyInHubSpot,
+          createCompanyInHubSpot,
+          updateCompanyInHubSpot
         },
         crearNegocio
       });

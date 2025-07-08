@@ -4,12 +4,72 @@ import { processContactForBusiness } from '@/services/contactService';
 import { useNegocio } from '@/context/NegocioContext';
 import { WizardState } from '@/components/wizard/types';
 
+// Helper function to process companies with HubSpot
+const processCompanyForBusiness = async (
+  companyData: { nombre: string; rut: string; direccion: string; sitio_web: string },
+  tipoCliente: 'productora' | 'cliente_final',
+  hubspotOperations: any
+) => {
+  console.log('Processing company:', companyData.nombre, 'Type:', tipoCliente);
+  
+  try {
+    // Search for existing company in HubSpot
+    const searchResult = await hubspotOperations.searchCompanyInHubSpot(companyData.nombre);
+    
+    if (searchResult?.found && searchResult.company) {
+      console.log('Company found in HubSpot:', searchResult.company.hubspotId);
+      
+      // Update existing company if needed
+      const updateResult = await hubspotOperations.updateCompanyInHubSpot({
+        ...companyData,
+        tipoCliente,
+        hubspotId: searchResult.company.hubspotId
+      });
+      
+      return {
+        success: true,
+        hubspotId: searchResult.company.hubspotId,
+        wasUpdated: updateResult.success,
+        wasCreated: false
+      };
+    } else {
+      console.log('Company not found in HubSpot, creating new one');
+      
+      // Create new company in HubSpot
+      const createResult = await hubspotOperations.createCompanyInHubSpot({
+        ...companyData,
+        tipoCliente
+      });
+      
+      if (createResult.success) {
+        return {
+          success: true,
+          hubspotId: createResult.company?.hubspotId,
+          wasCreated: true,
+          wasUpdated: false
+        };
+      } else {
+        throw new Error(createResult.error || 'Failed to create company in HubSpot');
+      }
+    }
+  } catch (error) {
+    console.error('Error processing company:', error);
+    return {
+      success: false,
+      error: error.message || 'Error processing company'
+    };
+  }
+};
+
 interface BusinessCreationParams {
   wizardState: WizardState;
   hubspotOperations: {
     searchContactInHubSpot: (email: string) => Promise<any>;
     createContactInHubSpot: (contactData: any) => Promise<any>;
     updateContactInHubSpot: (contactData: any) => Promise<any>;
+    searchCompanyInHubSpot: (companyName: string) => Promise<any>;
+    createCompanyInHubSpot: (companyData: any) => Promise<any>;
+    updateCompanyInHubSpot: (companyData: any) => Promise<any>;
   };
   crearNegocio: ReturnType<typeof useNegocio>['crearNegocio'];
 }
@@ -50,13 +110,25 @@ export const createBusinessFromWizard = async ({
     });
   }
 
-  // Step 2: Handle productora - find or create
+  // Step 2: Handle productora - find or create with HubSpot sync
   let productoraId = null;
   if (tipoCliente === 'productora' && productora.nombre) {
     const userId = (await supabase.auth.getUser()).data.user?.id;
     if (!userId) throw new Error('Usuario no autenticado');
 
-    // Try to find existing productora
+    // Process company in HubSpot first
+    const hubspotResult = await processCompanyForBusiness(
+      productora,
+      'productora',
+      hubspotOperations
+    );
+
+    if (!hubspotResult.success) {
+      console.warn('Failed to sync productora with HubSpot:', hubspotResult.error);
+      // Continue without HubSpot sync
+    }
+
+    // Try to find existing productora in local database
     const { data: existingProductora, error: searchError } = await supabase
       .from('empresas')
       .select('id')
@@ -70,7 +142,7 @@ export const createBusinessFromWizard = async ({
     if (existingProductora) {
       productoraId = existingProductora.id;
     } else {
-      // Create new productora
+      // Create new productora in local database
       const { data: newProductora, error: createError } = await supabase
         .from('empresas')
         .insert([{
@@ -84,15 +156,42 @@ export const createBusinessFromWizard = async ({
       if (createError) throw createError;
       productoraId = newProductora.id;
     }
+
+    // Show feedback for HubSpot sync
+    if (hubspotResult.success) {
+      if (hubspotResult.wasCreated) {
+        toast({
+          title: "Productora creada",
+          description: "La productora ha sido creada y sincronizada con HubSpot.",
+        });
+      } else if (hubspotResult.wasUpdated) {
+        toast({
+          title: "Productora actualizada",
+          description: "La información de la productora ha sido actualizada.",
+        });
+      }
+    }
   }
 
-  // Step 3: Handle cliente final - find or create
+  // Step 3: Handle cliente final - find or create with HubSpot sync
   let clienteFinalId = null;
   if ((tipoCliente === 'cliente_final' || tieneClienteFinal) && clienteFinal.nombre) {
     const userId = (await supabase.auth.getUser()).data.user?.id;
     if (!userId) throw new Error('Usuario no autenticado');
 
-    // Try to find existing cliente final
+    // Process company in HubSpot first
+    const hubspotResult = await processCompanyForBusiness(
+      clienteFinal,
+      'cliente_final',
+      hubspotOperations
+    );
+
+    if (!hubspotResult.success) {
+      console.warn('Failed to sync cliente final with HubSpot:', hubspotResult.error);
+      // Continue without HubSpot sync
+    }
+
+    // Try to find existing cliente final in local database
     const { data: existingCliente, error: searchError } = await supabase
       .from('empresas')
       .select('id')
@@ -106,7 +205,7 @@ export const createBusinessFromWizard = async ({
     if (existingCliente) {
       clienteFinalId = existingCliente.id;
     } else {
-      // Create new cliente final
+      // Create new cliente final in local database
       const { data: newCliente, error: createError } = await supabase
         .from('empresas')
         .insert([{
@@ -119,6 +218,21 @@ export const createBusinessFromWizard = async ({
 
       if (createError) throw createError;
       clienteFinalId = newCliente.id;
+    }
+
+    // Show feedback for HubSpot sync
+    if (hubspotResult.success) {
+      if (hubspotResult.wasCreated) {
+        toast({
+          title: "Cliente Final creado",
+          description: "El cliente final ha sido creado y sincronizado con HubSpot.",
+        });
+      } else if (hubspotResult.wasUpdated) {
+        toast({
+          title: "Cliente Final actualizado",
+          description: "La información del cliente final ha sido actualizada.",
+        });
+      }
     }
   }
 

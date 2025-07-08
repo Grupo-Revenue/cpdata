@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useChileanRutValidator } from '@/hooks/useChileanRutValidator';
+import { useHubSpotCompanyValidation } from '@/hooks/useHubSpotCompanyValidation';
 import { ProductoraData, ClienteFinalData } from './types';
 interface CompanyInfoStepProps {
   tipoCliente: 'productora' | 'cliente_final';
@@ -34,6 +35,97 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
 }) => {
   const rutValidator = useChileanRutValidator();
   const rutProductoraValidator = useChileanRutValidator();
+  
+  // HubSpot validation hooks
+  const {
+    searchCompanyInHubSpot,
+    isValidating: isValidatingProductora,
+    validationMessage: validationMessageProductora,
+    isCompanyFound: isProductoraFound,
+    clearValidation: clearProductoraValidation
+  } = useHubSpotCompanyValidation();
+  
+  const {
+    searchCompanyInHubSpot: searchClienteFinalInHubSpot,
+    isValidating: isValidatingClienteFinal,
+    validationMessage: validationMessageClienteFinal,
+    isCompanyFound: isClienteFinalFound,
+    clearValidation: clearClienteFinalValidation
+  } = useHubSpotCompanyValidation();
+
+  // Handle productora name validation
+  const handleProductoraNameChange = async (name: string) => {
+    setProductora({
+      ...productora,
+      nombre: name
+    });
+
+    if (name.trim().length > 2) {
+      const result = await searchCompanyInHubSpot(name);
+      if (result?.found && result.company) {
+        // Auto-fill productora data from HubSpot
+        const company = result.company;
+        
+        // Map HubSpot company type to local format
+        const mappedTipoCliente = company.tipoCliente === 'Productora' ? 'productora' : 'cliente_final';
+        
+        // Only auto-fill if the company type matches what we're looking for
+        if (mappedTipoCliente === 'productora') {
+          setProductora({
+            nombre: company.name,
+            rut: company.rut,
+            direccion: company.address,
+            sitio_web: productora.sitio_web // Keep existing value
+          });
+          
+          // Update RUT validator
+          if (company.rut) {
+            rutProductoraValidator.handleChange(company.rut);
+          }
+        }
+      }
+    }
+  };
+
+  // Handle cliente final name validation
+  const handleClienteFinalNameChange = async (name: string) => {
+    setClienteFinal({
+      ...clienteFinal,
+      nombre: name
+    });
+
+    if (name.trim().length > 2) {
+      const result = await searchClienteFinalInHubSpot(name);
+      if (result?.found && result.company) {
+        // Auto-fill cliente final data from HubSpot
+        const company = result.company;
+        
+        // Map HubSpot company type to local format
+        const mappedTipoCliente = company.tipoCliente === 'Cliente Final' ? 'cliente_final' : 'productora';
+        
+        // Only auto-fill if the company type matches what we're looking for
+        if (mappedTipoCliente === 'cliente_final') {
+          setClienteFinal({
+            nombre: company.name,
+            rut: company.rut,
+            direccion: company.address,
+            sitio_web: clienteFinal.sitio_web // Keep existing value
+          });
+          
+          // Update RUT validator
+          if (company.rut) {
+            rutValidator.handleChange(company.rut);
+          }
+        }
+      }
+    }
+  };
+
+  // Clear validations when company type changes
+  useEffect(() => {
+    clearProductoraValidation();
+    clearClienteFinalValidation();
+  }, [tipoCliente, clearProductoraValidation, clearClienteFinalValidation]);
   const validarPaso = () => {
     if (tipoCliente === 'productora') {
       const productoraValida = productora.nombre;
@@ -75,10 +167,27 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="productoraNombre">Nombre de la Productora *</Label>
-              <Input id="productoraNombre" value={productora.nombre} onChange={e => setProductora({
-            ...productora,
-            nombre: e.target.value
-          })} placeholder="Nombre de la productora" />
+              <div className="relative">
+                <Input 
+                  id="productoraNombre" 
+                  value={productora.nombre} 
+                  onChange={e => handleProductoraNameChange(e.target.value)}
+                  placeholder="Nombre de la productora" 
+                  className={isProductoraFound === true ? 'border-green-500' : isProductoraFound === false ? 'border-orange-500' : ''}
+                />
+                {isValidatingProductora && (
+                  <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
+              {validationMessageProductora && (
+                <p className={`text-xs mt-1 ${
+                  isProductoraFound === true ? 'text-green-600' : 
+                  isProductoraFound === false ? 'text-orange-600' : 
+                  'text-destructive'
+                }`}>
+                  {validationMessageProductora}
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="productoraRut">RUT de la Productora</Label>
@@ -118,10 +227,27 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="clienteNombre">Nombre del Cliente Final *</Label>
-              <Input id="clienteNombre" value={clienteFinal.nombre} onChange={e => setClienteFinal({
-            ...clienteFinal,
-            nombre: e.target.value
-          })} placeholder="Nombre del cliente final" />
+              <div className="relative">
+                <Input 
+                  id="clienteNombre" 
+                  value={clienteFinal.nombre} 
+                  onChange={e => handleClienteFinalNameChange(e.target.value)}
+                  placeholder="Nombre del cliente final" 
+                  className={isClienteFinalFound === true ? 'border-green-500' : isClienteFinalFound === false ? 'border-orange-500' : ''}
+                />
+                {isValidatingClienteFinal && (
+                  <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
+              {validationMessageClienteFinal && (
+                <p className={`text-xs mt-1 ${
+                  isClienteFinalFound === true ? 'text-green-600' : 
+                  isClienteFinalFound === false ? 'text-orange-600' : 
+                  'text-destructive'
+                }`}>
+                  {validationMessageClienteFinal}
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="clienteRut">RUT del Cliente Final</Label>
