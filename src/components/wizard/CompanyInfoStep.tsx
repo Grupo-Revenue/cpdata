@@ -295,9 +295,9 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
   };
   return <div className="space-y-6">
       <div>
-        <Label htmlFor="tipoCliente">Tipo de Cliente *</Label>
+        <Label htmlFor="tipoCliente" className="text-sm font-normal text-gray-700">¿Este negocio es para una productora o cliente final?</Label>
         <Select value={tipoCliente} onValueChange={(value: 'productora' | 'cliente_final') => setTipoCliente(value)}>
-          <SelectTrigger>
+          <SelectTrigger className="mt-2">
             <SelectValue placeholder="Seleccione el tipo de cliente" />
           </SelectTrigger>
           <SelectContent>
@@ -307,19 +307,19 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
         </Select>
       </div>
 
-      {tipoCliente === 'productora' && <div className="space-y-4 border rounded-lg p-4 bg-secondary/30">
-          <h3 className="text-lg font-medium">Información de la Productora</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {tipoCliente === 'productora' && <div className="space-y-4 rounded-lg p-6 bg-blue-50/70 border border-blue-100">
+          <h3 className="text-lg font-medium text-gray-800">Información de la Productora</h3>
+          <div className="space-y-4">
             <div>
-              <Label htmlFor="productoraNombre">Nombre de la Productora *</Label>
-              <div className="relative flex gap-2">
+              <Label htmlFor="productoraNombre" className="text-sm font-normal text-gray-700">Nombre de la Productora *</Label>
+              <div className="relative flex gap-2 mt-1">
                 <div className="relative flex-1">
                   <Input 
                     id="productoraNombre" 
                     value={productora.nombre} 
                     onChange={e => handleProductoraNameChange(e.target.value)}
                     placeholder="Nombre de la productora" 
-                    className={isProductoraFound === true ? 'border-green-500' : isProductoraFound === false ? 'border-orange-500' : ''}
+                    className={`bg-white ${isProductoraFound === true ? 'border-green-500' : isProductoraFound === false ? 'border-orange-500' : ''}`}
                   />
                   {isValidatingProductora && (
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center justify-center">
@@ -333,7 +333,7 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
                   size="icon"
                   onClick={() => handleProductoraNameChange(productora.nombre)}
                   disabled={!productora.nombre.trim() || isValidatingProductora}
-                  className="shrink-0"
+                  className="shrink-0 bg-white"
                 >
                   <Search className="h-4 w-4" />
                 </Button>
@@ -348,52 +348,77 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
                 </div>
               )}
             </div>
-            <div>
-              <Label htmlFor="productoraRut">RUT de la Productora</Label>
-              <Input id="productoraRut" value={rutProductoraValidator.value} onChange={e => {
-            const result = rutProductoraValidator.handleChange(e.target.value);
-            setProductora({
-              ...productora,
-              rut: result.formattedValue
-            });
-          }} placeholder="12.345.678-9" className={rutProductoraValidator.error ? 'border-destructive' : ''} />
-              {rutProductoraValidator.error && <p className="text-sm text-destructive mt-1">{rutProductoraValidator.error}</p>}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="productoraRut" className="text-sm font-normal text-gray-700">RUT (opcional)</Label>
+                <Input 
+                  id="productoraRut" 
+                  value={rutProductoraValidator.value} 
+                  onChange={e => {
+                    const result = rutProductoraValidator.handleChange(e.target.value);
+                    setProductora({
+                      ...productora,
+                      rut: result.formattedValue
+                    });
+                  }} 
+                  placeholder="12.345.678-9" 
+                  className={`bg-white mt-1 ${rutProductoraValidator.error ? 'border-destructive' : ''}`} 
+                />
+                {rutProductoraValidator.error && <p className="text-sm text-destructive mt-1">{rutProductoraValidator.error}</p>}
+              </div>
+              <div>
+                <Label htmlFor="productoraSitioWeb" className="text-sm font-normal text-gray-700">Sitio Web (opcional)</Label>
+                <Input 
+                  id="productoraSitioWeb" 
+                  value={productora.sitio_web} 
+                  onChange={e => setProductora({
+                    ...productora,
+                    sitio_web: e.target.value
+                  })} 
+                  placeholder="www.productora.com" 
+                  className="bg-white mt-1" 
+                />
+              </div>
             </div>
             <div>
-              <Label htmlFor="productoraSitioWeb">Sitio Web</Label>
-              <Input id="productoraSitioWeb" value={productora.sitio_web} onChange={e => setProductora({
-            ...productora,
-            sitio_web: e.target.value
-          })} placeholder="https://www.productora.com" />
+              <Label htmlFor="productoraDireccion" className="text-sm font-normal text-gray-700">Dirección (opcional)</Label>
+              <Input 
+                id="productoraDireccion" 
+                value={productora.direccion} 
+                onChange={e => setProductora({
+                  ...productora,
+                  direccion: e.target.value
+                })} 
+                placeholder="Dirección de la productora" 
+                className="bg-white mt-1" 
+              />
             </div>
-            <div>
-              <Label htmlFor="productoraDireccion">Dirección</Label>
-              <Input id="productoraDireccion" value={productora.direccion} onChange={e => setProductora({
-            ...productora,
-            direccion: e.target.value
-          })} placeholder="Dirección de la productora" />
+            
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox 
+                id="tieneClienteFinal" 
+                checked={tieneClienteFinal} 
+                onCheckedChange={checked => setTieneClienteFinal(checked as boolean)} 
+                className="rounded border-gray-400"
+              />
+              <Label htmlFor="tieneClienteFinal" className="text-sm font-normal text-gray-700">¿Conoce el cliente final?</Label>
             </div>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Checkbox id="tieneClienteFinal" checked={tieneClienteFinal} onCheckedChange={checked => setTieneClienteFinal(checked as boolean)} />
-            <Label htmlFor="tieneClienteFinal">¿Hay un cliente final diferente?</Label>
           </div>
         </div>}
 
-      {(tipoCliente === 'cliente_final' || tieneClienteFinal) && <div className="space-y-4 border rounded-lg p-4 bg-slate-200">
-          <h3 className="text-lg font-medium">Información del Cliente Final</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {(tipoCliente === 'cliente_final' || tieneClienteFinal) && <div className="space-y-4 rounded-lg p-6 bg-green-50/70 border border-green-100">
+          <h3 className="text-lg font-medium text-gray-800">Información del Cliente Final</h3>
+          <div className="space-y-4">
             <div>
-              <Label htmlFor="clienteNombre">Nombre del Cliente Final *</Label>
-              <div className="relative flex gap-2">
+              <Label htmlFor="clienteNombre" className="text-sm font-normal text-gray-700">Nombre del Cliente Final *</Label>
+              <div className="relative flex gap-2 mt-1">
                 <div className="relative flex-1">
                   <Input 
                     id="clienteNombre" 
                     value={clienteFinal.nombre} 
                     onChange={e => handleClienteFinalNameChange(e.target.value)}
                     placeholder="Nombre del cliente final" 
-                    className={isClienteFinalFound === true ? 'border-green-500' : isClienteFinalFound === false ? 'border-orange-500' : ''}
+                    className={`bg-white ${isClienteFinalFound === true ? 'border-green-500' : isClienteFinalFound === false ? 'border-orange-500' : ''}`}
                   />
                   {isValidatingClienteFinal && (
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center justify-center">
@@ -407,7 +432,7 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
                   size="icon"
                   onClick={() => handleClienteFinalNameChange(clienteFinal.nombre)}
                   disabled={!clienteFinal.nombre.trim() || isValidatingClienteFinal}
-                  className="shrink-0"
+                  className="shrink-0 bg-white"
                 >
                   <Search className="h-4 w-4" />
                 </Button>
@@ -422,30 +447,50 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
                 </div>
               )}
             </div>
-            <div>
-              <Label htmlFor="clienteRut">RUT del Cliente Final</Label>
-              <Input id="clienteRut" value={rutValidator.value} onChange={e => {
-            const result = rutValidator.handleChange(e.target.value);
-            setClienteFinal({
-              ...clienteFinal,
-              rut: result.formattedValue
-            });
-          }} placeholder="12.345.678-9" className={rutValidator.error ? 'border-destructive' : ''} />
-              {rutValidator.error && <p className="text-sm text-destructive mt-1">{rutValidator.error}</p>}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="clienteRut" className="text-sm font-normal text-gray-700">RUT (opcional)</Label>
+                <Input 
+                  id="clienteRut" 
+                  value={rutValidator.value} 
+                  onChange={e => {
+                    const result = rutValidator.handleChange(e.target.value);
+                    setClienteFinal({
+                      ...clienteFinal,
+                      rut: result.formattedValue
+                    });
+                  }} 
+                  placeholder="12.345.678-9" 
+                  className={`bg-white mt-1 ${rutValidator.error ? 'border-destructive' : ''}`} 
+                />
+                {rutValidator.error && <p className="text-sm text-destructive mt-1">{rutValidator.error}</p>}
+              </div>
+              <div>
+                <Label htmlFor="clienteSitioWeb" className="text-sm font-normal text-gray-700">Sitio Web (opcional)</Label>
+                <Input 
+                  id="clienteSitioWeb" 
+                  value={clienteFinal.sitio_web} 
+                  onChange={e => setClienteFinal({
+                    ...clienteFinal,
+                    sitio_web: e.target.value
+                  })} 
+                  placeholder="www.cliente.com" 
+                  className="bg-white mt-1" 
+                />
+              </div>
             </div>
             <div>
-              <Label htmlFor="clienteSitioWeb">Sitio Web</Label>
-              <Input id="clienteSitioWeb" value={clienteFinal.sitio_web} onChange={e => setClienteFinal({
-            ...clienteFinal,
-            sitio_web: e.target.value
-          })} placeholder="https://www.cliente.com" />
-            </div>
-            <div>
-              <Label htmlFor="clienteDireccion">Dirección</Label>
-              <Input id="clienteDireccion" value={clienteFinal.direccion} onChange={e => setClienteFinal({
-            ...clienteFinal,
-            direccion: e.target.value
-          })} placeholder="Dirección del cliente final" />
+              <Label htmlFor="clienteDireccion" className="text-sm font-normal text-gray-700">Dirección (opcional)</Label>
+              <Input 
+                id="clienteDireccion" 
+                value={clienteFinal.direccion} 
+                onChange={e => setClienteFinal({
+                  ...clienteFinal,
+                  direccion: e.target.value
+                })} 
+                placeholder="Dirección del cliente" 
+                className="bg-white mt-1" 
+              />
             </div>
           </div>
         </div>}
