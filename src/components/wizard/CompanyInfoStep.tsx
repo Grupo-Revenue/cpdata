@@ -327,13 +327,13 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
                 </Button>
               </div>
               {validationMessageProductora && (
-                <p className={`text-xs mt-1 ${
-                  isProductoraFound === true ? 'text-green-600' : 
-                  isProductoraFound === false ? 'text-orange-600' : 
-                  'text-destructive'
+                <div className={`text-xs mt-2 p-2 rounded-md ${
+                  isProductoraFound === true ? 'bg-green-50 text-green-700 border border-green-200' : 
+                  isProductoraFound === false ? 'bg-blue-50 text-blue-700 border border-blue-200' : 
+                  'bg-red-50 text-red-700 border border-red-200'
                 }`}>
                   {validationMessageProductora}
-                </p>
+                </div>
               )}
             </div>
             <div>
@@ -401,13 +401,13 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
                 </Button>
               </div>
               {validationMessageClienteFinal && (
-                <p className={`text-xs mt-1 ${
-                  isClienteFinalFound === true ? 'text-green-600' : 
-                  isClienteFinalFound === false ? 'text-orange-600' : 
-                  'text-destructive'
+                <div className={`text-xs mt-2 p-2 rounded-md ${
+                  isClienteFinalFound === true ? 'bg-green-50 text-green-700 border border-green-200' : 
+                  isClienteFinalFound === false ? 'bg-blue-50 text-blue-700 border border-blue-200' : 
+                  'bg-red-50 text-red-700 border border-red-200'
                 }`}>
                   {validationMessageClienteFinal}
-                </p>
+                </div>
               )}
             </div>
             <div>
