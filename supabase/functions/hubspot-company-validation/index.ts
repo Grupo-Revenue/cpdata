@@ -132,6 +132,10 @@ serve(async (req) => {
 
       const searchResult = await searchResponse.json()
       console.log('HubSpot search result:', JSON.stringify(searchResult, null, 2))
+      
+      // Debug logging for company name search
+      console.log(`Search query for: "${companyName}"`)
+      console.log(`Total results found: ${searchResult.results?.length || 0}`)
 
       if (searchResult.results && searchResult.results.length > 0) {
         const company = searchResult.results[0]
@@ -139,11 +143,17 @@ serve(async (req) => {
         
         // Determine RUT based on company type
         let rut = ''
+        console.log(`Company details - Name: "${company.properties.name}", Type: "${tipoCliente}"`)
+        console.log(`Available properties:`, Object.keys(company.properties))
+        console.log(`RUT fields - rut_cliente_final: "${company.properties.rut_cliente_final || 'EMPTY'}", rut_productora: "${company.properties.rut_productora || 'EMPTY'}"`)
+        
         if (tipoCliente === 'Cliente Final') {
           rut = company.properties.rut_cliente_final || ''
         } else if (tipoCliente === 'Productora') {
           rut = company.properties.rut_productora || ''
         }
+        
+        console.log(`Final RUT value: "${rut}"`)
         
         return new Response(JSON.stringify({
           success: true,
