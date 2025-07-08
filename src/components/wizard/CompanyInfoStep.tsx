@@ -260,18 +260,18 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
 
       if (hasErrors) {
         toast({
-          title: "Procesamiento completado",
-          description: "Algunas operaciones tuvieron problemas, pero se puede continuar.",
-          variant: "default"
+          title: "Error en el procesamiento",
+          description: "Algunas operaciones tuvieron problemas. Por favor, corrige los errores antes de continuar.",
+          variant: "destructive"
         });
+        return;
       } else {
         toast({
           title: "Empresas procesadas",
           description: "Todas las empresas han sido sincronizadas correctamente.",
         });
+        onNext();
       }
-
-      onNext();
     } catch (error) {
       console.error('Error general en el procesamiento:', error);
       toast({
