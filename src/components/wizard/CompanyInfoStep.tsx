@@ -39,6 +39,8 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
   // HubSpot validation hooks
   const {
     searchCompanyInHubSpot,
+    createCompanyInHubSpot,
+    updateCompanyInHubSpot,
     isValidating: isValidatingProductora,
     validationMessage: validationMessageProductora,
     isCompanyFound: isProductoraFound,
@@ -47,6 +49,8 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
   
   const {
     searchCompanyInHubSpot: searchClienteFinalInHubSpot,
+    createCompanyInHubSpot: createClienteFinalInHubSpot,
+    updateCompanyInHubSpot: updateClienteFinalInHubSpot,
     isValidating: isValidatingClienteFinal,
     validationMessage: validationMessageClienteFinal,
     isCompanyFound: isClienteFinalFound,
@@ -181,7 +185,7 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
       return clienteFinal.nombre;
     }
   };
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!validarPaso()) {
       toast({
         title: "Campos requeridos",
@@ -190,7 +194,92 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
       });
       return;
     }
-    onNext();
+
+    try {
+      let hasErrors = false;
+
+      // Process Productora if selected
+      if (tipoCliente === 'productora' && productora.nombre) {
+        try {
+          const result = await searchCompanyInHubSpot(productora.nombre);
+          if (result?.found && result.company) {
+            // Update existing company in HubSpot
+            await updateCompanyInHubSpot({
+              nombre: productora.nombre,
+              rut: productora.rut,
+              direccion: productora.direccion,
+              sitio_web: productora.sitio_web,
+              tipoCliente: 'productora',
+              hubspotId: result.company.hubspotId
+            });
+          } else {
+            // Create new company in HubSpot
+            await createCompanyInHubSpot({
+              nombre: productora.nombre,
+              rut: productora.rut,
+              direccion: productora.direccion,
+              sitio_web: productora.sitio_web,
+              tipoCliente: 'productora'
+            });
+          }
+        } catch (error) {
+          console.error('Error processing Productora:', error);
+          hasErrors = true;
+        }
+      }
+
+      // Process Cliente Final if applicable
+      if ((tipoCliente === 'cliente_final' || tieneClienteFinal) && clienteFinal.nombre) {
+        try {
+          const result = await searchClienteFinalInHubSpot(clienteFinal.nombre);
+          if (result?.found && result.company) {
+            // Update existing company in HubSpot
+            await updateClienteFinalInHubSpot({
+              nombre: clienteFinal.nombre,
+              rut: clienteFinal.rut,
+              direccion: clienteFinal.direccion,
+              sitio_web: clienteFinal.sitio_web,
+              tipoCliente: 'cliente_final',
+              hubspotId: result.company.hubspotId
+            });
+          } else {
+            // Create new company in HubSpot
+            await createClienteFinalInHubSpot({
+              nombre: clienteFinal.nombre,
+              rut: clienteFinal.rut,
+              direccion: clienteFinal.direccion,
+              sitio_web: clienteFinal.sitio_web,
+              tipoCliente: 'cliente_final'
+            });
+          }
+        } catch (error) {
+          console.error('Error processing Cliente Final:', error);
+          hasErrors = true;
+        }
+      }
+
+      if (hasErrors) {
+        toast({
+          title: "Procesamiento completado",
+          description: "Algunas operaciones tuvieron problemas, pero se puede continuar.",
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "Empresas procesadas",
+          description: "Todas las empresas han sido sincronizadas correctamente.",
+        });
+      }
+
+      onNext();
+    } catch (error) {
+      console.error('Error general en el procesamiento:', error);
+      toast({
+        title: "Error",
+        description: "Hubo un problema al procesar las empresas.",
+        variant: "destructive"
+      });
+    }
   };
   return <div className="space-y-6">
       <div>
