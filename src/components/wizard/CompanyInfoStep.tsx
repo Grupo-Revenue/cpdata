@@ -72,22 +72,22 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
         // Only auto-fill if the company type matches what we're looking for
         if (mappedTipoCliente === 'productora') {
           // Update RUT validator with the found RUT first
-          if (company.rut) {
-            const result = rutProductoraValidator.handleChange(company.rut);
-            setProductora({
-              nombre: company.name,
-              rut: result.formattedValue,
-              direccion: company.address,
-              sitio_web: productora.sitio_web // Keep existing value
-            });
-          } else {
-            setProductora({
-              nombre: company.name,
-              rut: company.rut,
-              direccion: company.address,
-              sitio_web: productora.sitio_web // Keep existing value
-            });
-          }
+           if (company.rut) {
+             const result = rutProductoraValidator.handleChange(company.rut);
+             setProductora({
+               nombre: company.name,
+               rut: result.formattedValue,
+               direccion: company.address,
+               sitio_web: company.website || ''
+             });
+           } else {
+             setProductora({
+               nombre: company.name,
+               rut: company.rut,
+               direccion: company.address,
+               sitio_web: company.website || ''
+             });
+           }
         }
       }
     }
@@ -112,22 +112,22 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
         // Only auto-fill if the company type matches what we're looking for
         if (mappedTipoCliente === 'cliente_final') {
           // Update RUT validator with the found RUT first
-          if (company.rut) {
-            const result = rutValidator.handleChange(company.rut);
-            setClienteFinal({
-              nombre: company.name,
-              rut: result.formattedValue,
-              direccion: company.address,
-              sitio_web: clienteFinal.sitio_web // Keep existing value
-            });
-          } else {
-            setClienteFinal({
-              nombre: company.name,
-              rut: company.rut,
-              direccion: company.address,
-              sitio_web: clienteFinal.sitio_web // Keep existing value
-            });
-          }
+           if (company.rut) {
+             const result = rutValidator.handleChange(company.rut);
+             setClienteFinal({
+               nombre: company.name,
+               rut: result.formattedValue,
+               direccion: company.address,
+               sitio_web: company.website || ''
+             });
+           } else {
+             setClienteFinal({
+               nombre: company.name,
+               rut: company.rut,
+               direccion: company.address,
+               sitio_web: company.website || ''
+             });
+           }
         }
       }
     }

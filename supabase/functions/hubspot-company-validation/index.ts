@@ -112,7 +112,8 @@ serve(async (req) => {
             "tipo_de_cliente", 
             "rut_cliente_final",
             "rut_de_empresa",
-            "address"
+            "address",
+            "website"
           ],
           limit: 10
         })
@@ -163,7 +164,8 @@ serve(async (req) => {
             name: company.properties.name || '',
             tipoCliente: tipoCliente,
             rut: rut,
-            address: company.properties.address || ''
+            address: company.properties.address || '',
+            website: company.properties.website || ''
           }
         }), { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -184,7 +186,8 @@ serve(async (req) => {
       const properties: any = {
         name: companyData.nombre || '',
         tipo_de_cliente: companyData.tipoCliente || '',
-        address: companyData.direccion || ''
+        address: companyData.direccion || '',
+        website: companyData.sitio_web || ''
       }
       
       if (companyData.tipoCliente === 'Cliente Final') {
@@ -251,7 +254,8 @@ serve(async (req) => {
       const properties: any = {
         name: companyData.nombre || '',
         tipo_de_cliente: companyData.tipoCliente || '',
-        address: companyData.direccion || ''
+        address: companyData.direccion || '',
+        website: companyData.sitio_web || ''
       }
       
       if (companyData.tipoCliente === 'Cliente Final') {

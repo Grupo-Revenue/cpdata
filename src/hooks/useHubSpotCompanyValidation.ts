@@ -17,6 +17,7 @@ interface HubSpotCompany {
   tipoCliente: string;
   rut: string;
   address: string;
+  website: string;
 }
 
 interface ValidationResult {
