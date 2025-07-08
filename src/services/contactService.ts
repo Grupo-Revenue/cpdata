@@ -20,6 +20,7 @@ interface HubSpotContact {
 interface ProcessContactResult {
   success: boolean;
   contactId: string;
+  hubspotId?: string;
   error?: string;
   wasCreated?: boolean;
   wasUpdated?: boolean;
@@ -201,6 +202,7 @@ export const processContactForBusiness = async (
     return {
       success: true,
       contactId,
+      hubspotId: hubspotContact?.hubspotId,
       wasCreated,
       wasUpdated
     };

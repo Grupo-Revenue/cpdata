@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNegocio } from '@/context/NegocioContext';
 import { useHubSpotContactValidation } from '@/hooks/useHubSpotContactValidation';
 import { useHubSpotCompanyValidation } from '@/hooks/useHubSpotCompanyValidation';
+import { useHubSpotDealCreation } from '@/hooks/useHubSpotDealCreation';
 import { toast } from '@/hooks/use-toast';
 import { processContactForBusiness } from '@/services/contactService';
 import { createBusinessFromWizard } from '@/services/wizardBusinessService';
@@ -28,6 +29,11 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
     createCompanyInHubSpot,
     updateCompanyInHubSpot
   } = useHubSpotCompanyValidation();
+
+  const {
+    generateUniqueCorrelative,
+    createDealInHubSpot
+  } = useHubSpotDealCreation();
 
   const [wizardState, setWizardState] = useState<WizardState>({
     paso: 1,
@@ -128,7 +134,11 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
           createCompanyInHubSpot,
           updateCompanyInHubSpot
         },
-        crearNegocio
+        crearNegocio,
+        hubspotDealOperations: {
+          generateUniqueCorrelative,
+          createDealInHubSpot
+        }
       });
 
       onComplete(negocioId);

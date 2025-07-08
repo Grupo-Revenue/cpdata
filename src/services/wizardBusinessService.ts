@@ -3,6 +3,7 @@ import { toast } from '@/hooks/use-toast';
 import { processContactForBusiness } from '@/services/contactService';
 import { useNegocio } from '@/context/NegocioContext';
 import { WizardState } from '@/components/wizard/types';
+import { useHubSpotDealCreation } from '@/hooks/useHubSpotDealCreation';
 
 // Helper function to process companies with HubSpot
 const processCompanyForBusiness = async (
@@ -72,12 +73,17 @@ interface BusinessCreationParams {
     updateCompanyInHubSpot: (companyData: any) => Promise<any>;
   };
   crearNegocio: ReturnType<typeof useNegocio>['crearNegocio'];
+  hubspotDealOperations: {
+    generateUniqueCorrelative: () => Promise<any>;
+    createDealInHubSpot: (dealData: any) => Promise<any>;
+  };
 }
 
 export const createBusinessFromWizard = async ({
   wizardState,
   hubspotOperations,
-  crearNegocio
+  crearNegocio,
+  hubspotDealOperations
 }: BusinessCreationParams): Promise<string> => {
   const { contacto, tipoCliente, productora, tieneClienteFinal, clienteFinal, evento, fechaCierre } = wizardState;
 
@@ -236,7 +242,18 @@ export const createBusinessFromWizard = async ({
     }
   }
 
-  // Step 4: Create the business using the processed contact ID
+  // Step 4: Generate unique correlative for the business
+  console.log('Generating unique correlative number...');
+  const correlativeResult = await hubspotDealOperations.generateUniqueCorrelative();
+  
+  if (!correlativeResult.success) {
+    throw new Error(`Error generando número correlativo: ${correlativeResult.error}`);
+  }
+
+  const numeroCorrelativo = correlativeResult.correlative;
+  console.log('Generated correlative:', numeroCorrelativo);
+
+  // Step 5: Create the business in local database first
   const negocioData = {
     contactoId: contactResult.contactId,
     productora: tipoCliente === 'productora' && productoraId ? {
@@ -258,7 +275,8 @@ export const createBusinessFromWizard = async ({
     cantidad_asistentes: parseInt(evento.cantidad_asistentes) || 0,
     cantidad_invitados: parseInt(evento.cantidad_invitados) || 0,
     locacion: evento.locacion,
-    fecha_cierre: fechaCierre || undefined
+    fecha_cierre: fechaCierre || undefined,
+    numero: parseInt(numeroCorrelativo) // Add the correlative number
   };
 
   console.log('Creating business with data:', negocioData);
@@ -269,10 +287,73 @@ export const createBusinessFromWizard = async ({
     throw new Error('No se pudo crear el negocio');
   }
 
-  toast({
-    title: "Negocio creado exitosamente",
-    description: "El negocio ha sido creado y el contacto sincronizado correctamente.",
-  });
+  // Step 6: Create deal in HubSpot with all associations
+  console.log('Creating deal in HubSpot...');
+  try {
+    // Get HubSpot IDs for contact and companies
+    const contactHubSpotId = contactResult.hubspotId;
+    let productoraHubSpotId = null;
+    let clienteFinalHubSpotId = null;
+
+    // Get productora HubSpot ID if exists
+    if (tipoCliente === 'productora' && productora.nombre) {
+      const productoraSearch = await hubspotOperations.searchCompanyInHubSpot(productora.nombre);
+      if (productoraSearch?.found && productoraSearch.company) {
+        productoraHubSpotId = productoraSearch.company.hubspotId;
+      }
+    }
+
+    // Get cliente final HubSpot ID if exists
+    if ((tipoCliente === 'cliente_final' || tieneClienteFinal) && clienteFinal.nombre) {
+      const clienteFinalSearch = await hubspotOperations.searchCompanyInHubSpot(clienteFinal.nombre);
+      if (clienteFinalSearch?.found && clienteFinalSearch.company) {
+        clienteFinalHubSpotId = clienteFinalSearch.company.hubspotId;
+      }
+    }
+
+    // Prepare deal data for HubSpot
+    const hubspotDealData = {
+      nombre_correlativo: numeroCorrelativo,
+      tipo_evento: evento.tipo_evento,
+      nombre_evento: evento.nombre_evento,
+      valor_negocio: 0, // Default value, can be updated later
+      fecha_evento: evento.fecha_evento,
+      fecha_evento_fin: evento.fecha_evento_fin,
+      horario_inicio: evento.horario_inicio,
+      horario_fin: evento.horario_fin,
+      fecha_cierre: fechaCierre,
+      locacion: evento.locacion,
+      cantidad_invitados: parseInt(evento.cantidad_invitados) || 0,
+      cantidad_asistentes: parseInt(evento.cantidad_asistentes) || 0,
+      contactId: contactHubSpotId,
+      productoraId: productoraHubSpotId,
+      clienteFinalId: clienteFinalHubSpotId
+    };
+
+    const dealResult = await hubspotDealOperations.createDealInHubSpot(hubspotDealData);
+    
+    if (dealResult.success) {
+      console.log('Deal created in HubSpot:', dealResult.deal?.hubspotId);
+      toast({
+        title: "Negocio creado exitosamente",
+        description: `El negocio ${numeroCorrelativo} ha sido creado y sincronizado con HubSpot.`,
+      });
+    } else {
+      console.error('Failed to create deal in HubSpot:', dealResult.error);
+      toast({
+        title: "Negocio creado localmente",
+        description: "El negocio fue creado pero no se pudo sincronizar con HubSpot.",
+        variant: "destructive"
+      });
+    }
+  } catch (error) {
+    console.error('Error creating deal in HubSpot:', error);
+    toast({
+      title: "Negocio creado localmente",
+      description: "El negocio fue creado pero no se pudo sincronizar con HubSpot.",
+      variant: "destructive"
+    });
+  }
 
   return negocioCreado.id;
 };
