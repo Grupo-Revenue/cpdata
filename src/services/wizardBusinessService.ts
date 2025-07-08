@@ -250,7 +250,8 @@ export const createBusinessFromWizard = async ({
     throw new Error(`Error generando número correlativo: ${correlativeResult.error}`);
   }
 
-  const numeroCorrelativo = correlativeResult.correlative;
+  const numeroCorrelativo = correlativeResult.correlative; // Now comes as "#17662"
+  const numeroSinFormato = parseInt(numeroCorrelativo.replace('#', '')); // Extract number for database
   console.log('Generated correlative:', numeroCorrelativo);
 
   // Step 5: Create the business in local database first
@@ -276,7 +277,7 @@ export const createBusinessFromWizard = async ({
     cantidad_invitados: parseInt(evento.cantidad_invitados) || 0,
     locacion: evento.locacion,
     fecha_cierre: fechaCierre || undefined,
-    numero: parseInt(numeroCorrelativo) // Add the correlative number
+    numero: numeroSinFormato // Add the correlative number
   };
 
   console.log('Creating business with data:', negocioData);

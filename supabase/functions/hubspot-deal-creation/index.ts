@@ -267,7 +267,7 @@ async function generateUniqueCorrelative(hubspotApiKey: string, supabase: any, u
 
   while (attempts < maxAttempts) {
     currentNumber++;
-    const correlativeNumber = currentNumber.toString().padStart(6, '0');
+    const correlativeNumber = `#${currentNumber}`;
     
     // Check if exists in local database
     const { data: localExists } = await supabase
