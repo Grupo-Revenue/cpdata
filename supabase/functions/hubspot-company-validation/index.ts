@@ -111,7 +111,7 @@ serve(async (req) => {
             "name",
             "tipo_de_cliente", 
             "rut_cliente_final",
-            "rut_productora",
+            "rut_de_empresa",
             "address"
           ],
           limit: 10
@@ -145,12 +145,12 @@ serve(async (req) => {
         let rut = ''
         console.log(`Company details - Name: "${company.properties.name}", Type: "${tipoCliente}"`)
         console.log(`Available properties:`, Object.keys(company.properties))
-        console.log(`RUT fields - rut_cliente_final: "${company.properties.rut_cliente_final || 'EMPTY'}", rut_productora: "${company.properties.rut_productora || 'EMPTY'}"`)
+        console.log(`RUT fields - rut_cliente_final: "${company.properties.rut_cliente_final || 'EMPTY'}", rut_de_empresa: "${company.properties.rut_de_empresa || 'EMPTY'}"`)
         
         if (tipoCliente === 'Cliente Final') {
           rut = company.properties.rut_cliente_final || ''
         } else if (tipoCliente === 'Productora') {
-          rut = company.properties.rut_productora || ''
+          rut = company.properties.rut_de_empresa || ''
         }
         
         console.log(`Final RUT value: "${rut}"`)
@@ -190,7 +190,7 @@ serve(async (req) => {
       if (companyData.tipoCliente === 'Cliente Final') {
         properties.rut_cliente_final = companyData.rut || ''
       } else if (companyData.tipoCliente === 'Productora') {
-        properties.rut_productora = companyData.rut || ''
+        properties.rut_de_empresa = companyData.rut || ''
       }
       
       // Create new company in HubSpot using the correct companies API
@@ -257,7 +257,7 @@ serve(async (req) => {
       if (companyData.tipoCliente === 'Cliente Final') {
         properties.rut_cliente_final = companyData.rut || ''
       } else if (companyData.tipoCliente === 'Productora') {
-        properties.rut_productora = companyData.rut || ''
+        properties.rut_de_empresa = companyData.rut || ''
       }
 
       // Update company in HubSpot
