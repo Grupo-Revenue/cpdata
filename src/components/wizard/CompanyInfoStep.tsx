@@ -111,16 +111,22 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
         
         // Only auto-fill if the company type matches what we're looking for
         if (mappedTipoCliente === 'cliente_final') {
-          setClienteFinal({
-            nombre: company.name,
-            rut: company.rut,
-            direccion: company.address,
-            sitio_web: clienteFinal.sitio_web // Keep existing value
-          });
-          
-          // Update RUT validator
+          // Update RUT validator with the found RUT first
           if (company.rut) {
-            rutValidator.handleChange(company.rut);
+            const result = rutValidator.handleChange(company.rut);
+            setClienteFinal({
+              nombre: company.name,
+              rut: result.formattedValue,
+              direccion: company.address,
+              sitio_web: clienteFinal.sitio_web // Keep existing value
+            });
+          } else {
+            setClienteFinal({
+              nombre: company.name,
+              rut: company.rut,
+              direccion: company.address,
+              sitio_web: clienteFinal.sitio_web // Keep existing value
+            });
           }
         }
       }
