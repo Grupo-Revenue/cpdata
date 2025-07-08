@@ -116,8 +116,19 @@ export const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
               type="email"
               value={emailValidator.value}
               onChange={(e) => {
-                emailValidator.handleChange(e.target.value);
-                setContacto({...contacto, email: e.target.value});
+                // Clear other fields when searching by email
+                const email = e.target.value;
+                emailValidator.handleChange(email);
+                setContacto({
+                  email: email,
+                  nombre: '',
+                  apellido: '',
+                  telefono: '',
+                  cargo: ''
+                });
+                
+                // Clear phone validator
+                phoneValidator.reset();
               }}
               placeholder="contacto@empresa.com"
               className={emailValidator.error ? 'border-destructive' : ''}
