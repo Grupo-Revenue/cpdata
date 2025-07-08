@@ -59,10 +59,16 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
 
   // Handle productora name validation
   const handleProductoraNameChange = async (name: string) => {
+    // Clear other fields when searching
     setProductora({
-      ...productora,
-      nombre: name
+      nombre: name,
+      rut: '',
+      direccion: '',
+      sitio_web: ''
     });
+    
+    // Clear RUT validator
+    rutProductoraValidator.reset();
 
     if (name.trim().length > 2) {
       const result = await searchCompanyInHubSpot(name);
@@ -99,10 +105,16 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
 
   // Handle cliente final name validation
   const handleClienteFinalNameChange = async (name: string) => {
+    // Clear other fields when searching
     setClienteFinal({
-      ...clienteFinal,
-      nombre: name
+      nombre: name,
+      rut: '',
+      direccion: '',
+      sitio_web: ''
     });
+    
+    // Clear RUT validator
+    rutValidator.reset();
 
     if (name.trim().length > 2) {
       const result = await searchClienteFinalInHubSpot(name);
