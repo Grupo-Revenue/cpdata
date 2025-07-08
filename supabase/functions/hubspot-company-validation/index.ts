@@ -88,7 +88,7 @@ serve(async (req) => {
     if (action === 'search') {
       console.log('Searching for company with name:', companyName)
       
-      // Search for company by name using the correct companies API
+      // Search for company by name using case-insensitive search
       const searchResponse = await fetch('https://api.hubapi.com/crm/v3/objects/companies/search', {
         method: 'POST',
         headers: {
@@ -101,7 +101,7 @@ serve(async (req) => {
               filters: [
                 {
                   propertyName: "name",
-                  operator: "EQ",
+                  operator: "CONTAINS_TOKEN",
                   value: companyName
                 }
               ]
@@ -109,12 +109,12 @@ serve(async (req) => {
           ],
           properties: [
             "name",
-            "tipo_de_cliente",
+            "tipo_de_cliente", 
             "rut_cliente_final",
             "rut_productora",
             "address"
           ],
-          limit: 1
+          limit: 10
         })
       })
 
