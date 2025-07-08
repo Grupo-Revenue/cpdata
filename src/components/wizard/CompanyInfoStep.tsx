@@ -138,6 +138,38 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
     clearProductoraValidation();
     clearClienteFinalValidation();
   }, [tipoCliente, clearProductoraValidation, clearClienteFinalValidation]);
+
+  // Clear data when client type changes
+  useEffect(() => {
+    setProductora({
+      nombre: '',
+      rut: '',
+      sitio_web: '',
+      direccion: ''
+    });
+    setClienteFinal({
+      nombre: '',
+      rut: '',
+      sitio_web: '',
+      direccion: ''
+    });
+    // Reset RUT validators
+    rutValidator.reset();
+    rutProductoraValidator.reset();
+  }, [tipoCliente]);
+
+  // Clear cliente final data when checkbox changes
+  useEffect(() => {
+    if (!tieneClienteFinal) {
+      setClienteFinal({
+        nombre: '',
+        rut: '',
+        sitio_web: '',
+        direccion: ''
+      });
+      rutValidator.reset();
+    }
+  }, [tieneClienteFinal]);
   const validarPaso = () => {
     if (tipoCliente === 'productora') {
       const productoraValida = productora.nombre;
