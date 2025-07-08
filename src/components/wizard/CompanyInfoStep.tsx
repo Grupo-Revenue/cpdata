@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Search } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useChileanRutValidator } from '@/hooks/useChileanRutValidator';
 import { useHubSpotCompanyValidation } from '@/hooks/useHubSpotCompanyValidation';
@@ -167,17 +167,31 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="productoraNombre">Nombre de la Productora *</Label>
-              <div className="relative">
-                <Input 
-                  id="productoraNombre" 
-                  value={productora.nombre} 
-                  onChange={e => handleProductoraNameChange(e.target.value)}
-                  placeholder="Nombre de la productora" 
-                  className={isProductoraFound === true ? 'border-green-500' : isProductoraFound === false ? 'border-orange-500' : ''}
-                />
-                {isValidatingProductora && (
-                  <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-                )}
+              <div className="relative flex gap-2">
+                <div className="relative flex-1">
+                  <Input 
+                    id="productoraNombre" 
+                    value={productora.nombre} 
+                    onChange={e => handleProductoraNameChange(e.target.value)}
+                    placeholder="Nombre de la productora" 
+                    className={isProductoraFound === true ? 'border-green-500' : isProductoraFound === false ? 'border-orange-500' : ''}
+                  />
+                  {isValidatingProductora && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center justify-center">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    </div>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleProductoraNameChange(productora.nombre)}
+                  disabled={!productora.nombre.trim() || isValidatingProductora}
+                  className="shrink-0"
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
               </div>
               {validationMessageProductora && (
                 <p className={`text-xs mt-1 ${
@@ -227,17 +241,31 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="clienteNombre">Nombre del Cliente Final *</Label>
-              <div className="relative">
-                <Input 
-                  id="clienteNombre" 
-                  value={clienteFinal.nombre} 
-                  onChange={e => handleClienteFinalNameChange(e.target.value)}
-                  placeholder="Nombre del cliente final" 
-                  className={isClienteFinalFound === true ? 'border-green-500' : isClienteFinalFound === false ? 'border-orange-500' : ''}
-                />
-                {isValidatingClienteFinal && (
-                  <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-                )}
+              <div className="relative flex gap-2">
+                <div className="relative flex-1">
+                  <Input 
+                    id="clienteNombre" 
+                    value={clienteFinal.nombre} 
+                    onChange={e => handleClienteFinalNameChange(e.target.value)}
+                    placeholder="Nombre del cliente final" 
+                    className={isClienteFinalFound === true ? 'border-green-500' : isClienteFinalFound === false ? 'border-orange-500' : ''}
+                  />
+                  {isValidatingClienteFinal && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center justify-center">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    </div>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleClienteFinalNameChange(clienteFinal.nombre)}
+                  disabled={!clienteFinal.nombre.trim() || isValidatingClienteFinal}
+                  className="shrink-0"
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
               </div>
               {validationMessageClienteFinal && (
                 <p className={`text-xs mt-1 ${
