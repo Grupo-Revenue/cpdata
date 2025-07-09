@@ -156,26 +156,22 @@ const SyncConfiguration = () => {
       <CardHeader>
         <CardTitle>Mapeo de Estados con HubSpot</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-4">
+      <CardContent className="space-y-3">
+        <div className="space-y-2">
           {ESTADOS_NEGOCIO.map(estado => (
-            <div key={estado.value} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
-              <div className="flex items-center">
-                <Label className="font-medium">{estado.label}</Label>
+            <div key={estado.value} className="flex items-center gap-3 p-2 border rounded-md">
+              <div className="min-w-0 flex-1">
+                <Label className="text-sm font-medium">{estado.label}</Label>
               </div>
               
-              <div>
-                <Label htmlFor={`stage-id-${estado.value}`} className="text-sm">ID de Etapa HubSpot</Label>
+              <div className="flex-1 max-w-xs">
                 <Input
                   id={`stage-id-${estado.value}`}
                   value={mappings[estado.value]?.stage_id || ''}
                   onChange={(e) => handleMappingChange(estado.value, 'stage_id', e.target.value)}
-                  placeholder="Ej: appointment_scheduled, qualified_to_buy"
-                  className="font-mono text-sm"
+                  placeholder="ID de etapa"
+                  className="font-mono text-xs h-8"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Ingresa el ID exacto de la etapa en HubSpot
-                </p>
               </div>
             </div>
           ))}
