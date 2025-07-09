@@ -198,7 +198,16 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
     }
   };
   const handleNext = async () => {
+    console.log('[CompanyInfoStep] handleNext called with:', {
+      tipoCliente,
+      productora,
+      tieneClienteFinal,
+      clienteFinal,
+      validationPassed: validarPaso()
+    });
+
     if (!validarPaso()) {
+      console.log('[CompanyInfoStep] Validation failed');
       toast({
         title: "Campos requeridos",
         description: "Por favor complete todos los campos obligatorios",
@@ -209,14 +218,18 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
 
     try {
       let hasErrors = false;
+      console.log('[CompanyInfoStep] Starting company processing...');
 
       // Process Productora if selected
       if (tipoCliente === 'productora' && productora.nombre) {
+        console.log('[CompanyInfoStep] Processing productora:', productora.nombre);
         try {
           const result = await searchCompanyInHubSpot(productora.nombre);
+          console.log('[CompanyInfoStep] Productora search result:', result);
+          
           if (result?.found && result.company) {
-            // Update existing company in HubSpot
-            await updateCompanyInHubSpot({
+            console.log('[CompanyInfoStep] Updating existing productora in HubSpot');
+            const updateResult = await updateCompanyInHubSpot({
               nombre: productora.nombre,
               rut: productora.rut,
               direccion: productora.direccion,
@@ -224,29 +237,34 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
               tipoCliente: 'productora',
               hubspotId: result.company.hubspotId
             });
+            console.log('[CompanyInfoStep] Productora update result:', updateResult);
           } else {
-            // Create new company in HubSpot
-            await createCompanyInHubSpot({
+            console.log('[CompanyInfoStep] Creating new productora in HubSpot');
+            const createResult = await createCompanyInHubSpot({
               nombre: productora.nombre,
               rut: productora.rut,
               direccion: productora.direccion,
               sitio_web: productora.sitio_web,
               tipoCliente: 'productora'
             });
+            console.log('[CompanyInfoStep] Productora create result:', createResult);
           }
         } catch (error) {
-          console.error('Error processing Productora:', error);
+          console.error('[CompanyInfoStep] Error processing Productora:', error);
           hasErrors = true;
         }
       }
 
       // Process Cliente Final if applicable
       if ((tipoCliente === 'cliente_final' || tieneClienteFinal) && clienteFinal.nombre) {
+        console.log('[CompanyInfoStep] Processing cliente final:', clienteFinal.nombre);
         try {
           const result = await searchClienteFinalInHubSpot(clienteFinal.nombre);
+          console.log('[CompanyInfoStep] Cliente final search result:', result);
+          
           if (result?.found && result.company) {
-            // Update existing company in HubSpot
-            await updateClienteFinalInHubSpot({
+            console.log('[CompanyInfoStep] Updating existing cliente final in HubSpot');
+            const updateResult = await updateClienteFinalInHubSpot({
               nombre: clienteFinal.nombre,
               rut: clienteFinal.rut,
               direccion: clienteFinal.direccion,
@@ -254,21 +272,25 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
               tipoCliente: 'cliente_final',
               hubspotId: result.company.hubspotId
             });
+            console.log('[CompanyInfoStep] Cliente final update result:', updateResult);
           } else {
-            // Create new company in HubSpot
-            await createClienteFinalInHubSpot({
+            console.log('[CompanyInfoStep] Creating new cliente final in HubSpot');
+            const createResult = await createClienteFinalInHubSpot({
               nombre: clienteFinal.nombre,
               rut: clienteFinal.rut,
               direccion: clienteFinal.direccion,
               sitio_web: clienteFinal.sitio_web,
               tipoCliente: 'cliente_final'
             });
+            console.log('[CompanyInfoStep] Cliente final create result:', createResult);
           }
         } catch (error) {
-          console.error('Error processing Cliente Final:', error);
+          console.error('[CompanyInfoStep] Error processing Cliente Final:', error);
           hasErrors = true;
         }
       }
+
+      console.log('[CompanyInfoStep] Company processing completed. HasErrors:', hasErrors);
 
       if (hasErrors) {
         toast({
@@ -278,6 +300,7 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
         });
         return;
       } else {
+        console.log('[CompanyInfoStep] All companies processed successfully, proceeding to next step');
         toast({
           title: "Empresas procesadas",
           description: "Todas las empresas han sido sincronizadas correctamente.",
@@ -285,7 +308,7 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
         onNext();
       }
     } catch (error) {
-      console.error('Error general en el procesamiento:', error);
+      console.error('[CompanyInfoStep] Error general en el procesamiento:', error);
       toast({
         title: "Error",
         description: "Hubo un problema al procesar las empresas.",
