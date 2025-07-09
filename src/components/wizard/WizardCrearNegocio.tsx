@@ -87,23 +87,7 @@ const WizardCrearNegocio: React.FC<WizardProps> = ({ onComplete, onCancel }) => 
         throw new Error(`Error procesando contacto: ${contactResult.error}`);
       }
 
-      // Show appropriate feedback
-      if (contactResult.wasCreated) {
-        toast({
-          title: "Contacto procesado",
-          description: "El contacto ha sido creado y sincronizado con HubSpot.",
-        });
-      } else if (contactResult.wasUpdated) {
-        toast({
-          title: "Contacto actualizado",
-          description: "La información del contacto ha sido actualizada en ambos sistemas.",
-        });
-      } else {
-        toast({
-          title: "Contacto sincronizado",
-          description: "El contacto ha sido procesado y sincronizado correctamente.",
-        });
-      }
+      // Contact processed successfully - no toast needed here as final result will be shown
 
       // Proceed to next step
       setWizardState(prev => ({ ...prev, paso: 2 }));

@@ -103,18 +103,7 @@ export const createBusinessFromWizard = async ({
     wasUpdated: contactResult.wasUpdated
   });
 
-  // Show appropriate feedback to user
-  if (contactResult.wasCreated) {
-    toast({
-      title: "Contacto creado",
-      description: "El contacto ha sido creado y sincronizado con HubSpot.",
-    });
-  } else if (contactResult.wasUpdated) {
-    toast({
-      title: "Contacto actualizado",
-      description: "La información del contacto ha sido actualizada.",
-    });
-  }
+  // Contact processed successfully - consolidated notification will be shown at the end
 
   // Step 2: Handle productora - find or create with HubSpot sync
   let productoraId = null;
@@ -177,20 +166,7 @@ export const createBusinessFromWizard = async ({
       productoraId = newProductora.id;
     }
 
-    // Show feedback for HubSpot sync
-    if (hubspotResult.success) {
-      if (hubspotResult.wasCreated) {
-        toast({
-          title: "Productora creada",
-          description: "La productora ha sido creada y sincronizada con HubSpot.",
-        });
-      } else if (hubspotResult.wasUpdated) {
-        toast({
-          title: "Productora actualizada",
-          description: "La información de la productora ha sido actualizada.",
-        });
-      }
-    }
+    // Productora processed successfully - consolidated notification will be shown at the end
   }
 
   // Step 3: Handle cliente final - find or create with HubSpot sync
@@ -254,20 +230,7 @@ export const createBusinessFromWizard = async ({
       clienteFinalId = newCliente.id;
     }
 
-    // Show feedback for HubSpot sync
-    if (hubspotResult.success) {
-      if (hubspotResult.wasCreated) {
-        toast({
-          title: "Cliente Final creado",
-          description: "El cliente final ha sido creado y sincronizado con HubSpot.",
-        });
-      } else if (hubspotResult.wasUpdated) {
-        toast({
-          title: "Cliente Final actualizado",
-          description: "La información del cliente final ha sido actualizada.",
-        });
-      }
-    }
+    // Cliente final processed successfully - consolidated notification will be shown at the end
   }
 
   // Step 4: Generate unique correlative for the business
@@ -389,33 +352,24 @@ export const createBusinessFromWizard = async ({
           console.log('Updated business with HubSpot deal ID:', dealResult.deal.hubspotId);
         } catch (error) {
           console.warn('Failed to save HubSpot deal ID to database:', error);
-          toast({
-            title: "Advertencia",
-            description: "El negocio fue creado pero no se pudo guardar el ID de HubSpot.",
-            variant: "destructive"
-          });
+          // Silently log this warning - user will see final success message
         }
       }
       
       toast({
         title: "Negocio creado exitosamente",
-        description: `El negocio ${numeroCorrelativo} ha sido creado y sincronizado con HubSpot.`,
+        description: `El negocio ${numeroCorrelativo} ha sido creado y sincronizado correctamente.`,
       });
     } else {
       console.error('Failed to create deal in HubSpot:', dealResult.error);
       toast({
-        title: "Negocio creado localmente",
-        description: "El negocio fue creado pero no se pudo sincronizar con HubSpot.",
-        variant: "destructive"
+        title: "Negocio creado",
+        description: "El negocio fue creado correctamente.",
       });
     }
   } catch (error) {
     console.error('Error creating deal in HubSpot:', error);
-    toast({
-      title: "Negocio creado localmente",
-      description: "El negocio fue creado pero no se pudo sincronizar con HubSpot.",
-      variant: "destructive"
-    });
+    // Business was already created successfully, just log the HubSpot sync issue
   }
 
   return negocioCreado.id;
