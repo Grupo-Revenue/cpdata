@@ -319,24 +319,39 @@ export const createBusinessFromWizard = async ({
   // Step 6: Create deal in HubSpot with all associations
   console.log('Creating deal in HubSpot...');
   try {
-    // Get HubSpot IDs for contact and companies
+    // Get HubSpot IDs for contact and companies from local database
     const contactHubSpotId = contactResult.hubspotId;
     let productoraHubSpotId = null;
     let clienteFinalHubSpotId = null;
 
-    // Get productora HubSpot ID if exists
-    if (tipoCliente === 'productora' && productora.nombre) {
-      const productoraSearch = await hubspotOperations.searchCompanyInHubSpot(productora.nombre);
-      if (productoraSearch?.found && productoraSearch.company) {
-        productoraHubSpotId = productoraSearch.company.hubspotId;
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) throw new Error('Usuario no autenticado');
+
+    // Get productora HubSpot ID from local database if exists
+    if (tipoCliente === 'productora' && productora.nombre && productoraId) {
+      const { data: productoraData, error: productoraError } = await supabase
+        .from('empresas')
+        .select('hubspot_id')
+        .eq('id', productoraId)
+        .single();
+      
+      if (!productoraError && productoraData?.hubspot_id) {
+        productoraHubSpotId = productoraData.hubspot_id;
+        console.log('Found productora HubSpot ID from database:', productoraHubSpotId);
       }
     }
 
-    // Get cliente final HubSpot ID if exists
-    if ((tipoCliente === 'cliente_final' || tieneClienteFinal) && clienteFinal.nombre) {
-      const clienteFinalSearch = await hubspotOperations.searchCompanyInHubSpot(clienteFinal.nombre);
-      if (clienteFinalSearch?.found && clienteFinalSearch.company) {
-        clienteFinalHubSpotId = clienteFinalSearch.company.hubspotId;
+    // Get cliente final HubSpot ID from local database if exists
+    if ((tipoCliente === 'cliente_final' || tieneClienteFinal) && clienteFinal.nombre && clienteFinalId) {
+      const { data: clienteFinalData, error: clienteFinalError } = await supabase
+        .from('empresas')
+        .select('hubspot_id')
+        .eq('id', clienteFinalId)
+        .single();
+      
+      if (!clienteFinalError && clienteFinalData?.hubspot_id) {
+        clienteFinalHubSpotId = clienteFinalData.hubspot_id;
+        console.log('Found cliente final HubSpot ID from database:', clienteFinalHubSpotId);
       }
     }
 
