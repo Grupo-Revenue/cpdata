@@ -93,6 +93,10 @@ const SyncConfiguration = () => {
     try {
       setSaving(true);
       
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
+      
       // Delete existing mappings
       await supabase
         .from('hubspot_stage_mapping')
@@ -108,7 +112,7 @@ const SyncConfiguration = () => {
         const mappingsWithUserId = mappingsToInsert.map(mapping => ({
           estado_negocio: mapping.estado_negocio,
           stage_id: mapping.stage_id,
-          user_id: undefined // Will be set by RLS
+          user_id: user.id
         }));
         
         const { error } = await supabase
