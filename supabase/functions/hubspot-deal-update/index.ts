@@ -143,7 +143,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           properties: {
-            dealstage: stageMapping.stage_id
+            dealname: stageMapping.stage_id
           }
         })
       }
