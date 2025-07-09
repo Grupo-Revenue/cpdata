@@ -190,6 +190,11 @@ export const useHubSpotStateSync = () => {
               });
             } else {
               console.log('✅ [HubSpot Sync] Successfully synced amount to HubSpot:', data);
+              toast({
+                title: "Sincronización exitosa",
+                description: `Valor actualizado en HubSpot: ${new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(newAmount)}`,
+                className: "bg-green-50 border-green-200"
+              });
             }
           } catch (error) {
             console.error('❌ [HubSpot Sync] Unexpected error during amount sync:', error);
