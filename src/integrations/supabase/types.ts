@@ -62,6 +62,7 @@ export type Database = {
           cargo: string | null
           created_at: string
           email: string
+          hubspot_id: string | null
           id: string
           nombre: string
           telefono: string
@@ -73,6 +74,7 @@ export type Database = {
           cargo?: string | null
           created_at?: string
           email: string
+          hubspot_id?: string | null
           id?: string
           nombre: string
           telefono: string
@@ -84,6 +86,7 @@ export type Database = {
           cargo?: string | null
           created_at?: string
           email?: string
+          hubspot_id?: string | null
           id?: string
           nombre?: string
           telefono?: string
@@ -114,6 +117,7 @@ export type Database = {
         Row: {
           created_at: string
           direccion: string | null
+          hubspot_id: string | null
           id: string
           nombre: string
           rut: string | null
@@ -125,6 +129,7 @@ export type Database = {
         Insert: {
           created_at?: string
           direccion?: string | null
+          hubspot_id?: string | null
           id?: string
           nombre: string
           rut?: string | null
@@ -136,6 +141,7 @@ export type Database = {
         Update: {
           created_at?: string
           direccion?: string | null
+          hubspot_id?: string | null
           id?: string
           nombre?: string
           rut?: string | null
@@ -214,6 +220,7 @@ export type Database = {
           fecha_cierre: string | null
           fecha_evento: string | null
           horas_acreditacion: string
+          hubspot_id: string | null
           id: string
           locacion: string
           nombre_evento: string
@@ -233,6 +240,7 @@ export type Database = {
           fecha_cierre?: string | null
           fecha_evento?: string | null
           horas_acreditacion: string
+          hubspot_id?: string | null
           id?: string
           locacion: string
           nombre_evento: string
@@ -252,6 +260,7 @@ export type Database = {
           fecha_cierre?: string | null
           fecha_evento?: string | null
           horas_acreditacion?: string
+          hubspot_id?: string | null
           id?: string
           locacion?: string
           nombre_evento?: string

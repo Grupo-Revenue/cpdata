@@ -32,6 +32,7 @@ interface CreateUpdateResult {
   updated?: boolean;
   message?: string;
   error?: string;
+  hubspotId?: string;
 }
 
 export const useHubSpotContactValidation = () => {
@@ -129,7 +130,8 @@ export const useHubSpotContactValidation = () => {
         success: true,
         created: true,
         contact: data.contact,
-        message: data.message
+        message: data.message,
+        hubspotId: data.contact?.hubspotId
       };
 
     } catch (error) {
@@ -171,7 +173,8 @@ export const useHubSpotContactValidation = () => {
         success: true,
         updated: true,
         contact: data.contact,
-        message: data.message
+        message: data.message,
+        hubspotId: data.contact?.hubspotId
       };
 
     } catch (error) {

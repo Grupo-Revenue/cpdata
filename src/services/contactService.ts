@@ -120,7 +120,8 @@ export const processContactForBusiness = async (
         apellido: hubspotContact?.lastname || contactData.apellido,
         email: normalizedEmail,
         telefono: hubspotContact?.phone || contactData.telefono,
-        cargo: contactData.cargo || null
+        cargo: contactData.cargo || null,
+        hubspot_id: hubspotContact?.hubspotId || null
       };
 
       const { data: newContact, error: createError } = await supabase
@@ -142,28 +143,42 @@ export const processContactForBusiness = async (
       contactId = existingLocalContact.id;
       console.log('Contact found in local database:', contactId);
 
-      // Check if we need to update local data with HubSpot data
-      if (hubspotContact && hasContactChanges(existingLocalContact, hubspotContact)) {
-        console.log('Updating local contact with HubSpot data...');
-        
-        const updatedContactData = {
-          nombre: hubspotContact.firstname || existingLocalContact.nombre,
-          apellido: hubspotContact.lastname || existingLocalContact.apellido,
-          telefono: hubspotContact.phone || existingLocalContact.telefono,
-          updated_at: new Date().toISOString()
-        };
+      // Check if we need to update local data with HubSpot data or save HubSpot ID
+      if (hubspotContact) {
+        const updateData: any = {};
+        let shouldUpdate = false;
 
-        const { error: updateError } = await supabase
-          .from('contactos')
-          .update(updatedContactData)
-          .eq('id', contactId);
+        // Check if we need to save the HubSpot ID
+        if (!existingLocalContact.hubspot_id && hubspotContact.hubspotId) {
+          updateData.hubspot_id = hubspotContact.hubspotId;
+          shouldUpdate = true;
+          console.log('Adding HubSpot ID to existing contact:', hubspotContact.hubspotId);
+        }
 
-        if (updateError) {
-          console.error('Error updating local contact:', updateError);
-          // Don't fail the entire process for update errors
-        } else {
-          wasUpdated = true;
-          console.log('Local contact updated successfully');
+        // Check if we need to update contact data
+        if (hasContactChanges(existingLocalContact, hubspotContact)) {
+          updateData.nombre = hubspotContact.firstname || existingLocalContact.nombre;
+          updateData.apellido = hubspotContact.lastname || existingLocalContact.apellido;
+          updateData.telefono = hubspotContact.phone || existingLocalContact.telefono;
+          shouldUpdate = true;
+          console.log('Updating local contact with HubSpot data...');
+        }
+
+        if (shouldUpdate) {
+          updateData.updated_at = new Date().toISOString();
+
+          const { error: updateError } = await supabase
+            .from('contactos')
+            .update(updateData)
+            .eq('id', contactId);
+
+          if (updateError) {
+            console.error('Error updating local contact:', updateError);
+            // Don't fail the entire process for update errors
+          } else {
+            wasUpdated = true;
+            console.log('Local contact updated successfully');
+          }
         }
       }
 

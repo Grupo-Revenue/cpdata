@@ -33,6 +33,7 @@ interface CreateUpdateResult {
   updated?: boolean;
   message?: string;
   error?: string;
+  hubspotId?: string;
 }
 
 export const useHubSpotCompanyValidation = () => {
@@ -133,7 +134,8 @@ export const useHubSpotCompanyValidation = () => {
         success: true,
         created: true,
         company: data.company,
-        message: data.message
+        message: data.message,
+        hubspotId: data.company?.hubspotId
       };
 
     } catch (error) {
@@ -178,7 +180,8 @@ export const useHubSpotCompanyValidation = () => {
         success: true,
         updated: true,
         company: data.company,
-        message: data.message
+        message: data.message,
+        hubspotId: data.company?.hubspotId
       };
 
     } catch (error) {

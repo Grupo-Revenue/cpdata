@@ -137,7 +137,7 @@ export const createBusinessFromWizard = async ({
     // Try to find existing productora in local database
     const { data: existingProductora, error: searchError } = await supabase
       .from('empresas')
-      .select('id')
+      .select('id, hubspot_id')
       .eq('user_id', userId)
       .eq('nombre', productora.nombre)
       .eq('tipo', 'productora')
@@ -147,6 +147,19 @@ export const createBusinessFromWizard = async ({
 
     if (existingProductora) {
       productoraId = existingProductora.id;
+      
+      // Update HubSpot ID if not present and we have one from HubSpot
+      if (!existingProductora.hubspot_id && hubspotResult.success && hubspotResult.hubspotId) {
+        try {
+          await supabase
+            .from('empresas')
+            .update({ hubspot_id: hubspotResult.hubspotId })
+            .eq('id', productoraId);
+          console.log('Updated existing productora with HubSpot ID:', hubspotResult.hubspotId);
+        } catch (error) {
+          console.warn('Failed to update productora with HubSpot ID:', error);
+        }
+      }
     } else {
       // Create new productora in local database
       const { data: newProductora, error: createError } = await supabase
@@ -154,7 +167,8 @@ export const createBusinessFromWizard = async ({
         .insert([{
           ...productora,
           tipo: 'productora',
-          user_id: userId
+          user_id: userId,
+          hubspot_id: hubspotResult.success ? hubspotResult.hubspotId : null
         }])
         .select('id')
         .single();
@@ -200,7 +214,7 @@ export const createBusinessFromWizard = async ({
     // Try to find existing cliente final in local database
     const { data: existingCliente, error: searchError } = await supabase
       .from('empresas')
-      .select('id')
+      .select('id, hubspot_id')
       .eq('user_id', userId)
       .eq('nombre', clienteFinal.nombre)
       .eq('tipo', 'cliente_final')
@@ -210,6 +224,19 @@ export const createBusinessFromWizard = async ({
 
     if (existingCliente) {
       clienteFinalId = existingCliente.id;
+      
+      // Update HubSpot ID if not present and we have one from HubSpot
+      if (!existingCliente.hubspot_id && hubspotResult.success && hubspotResult.hubspotId) {
+        try {
+          await supabase
+            .from('empresas')
+            .update({ hubspot_id: hubspotResult.hubspotId })
+            .eq('id', clienteFinalId);
+          console.log('Updated existing cliente final with HubSpot ID:', hubspotResult.hubspotId);
+        } catch (error) {
+          console.warn('Failed to update cliente final with HubSpot ID:', error);
+        }
+      }
     } else {
       // Create new cliente final in local database
       const { data: newCliente, error: createError } = await supabase
@@ -217,7 +244,8 @@ export const createBusinessFromWizard = async ({
         .insert([{
           ...clienteFinal,
           tipo: 'cliente_final',
-          user_id: userId
+          user_id: userId,
+          hubspot_id: hubspotResult.success ? hubspotResult.hubspotId : null
         }])
         .select('id')
         .single();
@@ -335,6 +363,25 @@ export const createBusinessFromWizard = async ({
     
     if (dealResult.success) {
       console.log('Deal created in HubSpot:', dealResult.deal?.hubspotId);
+      
+      // Save HubSpot deal ID to local database
+      if (dealResult.deal?.hubspotId) {
+        try {
+          await supabase
+            .from('negocios')
+            .update({ hubspot_id: dealResult.deal.hubspotId })
+            .eq('id', negocioCreado.id);
+          console.log('Updated business with HubSpot deal ID:', dealResult.deal.hubspotId);
+        } catch (error) {
+          console.warn('Failed to save HubSpot deal ID to database:', error);
+          toast({
+            title: "Advertencia",
+            description: "El negocio fue creado pero no se pudo guardar el ID de HubSpot.",
+            variant: "destructive"
+          });
+        }
+      }
+      
       toast({
         title: "Negocio creado exitosamente",
         description: `El negocio ${numeroCorrelativo} ha sido creado y sincronizado con HubSpot.`,
