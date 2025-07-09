@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Loader2, Save, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,12 +19,12 @@ interface StageMapping {
 }
 
 const ESTADOS_NEGOCIO = [
-  { value: 'oportunidad_creada', label: 'Oportunidad Creada' },
-  { value: 'presupuesto_enviado', label: 'Presupuesto Enviado' },
-  { value: 'parcialmente_aceptado', label: 'Parcialmente Aceptado' },
-  { value: 'negocio_aceptado', label: 'Negocio Aceptado' },
-  { value: 'negocio_cerrado', label: 'Negocio Cerrado' },
-  { value: 'negocio_perdido', label: 'Negocio Perdido' }
+  { value: 'oportunidad_creada', label: 'Oportunidad Creada', colorClass: 'bg-business-oportunidad text-business-oportunidad-foreground' },
+  { value: 'presupuesto_enviado', label: 'Presupuesto Enviado', colorClass: 'bg-business-presupuesto text-business-presupuesto-foreground' },
+  { value: 'parcialmente_aceptado', label: 'Parcialmente Aceptado', colorClass: 'bg-business-parcial text-business-parcial-foreground' },
+  { value: 'negocio_aceptado', label: 'Negocio Aceptado', colorClass: 'bg-business-aceptado text-business-aceptado-foreground' },
+  { value: 'negocio_cerrado', label: 'Negocio Cerrado', colorClass: 'bg-business-cerrado text-business-cerrado-foreground' },
+  { value: 'negocio_perdido', label: 'Negocio Perdido', colorClass: 'bg-business-perdido text-business-perdido-foreground' }
 ];
 
 const SyncConfiguration = () => {
@@ -160,9 +161,9 @@ const SyncConfiguration = () => {
         <div className="space-y-2">
           {ESTADOS_NEGOCIO.map(estado => (
             <div key={estado.value} className="flex items-center gap-3 p-2 border rounded-md">
-              <div className="min-w-0 flex-1">
-                <Label className="text-sm font-medium">{estado.label}</Label>
-              </div>
+              <Badge variant="outline" className={`${estado.colorClass} text-xs px-2 py-1 shrink-0`}>
+                {estado.label}
+              </Badge>
               
               <div className="flex-1 max-w-xs">
                 <Input
