@@ -85,7 +85,8 @@ export const createBusinessFromWizard = async ({
   crearNegocio,
   hubspotDealOperations
 }: BusinessCreationParams): Promise<string> => {
-  const { contacto, tipoCliente, productora, tieneClienteFinal, clienteFinal, evento, fechaCierre } = wizardState;
+  try {
+    const { contacto, tipoCliente, productora, tieneClienteFinal, clienteFinal, evento, fechaCierre } = wizardState;
 
   console.log('Starting business creation process...');
   
@@ -368,11 +369,20 @@ export const createBusinessFromWizard = async ({
     // Business was already created successfully, just log the HubSpot sync issue
   }
 
-  // Show single success message at the end
-  toast({
-    title: "Negocio creado exitosamente",
-    description: `El negocio ${numeroCorrelativo} ha sido creado correctamente.`,
-  });
+    // Show single success message at the end
+    toast({
+      title: "Negocio creado exitosamente",
+      description: `El negocio ${numeroCorrelativo} ha sido creado correctamente.`,
+    });
 
-  return negocioCreado.id;
+    return negocioCreado.id;
+  } catch (error) {
+    console.error('Error creating business:', error);
+    toast({
+      title: "Error al crear negocio",
+      description: "No se pudo crear el negocio. Por favor, intenta nuevamente.",
+      variant: "destructive"
+    });
+    throw error;
+  }
 };
