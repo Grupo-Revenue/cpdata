@@ -25,13 +25,14 @@ serve(async (req) => {
     )
 
     // Parse request body
-    const { negocio_id, estado_anterior, estado_nuevo } = await req.json()
+    const { negocio_id, estado_anterior, estado_nuevo, update_type } = await req.json()
 
-    if (!negocio_id || !estado_nuevo) {
+    if (!negocio_id || (!estado_nuevo && !update_type)) {
       console.error('🚫 [HubSpot Deal Update] Missing required parameters:', {
         negocio_id,
         estado_nuevo,
-        received_body: { negocio_id, estado_anterior, estado_nuevo }
+        update_type,
+        received_body: { negocio_id, estado_anterior, estado_nuevo, update_type }
       })
       return new Response(
         JSON.stringify({ error: 'Missing required parameters' }),
@@ -39,8 +40,9 @@ serve(async (req) => {
       )
     }
 
-    console.log('🔄 [HubSpot Deal Update] Processing business state change:', {
+    console.log('🔄 [HubSpot Deal Update] Processing request:', {
       negocio_id,
+      update_type,
       estado_anterior,
       estado_nuevo
     })
@@ -99,40 +101,82 @@ serve(async (req) => {
       )
     }
 
-    // Get stage mapping for the new state
-    const { data: stageMapping, error: mappingError } = await supabaseClient
-      .from('hubspot_stage_mapping')
-      .select('stage_id')
-      .eq('user_id', negocio.user_id)
-      .eq('estado_negocio', estado_nuevo)
-      .single()
+    let updateProperties = {}
+    let updateMessage = ''
 
-    console.log('🗺️ [HubSpot Deal Update] Stage mapping retrieval:', {
-      user_id: negocio.user_id,
-      estado_nuevo,
-      stageMapping,
-      error: mappingError
-    })
+    // Handle different update types
+    if (update_type === 'value') {
+      // Calculate business value from approved budgets
+      const { data: presupuestos, error: presupuestosError } = await supabaseClient
+        .from('presupuestos')
+        .select('total, estado')
+        .eq('negocio_id', negocio_id)
 
-    if (mappingError || !stageMapping) {
-      console.log('⚠️ [HubSpot Deal Update] No stage mapping found for state:', {
-        estado_nuevo,
+      if (presupuestosError) {
+        console.error('❌ [HubSpot Deal Update] Error getting budgets:', presupuestosError)
+        return new Response(
+          JSON.stringify({ error: 'Failed to calculate business value' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // Calculate total value from approved budgets, fallback to sent budgets
+      const approvedTotal = presupuestos
+        .filter(p => p.estado === 'aprobado')
+        .reduce((sum, p) => sum + parseFloat(String(p.total || '0')), 0)
+
+      const businessValue = approvedTotal > 0 ? approvedTotal : presupuestos
+        .filter(p => p.estado === 'enviado')
+        .reduce((sum, p) => sum + parseFloat(String(p.total || '0')), 0)
+
+      console.log('💰 [HubSpot Deal Update] Calculated business value:', {
+        businessValue,
+        approvedTotal,
+        totalBudgets: presupuestos.length
+      })
+
+      updateProperties = { amount: businessValue.toString() }
+      updateMessage = 'Deal value updated in HubSpot'
+
+    } else {
+      // Handle state update
+      const { data: stageMapping, error: mappingError } = await supabaseClient
+        .from('hubspot_stage_mapping')
+        .select('stage_id')
+        .eq('user_id', negocio.user_id)
+        .eq('estado_negocio', estado_nuevo)
+        .single()
+
+      console.log('🗺️ [HubSpot Deal Update] Stage mapping retrieval:', {
         user_id: negocio.user_id,
+        estado_nuevo,
+        stageMapping,
         error: mappingError
       })
-      return new Response(
-        JSON.stringify({ message: 'No stage mapping configured for this state' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+
+      if (mappingError || !stageMapping) {
+        console.log('⚠️ [HubSpot Deal Update] No stage mapping found for state:', {
+          estado_nuevo,
+          user_id: negocio.user_id,
+          error: mappingError
+        })
+        return new Response(
+          JSON.stringify({ message: 'No stage mapping configured for this state' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      updateProperties = { dealstage: stageMapping.stage_id }
+      updateMessage = 'Deal stage updated in HubSpot'
     }
 
-    console.log('🚀 [HubSpot Deal Update] Updating HubSpot deal stage:', {
+    console.log('🚀 [HubSpot Deal Update] Updating HubSpot deal:', {
       dealId: negocio.hubspot_id,
-      stageId: stageMapping.stage_id,
-      estado_nuevo
+      properties: updateProperties,
+      updateType: update_type || 'state'
     })
 
-    // Update deal stage in HubSpot
+    // Update deal in HubSpot
     const updateResponse = await fetch(
       `https://api.hubapi.com/crm/v3/objects/deals/${negocio.hubspot_id}`,
       {
@@ -142,9 +186,7 @@ serve(async (req) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          properties: {
-            dealstage: stageMapping.stage_id
-          }
+          properties: updateProperties
         })
       }
     )
@@ -164,8 +206,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Deal stage updated in HubSpot',
-        hubspot_deal_id: updatedDeal.id
+        message: updateMessage,
+        hubspot_deal_id: updatedDeal.id,
+        updated_properties: updateProperties
       }),
       { 
         status: 200, 
