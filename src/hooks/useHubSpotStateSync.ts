@@ -86,47 +86,6 @@ export const useHubSpotStateSync = () => {
           }
         }
       )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'presupuestos'
-        },
-        async (payload) => {
-          console.log('💰 [HubSpot Sync] Budget update received:', payload);
-          
-          const { new: newBudget, old: oldBudget } = payload;
-          
-          // Check if total changed
-          if (newBudget && oldBudget && newBudget.total !== oldBudget.total) {
-            console.log('💰 [HubSpot Sync] Budget total changed, updating business value:', {
-              presupuesto_id: newBudget.id,
-              negocio_id: newBudget.negocio_id,
-              old_total: oldBudget.total,
-              new_total: newBudget.total
-            });
-
-            try {
-              // Call the edge function to update business value in HubSpot
-              const { data, error } = await supabase.functions.invoke('hubspot-deal-update', {
-                body: {
-                  negocio_id: newBudget.negocio_id,
-                  update_type: 'value'
-                }
-              });
-
-              if (error) {
-                console.error('❌ [HubSpot Sync] Error updating business value in HubSpot:', error);
-              } else {
-                console.log('✅ [HubSpot Sync] Successfully updated business value in HubSpot:', data);
-              }
-            } catch (error) {
-              console.error('❌ [HubSpot Sync] Unexpected error during business value sync:', error);
-            }
-          }
-        }
-      )
       .subscribe(status => {
         console.log('🔄 [HubSpot Sync] Channel subscription status:', status);
         
