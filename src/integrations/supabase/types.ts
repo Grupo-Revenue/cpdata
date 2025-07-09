@@ -183,30 +183,24 @@ export type Database = {
         Row: {
           created_at: string
           estado_negocio: Database["public"]["Enums"]["estado_negocio"]
-          hubspot_pipeline_id: string
-          hubspot_stage_id: string
-          hubspot_stage_name: string
           id: string
+          stage_id: string
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           estado_negocio: Database["public"]["Enums"]["estado_negocio"]
-          hubspot_pipeline_id: string
-          hubspot_stage_id: string
-          hubspot_stage_name: string
           id?: string
+          stage_id: string
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           estado_negocio?: Database["public"]["Enums"]["estado_negocio"]
-          hubspot_pipeline_id?: string
-          hubspot_stage_id?: string
-          hubspot_stage_name?: string
           id?: string
+          stage_id?: string
           updated_at?: string
           user_id?: string
         }

@@ -1,32 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Save, RefreshCw, AlertCircle } from 'lucide-react';
+import { Loader2, Save, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Database } from '@/integrations/supabase/types';
 
-interface HubSpotPipeline {
-  id: string;
-  name: string;
-  stages: HubSpotStage[];
-}
-
-interface HubSpotStage {
-  id: string;
-  name: string;
-}
-
 type EstadoNegocio = Database['public']['Enums']['estado_negocio'];
 
 interface StageMapping {
   estado_negocio: EstadoNegocio;
-  hubspot_pipeline_id: string;
-  hubspot_stage_id: string;
-  hubspot_stage_name: string;
+  stage_id: string;
   user_id?: string;
 }
 
@@ -41,9 +28,7 @@ const ESTADOS_NEGOCIO = [
 
 const SyncConfiguration = () => {
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [pipelines, setPipelines] = useState<HubSpotPipeline[]>([]);
   const [mappings, setMappings] = useState<Record<string, StageMapping>>({});
   const [hasHubSpotConfig, setHasHubSpotConfig] = useState(false);
 
@@ -61,34 +46,8 @@ const SyncConfiguration = () => {
         .single();
       
       setHasHubSpotConfig(!!data);
-      
-      if (data) {
-        loadPipelines();
-      }
     } catch (error) {
       console.error('Error checking HubSpot config:', error);
-    }
-  };
-
-  const loadPipelines = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase.functions.invoke('hubspot-pipelines', {
-        method: 'GET'
-      });
-
-      if (error) throw error;
-      
-      setPipelines(data.pipelines || []);
-    } catch (error) {
-      console.error('Error loading pipelines:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los pipelines de HubSpot",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -115,33 +74,8 @@ const SyncConfiguration = () => {
     setMappings(prev => {
       const currentMapping = prev[estadoNegocio] || {
         estado_negocio: estadoNegocio as EstadoNegocio,
-        hubspot_pipeline_id: '',
-        hubspot_stage_id: '',
-        hubspot_stage_name: ''
+        stage_id: ''
       };
-      
-      if (field === 'hubspot_stage_id') {
-        // Find the stage name
-        let stageName = '';
-        for (const pipeline of pipelines) {
-          const stage = pipeline.stages.find(s => s.id === value);
-          if (stage) {
-            stageName = stage.name;
-            break;
-          }
-        }
-        
-        return {
-          ...prev,
-          [estadoNegocio]: {
-            ...currentMapping,
-            estado_negocio: estadoNegocio as EstadoNegocio,
-            hubspot_stage_id: value,
-            hubspot_stage_name: stageName,
-            hubspot_pipeline_id: currentMapping.hubspot_pipeline_id
-          }
-        };
-      }
       
       return {
         ...prev,
@@ -152,11 +86,6 @@ const SyncConfiguration = () => {
         }
       };
     });
-  };
-
-  const getStagesForPipeline = (pipelineId: string): HubSpotStage[] => {
-    const pipeline = pipelines.find(p => p.id === pipelineId);
-    return pipeline?.stages || [];
   };
 
   const saveMappings = async () => {
@@ -171,12 +100,13 @@ const SyncConfiguration = () => {
 
       // Insert new mappings
       const mappingsToInsert = Object.values(mappings).filter(mapping => 
-        mapping.hubspot_pipeline_id && mapping.hubspot_stage_id
+        mapping.stage_id && mapping.stage_id.trim() !== ''
       );
 
       if (mappingsToInsert.length > 0) {
         const mappingsWithUserId = mappingsToInsert.map(mapping => ({
-          ...mapping,
+          estado_negocio: mapping.estado_negocio,
+          stage_id: mapping.stage_id,
           user_id: undefined // Will be set by RLS
         }));
         
@@ -224,97 +154,48 @@ const SyncConfiguration = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          Mapeo de Estados con HubSpot
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={loadPipelines}
-            disabled={loading}
-          >
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
-            Actualizar
-          </Button>
-        </CardTitle>
+        <CardTitle>Mapeo de Estados con HubSpot</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin mr-2" />
-            Cargando pipelines de HubSpot...
-          </div>
-        ) : (
-          <>
-            <div className="space-y-4">
-              {ESTADOS_NEGOCIO.map(estado => (
-                <div key={estado.value} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg">
-                  <div className="flex items-center">
-                    <Label className="font-medium">{estado.label}</Label>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor={`pipeline-${estado.value}`} className="text-sm">Pipeline</Label>
-                    <Select
-                      value={mappings[estado.value]?.hubspot_pipeline_id || ''}
-                      onValueChange={(value) => handleMappingChange(estado.value, 'hubspot_pipeline_id', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar pipeline" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {pipelines.map(pipeline => (
-                          <SelectItem key={pipeline.id} value={pipeline.id}>
-                            {pipeline.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor={`stage-${estado.value}`} className="text-sm">Etapa</Label>
-                    <Select
-                      value={mappings[estado.value]?.hubspot_stage_id || ''}
-                      onValueChange={(value) => handleMappingChange(estado.value, 'hubspot_stage_id', value)}
-                      disabled={!mappings[estado.value]?.hubspot_pipeline_id}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar etapa" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getStagesForPipeline(mappings[estado.value]?.hubspot_pipeline_id || '').map(stage => (
-                          <SelectItem key={stage.id} value={stage.id}>
-                            {stage.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              ))}
+        <div className="space-y-4">
+          {ESTADOS_NEGOCIO.map(estado => (
+            <div key={estado.value} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
+              <div className="flex items-center">
+                <Label className="font-medium">{estado.label}</Label>
+              </div>
+              
+              <div>
+                <Label htmlFor={`stage-id-${estado.value}`} className="text-sm">ID de Etapa HubSpot</Label>
+                <Input
+                  id={`stage-id-${estado.value}`}
+                  value={mappings[estado.value]?.stage_id || ''}
+                  onChange={(e) => handleMappingChange(estado.value, 'stage_id', e.target.value)}
+                  placeholder="Ej: appointment_scheduled, qualified_to_buy"
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Ingresa el ID exacto de la etapa en HubSpot
+                </p>
+              </div>
             </div>
+          ))}
+        </div>
 
-            <div className="flex justify-end">
-              <Button onClick={saveMappings} disabled={saving}>
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Guardando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Guardar Configuración
-                  </>
-                )}
-              </Button>
-            </div>
-          </>
-        )}
+        <div className="flex justify-end">
+          <Button onClick={saveMappings} disabled={saving}>
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Guardar Configuración
+              </>
+            )}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
