@@ -140,9 +140,9 @@ serve(async (req) => {
         dealname: dealData.nombre_correlativo,
         pipeline: "Pipeline de Negocio",
         dealstage: "Oportunidad creada",
+        amount: dealData.valor_negocio.toString(),
         tipo_de_evento: dealData.tipo_evento,
         nombre_del_evento: dealData.nombre_evento,
-        valor_del_negocio: dealData.valor_negocio.toString(),
         locacion_del_evento: dealData.locacion,
         cantidad_de_invitados: dealData.cantidad_invitados.toString(),
         cantidad_de_asistentes: dealData.cantidad_asistentes.toString()
