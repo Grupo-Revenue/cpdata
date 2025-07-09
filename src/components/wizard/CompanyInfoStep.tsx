@@ -8,6 +8,7 @@ import { ArrowLeft, Loader2, Search } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useChileanRutValidator } from '@/hooks/useChileanRutValidator';
 import { useHubSpotCompanyValidation } from '@/hooks/useHubSpotCompanyValidation';
+import { supabase } from '@/integrations/supabase/client';
 import { ProductoraData, ClienteFinalData } from './types';
 interface CompanyInfoStepProps {
   tipoCliente: 'productora' | 'cliente_final';
@@ -224,6 +225,12 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
       if (tipoCliente === 'productora' && productora.nombre) {
         console.log('[CompanyInfoStep] Processing productora:', productora.nombre);
         try {
+          const userId = (await supabase.auth.getUser()).data.user?.id;
+          if (!userId) throw new Error('Usuario no autenticado');
+
+          let hubspotId = null;
+          
+          // First sync with HubSpot
           const result = await searchCompanyInHubSpot(productora.nombre);
           console.log('[CompanyInfoStep] Productora search result:', result);
           
@@ -238,6 +245,7 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
               hubspotId: result.company.hubspotId
             });
             console.log('[CompanyInfoStep] Productora update result:', updateResult);
+            hubspotId = result.company.hubspotId;
           } else {
             console.log('[CompanyInfoStep] Creating new productora in HubSpot');
             const createResult = await createCompanyInHubSpot({
@@ -248,10 +256,60 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
               tipoCliente: 'productora'
             });
             console.log('[CompanyInfoStep] Productora create result:', createResult);
+            hubspotId = createResult.hubspotId;
+          }
+
+          // Now save/update in local database
+          console.log('[CompanyInfoStep] Saving productora to local database...');
+          const { data: existingProductora, error: searchError } = await supabase
+            .from('empresas')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('nombre', productora.nombre)
+            .eq('tipo', 'productora')
+            .maybeSingle();
+
+          if (searchError) throw searchError;
+
+          if (existingProductora) {
+            // Update existing productora
+            const { error: updateError } = await supabase
+              .from('empresas')
+              .update({
+                rut: productora.rut,
+                direccion: productora.direccion,
+                sitio_web: productora.sitio_web,
+                hubspot_id: hubspotId
+              })
+              .eq('id', existingProductora.id);
+
+            if (updateError) throw updateError;
+            console.log('[CompanyInfoStep] Productora updated in local database');
+          } else {
+            // Create new productora
+            const { error: createError } = await supabase
+              .from('empresas')
+              .insert([{
+                nombre: productora.nombre,
+                rut: productora.rut,
+                direccion: productora.direccion,
+                sitio_web: productora.sitio_web,
+                tipo: 'productora',
+                user_id: userId,
+                hubspot_id: hubspotId
+              }]);
+
+            if (createError) throw createError;
+            console.log('[CompanyInfoStep] Productora created in local database');
           }
         } catch (error) {
           console.error('[CompanyInfoStep] Error processing Productora:', error);
           hasErrors = true;
+          toast({
+            title: "Error",
+            description: `Error al guardar productora: ${error.message}`,
+            variant: "destructive"
+          });
         }
       }
 
@@ -259,6 +317,12 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
       if ((tipoCliente === 'cliente_final' || tieneClienteFinal) && clienteFinal.nombre) {
         console.log('[CompanyInfoStep] Processing cliente final:', clienteFinal.nombre);
         try {
+          const userId = (await supabase.auth.getUser()).data.user?.id;
+          if (!userId) throw new Error('Usuario no autenticado');
+
+          let hubspotId = null;
+          
+          // First sync with HubSpot
           const result = await searchClienteFinalInHubSpot(clienteFinal.nombre);
           console.log('[CompanyInfoStep] Cliente final search result:', result);
           
@@ -273,6 +337,7 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
               hubspotId: result.company.hubspotId
             });
             console.log('[CompanyInfoStep] Cliente final update result:', updateResult);
+            hubspotId = result.company.hubspotId;
           } else {
             console.log('[CompanyInfoStep] Creating new cliente final in HubSpot');
             const createResult = await createClienteFinalInHubSpot({
@@ -283,10 +348,60 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
               tipoCliente: 'cliente_final'
             });
             console.log('[CompanyInfoStep] Cliente final create result:', createResult);
+            hubspotId = createResult.hubspotId;
+          }
+
+          // Now save/update in local database
+          console.log('[CompanyInfoStep] Saving cliente final to local database...');
+          const { data: existingCliente, error: searchError } = await supabase
+            .from('empresas')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('nombre', clienteFinal.nombre)
+            .eq('tipo', 'cliente_final')
+            .maybeSingle();
+
+          if (searchError) throw searchError;
+
+          if (existingCliente) {
+            // Update existing cliente final
+            const { error: updateError } = await supabase
+              .from('empresas')
+              .update({
+                rut: clienteFinal.rut,
+                direccion: clienteFinal.direccion,
+                sitio_web: clienteFinal.sitio_web,
+                hubspot_id: hubspotId
+              })
+              .eq('id', existingCliente.id);
+
+            if (updateError) throw updateError;
+            console.log('[CompanyInfoStep] Cliente final updated in local database');
+          } else {
+            // Create new cliente final
+            const { error: createError } = await supabase
+              .from('empresas')
+              .insert([{
+                nombre: clienteFinal.nombre,
+                rut: clienteFinal.rut,
+                direccion: clienteFinal.direccion,
+                sitio_web: clienteFinal.sitio_web,
+                tipo: 'cliente_final',
+                user_id: userId,
+                hubspot_id: hubspotId
+              }]);
+
+            if (createError) throw createError;
+            console.log('[CompanyInfoStep] Cliente final created in local database');
           }
         } catch (error) {
           console.error('[CompanyInfoStep] Error processing Cliente Final:', error);
           hasErrors = true;
+          toast({
+            title: "Error",
+            description: `Error al guardar cliente final: ${error.message}`,
+            variant: "destructive"
+          });
         }
       }
 
