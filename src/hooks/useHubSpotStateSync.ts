@@ -7,7 +7,11 @@ export const useHubSpotStateSync = () => {
     
     // Set up real-time listener for business state changes
     const channel = supabase
-      .channel('business-state-changes')
+      .channel('business-state-changes', {
+        config: {
+          broadcast: { self: false }
+        }
+      })
       .on(
         'postgres_changes',
         {
@@ -62,6 +66,19 @@ export const useHubSpotStateSync = () => {
       )
       .subscribe(status => {
         console.log('🔄 [HubSpot Sync] Channel subscription status:', status);
+        
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ [HubSpot Sync] Successfully subscribed to business state changes');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.error('❌ [HubSpot Sync] Subscription error:', status);
+          console.log('🔄 [HubSpot Sync] Attempting to reconnect...');
+          
+          // Attempt to reconnect after a delay
+          setTimeout(() => {
+            channel.unsubscribe();
+            channel.subscribe();
+          }, 2000);
+        }
       });
 
     // Cleanup subscription on unmount
