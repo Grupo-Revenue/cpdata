@@ -139,7 +139,7 @@ serve(async (req) => {
       const properties: any = {
         dealname: dealData.nombre_correlativo,
         pipeline: "755372600",
-        dealstage: "Oportunidad creada",
+        dealstage: "1098991987",
         amount: dealData.valor_negocio.toString(),
         tipo_de_evento: dealData.tipo_evento,
         nombre_del_evento: dealData.nombre_evento,
