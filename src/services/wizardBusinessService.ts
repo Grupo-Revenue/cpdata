@@ -356,21 +356,23 @@ export const createBusinessFromWizard = async ({
         }
       }
       
-      toast({
-        title: "Negocio creado exitosamente",
-        description: `El negocio ${numeroCorrelativo} ha sido creado y sincronizado correctamente.`,
-      });
-    } else {
-      console.error('Failed to create deal in HubSpot:', dealResult.error);
-      toast({
-        title: "Negocio creado",
-        description: "El negocio fue creado correctamente.",
-      });
+      // Log success/failure but don't show additional toast
+      if (dealResult.success) {
+        console.log('Deal created and synced with HubSpot successfully');
+      } else {
+        console.error('Failed to create deal in HubSpot:', dealResult.error);
+      }
     }
   } catch (error) {
     console.error('Error creating deal in HubSpot:', error);
     // Business was already created successfully, just log the HubSpot sync issue
   }
+
+  // Show single success message at the end
+  toast({
+    title: "Negocio creado exitosamente",
+    description: `El negocio ${numeroCorrelativo} ha sido creado correctamente.`,
+  });
 
   return negocioCreado.id;
 };
