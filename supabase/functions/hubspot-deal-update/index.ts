@@ -28,13 +28,18 @@ serve(async (req) => {
     const { negocio_id, estado_anterior, estado_nuevo } = await req.json()
 
     if (!negocio_id || !estado_nuevo) {
+      console.error('🚫 [HubSpot Deal Update] Missing required parameters:', {
+        negocio_id,
+        estado_nuevo,
+        received_body: { negocio_id, estado_anterior, estado_nuevo }
+      })
       return new Response(
         JSON.stringify({ error: 'Missing required parameters' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log('Processing business state change:', {
+    console.log('🔄 [HubSpot Deal Update] Processing business state change:', {
       negocio_id,
       estado_anterior,
       estado_nuevo
@@ -47,8 +52,13 @@ serve(async (req) => {
       .eq('id', negocio_id)
       .single()
 
+    console.log('📊 [HubSpot Deal Update] Business data retrieved:', {
+      negocio,
+      error: negocioError
+    })
+
     if (negocioError || !negocio) {
-      console.error('Error getting business:', negocioError)
+      console.error('❌ [HubSpot Deal Update] Error getting business:', negocioError)
       return new Response(
         JSON.stringify({ error: 'Business not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -57,7 +67,10 @@ serve(async (req) => {
 
     // Skip if no HubSpot ID
     if (!negocio.hubspot_id) {
-      console.log('Business has no HubSpot ID, skipping sync')
+      console.log('⚠️ [HubSpot Deal Update] Business has no HubSpot ID, skipping sync:', {
+        negocio_id,
+        user_id: negocio.user_id
+      })
       return new Response(
         JSON.stringify({ message: 'Business not synced with HubSpot' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -72,8 +85,14 @@ serve(async (req) => {
       .eq('activo', true)
       .single()
 
+    console.log('🔑 [HubSpot Deal Update] API key retrieval:', {
+      user_id: negocio.user_id,
+      hasApiKey: !!apiKeyData,
+      error: apiKeyError
+    })
+
     if (apiKeyError || !apiKeyData) {
-      console.error('Error getting HubSpot API key:', apiKeyError)
+      console.error('❌ [HubSpot Deal Update] Error getting HubSpot API key:', apiKeyError)
       return new Response(
         JSON.stringify({ error: 'No active HubSpot API key found' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -88,17 +107,29 @@ serve(async (req) => {
       .eq('estado_negocio', estado_nuevo)
       .single()
 
+    console.log('🗺️ [HubSpot Deal Update] Stage mapping retrieval:', {
+      user_id: negocio.user_id,
+      estado_nuevo,
+      stageMapping,
+      error: mappingError
+    })
+
     if (mappingError || !stageMapping) {
-      console.log('No stage mapping found for state:', estado_nuevo)
+      console.log('⚠️ [HubSpot Deal Update] No stage mapping found for state:', {
+        estado_nuevo,
+        user_id: negocio.user_id,
+        error: mappingError
+      })
       return new Response(
         JSON.stringify({ message: 'No stage mapping configured for this state' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log('Updating HubSpot deal stage:', {
+    console.log('🚀 [HubSpot Deal Update] Updating HubSpot deal stage:', {
       dealId: negocio.hubspot_id,
-      stageId: stageMapping.stage_id
+      stageId: stageMapping.stage_id,
+      estado_nuevo
     })
 
     // Update deal stage in HubSpot
