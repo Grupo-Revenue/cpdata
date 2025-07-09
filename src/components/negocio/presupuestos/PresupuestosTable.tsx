@@ -81,8 +81,7 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
       setEliminandoPresupuesto(presupuestoId);
       try {
         await onEliminarPresupuesto(presupuestoId);
-        
-        onRefresh();
+        // No need to refresh - the state is updated optimistically in NegocioContext
       } catch (error) {
         console.error('Error eliminando presupuesto:', error);
       } finally {
