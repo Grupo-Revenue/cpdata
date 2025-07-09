@@ -83,7 +83,7 @@ serve(async (req) => {
     // Get stage mapping for the new state
     const { data: stageMapping, error: mappingError } = await supabaseClient
       .from('hubspot_stage_mapping')
-      .select('hubspot_stage_id, hubspot_pipeline_id')
+      .select('stage_id')
       .eq('user_id', negocio.user_id)
       .eq('estado_negocio', estado_nuevo)
       .single()
@@ -98,8 +98,7 @@ serve(async (req) => {
 
     console.log('Updating HubSpot deal stage:', {
       dealId: negocio.hubspot_id,
-      stageId: stageMapping.hubspot_stage_id,
-      pipelineId: stageMapping.hubspot_pipeline_id
+      stageId: stageMapping.stage_id
     })
 
     // Update deal stage in HubSpot
@@ -113,8 +112,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           properties: {
-            dealstage: stageMapping.hubspot_stage_id,
-            pipeline: stageMapping.hubspot_pipeline_id
+            dealstage: stageMapping.stage_id
           }
         })
       }
