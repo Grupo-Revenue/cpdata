@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNegocio } from '@/context/NegocioContext';
 import CrearPresupuesto from './CrearPresupuesto';
 import BusinessDetailHeader from './negocio/BusinessDetailHeader';
 import DetalleNegocioMainContent from './negocio/DetalleNegocioMainContent';
 import LoadingState from './negocio/LoadingState';
 import BusinessNotFound from './negocio/BusinessNotFound';
+import { useHubSpotSync } from '@/hooks/hubspot/useHubSpotSync';
 
 import { useBusinessDetailActions } from './negocio/BusinessDetailActions';
 
@@ -18,8 +19,16 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
   const { obtenerNegocio, loading } = useNegocio();
   const [mostrarCrearPresupuesto, setMostrarCrearPresupuesto] = useState(false);
   const [presupuestoEditando, setPresupuestoEditando] = useState<string | null>(null);
+  const { syncAmountToHubSpot } = useHubSpotSync();
 
   const negocio = obtenerNegocio(negocioId);
+
+  // Sync amount to HubSpot when entering this view
+  useEffect(() => {
+    if (negocio && negocio.hubspot_id) {
+      syncAmountToHubSpot(negocioId);
+    }
+  }, [negocio, negocioId, syncAmountToHubSpot]);
 
   const {
     handleEliminarPresupuesto,
