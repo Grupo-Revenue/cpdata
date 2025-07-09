@@ -122,7 +122,11 @@ export const useHubSpotStateSync = () => {
           table: 'presupuestos'
         },
         async (payload) => {
-          console.log('💰 [HubSpot Sync] Presupuesto change detected:', payload);
+          console.log('💰 [HubSpot Amount Sync] Presupuesto change detected:', {
+            event: payload.eventType,
+            table: payload.table,
+            payload
+          });
           
           const { new: newRecord, old: oldRecord } = payload;
           const negocioId = (newRecord as any)?.negocio_id || (oldRecord as any)?.negocio_id;
