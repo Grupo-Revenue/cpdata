@@ -19,11 +19,7 @@ export const useHubSpotStateSync = () => {
     
     // Set up real-time listener for business state changes
     const channel = supabase
-      .channel(channelName, {
-        config: {
-          broadcast: { self: false }
-        }
-      })
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
