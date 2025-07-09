@@ -13,6 +13,7 @@ import {
   eliminarPresupuestoEnSupabase,
   cambiarEstadoPresupuestoEnSupabase
 } from '@/services/presupuestoService';
+import { useHubSpotStateSync } from '@/hooks/useHubSpotStateSync';
 
 interface NegocioContextProps {
   negocios: Negocio[];
@@ -36,6 +37,9 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const [negocios, setNegocios] = useState<Negocio[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Initialize HubSpot state synchronization
+  useHubSpotStateSync();
 
   const obtenerNegocios = useCallback(async (forceRefresh = false) => {
     console.log('[NegocioContext] ==> LOADING NEGOCIOS <==');

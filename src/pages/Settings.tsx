@@ -11,6 +11,7 @@ import { User, Save, Loader2, ArrowLeft, Settings as SettingsIcon, Activity } fr
 import { Link } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
 import HubSpotConfig from '@/components/settings/HubSpotConfig';
+import SyncConfiguration from '@/components/settings/SyncConfiguration';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -223,9 +224,7 @@ const Settings = () => {
             </TabsContent>
 
             <TabsContent value="sync">
-              <div className="text-center text-gray-500 py-8">
-                <p>Monitor de sincronización disponible próximamente</p>
-              </div>
+              <SyncConfiguration />
             </TabsContent>
           </Tabs>
         </div>
