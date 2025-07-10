@@ -162,13 +162,32 @@ serve(async (req) => {
       }
     )
 
+    console.log('📡 [HubSpot Amount Update] Response status:', updateResponse.status)
+
     if (!updateResponse.ok) {
       const errorText = await updateResponse.text()
-      console.error('❌ [HubSpot Amount Update] HubSpot API error:', errorText)
+      console.error('❌ [HubSpot Amount Update] HubSpot API error:', {
+        status: updateResponse.status,
+        statusText: updateResponse.statusText,
+        errorText: errorText,
+        dealId: negocio.hubspot_id,
+        apiKeyStart: apiKeyData.api_key.substring(0, 10) + '...'
+      })
+      
+      // Try to parse error details for better debugging
+      let errorDetails = errorText;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorDetails = errorJson.message || errorJson.error || errorText;
+      } catch (e) {
+        // Keep original error text if not JSON
+      }
+      
       return new Response(
         JSON.stringify({ 
           error: 'Failed to update deal amount in HubSpot',
-          details: errorText
+          details: errorDetails,
+          status: updateResponse.status
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
