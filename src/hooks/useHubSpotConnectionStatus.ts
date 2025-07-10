@@ -22,9 +22,9 @@ export const useHubSpotConnectionStatus = () => {
         .select('*')
         .eq('user_id', user.id)
         .eq('activo', true)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error checking HubSpot connection:', error);
         setIsConnected(false);
       } else {
@@ -42,31 +42,6 @@ export const useHubSpotConnectionStatus = () => {
   useEffect(() => {
     checkConnection();
   }, [checkConnection]);
-
-  // Set up real-time subscription to detect changes
-  useEffect(() => {
-    if (!user) return;
-
-    const subscription = supabase
-      .channel('hubspot_api_keys_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'hubspot_api_keys',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          checkConnection();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [user, checkConnection]);
 
   return {
     isConnected,

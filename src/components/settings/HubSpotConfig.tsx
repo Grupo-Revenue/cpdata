@@ -38,9 +38,9 @@ const HubSpotConfig = () => {
         .select('*')
         .eq('user_id', user.id)
         .eq('activo', true)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error loading HubSpot config:', error);
         return;
       }
@@ -50,6 +50,12 @@ const HubSpotConfig = () => {
         setApiKey('••••••••••••••••'); // Masked token display
         setLastTestedAt(data.updated_at);
         setIsConnectionTested(true); // If already saved, consider it tested
+      } else {
+        // No token found for this user
+        setIsConfigured(false);
+        setApiKey('');
+        setIsConnectionTested(false);
+        setLastTestedAt(null);
       }
     } catch (error) {
       console.error('Error loading HubSpot config:', error);
