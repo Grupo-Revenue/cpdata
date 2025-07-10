@@ -96,27 +96,6 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
             {formatBusinessStateForDisplay(negocio.estado)}
           </Badge>
           
-          {negocio.hubspot_id && (
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  console.log('🧪 [TESTING] Manual test - changing state to trigger sync...');
-                  window.dispatchEvent(new CustomEvent('testHubSpotSync', { 
-                    detail: { 
-                      negocioId: negocio.id,
-                      estadoAnterior: negocio.estado,
-                      estadoNuevo: negocio.estado === 'oportunidad_creada' ? 'presupuesto_enviado' : 'oportunidad_creada'
-                    }
-                  }));
-                }}
-                className="border-orange-300 text-orange-600 hover:bg-orange-50"
-                size="sm"
-              >
-                🧪 Test Sync
-              </Button>
-            </div>
-          )}
         </div>
       </div>
 
