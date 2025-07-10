@@ -34,7 +34,6 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
     handleEliminarPresupuesto,
     handleVerPDF,
     handleCambiarEstadoPresupuesto,
-    handleCambiarEstadoNegocio,
     handleRefresh
   } = useBusinessDetailActions(negocioId);
 
@@ -80,7 +79,6 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
             negocio={negocio}
             onVolver={onVolver}
             onCrearPresupuesto={handleCrearPresupuesto}
-            onCambiarEstado={handleCambiarEstadoNegocio}
           />
           
           <DetalleNegocioMainContent
@@ -90,7 +88,6 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
             onEliminarPresupuesto={handleEliminarPresupuesto}
             onVerPDF={handleVerPDF}
             onCambiarEstado={handleCambiarEstadoPresupuesto}
-            onCambiarEstadoNegocio={handleCambiarEstadoNegocio}
             onRefresh={handleRefresh}
           />
         </div>

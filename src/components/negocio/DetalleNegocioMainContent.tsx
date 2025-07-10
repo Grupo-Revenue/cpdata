@@ -10,7 +10,6 @@ interface DetalleNegocioMainContentProps {
   onEliminarPresupuesto: (presupuestoId: string) => Promise<void>;
   onVerPDF: (presupuestoId: string) => void;
   onCambiarEstado: (presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string) => Promise<void>;
-  onCambiarEstadoNegocio?: (negocioId: string, nuevoEstado: string) => void;
   onRefresh: () => void;
 }
 

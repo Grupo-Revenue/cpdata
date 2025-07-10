@@ -2,18 +2,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNegocio } from '@/context/NegocioContext';
-import { EstadoPresupuesto, EstadoNegocio } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { EstadoPresupuesto } from '@/types';
 
 interface BusinessDetailActionsProps {
   negocioId: string;
 }
 
 export const useBusinessDetailActions = (negocioId: string) => {
-  const { eliminarPresupuesto, cambiarEstadoPresupuesto, cambiarEstadoNegocio, obtenerNegocio } = useNegocio();
+  const { eliminarPresupuesto, cambiarEstadoPresupuesto } = useNegocio();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const handleEliminarPresupuesto = async (presupuestoId: string): Promise<void> => {
     await eliminarPresupuesto(negocioId, presupuestoId);
@@ -27,63 +24,6 @@ export const useBusinessDetailActions = (negocioId: string) => {
     await cambiarEstadoPresupuesto(negocioId, presupuestoId, nuevoEstado as EstadoPresupuesto, fechaVencimiento);
   };
 
-  const handleCambiarEstadoNegocio = async (negocioId: string, nuevoEstado: string) => {
-    try {
-      const negocio = obtenerNegocio(negocioId);
-      
-      // Usar el contexto para manejar la actualización
-      await cambiarEstadoNegocio(negocioId, nuevoEstado as EstadoNegocio);
-
-      // Si llegamos aquí, la actualización fue exitosa
-      if (negocio?.hubspot_id) {
-        // Intentar sincronizar con HubSpot
-        try {
-          const { data: hubspotData, error: hubspotError } = await supabase.functions.invoke('hubspot-deal-update', {
-            body: {
-              negocio_id: negocioId,
-              estado_anterior: negocio.estado,
-              estado_nuevo: nuevoEstado
-            }
-          });
-
-          if (hubspotError) {
-            console.warn('Error al sincronizar con HubSpot:', hubspotError);
-            toast({
-              variant: "destructive",
-              title: "Error de sincronización",
-              description: "El estado fue actualizado en la aplicación, pero la sincronización con HubSpot falló."
-            });
-          } else {
-            toast({
-              title: "Estado actualizado",
-              description: "El estado del negocio fue actualizado correctamente y sincronizado con HubSpot."
-            });
-          }
-        } catch (syncError) {
-          console.warn('Error al sincronizar con HubSpot:', syncError);
-          toast({
-            variant: "destructive", 
-            title: "Error de sincronización",
-            description: "El estado fue actualizado en la aplicación, pero la sincronización con HubSpot falló."
-          });
-        }
-      } else {
-        toast({
-          title: "Estado actualizado",
-          description: "El estado del negocio fue actualizado correctamente."
-        });
-      }
-
-    } catch (error) {
-      console.error('Error al cambiar estado del negocio:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo actualizar el estado del negocio."
-      });
-    }
-  };
-
   const handleRefresh = () => {
     window.location.reload();
   };
@@ -92,7 +32,6 @@ export const useBusinessDetailActions = (negocioId: string) => {
     handleEliminarPresupuesto,
     handleVerPDF,
     handleCambiarEstadoPresupuesto,
-    handleCambiarEstadoNegocio,
     handleRefresh
   };
 };
