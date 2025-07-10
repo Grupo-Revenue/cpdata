@@ -43,6 +43,7 @@ export const useHubSpotDealCreation = () => {
 
   const generateUniqueCorrelative = async (): Promise<CorrelativeResult> => {
     if (!isConnected) {
+      console.log('[HubSpot Deal] Not connected, cannot generate correlative');
       toast({
         title: "Sin conexión a HubSpot",
         description: "Configure la conexión a HubSpot en la sección de Configuración.",
@@ -54,17 +55,23 @@ export const useHubSpotDealCreation = () => {
     setIsGeneratingCorrelative(true);
     
     try {
+      console.log('[HubSpot Deal] Invoking correlative generation function');
+      
       const { data, error } = await supabase.functions.invoke('hubspot-deal-creation', {
         body: {
           action: 'generate_correlative'
         }
       });
 
+      console.log('[HubSpot Deal] Correlative function response:', { data, error });
+
       if (error) {
+        console.error('[HubSpot Deal] Function error:', error);
         throw error;
       }
 
       if (!data || !data.success) {
+        console.error('[HubSpot Deal] Function returned error:', data?.error);
         throw new Error(data?.error || 'Error generando número correlativo');
       }
 

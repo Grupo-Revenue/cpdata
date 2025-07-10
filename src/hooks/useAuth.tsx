@@ -192,7 +192,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [user, loading, checkAdminStatus]);
 
   const signUp = async (email: string, password: string, userData?: any) => {
-    const redirectUrl = `${window.location.origin}/`;
+    // Handle different environments properly
+    const baseUrl = window.location.origin;
+    const redirectUrl = baseUrl.includes('localhost') ? 
+      `${baseUrl}/` : 
+      `${baseUrl}/`;
+    
+    console.log('[Auth] Signing up with redirect URL:', redirectUrl);
     
     const { error } = await supabase.auth.signUp({
       email,

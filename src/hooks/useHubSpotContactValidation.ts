@@ -50,6 +50,7 @@ export const useHubSpotContactValidation = () => {
     }
 
     if (!isConnected) {
+      console.log('[HubSpot Contact] Not connected, showing error message');
       setValidationMessage('No está conectado a HubSpot. Por favor, configure la conexión en Configuración.');
       setIsContactFound(null);
       toast({
@@ -65,6 +66,8 @@ export const useHubSpotContactValidation = () => {
     setIsContactFound(null);
 
     try {
+      console.log('[HubSpot Contact] Invoking search function for email:', email.trim().toLowerCase());
+      
       const { data, error } = await supabase.functions.invoke('hubspot-contact-validation', {
         body: {
           action: 'search',
@@ -72,11 +75,15 @@ export const useHubSpotContactValidation = () => {
         }
       });
 
+      console.log('[HubSpot Contact] Function response:', { data, error });
+
       if (error) {
+        console.error('[HubSpot Contact] Function error:', error);
         throw error;
       }
 
       if (!data || !data.success) {
+        console.error('[HubSpot Contact] Function returned error:', data?.error);
         throw new Error(data?.error || 'Error al buscar el contacto');
       }
 

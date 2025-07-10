@@ -51,6 +51,7 @@ export const useHubSpotCompanyValidation = () => {
     }
 
     if (!isConnected) {
+      console.log('[HubSpot Company] Not connected, showing error message');
       setValidationMessage('No está conectado a HubSpot. Por favor, configure la conexión en Configuración.');
       setIsCompanyFound(null);
       toast({
@@ -66,6 +67,8 @@ export const useHubSpotCompanyValidation = () => {
     setIsCompanyFound(null);
 
     try {
+      console.log('[HubSpot Company] Invoking search function for company:', companyName.trim());
+      
       const { data, error } = await supabase.functions.invoke('hubspot-company-validation', {
         body: {
           action: 'search',
@@ -73,11 +76,15 @@ export const useHubSpotCompanyValidation = () => {
         }
       });
 
+      console.log('[HubSpot Company] Function response:', { data, error });
+
       if (error) {
+        console.error('[HubSpot Company] Function error:', error);
         throw error;
       }
 
       if (!data || !data.success) {
+        console.error('[HubSpot Company] Function returned error:', data?.error);
         throw new Error(data?.error || 'Error al buscar la empresa');
       }
 
