@@ -4,6 +4,7 @@ import { processContactForBusiness } from '@/services/contactService';
 import { useNegocio } from '@/context/NegocioContext';
 import { WizardState } from '@/components/wizard/types';
 import { useHubSpotDealCreation } from '@/hooks/useHubSpotDealCreation';
+import { useHubSpotAmountSync } from '@/hooks/hubspot/useHubSpotAmountSync';
 
 // Helper function to process companies with HubSpot
 const processCompanyForBusiness = async (
@@ -357,9 +358,27 @@ export const createBusinessFromWizard = async ({
         }
       }
       
-      // Log success/failure but don't show additional toast
+      // Step 7: Sync business value to HubSpot after deal creation
       if (dealResult.success) {
-        console.log('Deal created and synced with HubSpot successfully');
+        console.log('Deal created successfully, now syncing business value...');
+        try {
+          // Sync the calculated business value to HubSpot
+          const { data, error } = await supabase.functions.invoke('hubspot-deal-amount-update', {
+            body: {
+              negocio_id: negocioCreado.id,
+              amount: 0 // Will be calculated based on presupuestos
+            }
+          });
+          
+          if (error) {
+            console.warn('Failed to sync initial business value to HubSpot:', error);
+          } else {
+            console.log('Business value synced to HubSpot successfully:', data);
+          }
+        } catch (syncError) {
+          console.warn('Error syncing business value to HubSpot:', syncError);
+          // Don't fail the whole process for sync errors
+        }
       } else {
         console.error('Failed to create deal in HubSpot:', dealResult.error);
       }
