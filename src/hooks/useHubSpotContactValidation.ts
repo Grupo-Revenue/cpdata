@@ -108,13 +108,27 @@ export const useHubSpotContactValidation = () => {
 
     } catch (error) {
       console.error('Error searching contact:', error);
-      setValidationMessage('No se pudo buscar el contacto en HubSpot. Verifique su conexión.');
+      
+      // More specific error handling
+      const errorMessage = error?.value?.message || error?.message || 'Error desconocido';
+      
+      if (errorMessage.includes('Edge Function returned a non-2xx status code')) {
+        setValidationMessage('Error de configuración en HubSpot. Verifique que la clave de API sea válida y tenga los permisos correctos.');
+        toast({
+          title: "Error de configuración",
+          description: "La clave de API de HubSpot no es válida o no tiene los permisos necesarios. Verifique la configuración.",
+          variant: "destructive"
+        });
+      } else {
+        setValidationMessage('No se pudo buscar el contacto en HubSpot. Verifique su conexión.');
+        toast({
+          title: "Error de búsqueda",
+          description: "No se pudo buscar el contacto en HubSpot. Verifique su conexión.",
+          variant: "destructive"
+        });
+      }
+      
       setIsContactFound(null);
-      toast({
-        title: "Error de búsqueda",
-        description: "No se pudo buscar el contacto en HubSpot. Verifique su conexión.",
-        variant: "destructive"
-      });
       return null;
     } finally {
       setIsValidating(false);
