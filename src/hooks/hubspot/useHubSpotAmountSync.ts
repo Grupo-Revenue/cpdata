@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { calculateBusinessValue } from '@/utils/businessValueCalculator';
+import { calcularValorNegocio } from '@/utils/businessCalculations';
 
 export const useHubSpotAmountSync = () => {
   const { toast } = useToast();
@@ -38,7 +38,7 @@ export const useHubSpotAmountSync = () => {
       }
 
       // Calculate new total value
-      const newAmount = calculateBusinessValue(negocioData as any);
+      const newAmount = calcularValorNegocio(negocioData as any);
       
       console.log('💰 [HubSpot Amount Sync] Calculated new business amount:', {
         negocio_id: negocioId,
