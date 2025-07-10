@@ -156,7 +156,7 @@ serve(async (req) => {
         properties.fecha_y_hora_del_evento_termino = fechaEventoFinTimestamp.toString();
       }
       if (fechaCierreTimestamp) {
-        properties.fecha_y_hora_de_cierre = fechaCierreTimestamp.toString();
+        properties.closedate = fechaCierreTimestamp.toString();
       }
 
       // Prepare associations
