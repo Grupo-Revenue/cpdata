@@ -8,11 +8,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useHubSpotConnectionStatus } from '@/hooks/useHubSpotConnectionStatus';
 import { Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Key, Unplug } from 'lucide-react';
 
 const HubSpotConfig = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { refreshStatus } = useHubSpotConnectionStatus();
   const [apiKey, setApiKey] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -86,6 +88,9 @@ const HubSpotConfig = () => {
         setApiKey('');
         setIsConnectionTested(false);
         setLastTestedAt(null);
+
+        // Refresh connection status in Navigation
+        refreshStatus();
 
         toast({
           title: "Desconectado exitosamente",
@@ -199,6 +204,10 @@ const HubSpotConfig = () => {
         setIsConfigured(true);
         setApiKey('••••••••••••••••'); // Mask the saved token
         setLastTestedAt(new Date().toISOString());
+        
+        // Refresh connection status in Navigation
+        refreshStatus();
+        
         toast({
           title: "Token guardado",
           description: "El token de acceso de HubSpot se ha guardado correctamente. El token anterior ha sido reemplazado."

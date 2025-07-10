@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useBrandConfig } from '@/hooks/useBrandConfig';
+import { useHubSpotConnectionStatus } from '@/hooks/useHubSpotConnectionStatus';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
@@ -13,45 +14,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { LogOut, Settings, Shield, Building2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 const Navigation = () => {
   const { user, signOut, isAdmin } = useAuth();
   const { config: brandConfig, loading: configLoading } = useBrandConfig();
-  const [hubspotConnected, setHubspotConnected] = useState(false);
-  const [checkingConnection, setCheckingConnection] = useState(true);
-
-  useEffect(() => {
-    checkHubSpotConnection();
-  }, [user]);
-
-  const checkHubSpotConnection = async () => {
-    if (!user) {
-      setCheckingConnection(false);
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('hubspot_api_keys')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('activo', true)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error checking HubSpot connection:', error);
-        setHubspotConnected(false);
-      } else {
-        setHubspotConnected(!!data);
-      }
-    } catch (error) {
-      console.error('Error checking HubSpot connection:', error);
-      setHubspotConnected(false);
-    } finally {
-      setCheckingConnection(false);
-    }
-  };
+  const { isConnected: hubspotConnected, isChecking: checkingConnection } = useHubSpotConnectionStatus();
 
   if (!user) return null;
 
