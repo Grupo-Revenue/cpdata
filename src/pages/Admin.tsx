@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 
 import { UserTable } from '@/components/admin/UserTable';
-import { ProductTable } from '@/components/admin/ProductTable';
+import AdminProductos from '@/components/admin/AdminProductos';
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState("usuarios");
@@ -106,13 +106,7 @@ const Admin = () => {
           />
         </TabsContent>
         <TabsContent value="productos">
-          <ProductTable 
-            email={email}
-            password={password}
-            setEmail={setEmail}
-            setPassword={setPassword}
-            handleCreateUser={handleCreateUser}
-          />
+          <AdminProductos />
         </TabsContent>
       </Tabs>
     </div>
