@@ -93,16 +93,15 @@ export const processContactForBusiness = async (
       console.log('Contact created in HubSpot:', hubspotContact.hubspotId);
     }
 
-    // Step 3: Search for contact in local database (email normalized and by hubspot_id if available)
-    console.log('Searching in local database for:', normalizedEmail);
+    // Step 3: Search for contact in local database globally (email normalized and by hubspot_id if available)
+    console.log('Searching in local database globally for:', normalizedEmail);
     
     let existingLocalContact = null;
     
-    // First try to find by email
+    // First try to find by email globally
     const { data: contactByEmail, error: searchEmailError } = await supabase
       .from('contactos')
       .select('*')
-      .eq('user_id', userId)
       .eq('email', normalizedEmail)
       .maybeSingle();
 
@@ -122,7 +121,6 @@ export const processContactForBusiness = async (
       const { data: contactByHubspotId, error: searchHubspotError } = await supabase
         .from('contactos')
         .select('*')
-        .eq('user_id', userId)
         .eq('hubspot_id', hubspotContact.hubspotId)
         .maybeSingle();
 

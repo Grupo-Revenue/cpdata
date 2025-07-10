@@ -36,7 +36,7 @@ export const useHubSpotBusinessStateSync = () => {
         return;
       }
 
-      // Validate stage mapping exists
+      // Validate stage mapping exists (búsqueda global)
       const { data: stageMappingData, error: stageMappingError } = await supabase
         .from('hubspot_stage_mapping')
         .select('stage_id')

@@ -39,12 +39,11 @@ export const useHubSpotDealStageSync = () => {
 
       console.log('✅ [HubSpot Deal Stage Sync] Negocio encontrado con HubSpot ID:', negocio.hubspot_id);
 
-      // 2. Obtener el stage_id correspondiente al nuevo estado
+      // 2. Obtener el stage_id correspondiente al nuevo estado (búsqueda global)
       console.log('🎯 [HubSpot Deal Stage Sync] Obteniendo stage_id para estado:', nuevoEstado);
       const { data: stageMapping, error: mappingError } = await supabase
         .from('hubspot_stage_mapping')
         .select('stage_id')
-        .eq('user_id', negocio.user_id)
         .eq('estado_negocio', nuevoEstado)
         .single();
 

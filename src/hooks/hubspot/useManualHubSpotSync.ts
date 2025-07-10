@@ -52,7 +52,7 @@ export const useManualHubSpotSync = () => {
         return;
       }
 
-      // Check if stage mapping exists
+      // Check if stage mapping exists (búsqueda global)
       const { data: stageMappingData, error: stageMappingError } = await supabase
         .from('hubspot_stage_mapping')
         .select('stage_id')

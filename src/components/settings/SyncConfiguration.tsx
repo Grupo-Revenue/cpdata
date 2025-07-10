@@ -109,15 +109,15 @@ const SyncConfiguration = () => {
       );
 
       if (mappingsToInsert.length > 0) {
-        const mappingsWithUserId = mappingsToInsert.map(mapping => ({
+        const mappingsGlobal = mappingsToInsert.map(mapping => ({
           estado_negocio: mapping.estado_negocio,
           stage_id: mapping.stage_id,
-          user_id: user.id
+          user_id: user.id // Mantenemos para compatibilidad, pero políticas RLS son globales
         }));
         
         const { error } = await supabase
           .from('hubspot_stage_mapping')
-          .insert(mappingsWithUserId);
+          .insert(mappingsGlobal);
 
         if (error) throw error;
       }
