@@ -13,6 +13,7 @@ import {
   eliminarPresupuestoEnSupabase,
   cambiarEstadoPresupuestoEnSupabase
 } from '@/services/presupuestoService';
+import { useHubSpotStateSync } from '@/hooks/hubspot/useHubSpotStateSync';
 
 
 interface NegocioContextProps {
@@ -37,6 +38,7 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const [negocios, setNegocios] = useState<Negocio[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { syncStateToHubSpot } = useHubSpotStateSync();
 
 
   const obtenerNegocios = useCallback(async (forceRefresh = false) => {
@@ -243,6 +245,10 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   const cambiarEstadoNegocio = async (negocioId: string, nuevoEstado: EstadoNegocio): Promise<void> => {
     try {
+      // Get current state before updating
+      const negocioActual = obtenerNegocio(negocioId);
+      const estadoAnterior = negocioActual?.estado;
+
       const negocioActualizado = await cambiarEstadoNegocioEnSupabase(negocioId, nuevoEstado);
       if (negocioActualizado) {
         setNegocios(prevNegocios =>
@@ -250,6 +256,11 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
             negocio.id === negocioId ? negocioActualizado : negocio
           )
         );
+
+        // Sync state change to HubSpot if we have both states
+        if (estadoAnterior && estadoAnterior !== nuevoEstado) {
+          syncStateToHubSpot(negocioId, estadoAnterior, nuevoEstado);
+        }
       }
     } catch (error) {
       console.error("Failed to update negocio state:", error);
