@@ -93,17 +93,60 @@ export const processContactForBusiness = async (
       console.log('Contact created in HubSpot:', hubspotContact.hubspotId);
     }
 
-    // Step 3: Search for contact in local database (email normalized)
+    // Step 3: Search for contact in local database (email normalized and by hubspot_id if available)
     console.log('Searching in local database for:', normalizedEmail);
-    const { data: existingLocalContact, error: searchError } = await supabase
+    
+    let existingLocalContact = null;
+    
+    // First try to find by email
+    const { data: contactByEmail, error: searchEmailError } = await supabase
       .from('contactos')
       .select('*')
       .eq('user_id', userId)
       .eq('email', normalizedEmail)
       .maybeSingle();
 
-    if (searchError) {
-      throw new Error(`Error searching local contact: ${searchError.message}`);
+    if (searchEmailError) {
+      throw new Error(`Error searching local contact by email: ${searchEmailError.message}`);
+    }
+
+    // If contact found by email, use it
+    if (contactByEmail) {
+      existingLocalContact = contactByEmail;
+      console.log('Contact found by email in local database:', contactByEmail.id);
+    } 
+    // If not found by email but we have a hubspot contact, try to find by hubspot_id
+    else if (hubspotContact?.hubspotId) {
+      console.log('Searching by hubspot_id:', hubspotContact.hubspotId);
+      
+      const { data: contactByHubspotId, error: searchHubspotError } = await supabase
+        .from('contactos')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('hubspot_id', hubspotContact.hubspotId)
+        .maybeSingle();
+
+      if (searchHubspotError) {
+        throw new Error(`Error searching local contact by hubspot_id: ${searchHubspotError.message}`);
+      }
+
+      if (contactByHubspotId) {
+        existingLocalContact = contactByHubspotId;
+        console.log('Contact found by hubspot_id in local database:', contactByHubspotId.id);
+        
+        // Update the email if it's different
+        if (contactByHubspotId.email !== normalizedEmail) {
+          console.log('Updating email from', contactByHubspotId.email, 'to', normalizedEmail);
+          const { error: updateEmailError } = await supabase
+            .from('contactos')
+            .update({ email: normalizedEmail, updated_at: new Date().toISOString() })
+            .eq('id', contactByHubspotId.id);
+            
+          if (updateEmailError) {
+            console.error('Error updating contact email:', updateEmailError);
+          }
+        }
+      }
     }
 
     let contactId: string;
