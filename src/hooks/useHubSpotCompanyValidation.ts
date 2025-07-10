@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useHubSpotConnectionStatus } from './useHubSpotConnectionStatus';
 
 interface CompanyData {
   nombre: string;
@@ -37,6 +38,7 @@ interface CreateUpdateResult {
 }
 
 export const useHubSpotCompanyValidation = () => {
+  const { isConnected } = useHubSpotConnectionStatus();
   const [isValidating, setIsValidating] = useState(false);
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const [isCompanyFound, setIsCompanyFound] = useState<boolean | null>(null);
@@ -45,6 +47,17 @@ export const useHubSpotCompanyValidation = () => {
     if (!companyName || companyName.trim().length === 0) {
       setValidationMessage(null);
       setIsCompanyFound(null);
+      return null;
+    }
+
+    if (!isConnected) {
+      setValidationMessage('No está conectado a HubSpot. Por favor, configure la conexión en Configuración.');
+      setIsCompanyFound(null);
+      toast({
+        title: "Sin conexión a HubSpot",
+        description: "Configure la conexión a HubSpot en la sección de Configuración.",
+        variant: "destructive"
+      });
       return null;
     }
 

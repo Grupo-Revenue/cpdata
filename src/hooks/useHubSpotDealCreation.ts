@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useHubSpotConnectionStatus } from './useHubSpotConnectionStatus';
 
 interface DealData {
   nombre_correlativo: string;
@@ -36,10 +37,20 @@ interface CorrelativeResult {
 }
 
 export const useHubSpotDealCreation = () => {
+  const { isConnected } = useHubSpotConnectionStatus();
   const [isCreating, setIsCreating] = useState(false);
   const [isGeneratingCorrelative, setIsGeneratingCorrelative] = useState(false);
 
   const generateUniqueCorrelative = async (): Promise<CorrelativeResult> => {
+    if (!isConnected) {
+      toast({
+        title: "Sin conexión a HubSpot",
+        description: "Configure la conexión a HubSpot en la sección de Configuración.",
+        variant: "destructive"
+      });
+      return { success: false, error: 'No está conectado a HubSpot' };
+    }
+
     setIsGeneratingCorrelative(true);
     
     try {
@@ -75,6 +86,15 @@ export const useHubSpotDealCreation = () => {
   };
 
   const createDealInHubSpot = async (dealData: DealData): Promise<DealCreationResult> => {
+    if (!isConnected) {
+      toast({
+        title: "Sin conexión a HubSpot",
+        description: "Configure la conexión a HubSpot en la sección de Configuración.",
+        variant: "destructive"
+      });
+      return { success: false, error: 'No está conectado a HubSpot' };
+    }
+
     setIsCreating(true);
     
     try {
