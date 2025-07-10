@@ -7,9 +7,11 @@ export const useHubSpotDealStageSync = () => {
   const { toast } = useToast();
 
   const syncDealStage = useCallback(async (negocioId: string, nuevoEstado: EstadoNegocio) => {
-    console.log('🔄 [HubSpot Deal Stage Sync] Iniciando sincronización...');
-    console.log('🔄 [HubSpot Deal Stage Sync] Negocio ID:', negocioId);
-    console.log('🔄 [HubSpot Deal Stage Sync] Nuevo estado:', nuevoEstado);
+    console.log('🚀 [HubSpot Deal Stage Sync] ==========================================');
+    console.log('🚀 [HubSpot Deal Stage Sync] INICIANDO SINCRONIZACIÓN');
+    console.log('🚀 [HubSpot Deal Stage Sync] Negocio ID:', negocioId);
+    console.log('🚀 [HubSpot Deal Stage Sync] Nuevo estado:', nuevoEstado);
+    console.log('🚀 [HubSpot Deal Stage Sync] Timestamp:', new Date().toISOString());
     
     try {
       // 1. Obtener datos del negocio y verificar que tenga HubSpot ID
@@ -79,40 +81,63 @@ export const useHubSpotDealStageSync = () => {
 
       console.log('✅ [HubSpot Deal Stage Sync] API key obtenida');
 
-      // 4. Llamar al endpoint de HubSpot para actualizar el dealstage
-      console.log('🚀 [HubSpot Deal Stage Sync] Actualizando dealstage en HubSpot...');
-      console.log('🚀 [HubSpot Deal Stage Sync] Deal ID:', negocio.hubspot_id);
-      console.log('🚀 [HubSpot Deal Stage Sync] Stage ID:', stageMapping.stage_id);
-
-      const hubspotResponse = await fetch(
-        `https://api.hubapi.com/crm/v3/objects/deals/${negocio.hubspot_id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${apiKeyData.api_key}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            properties: {
-              dealstage: stageMapping.stage_id
-            }
-          })
+      // 4. Preparar payload para HubSpot
+      const hubspotUrl = `https://api.hubapi.com/crm/v3/objects/deals/${negocio.hubspot_id}`;
+      const hubspotPayload = {
+        properties: {
+          dealstage: stageMapping.stage_id
         }
-      );
+      };
+      
+      console.log('🚀 [HubSpot Deal Stage Sync] Enviando request a HubSpot:');
+      console.log('🚀 [HubSpot Deal Stage Sync] URL:', hubspotUrl);
+      console.log('🚀 [HubSpot Deal Stage Sync] Method: PATCH');
+      console.log('🚀 [HubSpot Deal Stage Sync] Headers:', {
+        'Authorization': `Bearer ${apiKeyData.api_key.substring(0, 10)}...`,
+        'Content-Type': 'application/json'
+      });
+      console.log('🚀 [HubSpot Deal Stage Sync] Payload:', JSON.stringify(hubspotPayload, null, 2));
+
+      const hubspotResponse = await fetch(hubspotUrl, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${apiKeyData.api_key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(hubspotPayload)
+      });
+
+      // Logging detallado de la respuesta
+      console.log('📥 [HubSpot Deal Stage Sync] Respuesta de HubSpot:');
+      console.log('📥 [HubSpot Deal Stage Sync] Status:', hubspotResponse.status);
+      console.log('📥 [HubSpot Deal Stage Sync] Status Text:', hubspotResponse.statusText);
+      console.log('📥 [HubSpot Deal Stage Sync] Headers:', Object.fromEntries(hubspotResponse.headers.entries()));
 
       if (!hubspotResponse.ok) {
         const errorText = await hubspotResponse.text();
-        console.error('❌ [HubSpot Deal Stage Sync] Error de HubSpot API:', errorText);
+        console.error('❌ [HubSpot Deal Stage Sync] Error Response Body:', errorText);
+        console.error('❌ [HubSpot Deal Stage Sync] Error Status:', hubspotResponse.status);
+        
+        let errorDetail = errorText;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorDetail = errorJson.message || errorJson.errors?.[0]?.message || errorText;
+        } catch (e) {
+          // Si no es JSON válido, usar el texto original
+        }
+        
         toast({
           variant: "destructive",
           title: "Error de sincronización con HubSpot",
-          description: `Error al actualizar el estado en HubSpot: ${hubspotResponse.status}`
+          description: `${hubspotResponse.status}: ${errorDetail}`
         });
         return;
       }
 
       const updatedDeal = await hubspotResponse.json();
-      console.log('✅ [HubSpot Deal Stage Sync] Deal actualizado exitosamente:', updatedDeal.id);
+      console.log('✅ [HubSpot Deal Stage Sync] Response Body completo:', JSON.stringify(updatedDeal, null, 2));
+      console.log('✅ [HubSpot Deal Stage Sync] Deal ID actualizado:', updatedDeal.id);
+      console.log('✅ [HubSpot Deal Stage Sync] Dealstage actual:', updatedDeal.properties?.dealstage);
 
       // 5. Mostrar notificación de éxito
       toast({
