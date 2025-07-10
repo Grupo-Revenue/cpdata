@@ -7,45 +7,27 @@ interface PDFProductTableProps {
 }
 
 const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
-  const renderHtmlContent = (html: string) => {
-    if (!html) return null;
-    return <div className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{
-      __html: html
-    }} />;
-  };
-
   const renderSessionDetails = (sessions: any[]) => {
-    console.log('Rendering session details:', sessions);
-    if (!sessions || sessions.length === 0) {
-      console.log('No sessions found or empty array');
-      return null;
-    }
-    
-    return (
-      <div className="mt-2 pt-2 border-t border-gray-200">
-        <div className="text-xs font-semibold text-gray-700 mb-2">Detalle de Sesiones:</div>
-        <div className="space-y-1">
-          {sessions.map((session, index) => (
-            <div key={session.id || index} className="text-xs text-gray-600 grid grid-cols-2 gap-2">
-              <span className="font-medium">{session.fecha} - {session.servicio}</span>
-              <span>{session.acreditadores} acred. + {session.supervisor} super.</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const renderSessionPrices = (sessions: any[]) => {
     if (!sessions || sessions.length === 0) {
       return null;
     }
     
     return (
-      <div className="space-y-1">
+      <div className="ml-4 mt-2">
         {sessions.map((session, index) => (
-          <div key={session.id || index} className="text-xs text-gray-600 text-right">
-            {formatearPrecio(session.precio)} x {(session.acreditadores || 0) + (session.supervisor || 0)}
+          <div key={session.id || index} className="flex justify-between items-center py-1 text-sm border-b border-gray-200 last:border-b-0">
+            <div className="flex-1">
+              <span className="text-gray-700">{session.fecha} - {session.servicio}</span>
+            </div>
+            <div className="flex-1 text-center">
+              <span className="text-gray-600">{session.acreditadores} acred. + {session.supervisor} super.</span>
+            </div>
+            <div className="flex-1 text-right">
+              <span className="text-gray-700 font-medium">{formatearPrecio(session.precio)}</span>
+            </div>
+            <div className="w-24 text-right">
+              <span className="text-gray-700 font-medium">{formatearPrecio(session.precio * ((session.acreditadores || 0) + (session.supervisor || 0)))}</span>
+            </div>
           </div>
         ))}
       </div>
@@ -54,62 +36,60 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
 
   return (
     <div className="mb-8">
-      <h3 className="text-lg font-bold text-gray-800 mb-4 border-b border-gray-300 pb-1">
-        DETALLE DE PRODUCTOS Y SERVICIOS
-      </h3>
-      <table className="w-full border-collapse border border-gray-300">
+      <table className="w-full border-collapse border border-gray-400">
         <thead>
-          <tr className="bg-blue-50">
-            <th className="border border-gray-300 p-3 text-left font-semibold">Descripción</th>
-            <th className="border border-gray-300 p-3 text-center font-semibold w-20">Cant.</th>
-            <th className="border border-gray-300 p-3 text-right font-semibold w-32">Precio Unit.</th>
-            <th className="border border-gray-300 p-3 text-right font-semibold w-32">Total</th>
+          <tr className="bg-gray-200">
+            <th className="border border-gray-400 p-3 text-left font-bold text-gray-800">DESCRIPCIÓN</th>
+            <th className="border border-gray-400 p-3 text-center font-bold text-gray-800 w-20">CANT.</th>
+            <th className="border border-gray-400 p-3 text-right font-bold text-gray-800 w-32">PRECIO UNIT.</th>
+            <th className="border border-gray-400 p-3 text-right font-bold text-gray-800 w-32">TOTAL</th>
           </tr>
         </thead>
         <tbody>
           {(presupuesto.productos || []).map((producto, index) => (
-            <tr key={producto.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-              <td className="border border-gray-300 p-3">
-                <div className="font-medium text-gray-800 mb-1">{producto.nombre}</div>
-                {producto.descripcion && (
-                  <div className="text-sm text-gray-600 mb-2">
-                    <div dangerouslySetInnerHTML={{ __html: producto.descripcion }} />
-                  </div>
-                )}
-                
-                {/* Session Details */}
-                {producto.sessions && producto.sessions.length > 0 && renderSessionDetails(producto.sessions)}
-                
-                {/* Comments */}
-                {producto.comentarios && (
-                  <div className="mt-2 pt-2 border-t border-gray-200">
-                    <div className="text-xs font-semibold text-gray-700 mb-1">Comentarios:</div>
-                    <div className="text-xs text-gray-600">
-                      {renderHtmlContent(producto.comentarios)}
+            <React.Fragment key={producto.id}>
+              <tr className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <td className="border border-gray-400 p-3">
+                  <div className="font-semibold text-gray-800">{producto.nombre}</div>
+                  {producto.descripcion && (
+                    <div className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{ __html: producto.descripcion }} />
+                  )}
+                  {producto.comentarios && (
+                    <div className="text-sm text-gray-600 mt-2 italic" dangerouslySetInnerHTML={{ __html: producto.comentarios }} />
+                  )}
+                  {producto.descuentoPorcentaje && producto.descuentoPorcentaje > 0 && (
+                    <div className="text-sm text-red-600 font-medium mt-1">
+                      Descuento aplicado: {producto.descuentoPorcentaje}%
                     </div>
-                  </div>
-                )}
-                
-                {/* Discount if applicable */}
-                {producto.descuentoPorcentaje && producto.descuentoPorcentaje > 0 && (
-                  <div className="mt-1 text-xs text-green-600 font-medium">
-                    Descuento aplicado: {producto.descuentoPorcentaje}%
-                  </div>
-                )}
-              </td>
-              <td className="border border-gray-300 p-3 text-center font-medium">{producto.cantidad}</td>
-              <td className="border border-gray-300 p-3 text-right font-medium">
-                {producto.sessions && producto.sessions.length > 0 ? (
-                  <div>
-                    <div className="font-medium text-gray-800 mb-1">Precios por sesión:</div>
-                    {renderSessionPrices(producto.sessions)}
-                  </div>
-                ) : (
-                  formatearPrecio(producto.precioUnitario || producto.precio_unitario)
-                )}
-              </td>
-              <td className="border border-gray-300 p-3 text-right font-bold text-blue-600">{formatearPrecio(producto.total)}</td>
-            </tr>
+                  )}
+                </td>
+                <td className="border border-gray-400 p-3 text-center font-medium">{producto.cantidad}</td>
+                <td className="border border-gray-400 p-3 text-right font-medium">
+                  {formatearPrecio(producto.precioUnitario || producto.precio_unitario)}
+                </td>
+                <td className="border border-gray-400 p-3 text-right font-bold">{formatearPrecio(producto.total)}</td>
+              </tr>
+              
+              {/* Session Details as Sub-rows */}
+              {producto.sessions && producto.sessions.length > 0 && (
+                <tr className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td colSpan={4} className="border border-gray-400 p-0">
+                    <div className="bg-gray-100 border-t border-gray-300">
+                      <div className="px-3 py-2">
+                        <div className="text-sm font-semibold text-gray-700 mb-2">Detalle de Sesiones de Acreditación:</div>
+                        <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-gray-600 pb-1 border-b border-gray-300">
+                          <div className="col-span-4">Fecha y Servicio</div>
+                          <div className="col-span-3 text-center">Personal</div>
+                          <div className="col-span-2 text-right">Precio por Persona</div>
+                          <div className="col-span-3 text-right">Subtotal</div>
+                        </div>
+                        {renderSessionDetails(producto.sessions)}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </React.Fragment>
           ))}
         </tbody>
       </table>

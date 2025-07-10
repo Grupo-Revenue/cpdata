@@ -25,65 +25,61 @@ const PDFHeader: React.FC<PDFHeaderProps> = ({ presupuesto, negocio, totales }) 
   };
 
   return (
-    <div className="border-b-2 border-primary pb-6 mb-8 bg-gradient-to-r from-secondary to-background rounded-xl p-8 shadow-soft">
-      <div className="flex justify-between items-start gap-8">
-        {/* Left Section - Company Info */}
-        <div className="flex items-start gap-4 flex-1">
+    <div className="mb-6">
+      {/* Top Brand Section */}
+      <div className="flex items-center justify-between border-b-2 border-gray-800 pb-4 mb-6">
+        <div className="flex items-center gap-4">
           {brandConfig?.logo_url && (
-            <div className="flex-shrink-0">
-              <img 
-                src={brandConfig.logo_url} 
-                alt={`${brandConfig.nombre_empresa} Logo`} 
-                className="h-12 w-auto object-contain border border-border rounded-lg p-2 bg-card shadow-sm" 
-              />
-            </div>
+            <img 
+              src={brandConfig.logo_url} 
+              alt={`${brandConfig.nombre_empresa} Logo`} 
+              className="h-16 w-auto object-contain" 
+            />
           )}
-          <div className="space-y-3 flex-1">
-            <div>
-              <h1 className="text-lg font-bold text-foreground leading-tight">
-                {brandConfig?.nombre_empresa || 'CP Data SpA'}
-              </h1>
-              <p className="text-sm text-muted-foreground font-medium mt-1">
-                Soluciones Profesionales en Acreditación Digital
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-1 text-xs text-muted-foreground">
-              <div className="flex justify-between">
-                <span className="font-semibold">Fecha de Emisión:</span>
-                <span>{fechaActual}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-semibold">Válido hasta:</span>
-                <span>{formatearFechaVencimiento()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-semibold">Moneda:</span>
-                <span>Pesos Chilenos (CLP)</span>
-              </div>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800 uppercase tracking-wide">
+              {brandConfig?.nombre_empresa || 'CP Data SpA'}
+            </h1>
+            <p className="text-sm text-gray-600 font-medium">
+              Soluciones Profesionales en Acreditación Digital
+            </p>
           </div>
         </div>
+        
+        {/* Quote Header */}
+        <div className="text-right">
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">COTIZACIÓN</h2>
+          <div className="text-sm text-gray-600 space-y-1">
+            <div><span className="font-semibold">N°:</span> {presupuesto.nombre}</div>
+            <div><span className="font-semibold">Fecha:</span> {fechaActual}</div>
+            <div><span className="font-semibold">Validez:</span> {formatearFechaVencimiento()}</div>
+          </div>
+        </div>
+      </div>
 
-        {/* Right Section - Quote Info */}
-        <div className="text-right bg-card p-6 rounded-xl shadow-soft border border-border min-w-[280px]">
-          <div className="space-y-3">
-            <h2 className="text-2xl font-bold text-primary tracking-tight">PRESUPUESTO</h2>
-            <div className="border-t border-border pt-3">
-              <p className="text-lg font-semibold text-foreground mb-2 leading-tight">{presupuesto.nombre}</p>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground font-medium">Negocio:</span>
-                  <span className="font-semibold text-foreground">#{negocio.numero}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground font-medium">Estado:</span>
-                  <span className="font-semibold text-foreground capitalize">{presupuesto.estado}</span>
-                </div>
-                <div className="flex justify-between items-center pt-2 border-t border-border">
-                  <span className="text-muted-foreground font-medium">Total:</span>
-                  <span className="text-lg font-bold text-primary">{formatearPrecio(totales.total)}</span>
-                </div>
-              </div>
+      {/* Quote Summary Box */}
+      <div className="bg-gray-50 border border-gray-300 p-4 mb-6">
+        <div className="grid grid-cols-2 gap-8">
+          <div>
+            <h3 className="font-bold text-gray-800 mb-2">DATOS DEL CLIENTE</h3>
+            <div className="text-sm space-y-1">
+              <div><span className="font-semibold">Contacto:</span> {negocio.contacto.nombre} {negocio.contacto.apellido}</div>
+              <div><span className="font-semibold">Email:</span> {negocio.contacto.email}</div>
+              <div><span className="font-semibold">Teléfono:</span> {negocio.contacto.telefono}</div>
+              {negocio.productora && (
+                <div><span className="font-semibold">Empresa:</span> {negocio.productora.nombre}</div>
+              )}
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="font-bold text-gray-800 mb-2">DATOS DEL EVENTO</h3>
+            <div className="text-sm space-y-1">
+              <div><span className="font-semibold">Evento:</span> {negocio.evento.nombreEvento}</div>
+              <div><span className="font-semibold">Tipo:</span> {negocio.evento.tipoEvento}</div>
+              <div><span className="font-semibold">Fecha:</span> {negocio.evento.fechaEvento ? format(new Date(negocio.evento.fechaEvento), 'dd/MM/yyyy', { locale: es }) : 'Por definir'}</div>
+              <div><span className="font-semibold">Lugar:</span> {negocio.evento.locacion}</div>
+              <div><span className="font-semibold">Asistentes:</span> {negocio.evento.cantidadAsistentes}</div>
             </div>
           </div>
         </div>

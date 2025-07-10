@@ -2,9 +2,9 @@ import React from 'react';
 import { Presupuesto, Negocio } from '@/types';
 import { calcularTotalesPresupuesto } from '@/utils/quoteCalculations';
 import PDFHeader from './components/PDFHeader';
-import PDFClientEventInfo from './components/PDFClientEventInfo';
 import PDFProductTable from './components/PDFProductTable';
 import PDFPricingSummary from './components/PDFPricingSummary';
+import PDFConditionsSection from './components/PDFConditionsSection';
 import PDFFooter from './components/PDFFooter';
 
 interface PresupuestoPDFTemplateProps {
@@ -16,29 +16,22 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
   presupuesto,
   negocio
 }, ref) => {
-  // Debug: log the products and their sessions
-  console.log('PDF Template - Presupuesto productos:', presupuesto.productos);
-  presupuesto.productos?.forEach((producto, index) => {
-    console.log(`Producto ${index + 1} (${producto.nombre}):`, {
-      sessions: producto.sessions,
-      sessionCount: producto.sessions?.length || 0
-    });
-  });
-
   // Calculate totals with IVA breakdown
   const totales = calcularTotalesPresupuesto(presupuesto.productos || []);
 
   return (
-    <div ref={ref} className="bg-white p-8 max-w-4xl mx-auto text-black" style={{
-      fontFamily: 'Arial, sans-serif'
+    <div ref={ref} className="bg-white p-8 max-w-5xl mx-auto text-black" style={{
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '12px',
+      lineHeight: '1.4'
     }}>
       <PDFHeader presupuesto={presupuesto} negocio={negocio} totales={totales} />
-      
-      <PDFClientEventInfo negocio={negocio} />
       
       <PDFProductTable presupuesto={presupuesto} />
       
       <PDFPricingSummary totales={totales} />
+      
+      <PDFConditionsSection />
       
       <PDFFooter />
     </div>
