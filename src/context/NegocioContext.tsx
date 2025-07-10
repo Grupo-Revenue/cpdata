@@ -97,11 +97,24 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
           console.error('🧪 [NegocioContext] Direct sync test failed:', error);
         });
     };
+
+    // Global test function for manual HubSpot sync testing
+    (window as any).testHubSpotSync = (negocioId: string, estadoAnterior: EstadoNegocio, estadoNuevo: EstadoNegocio) => {
+      console.log('🧪 [Global] Manual HubSpot sync test initiated:', { negocioId, estadoAnterior, estadoNuevo });
+      syncStateToHubSpot(negocioId, estadoAnterior, estadoNuevo)
+        .then(() => {
+          console.log('🧪 [Global] Manual sync test completed successfully');
+        })
+        .catch((error) => {
+          console.error('🧪 [Global] Manual sync test failed:', error);
+        });
+    };
     
     window.addEventListener('testHubSpotSync', handleTestSync as EventListener);
     
     return () => {
       window.removeEventListener('testHubSpotSync', handleTestSync as EventListener);
+      delete (window as any).testHubSpotSync;
     };
   }, [obtenerNegocios, syncStateToHubSpot]);
 
