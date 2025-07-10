@@ -62,12 +62,12 @@ export const useHubSpotBusinessStateSync = () => {
       });
 
       const { data: stateData, error: stateError } = await supabase.functions.invoke('hubspot-deal-update', {
-        body: {
+        body: JSON.stringify({
           negocio_id: negocioData.id,
           estado_anterior: negocioData.estado_anterior,
           estado_nuevo: negocioData.estado_nuevo,
           sync_log_id: negocioData.sync_log_id
-        },
+        }),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
