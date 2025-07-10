@@ -64,19 +64,18 @@ serve(async (req) => {
       });
     }
 
-    // Get user's HubSpot API key
+    // Get global HubSpot API key (shared by all users)
     const { data: hubspotConfig, error: configError } = await supabase
       .from('hubspot_api_keys')
       .select('api_key')
-      .eq('user_id', user.id)
       .eq('activo', true)
-      .single()
+      .maybeSingle()
 
     if (configError || !hubspotConfig) {
-      console.error('HubSpot API key not found:', configError)
+      console.error('Global HubSpot API key not found:', configError)
       return new Response(JSON.stringify({
         success: false,
-        error: 'HubSpot API key not found or inactive'
+        error: 'HubSpot API key not configured. Please configure the API key in settings.'
       }), { 
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
