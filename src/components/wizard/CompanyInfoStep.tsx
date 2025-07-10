@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Loader2, Search } from 'lucide-react';
+import { ArrowLeft, Loader2, Search, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useChileanRutValidator } from '@/hooks/useChileanRutValidator';
 import { useHubSpotCompanyValidation } from '@/hooks/useHubSpotCompanyValidation';
@@ -477,12 +477,21 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
                 </Button>
               </div>
               {validationMessageProductora && (
-                <div className={`text-xs mt-2 p-2 rounded-md ${
-                  isProductoraFound === true ? 'bg-green-50 text-green-700 border border-green-200' : 
-                  isProductoraFound === false ? 'bg-blue-50 text-blue-700 border border-blue-200' : 
-                  'bg-red-50 text-red-700 border border-red-200'
+                <div className={`flex items-start space-x-2 p-3 rounded-md mt-2 ${
+                  isProductoraFound === true 
+                    ? 'bg-green-50 border border-green-200' 
+                    : 'bg-blue-50 border border-blue-200'
                 }`}>
-                  {validationMessageProductora}
+                  {isProductoraFound === true ? (
+                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  )}
+                  <p className={`text-sm ${
+                    isProductoraFound === true ? 'text-green-700' : 'text-blue-700'
+                  }`}>
+                    {validationMessageProductora}
+                  </p>
                 </div>
               )}
             </div>
@@ -576,12 +585,21 @@ export const CompanyInfoStep: React.FC<CompanyInfoStepProps> = ({
                 </Button>
               </div>
               {validationMessageClienteFinal && (
-                <div className={`text-xs mt-2 p-2 rounded-md ${
-                  isClienteFinalFound === true ? 'bg-green-50 text-green-700 border border-green-200' : 
-                  isClienteFinalFound === false ? 'bg-blue-50 text-blue-700 border border-blue-200' : 
-                  'bg-red-50 text-red-700 border border-red-200'
+                <div className={`flex items-start space-x-2 p-3 rounded-md mt-2 ${
+                  isClienteFinalFound === true 
+                    ? 'bg-green-50 border border-green-200' 
+                    : 'bg-blue-50 border border-blue-200'
                 }`}>
-                  {validationMessageClienteFinal}
+                  {isClienteFinalFound === true ? (
+                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  )}
+                  <p className={`text-sm ${
+                    isClienteFinalFound === true ? 'text-green-700' : 'text-blue-700'
+                  }`}>
+                    {validationMessageClienteFinal}
+                  </p>
                 </div>
               )}
             </div>
