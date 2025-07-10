@@ -13,7 +13,7 @@ const PresupuestosResumen: React.FC<PresupuestosResumenProps> = ({ presupuestos 
   const totalPresupuestos = presupuestos.length;
   const valorTotal = presupuestos.reduce((sum, p) => sum + p.total, 0);
   const presupuestosAprobados = presupuestos.filter(p => p.estado === 'aprobado').length;
-  const presupuestosEnviados = presupuestos.filter(p => p.estado === 'enviado').length;
+  const presupuestosPublicados = presupuestos.filter(p => p.estado === 'publicado').length;
 
   const stats = [
     {
@@ -42,7 +42,7 @@ const PresupuestosResumen: React.FC<PresupuestosResumenProps> = ({ presupuestos 
     },
     {
       label: 'En Proceso',
-      value: presupuestosEnviados.toString(),
+      value: presupuestosPublicados.toString(),
       icon: Clock,
       color: 'bg-orange-500',
       bgColor: 'bg-orange-50',
