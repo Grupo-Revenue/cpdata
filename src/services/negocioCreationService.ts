@@ -73,6 +73,41 @@ export const processDealForBusiness = async (
       try {
         console.log('[NegocioCreationService] Updating existing negocio with HubSpot ID:', hubspotDeal.hubspotId);
         
+        // First check if another negocio already has this hubspot_id
+        const { data: existingWithHubspotId, error: searchError } = await supabase
+          .from('negocios')
+          .select('id, numero')
+          .eq('hubspot_id', hubspotDeal.hubspotId)
+          .eq('user_id', userId)
+          .neq('id', negocioId)
+          .maybeSingle();
+
+        if (searchError) {
+          console.error('[NegocioCreationService] Error checking for existing hubspot_id:', searchError);
+        } else if (existingWithHubspotId) {
+          console.warn('[NegocioCreationService] Found existing negocio with same hubspot_id, clearing it first:', {
+            existingId: existingWithHubspotId.id,
+            existingNumber: existingWithHubspotId.numero,
+            hubspotId: hubspotDeal.hubspotId
+          });
+          
+          // Clear the hubspot_id from the existing negocio to avoid conflicts
+          const { error: clearError } = await supabase
+            .from('negocios')
+            .update({ 
+              hubspot_id: null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingWithHubspotId.id);
+
+          if (clearError) {
+            console.error('[NegocioCreationService] Error clearing duplicate hubspot_id:', clearError);
+          } else {
+            console.log('[NegocioCreationService] Cleared duplicate hubspot_id from existing negocio');
+          }
+        }
+
+        // Now try to update the current negocio
         const { error: updateError } = await supabase
           .from('negocios')
           .update({ 
@@ -92,46 +127,6 @@ export const processDealForBusiness = async (
       }
     }
 
-    // Step 3: Handle cases where negocio might have duplicate hubspot_id constraint
-    if (hubspotDeal?.hubspotId) {
-      try {
-        // Check if another negocio already has this hubspot_id
-        const { data: existingNegocio, error: searchError } = await supabase
-          .from('negocios')
-          .select('id, numero')
-          .eq('hubspot_id', hubspotDeal.hubspotId)
-          .eq('user_id', userId)
-          .neq('id', negocioId || '') // Exclude current negocio if updating
-          .maybeSingle();
-
-        if (searchError) {
-          console.error('[NegocioCreationService] Error checking for duplicate hubspot_id:', searchError);
-        } else if (existingNegocio) {
-          console.warn('[NegocioCreationService] Found existing negocio with same hubspot_id:', {
-            existingId: existingNegocio.id,
-            existingNumber: existingNegocio.numero,
-            hubspotId: hubspotDeal.hubspotId
-          });
-          
-          // Clear the hubspot_id from the existing negocio to avoid conflicts
-          const { error: clearError } = await supabase
-            .from('negocios')
-            .update({ 
-              hubspot_id: null,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', existingNegocio.id);
-
-          if (clearError) {
-            console.error('[NegocioCreationService] Error clearing duplicate hubspot_id:', clearError);
-          } else {
-            console.log('[NegocioCreationService] Cleared duplicate hubspot_id from existing negocio');
-          }
-        }
-      } catch (error) {
-        console.warn('[NegocioCreationService] Error handling duplicate hubspot_id:', error);
-      }
-    }
 
     // Step 4: Sync business value to HubSpot if we have the IDs
     if (negocioId && hubspotDeal?.hubspotId) {
