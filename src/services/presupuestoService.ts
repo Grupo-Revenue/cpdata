@@ -2,6 +2,29 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Presupuesto, EstadoPresupuesto, ProductoPresupuesto } from '@/types';
 
+// Function to trigger HubSpot amount sync
+const triggerHubSpotAmountSync = async (negocioId: string) => {
+  try {
+    console.log('💰 [Presupuesto Service] Triggering HubSpot amount sync for negocio:', negocioId);
+    
+    // Call the HubSpot amount sync edge function
+    const { error } = await supabase.functions.invoke('hubspot-deal-amount-update', {
+      body: { 
+        negocio_id: negocioId,
+        trigger_source: 'presupuesto_change'
+      }
+    });
+
+    if (error) {
+      console.error('❌ [Presupuesto Service] Error syncing amount to HubSpot:', error);
+    } else {
+      console.log('✅ [Presupuesto Service] Amount sync triggered successfully');
+    }
+  } catch (error) {
+    console.error('❌ [Presupuesto Service] Unexpected error during amount sync:', error);
+  }
+};
+
 export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoData: Omit<Presupuesto, 'id' | 'created_at' | 'updated_at'>): Promise<Presupuesto | null> => {
   try {
     console.log('Creating presupuesto with data:', presupuestoData);
@@ -88,6 +111,10 @@ export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoD
     }
 
     console.log('Presupuesto creation completed successfully');
+    
+    // Trigger HubSpot amount sync after successful presupuesto creation
+    await triggerHubSpotAmountSync(negocioId);
+    
     return presupuestoCompleto;
   } catch (error) {
     console.error("Failed to create presupuesto:", error);
@@ -118,6 +145,9 @@ export const actualizarPresupuestoEnSupabase = async (
     }
 
     console.log('Presupuesto updated successfully:', data);
+
+    // Get negocio_id for HubSpot sync
+    const negocioId = data.negocio_id;
 
     // If products are provided, update them as well
     if (productos && productos.length > 0) {
@@ -158,6 +188,9 @@ export const actualizarPresupuestoEnSupabase = async (
       console.log('Products updated successfully:', productosCreados);
     }
 
+    // Trigger HubSpot amount sync after successful presupuesto update
+    await triggerHubSpotAmountSync(negocioId);
+
     return data as Presupuesto;
   } catch (error) {
     console.error("Failed to update presupuesto:", error);
@@ -167,6 +200,13 @@ export const actualizarPresupuestoEnSupabase = async (
 
 export const eliminarPresupuestoEnSupabase = async (presupuestoId: string): Promise<boolean> => {
   try {
+    // Get negocio_id before deleting for HubSpot sync
+    const { data: presupuesto } = await supabase
+      .from('presupuestos')
+      .select('negocio_id')
+      .eq('id', presupuestoId)
+      .single();
+
     const { error } = await supabase
       .from('presupuestos')
       .delete()
@@ -175,6 +215,11 @@ export const eliminarPresupuestoEnSupabase = async (presupuestoId: string): Prom
     if (error) {
       console.error("Error deleting presupuesto:", error);
       throw error;
+    }
+
+    // Trigger HubSpot amount sync after successful presupuesto deletion
+    if (presupuesto?.negocio_id) {
+      await triggerHubSpotAmountSync(presupuesto.negocio_id);
     }
 
     return true;
@@ -201,6 +246,11 @@ export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, 
     if (error) {
       console.error("Error updating presupuesto state:", error);
       throw error;
+    }
+
+    // Trigger HubSpot amount sync after successful state change
+    if (data?.negocio_id) {
+      await triggerHubSpotAmountSync(data.negocio_id);
     }
 
     return data as Presupuesto;

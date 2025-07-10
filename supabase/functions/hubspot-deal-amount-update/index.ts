@@ -25,29 +25,37 @@ serve(async (req) => {
     )
 
     // Parse request body
-    const { negocio_id, amount } = await req.json()
+    const { negocio_id, amount, trigger_source } = await req.json()
 
-    if (!negocio_id || amount === undefined || amount === null) {
-      console.error('🚫 [HubSpot Amount Update] Missing required parameters:', {
+    if (!negocio_id) {
+      console.error('🚫 [HubSpot Amount Update] Missing negocio_id:', {
         negocio_id,
-        amount,
-        received_body: { negocio_id, amount }
+        received_body: { negocio_id, amount, trigger_source }
       })
       return new Response(
-        JSON.stringify({ error: 'Missing required parameters' }),
+        JSON.stringify({ error: 'Missing negocio_id parameter' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     console.log('💰 [HubSpot Amount Update] Processing business amount update:', {
       negocio_id,
-      amount
+      amount: amount || 'auto-calculate',
+      trigger_source: trigger_source || 'unknown'
     })
 
-    // Get business info with user_id and hubspot_id
+    // Get business info with presupuestos to calculate amount
     const { data: negocio, error: negocioError } = await supabaseClient
       .from('negocios')
-      .select('user_id, hubspot_id')
+      .select(`
+        user_id,
+        hubspot_id,
+        presupuestos:presupuestos(
+          id,
+          total,
+          estado
+        )
+      `)
       .eq('id', negocio_id)
       .single()
 
@@ -98,13 +106,45 @@ serve(async (req) => {
       )
     }
 
+    // Calculate business amount if not provided
+    let businessAmount = amount;
+    if (businessAmount === undefined || businessAmount === null) {
+      // Calculate total value based on presupuestos priority:
+      // 1. Sum all approved budgets first (highest priority)
+      const approvedTotal = negocio.presupuestos
+        .filter(p => p.estado === 'aprobado')
+        .reduce((sum, p) => sum + parseFloat(String(p.total || '0')), 0);
+
+      if (approvedTotal > 0) {
+        businessAmount = approvedTotal;
+      } else {
+        // 2. If no approved budgets, use sent budgets
+        const sentTotal = negocio.presupuestos
+          .filter(p => p.estado === 'enviado')
+          .reduce((sum, p) => sum + parseFloat(String(p.total || '0')), 0);
+
+        if (sentTotal > 0) {
+          businessAmount = sentTotal;
+        } else {
+          // 3. If no sent budgets, use draft budgets
+          const draftTotal = negocio.presupuestos
+            .filter(p => p.estado === 'borrador')
+            .reduce((sum, p) => sum + parseFloat(String(p.total || '0')), 0);
+          businessAmount = draftTotal;
+        }
+      }
+    }
+
     // Format amount correctly for HubSpot (should be numeric string)
-    const formattedAmount = Number(amount).toString()
+    const formattedAmount = Number(businessAmount).toString()
 
     console.log('🚀 [HubSpot Amount Update] Updating HubSpot deal amount:', {
       dealId: negocio.hubspot_id,
       amount: formattedAmount,
-      originalAmount: amount
+      originalAmount: amount,
+      calculatedAmount: businessAmount,
+      trigger_source: trigger_source || 'unknown',
+      presupuestos_count: negocio.presupuestos?.length || 0
     })
 
     // Update deal amount in HubSpot
