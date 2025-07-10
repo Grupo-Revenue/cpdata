@@ -160,7 +160,7 @@ export const processContactForBusiness = async (
 
     if (!existingLocalContact) {
       // Step 4a: Contact doesn't exist locally, create it
-      console.log('Creating contact in local database...');
+      console.log('[ContactService] Creating contact in local database...');
       
       const contactDataToInsert = {
         user_id: userId,
@@ -172,19 +172,69 @@ export const processContactForBusiness = async (
         hubspot_id: hubspotContact?.hubspotId || null
       };
 
-      const { data: newContact, error: createError } = await supabase
-        .from('contactos')
-        .insert([contactDataToInsert])
-        .select('id')
-        .single();
+      try {
+        const { data: newContact, error: createError } = await supabase
+          .from('contactos')
+          .insert([contactDataToInsert])
+          .select('id')
+          .single();
 
-      if (createError) {
-        throw new Error(`Error creating local contact: ${createError.message}`);
+        if (createError) {
+          // Check if it's a hubspot_id constraint violation
+          if (createError.message?.includes('unique_contactos_hubspot_id') && hubspotContact?.hubspotId) {
+            console.log('[ContactService] HubSpot ID constraint violation, searching for existing contact with this ID...');
+            
+            // Try to find the contact that has this hubspot_id
+            const { data: existingByHubspotId, error: searchByHubspotError } = await supabase
+              .from('contactos')
+              .select('*')
+              .eq('hubspot_id', hubspotContact.hubspotId)
+              .maybeSingle();
+
+            if (searchByHubspotError) {
+              throw new Error(`Error searching for contact with hubspot_id: ${searchByHubspotError.message}`);
+            }
+
+            if (existingByHubspotId) {
+              console.log('[ContactService] Found existing contact with hubspot_id, updating it...');
+              
+              // Update the existing contact with new data
+              const { data: updatedContact, error: updateError } = await supabase
+                .from('contactos')
+                .update({
+                  nombre: hubspotContact.firstname || contactData.nombre,
+                  apellido: hubspotContact.lastname || contactData.apellido,
+                  email: normalizedEmail,
+                  telefono: hubspotContact.phone || contactData.telefono,
+                  cargo: contactData.cargo || null,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', existingByHubspotId.id)
+                .select('id')
+                .single();
+
+              if (updateError) {
+                throw new Error(`Error updating existing contact: ${updateError.message}`);
+              }
+
+              contactId = updatedContact.id;
+              wasUpdated = true;
+              console.log('[ContactService] Successfully updated existing contact:', contactId);
+            } else {
+              throw new Error(`HubSpot ID constraint violation but no contact found with that ID`);
+            }
+          } else {
+            throw new Error(`Error creating local contact: ${createError.message}`);
+          }
+        } else {
+          contactId = newContact.id;
+          wasCreated = true;
+          console.log('[ContactService] Contact created in local database:', contactId);
+        }
+      } catch (error) {
+        console.error('[ContactService] Error in contact creation/update process:', error);
+        throw error;
       }
-
-      contactId = newContact.id;
-      wasCreated = true;
-      console.log('Contact created in local database:', contactId);
 
     } else {
       // Step 4b: Contact exists locally

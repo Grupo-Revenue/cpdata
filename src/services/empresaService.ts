@@ -167,19 +167,69 @@ export const processCompanyForBusiness = async (
         hubspot_id: hubspotCompany?.hubspotId || null
       };
 
-      const { data: newCompany, error: createError } = await supabase
-        .from('empresas')
-        .insert([companyDataToInsert])
-        .select('id')
-        .single();
+      try {
+        const { data: newCompany, error: createError } = await supabase
+          .from('empresas')
+          .insert([companyDataToInsert])
+          .select('id')
+          .single();
 
-      if (createError) {
-        throw new Error(`Error creating local company: ${createError.message}`);
+        if (createError) {
+          // Check if it's a hubspot_id constraint violation
+          if (createError.message?.includes('unique_empresas_hubspot_id') && hubspotCompany?.hubspotId) {
+            console.log('[EmpresaService] HubSpot ID constraint violation, searching for existing company with this ID...');
+            
+            // Try to find the company that has this hubspot_id
+            const { data: existingByHubspotId, error: searchByHubspotError } = await supabase
+              .from('empresas')
+              .select('*')
+              .eq('hubspot_id', hubspotCompany.hubspotId)
+              .maybeSingle();
+
+            if (searchByHubspotError) {
+              throw new Error(`Error searching for company with hubspot_id: ${searchByHubspotError.message}`);
+            }
+
+            if (existingByHubspotId) {
+              console.log('[EmpresaService] Found existing company with hubspot_id, updating it...');
+              
+              // Update the existing company with new data
+              const { data: updatedCompany, error: updateError } = await supabase
+                .from('empresas')
+                .update({
+                  nombre: normalizedName,
+                  rut: empresaData.rut,
+                  direccion: empresaData.direccion,
+                  sitio_web: empresaData.sitio_web,
+                  tipo: empresaData.tipo,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', existingByHubspotId.id)
+                .select('id')
+                .single();
+
+              if (updateError) {
+                throw new Error(`Error updating existing company: ${updateError.message}`);
+              }
+
+              empresaId = updatedCompany.id;
+              wasUpdated = true;
+              console.log('[EmpresaService] Successfully updated existing company:', empresaId);
+            } else {
+              throw new Error(`HubSpot ID constraint violation but no company found with that ID`);
+            }
+          } else {
+            throw new Error(`Error creating local company: ${createError.message}`);
+          }
+        } else {
+          empresaId = newCompany.id;
+          wasCreated = true;
+          console.log('[EmpresaService] Company created in local database:', empresaId);
+        }
+      } catch (error) {
+        console.error('[EmpresaService] Error in company creation/update process:', error);
+        throw error;
       }
-
-      empresaId = newCompany.id;
-      wasCreated = true;
-      console.log('[EmpresaService] Company created in local database:', empresaId);
     } else {
       // Step 4b: Company exists locally, update if needed
       empresaId = existingLocalCompany.id;
