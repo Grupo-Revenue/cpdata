@@ -137,13 +137,18 @@ export const processContactForBusiness = async (
         // Update the email if it's different
         if (contactByHubspotId.email !== normalizedEmail) {
           console.log('Updating email from', contactByHubspotId.email, 'to', normalizedEmail);
-          const { error: updateEmailError } = await supabase
+          const { data: updatedContact, error: updateEmailError } = await supabase
             .from('contactos')
             .update({ email: normalizedEmail, updated_at: new Date().toISOString() })
-            .eq('id', contactByHubspotId.id);
+            .eq('id', contactByHubspotId.id)
+            .select('*')
+            .single();
             
           if (updateEmailError) {
             console.error('Error updating contact email:', updateEmailError);
+          } else {
+            // Update existingLocalContact with the updated data
+            existingLocalContact = updatedContact;
           }
         }
       }
