@@ -112,8 +112,8 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
         });
       }
 
-      // Don't close automatically after saving, let user decide
-      // onCerrar();
+      // Close and return to business detail page after successful save
+      onCerrar();
     } catch (error) {
       console.error('Error saving presupuesto:', error);
       
