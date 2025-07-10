@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { NegocioProvider } from "@/context/NegocioContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import HubSpotSyncProvider from "@/components/HubSpotSyncProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
@@ -23,7 +24,8 @@ const App = () => {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <NegocioProvider>
-            <TooltipProvider>
+            <HubSpotSyncProvider>
+              <TooltipProvider>
               <Toaster />
               <Sonner />
               <BrowserRouter>
@@ -63,7 +65,8 @@ const App = () => {
                   </Routes>
                 </Suspense>
               </BrowserRouter>
-            </TooltipProvider>
+              </TooltipProvider>
+            </HubSpotSyncProvider>
           </NegocioProvider>
         </AuthProvider>
       </QueryClientProvider>
