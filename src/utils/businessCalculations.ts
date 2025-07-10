@@ -20,17 +20,17 @@ export const useCalcularValorNegocio = (negocio: Negocio): number => {
 export const obtenerInfoPresupuestos = (negocio: Negocio) => {
   const totalPresupuestos = negocio.presupuestos.length;
   const presupuestosAprobados = negocio.presupuestos.filter(p => p.estado === 'aprobado').length;
-  const presupuestosEnviados = negocio.presupuestos.filter(p => p.estado === 'enviado').length;
+  const presupuestosPublicados = negocio.presupuestos.filter(p => p.estado === 'publicado').length;
   const presupuestosBorrador = negocio.presupuestos.filter(p => p.estado === 'borrador').length;
   const presupuestosRechazados = negocio.presupuestos.filter(p => p.estado === 'rechazado').length;
   const presupuestosVencidos = negocio.presupuestos.filter(p => p.estado === 'vencido').length;
   const presupuestosFacturados = negocio.presupuestos.filter(p => p.estado === 'aprobado' && p.facturado === true).length;
-  const presupuestosPendientes = negocio.presupuestos.filter(p => ['enviado', 'borrador'].includes(p.estado)).length;
+  const presupuestosPendientes = negocio.presupuestos.filter(p => ['publicado', 'borrador'].includes(p.estado)).length;
   
   return {
     totalPresupuestos,
     presupuestosAprobados,
-    presupuestosEnviados,
+    presupuestosPublicados,
     presupuestosBorrador,
     presupuestosRechazados,
     presupuestosVencidos,
@@ -73,7 +73,7 @@ export const analyzeBusinessState = (negocio: Negocio) => {
     expectedState = 'parcialmente_aceptado';
   } else if ((info.presupuestosRechazados + info.presupuestosVencidos) === info.totalPresupuestos) {
     expectedState = 'negocio_perdido';
-  } else if (info.presupuestosEnviados > 0 || info.presupuestosBorrador > 0) {
+  } else if (info.presupuestosPublicados > 0 || info.presupuestosBorrador > 0) {
     expectedState = 'presupuesto_enviado';
   } else {
     expectedState = 'oportunidad_creada';
@@ -107,7 +107,7 @@ export const obtenerEstadoNegocioInfo = (negocio: Negocio) => {
       descripcionEstado = 'Oportunidad identificada, sin presupuestos creados';
       break;
     case 'presupuesto_enviado':
-      descripcionEstado = `${info.presupuestosEnviados} presupuesto(s) enviado(s) esperando respuesta`;
+      descripcionEstado = `${info.presupuestosPublicados} presupuesto(s) publicado(s) esperando respuesta`;
       break;
     case 'parcialmente_aceptado':
       descripcionEstado = `${info.presupuestosAprobados} de ${info.totalPresupuestos} presupuestos aprobados`;

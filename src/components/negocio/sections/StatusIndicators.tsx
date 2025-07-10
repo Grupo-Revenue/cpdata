@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 
 interface StatusIndicatorsProps {
   presupuestosAprobados: number;
-  presupuestosEnviados: number;
+  presupuestosPublicados: number;
   presupuestosBorrador: number;
   presupuestosRechazados: number;
   presupuestosVencidos: number;
@@ -13,7 +13,7 @@ interface StatusIndicatorsProps {
 
 const StatusIndicators: React.FC<StatusIndicatorsProps> = ({
   presupuestosAprobados,
-  presupuestosEnviados,
+  presupuestosPublicados,
   presupuestosBorrador,
   presupuestosRechazados,
   presupuestosVencidos,
@@ -31,10 +31,10 @@ const StatusIndicators: React.FC<StatusIndicatorsProps> = ({
     );
   }
   
-  if (presupuestosEnviados > 0) {
+  if (presupuestosPublicados > 0) {
     badges.push(
-      <Badge key="enviados" className="bg-blue-100 text-blue-700 border-blue-200 text-xs">
-        {presupuestosEnviados} enviado{presupuestosEnviados !== 1 ? 's' : ''}
+      <Badge key="publicados" className="bg-blue-100 text-blue-700 border-blue-200 text-xs">
+        {presupuestosPublicados} publicado{presupuestosPublicados !== 1 ? 's' : ''}
       </Badge>
     );
   }

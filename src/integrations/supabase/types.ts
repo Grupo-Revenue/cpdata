@@ -656,7 +656,7 @@ export type Database = {
         | "negocio_perdido"
       estado_presupuesto:
         | "borrador"
-        | "enviado"
+        | "publicado"
         | "aprobado"
         | "rechazado"
         | "vencido"
@@ -800,7 +800,7 @@ export const Constants = {
       ],
       estado_presupuesto: [
         "borrador",
-        "enviado",
+        "publicado",
         "aprobado",
         "rechazado",
         "vencido",
