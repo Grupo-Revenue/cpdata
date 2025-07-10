@@ -63,14 +63,14 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = React.memo(({ negocio,
       </TableCell>
       
       <TableCell className="font-medium">
-        {negocio.evento?.nombreEvento || 'Sin evento'}
+        {negocio.nombre_evento || negocio.evento?.nombreEvento || 'Sin evento'}
       </TableCell>
       
       <TableCell>
         <div className="flex items-center text-sm text-slate-600">
           <Calendar className="w-3 h-3 mr-1" />
-          {negocio.evento?.fechaEvento ? 
-            new Date(negocio.evento.fechaEvento).toLocaleDateString('es-CL', {
+          {negocio.fecha_evento || negocio.evento?.fechaEvento ? 
+            new Date(negocio.fecha_evento || negocio.evento.fechaEvento).toLocaleDateString('es-CL', {
               day: '2-digit',
               month: '2-digit',
               year: '2-digit'
