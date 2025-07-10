@@ -101,15 +101,11 @@ export const useManualHubSpotSync = () => {
       });
 
       const { data: stateData, error: stateError } = await supabase.functions.invoke('hubspot-deal-update', {
-        body: JSON.stringify({
+        body: {
           negocio_id: negocio.id,
-          estado_anterior: negocio.estado, // For manual sync, we use current state as both anterior and nuevo
+          estado_anterior: negocio.estado,
           estado_nuevo: negocio.estado,
           sync_log_id: logId
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
         }
       });
 
