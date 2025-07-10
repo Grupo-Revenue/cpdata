@@ -273,6 +273,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         title: "Sesión cerrada",
         description: "Has cerrado sesión exitosamente"
       });
+      // Redirect to auth page after successful logout
+      window.location.href = '/auth';
     }
   };
 
