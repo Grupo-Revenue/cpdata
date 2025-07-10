@@ -206,60 +206,6 @@ export type Database = {
         }
         Relationships: []
       }
-      hubspot_sync_log: {
-        Row: {
-          created_at: string | null
-          error_message: string | null
-          execution_time_ms: number | null
-          hubspot_deal_id: string | null
-          id: string
-          max_retries: number | null
-          negocio_id: string
-          operation_type: string
-          processed_at: string | null
-          request_payload: Json | null
-          response_payload: Json | null
-          retry_count: number | null
-          status: string | null
-          trigger_source: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          error_message?: string | null
-          execution_time_ms?: number | null
-          hubspot_deal_id?: string | null
-          id?: string
-          max_retries?: number | null
-          negocio_id: string
-          operation_type: string
-          processed_at?: string | null
-          request_payload?: Json | null
-          response_payload?: Json | null
-          retry_count?: number | null
-          status?: string | null
-          trigger_source?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          error_message?: string | null
-          execution_time_ms?: number | null
-          hubspot_deal_id?: string | null
-          id?: string
-          max_retries?: number | null
-          negocio_id?: string
-          operation_type?: string
-          processed_at?: string | null
-          request_payload?: Json | null
-          response_payload?: Json | null
-          retry_count?: number | null
-          status?: string | null
-          trigger_source?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       lineas_producto: {
         Row: {
           activo: boolean
@@ -590,28 +536,6 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
-      enqueue_hubspot_sync: {
-        Args: {
-          p_negocio_id: string
-          p_operation_type: string
-          p_payload: Json
-          p_priority?: number
-          p_trigger_source?: string
-        }
-        Returns: string
-      }
-      get_hubspot_sync_stats: {
-        Args: { p_user_id?: string }
-        Returns: {
-          total_pending: number
-          total_success_today: number
-          total_failed_today: number
-          total_retrying: number
-          avg_execution_time_ms: number
-          last_sync_at: string
-          success_rate_percentage: number
-        }[]
-      }
       has_role: {
         Args: {
           _user_id: string
@@ -629,10 +553,6 @@ export type Database = {
       }
       recalcular_todos_estados_negocios: {
         Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      retry_failed_hubspot_syncs: {
-        Args: { p_user_id?: string }
         Returns: number
       }
     }

@@ -12,7 +12,6 @@ import { Link } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
 import HubSpotConfig from '@/components/settings/HubSpotConfig';
 import SyncConfiguration from '@/components/settings/SyncConfiguration';
-import { HubSpotSyncMonitor } from '@/components/settings/HubSpotSyncMonitor';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -224,9 +223,8 @@ const Settings = () => {
               <HubSpotConfig />
             </TabsContent>
 
-            <TabsContent value="sync" className="space-y-6">
+            <TabsContent value="sync">
               <SyncConfiguration />
-              <HubSpotSyncMonitor />
             </TabsContent>
           </Tabs>
         </div>
