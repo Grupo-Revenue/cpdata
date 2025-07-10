@@ -5,6 +5,8 @@ import { useToast } from "@/hooks/use-toast"
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Home } from 'lucide-react';
 
 import { UserTable } from '@/components/admin/UserTable';
 import AdminProductos from '@/components/admin/AdminProductos';
@@ -86,9 +88,19 @@ const Admin = () => {
 
   return (
     <div className="container mx-auto px-6 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Panel de Administración</h1>
-        <p className="text-gray-600">Gestiona usuarios, productos y configuración del sistema</p>
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Panel de Administración</h1>
+          <p className="text-gray-600">Gestiona usuarios, productos y configuración del sistema</p>
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2"
+        >
+          <Home className="h-4 w-4" />
+          Volver al Inicio
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
