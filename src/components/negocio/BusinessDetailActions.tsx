@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useNegocio } from '@/context/NegocioContext';
 import { EstadoPresupuesto } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { useManualHubSpotSync } from '@/hooks/hubspot/useManualHubSpotSync';
 
 interface BusinessDetailActionsProps {
   negocioId: string;
@@ -13,6 +14,7 @@ export const useBusinessDetailActions = (negocioId: string) => {
   const { eliminarPresupuesto, cambiarEstadoPresupuesto, refreshNegocios } = useNegocio();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { syncNegocioToHubSpot } = useManualHubSpotSync();
 
   const handleEliminarPresupuesto = async (presupuestoId: string): Promise<void> => {
     await eliminarPresupuesto(negocioId, presupuestoId);
@@ -42,11 +44,16 @@ export const useBusinessDetailActions = (negocioId: string) => {
     }
   };
 
+  const handleSyncToHubSpot = async () => {
+    await syncNegocioToHubSpot(negocioId);
+  };
+
   return {
     handleEliminarPresupuesto,
     handleVerPDF,
     handleCambiarEstadoPresupuesto,
-    handleRefresh
+    handleRefresh,
+    handleSyncToHubSpot
   };
 };
 

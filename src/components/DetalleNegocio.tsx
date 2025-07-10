@@ -39,7 +39,8 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
     handleEliminarPresupuesto,
     handleVerPDF,
     handleCambiarEstadoPresupuesto,
-    handleRefresh
+    handleRefresh,
+    handleSyncToHubSpot
   } = useBusinessDetailActions(negocioId);
 
   if (loading && !negocio) {
@@ -84,6 +85,7 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
             negocio={negocio}
             onVolver={onVolver}
             onCrearPresupuesto={handleCrearPresupuesto}
+            onSyncToHubSpot={handleSyncToHubSpot}
           />
           
           <DetalleNegocioMainContent

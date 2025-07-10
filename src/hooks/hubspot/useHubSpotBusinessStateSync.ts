@@ -113,7 +113,7 @@ export const useHubSpotBusinessStateSync = () => {
     }
   }, [toast]);
 
-  // Enhanced channel setup with improved stability and logging
+  // Simplified and more stable channel setup
   const setupChannel = useCallback(() => {
     // Clean up existing channel
     if (channelRef.current) {
@@ -123,13 +123,12 @@ export const useHubSpotBusinessStateSync = () => {
       isSubscribedRef.current = false;
     }
 
-    logger.info('[HubSpot Sync] Setting up enhanced real-time listener for business state changes');
+    logger.info('[HubSpot Sync] Setting up stable real-time listener for business state changes');
     
     const channel = supabase
-      .channel('hubspot-sync-channel', {
+      .channel(`hubspot-sync-${Date.now()}`, {
         config: {
-          broadcast: { self: false },
-          presence: { key: 'hubspot-sync' }
+          broadcast: { self: false }
         }
       })
       .on(
@@ -137,11 +136,10 @@ export const useHubSpotBusinessStateSync = () => {
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'negocios',
-          filter: 'estado=neq.null'
+          table: 'negocios'
         },
         async (payload) => {
-          logger.info('[HubSpot Sync] Received real-time update:', payload);
+          logger.info('[HubSpot Sync] 🔥 Received real-time update:', payload);
           const { new: newRecord, old: oldRecord } = payload;
           
           // Enhanced payload validation
@@ -150,20 +148,18 @@ export const useHubSpotBusinessStateSync = () => {
               hasNewRecord: !!newRecord,
               hasId: !!newRecord?.id,
               newEstado: newRecord?.estado,
-              oldEstado: oldRecord?.estado,
-              fullPayload: payload
+              oldEstado: oldRecord?.estado
             });
             return;
           }
           
           // Only sync if the state actually changed
           if (newRecord.estado !== oldRecord.estado) {
-            logger.info('[HubSpot Sync] Detected business state change, initiating sync', {
+            logger.info('[HubSpot Sync] 🚀 ESTADO CHANGED DETECTED - Starting immediate sync', {
               negocio_id: newRecord.id,
               estado_anterior: oldRecord.estado,
               estado_nuevo: newRecord.estado,
-              hubspot_id: newRecord.hubspot_id,
-              has_hubspot_id: !!newRecord.hubspot_id
+              hubspot_id: newRecord.hubspot_id
             });
 
             // Create sync log entry and sync to HubSpot

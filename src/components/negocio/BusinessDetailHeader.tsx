@@ -26,12 +26,14 @@ interface BusinessDetailHeaderProps {
   negocio: Negocio;
   onVolver: () => void;
   onCrearPresupuesto: () => void;
+  onSyncToHubSpot?: () => void;
 }
 
 const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
   negocio,
   onVolver,
-  onCrearPresupuesto
+  onCrearPresupuesto,
+  onSyncToHubSpot
 }) => {
   const navigate = useNavigate();
   const valorTotal = calcularValorNegocio(negocio);
@@ -43,7 +45,7 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
   return (
     <div className="space-y-4 mb-6">
       {/* Back Button Above Title */}
-      <div className="flex items-center">
+      <div className="flex items-center justify-between">
         <Button
           variant="outline"
           size="sm"
@@ -53,6 +55,18 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
           <ArrowLeft className="h-4 w-4 mr-2" />
           Volver
         </Button>
+        
+        {negocio.hubspot_id && onSyncToHubSpot && (
+          <Button 
+            variant="outline" 
+            onClick={onSyncToHubSpot}
+            className="h-8 px-3 border-blue-300 text-blue-600 hover:bg-blue-50"
+            size="sm"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Sincronizar HubSpot
+          </Button>
+        )}
       </div>
 
       {/* Main Header */}

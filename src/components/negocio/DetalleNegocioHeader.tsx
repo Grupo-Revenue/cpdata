@@ -2,16 +2,17 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { Negocio } from '@/types';
 import { obtenerEstadoNegocioInfo, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
 
 interface DetalleNegocioHeaderProps {
   negocio: Negocio;
   onVolver: () => void;
+  onSyncToHubSpot?: () => void;
 }
 
-const DetalleNegocioHeader: React.FC<DetalleNegocioHeaderProps> = ({ negocio, onVolver }) => {
+const DetalleNegocioHeader: React.FC<DetalleNegocioHeaderProps> = ({ negocio, onVolver, onSyncToHubSpot }) => {
   const { colorEstado } = obtenerEstadoNegocioInfo(negocio);
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-8">
@@ -38,6 +39,17 @@ const DetalleNegocioHeader: React.FC<DetalleNegocioHeaderProps> = ({ negocio, on
             <p className="text-xl text-slate-600 font-medium">{negocio.evento.nombreEvento}</p>
           </div>
         </div>
+        {negocio.hubspot_id && onSyncToHubSpot && (
+          <Button 
+            variant="outline" 
+            onClick={onSyncToHubSpot}
+            className="border-blue-300 text-blue-600 hover:bg-blue-50"
+            size="sm"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Sincronizar HubSpot
+          </Button>
+        )}
       </div>
     </div>
   );
