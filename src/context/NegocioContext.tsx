@@ -287,14 +287,14 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
           )
         );
 
-        // Sync state change to HubSpot if we have both states
-        if (estadoAnterior && estadoAnterior !== nuevoEstado) {
-          console.log('🚀 [NegocioContext] CALLING syncStateToHubSpot...');
+        // **FIX: Sync state change to HubSpot directly here**
+        if (estadoAnterior && estadoAnterior !== nuevoEstado && negocioActual?.hubspot_id) {
+          console.log('🚀 [NegocioContext] CALLING syncStateToHubSpot DIRECTLY...');
           console.log('🚀 [NegocioContext] Params:', { negocioId, estadoAnterior, nuevoEstado });
           
           try {
             await syncStateToHubSpot(negocioId, estadoAnterior, nuevoEstado);
-            console.log('✅ [NegocioContext] syncStateToHubSpot completed');
+            console.log('✅ [NegocioContext] syncStateToHubSpot completed successfully');
           } catch (syncError) {
             console.error('❌ [NegocioContext] syncStateToHubSpot failed:', syncError);
           }
@@ -302,6 +302,7 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
           console.log('⚠️ [NegocioContext] Skipping HubSpot sync:', {
             hasEstadoAnterior: !!estadoAnterior,
             statesEqual: estadoAnterior === nuevoEstado,
+            hasHubSpotId: !!negocioActual?.hubspot_id,
             estadoAnterior,
             nuevoEstado
           });
