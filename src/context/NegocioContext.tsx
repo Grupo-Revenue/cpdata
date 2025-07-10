@@ -82,7 +82,28 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   useEffect(() => {
     console.log('[NegocioContext] ==> COMPONENT MOUNTED, TRIGGERING INITIAL LOAD <==');
     obtenerNegocios();
-  }, [obtenerNegocios]);
+    
+    // Add test event listener for HubSpot sync testing
+    const handleTestSync = (event: CustomEvent) => {
+      console.log('🧪 [NegocioContext] Test sync event received:', event.detail);
+      const { negocioId, estadoAnterior, estadoNuevo } = event.detail;
+      
+      console.log('🧪 [NegocioContext] Calling syncStateToHubSpot directly...');
+      syncStateToHubSpot(negocioId, estadoAnterior, estadoNuevo)
+        .then(() => {
+          console.log('🧪 [NegocioContext] Direct sync test completed');
+        })
+        .catch((error) => {
+          console.error('🧪 [NegocioContext] Direct sync test failed:', error);
+        });
+    };
+    
+    window.addEventListener('testHubSpotSync', handleTestSync as EventListener);
+    
+    return () => {
+      window.removeEventListener('testHubSpotSync', handleTestSync as EventListener);
+    };
+  }, [obtenerNegocios, syncStateToHubSpot]);
 
   const refreshNegocios = async () => {
     console.log('[NegocioContext] ==> MANUAL REFRESH REQUESTED <==');
@@ -245,12 +266,21 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   const cambiarEstadoNegocio = async (negocioId: string, nuevoEstado: EstadoNegocio): Promise<void> => {
     try {
+      console.log('🔄 [NegocioContext] ==> STARTING cambiarEstadoNegocio <==');
+      console.log('🔄 [NegocioContext] Negocio ID:', negocioId);
+      console.log('🔄 [NegocioContext] Nuevo estado:', nuevoEstado);
+      
       // Get current state before updating
       const negocioActual = obtenerNegocio(negocioId);
       const estadoAnterior = negocioActual?.estado;
+      
+      console.log('🔄 [NegocioContext] Estado anterior:', estadoAnterior);
+      console.log('🔄 [NegocioContext] HubSpot ID:', negocioActual?.hubspot_id);
 
       const negocioActualizado = await cambiarEstadoNegocioEnSupabase(negocioId, nuevoEstado);
       if (negocioActualizado) {
+        console.log('✅ [NegocioContext] Negocio actualizado en DB exitosamente');
+        
         setNegocios(prevNegocios =>
           prevNegocios.map(negocio =>
             negocio.id === negocioId ? negocioActualizado : negocio
@@ -259,11 +289,28 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
         // Sync state change to HubSpot if we have both states
         if (estadoAnterior && estadoAnterior !== nuevoEstado) {
-          syncStateToHubSpot(negocioId, estadoAnterior, nuevoEstado);
+          console.log('🚀 [NegocioContext] CALLING syncStateToHubSpot...');
+          console.log('🚀 [NegocioContext] Params:', { negocioId, estadoAnterior, nuevoEstado });
+          
+          try {
+            await syncStateToHubSpot(negocioId, estadoAnterior, nuevoEstado);
+            console.log('✅ [NegocioContext] syncStateToHubSpot completed');
+          } catch (syncError) {
+            console.error('❌ [NegocioContext] syncStateToHubSpot failed:', syncError);
+          }
+        } else {
+          console.log('⚠️ [NegocioContext] Skipping HubSpot sync:', {
+            hasEstadoAnterior: !!estadoAnterior,
+            statesEqual: estadoAnterior === nuevoEstado,
+            estadoAnterior,
+            nuevoEstado
+          });
         }
+      } else {
+        console.log('❌ [NegocioContext] Failed to update negocio in DB');
       }
     } catch (error) {
-      console.error("Failed to update negocio state:", error);
+      console.error("❌ [NegocioContext] Failed to update negocio state:", error);
       throw error; // Re-throw to allow UI error handling
     }
   };
