@@ -39,7 +39,8 @@ const Auth = () => {
     setLoading(true);
     const { error } = await signIn(loginForm.email, loginForm.password);
     if (!error) {
-      navigate('/');
+      // Force a full page refresh after successful login
+      window.location.href = '/';
     }
     setLoading(false);
   };
