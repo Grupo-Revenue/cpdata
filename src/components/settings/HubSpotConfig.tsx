@@ -32,11 +32,10 @@ const HubSpotConfig = () => {
     if (!user) return;
 
     try {
-      // Load only the active token for the user
+      // Load the global active token (not user-specific)
       const { data, error } = await supabase
         .from('hubspot_api_keys')
         .select('*')
-        .eq('user_id', user.id)
         .eq('activo', true)
         .maybeSingle();
 
@@ -51,7 +50,7 @@ const HubSpotConfig = () => {
         setLastTestedAt(data.updated_at);
         setIsConnectionTested(true); // If already saved, consider it tested
       } else {
-        // No token found for this user
+        // No global token found
         setIsConfigured(false);
         setApiKey('');
         setIsConnectionTested(false);

@@ -20,7 +20,6 @@ export const useHubSpotConnectionStatus = () => {
       const { data, error } = await supabase
         .from('hubspot_api_keys')
         .select('*')
-        .eq('user_id', user.id)
         .eq('activo', true)
         .maybeSingle();
 

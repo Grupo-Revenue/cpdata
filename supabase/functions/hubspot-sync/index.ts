@@ -123,7 +123,7 @@ serve(async (req) => {
       }
     }
 
-    // Handle saving API key with new logic: delete existing and insert new
+    // Handle saving API key with new logic: delete all existing tokens and insert new global one
     if (action === 'save_api_key') {
       if (!apiKey) {
         return new Response(JSON.stringify({ 
@@ -136,26 +136,26 @@ serve(async (req) => {
       }
 
       try {
-        console.log('Saving API key for user:', user.id);
+        console.log('Saving global API key by user:', user.id);
         
-        // Delete ALL existing tokens for this user (active and inactive)
+        // Delete ALL existing tokens (make room for the new global token)
         const { error: deleteError } = await supabase
           .from('hubspot_api_keys')
           .delete()
-          .eq('user_id', user.id);
+          .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
 
         if (deleteError) {
           console.error('Error deleting existing tokens:', deleteError);
           throw new Error(`Failed to delete existing tokens: ${deleteError.message}`);
         }
 
-        console.log('All existing tokens deleted for user:', user.id);
+        console.log('All existing tokens deleted');
 
-        // Insert the new token as active
+        // Insert the new token as the global active token
         const { error: insertError } = await supabase
           .from('hubspot_api_keys')
           .insert({
-            user_id: user.id,
+            user_id: user.id, // Track who created it, but all users can access it
             api_key: apiKey,
             activo: true,
             updated_at: new Date().toISOString()
@@ -166,11 +166,11 @@ serve(async (req) => {
           throw new Error(`Failed to insert new token: ${insertError.message}`);
         }
 
-        console.log('New token created and activated successfully');
+        console.log('New global token created and activated successfully');
 
         return new Response(JSON.stringify({ 
           success: true,
-          message: 'API key saved successfully. Previous token has been replaced.'
+          message: 'API key saved successfully and is now available to all users. Previous token has been replaced.'
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -186,27 +186,27 @@ serve(async (req) => {
       }
     }
 
-    // Handle disconnection by deleting the token completely
+    // Handle disconnection by deleting all tokens (global disconnect)
     if (action === 'disconnect') {
       try {
-        console.log('Disconnecting user from HubSpot:', user.id);
+        console.log('Disconnecting all users from HubSpot by user:', user.id);
 
-        // Delete ALL tokens for this user
+        // Delete ALL tokens (global disconnect)
         const { error: deleteError } = await supabase
           .from('hubspot_api_keys')
           .delete()
-          .eq('user_id', user.id);
+          .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
 
         if (deleteError) {
           console.error('Error deleting tokens on disconnect:', deleteError);
           throw new Error(`Failed to delete tokens: ${deleteError.message}`);
         }
 
-        console.log('All tokens deleted for user on disconnect:', user.id);
+        console.log('All tokens deleted (global disconnect)');
 
         return new Response(JSON.stringify({ 
           success: true,
-          message: 'Successfully disconnected from HubSpot. Token has been deleted.'
+          message: 'Successfully disconnected from HubSpot. Token has been deleted for all users.'
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -222,16 +222,15 @@ serve(async (req) => {
       }
     }
 
-    // Get the user's active API key from our table
+    // Get the global active API key from our table
     const { data: apiKeyData, error: keyError } = await supabase
       .from('hubspot_api_keys')
       .select('api_key')
-      .eq('user_id', user.id)
       .eq('activo', true)
-      .single();
+      .maybeSingle();
 
     if (keyError || !apiKeyData?.api_key) {
-      console.log('Active HubSpot API key not found for user:', user.id);
+      console.log('Active HubSpot API key not found globally');
       
       // Only update sync status for negocio-related actions
       if (negocioData?.id) {
