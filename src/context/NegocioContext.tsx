@@ -189,6 +189,10 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   };
 
   const eliminarPresupuesto = async (negocioId: string, presupuestoId: string): Promise<boolean> => {
+    // Get the current business to check budget count before deletion
+    const negocioActual = obtenerNegocio(negocioId);
+    const presupuestosAntesDeEliminar = negocioActual?.presupuestos?.length || 0;
+    
     const eliminado = await eliminarPresupuestoEnSupabase(presupuestoId);
     if (eliminado) {
       // Optimistically update the negocios state
@@ -202,6 +206,17 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
             : negocio
         )
       );
+
+      // Check if this deletion results in zero budgets
+      const presupuestosAfterDeletion = presupuestosAntesDeEliminar - 1;
+      
+      if (presupuestosAfterDeletion === 0) {
+        console.log('[NegocioContext] Business has zero budgets after deletion, refreshing page...');
+        // Small delay to ensure the database trigger has processed
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      }
     }
     return eliminado;
   };
