@@ -358,34 +358,34 @@ export const createBusinessFromWizard = async ({
         }
       }
       
-      // Step 7: Sync business value to HubSpot after deal creation
-      if (dealResult.success) {
-        console.log('Deal created successfully, now syncing business value...');
-        try {
-          // Sync the calculated business value to HubSpot
-          const { data, error } = await supabase.functions.invoke('hubspot-deal-amount-update', {
-            body: {
-              negocio_id: negocioCreado.id,
-              amount: 0 // Will be calculated based on presupuestos
-            }
-          });
-          
-          if (error) {
-            console.warn('Failed to sync initial business value to HubSpot:', error);
-          } else {
-            console.log('Business value synced to HubSpot successfully:', data);
-          }
-        } catch (syncError) {
-          console.warn('Error syncing business value to HubSpot:', syncError);
-          // Don't fail the whole process for sync errors
-        }
-      } else {
+      if (!dealResult.success) {
         console.error('Failed to create deal in HubSpot:', dealResult.error);
       }
     }
   } catch (error) {
     console.error('Error creating deal in HubSpot:', error);
     // Business was already created successfully, just log the HubSpot sync issue
+  }
+
+  // Step 7: Always sync business value to HubSpot after business creation
+  console.log('Syncing business value to HubSpot...');
+  try {
+    // Sync the calculated business value to HubSpot
+    const { data, error } = await supabase.functions.invoke('hubspot-deal-amount-update', {
+      body: {
+        negocio_id: negocioCreado.id,
+        amount: 0 // Will be calculated based on presupuestos
+      }
+    });
+    
+    if (error) {
+      console.warn('Failed to sync business value to HubSpot:', error);
+    } else {
+      console.log('Business value synced to HubSpot successfully:', data);
+    }
+  } catch (syncError) {
+    console.warn('Error syncing business value to HubSpot:', syncError);
+    // Don't fail the whole process for sync errors
   }
 
     // Show single success message at the end
