@@ -3,14 +3,16 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNegocio } from '@/context/NegocioContext';
 import { EstadoPresupuesto } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 interface BusinessDetailActionsProps {
   negocioId: string;
 }
 
 export const useBusinessDetailActions = (negocioId: string) => {
-  const { eliminarPresupuesto, cambiarEstadoPresupuesto } = useNegocio();
+  const { eliminarPresupuesto, cambiarEstadoPresupuesto, refreshNegocios } = useNegocio();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleEliminarPresupuesto = async (presupuestoId: string): Promise<void> => {
     await eliminarPresupuesto(negocioId, presupuestoId);
@@ -24,8 +26,20 @@ export const useBusinessDetailActions = (negocioId: string) => {
     await cambiarEstadoPresupuesto(negocioId, presupuestoId, nuevoEstado as EstadoPresupuesto, fechaVencimiento);
   };
 
-  const handleRefresh = () => {
-    window.location.reload();
+  const handleRefresh = async () => {
+    try {
+      await refreshNegocios();
+      toast({
+        title: "Datos actualizados",
+        description: "La información del negocio se ha actualizado correctamente."
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar la información del negocio."
+      });
+    }
   };
 
   return {
