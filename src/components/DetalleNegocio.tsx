@@ -85,7 +85,6 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
             negocio={negocio}
             onVolver={onVolver}
             onCrearPresupuesto={handleCrearPresupuesto}
-            onSyncToHubSpot={handleSyncToHubSpot}
           />
           
           <DetalleNegocioMainContent
