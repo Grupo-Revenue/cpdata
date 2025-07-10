@@ -8,6 +8,8 @@ export const useHubSpotStateSync = () => {
 
   const syncStateToHubSpot = useCallback(async (negocioId: string, estadoAnterior: EstadoNegocio, estadoNuevo: EstadoNegocio) => {
     console.log(`🔄 [HubSpot State Sync] STARTING sync for ${negocioId}: ${estadoAnterior} → ${estadoNuevo}`);
+    console.log('🔄 [HubSpot State Sync] Function called at:', new Date().toISOString());
+    console.log('🔄 [HubSpot State Sync] Input params:', { negocioId, estadoAnterior, estadoNuevo });
     
     try {
       // Step 1: Get business data
