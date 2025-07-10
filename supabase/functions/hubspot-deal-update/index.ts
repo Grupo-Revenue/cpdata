@@ -128,6 +128,15 @@ serve(async (req) => {
       estado_nuevo
     })
 
+    console.log('🚀 [HubSpot Deal Update] Sending PATCH request to HubSpot:', {
+      url: `https://api.hubapi.com/crm/v3/objects/deals/${negocio.hubspot_id}`,
+      body: {
+        properties: {
+          dealstage: stageMapping.stage_id
+        }
+      }
+    })
+
     // Update deal stage in HubSpot
     const updateResponse = await fetch(
       `https://api.hubapi.com/crm/v3/objects/deals/${negocio.hubspot_id}`,
