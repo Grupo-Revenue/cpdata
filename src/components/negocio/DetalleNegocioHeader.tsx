@@ -40,34 +40,15 @@ const DetalleNegocioHeader: React.FC<DetalleNegocioHeaderProps> = ({ negocio, on
           </div>
         </div>
         {negocio.hubspot_id && onSyncToHubSpot && (
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={onSyncToHubSpot}
-              className="border-blue-300 text-blue-600 hover:bg-blue-50"
-              size="sm"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Sincronizar HubSpot
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                console.log('🧪 [TESTING] Manual test - changing state to trigger sync...');
-                window.dispatchEvent(new CustomEvent('testHubSpotSync', { 
-                  detail: { 
-                    negocioId: negocio.id,
-                    estadoAnterior: negocio.estado,
-                    estadoNuevo: negocio.estado === 'oportunidad_creada' ? 'presupuesto_enviado' : 'oportunidad_creada'
-                  }
-                }));
-              }}
-              className="border-orange-300 text-orange-600 hover:bg-orange-50"
-              size="sm"
-            >
-              🧪 Test Sync
-            </Button>
-          </div>
+          <Button 
+            variant="outline" 
+            onClick={onSyncToHubSpot}
+            className="border-blue-300 text-blue-600 hover:bg-blue-50"
+            size="sm"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Sincronizar HubSpot
+          </Button>
         )}
       </div>
     </div>
