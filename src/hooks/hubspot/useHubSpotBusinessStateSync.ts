@@ -6,29 +6,15 @@ import { logger } from '@/utils/logger';
 export const useHubSpotBusinessStateSync = () => {
   const channelRef = useRef<any>(null);
   const isSubscribedRef = useRef(false);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const retryCountRef = useRef(0);
   const { toast } = useToast();
 
-  // Maximum number of retry attempts
-  const MAX_RETRIES = 5;
-  // Base delay for exponential backoff (in milliseconds)
-  const BASE_RETRY_DELAY = 1000;
-
-  // Exponential backoff calculation
-  const getRetryDelay = useCallback((retryCount: number) => {
-    return BASE_RETRY_DELAY * Math.pow(2, retryCount);
-  }, []);
-
-  // Enhanced sync function with retry logic
-  const syncStateToHubSpot = useCallback(async (negocioData: any, retryCount = 0) => {
-    const startTime = Date.now();
-    
+  // Simplified sync function
+  const syncStateToHubSpot = useCallback(async (negocioData: any) => {
     try {
-      logger.info(`[HubSpot Sync] Attempting sync for negocio ${negocioData.id} (attempt ${retryCount + 1})`);
+      logger.info(`[HubSpot Sync] Syncing negocio ${negocioData.id} - ${negocioData.estado_anterior} → ${negocioData.estado_nuevo}`);
       
-      // Call the edge function to update HubSpot
-      const { data, error } = await supabase.functions.invoke('hubspot-deal-update', {
+      // Call the edge function to update HubSpot deal stage
+      const { data: stateData, error: stateError } = await supabase.functions.invoke('hubspot-deal-update', {
         body: {
           negocio_id: negocioData.id,
           estado_anterior: negocioData.estado_anterior,
@@ -37,51 +23,36 @@ export const useHubSpotBusinessStateSync = () => {
         }
       });
 
-      const executionTime = Date.now() - startTime;
-
-      if (error) {
-        throw new Error(`HubSpot API Error: ${error.message}`);
+      if (stateError) {
+        logger.error(`[HubSpot Sync] Error syncing state for negocio ${negocioData.id}:`, stateError);
+        return;
       }
 
-      logger.info(`[HubSpot Sync] Successfully synced state to HubSpot in ${executionTime}ms`, data);
-      
-      // Reset retry count on success
-      retryCountRef.current = 0;
-      
-      return { success: true, data, executionTime };
-    } catch (error) {
-      const executionTime = Date.now() - startTime;
-      logger.error(`[HubSpot Sync] Error syncing state to HubSpot (attempt ${retryCount + 1})`, error);
+      // Call the edge function to update HubSpot deal amount
+      const { data: amountData, error: amountError } = await supabase.functions.invoke('hubspot-deal-amount-update', {
+        body: {
+          negocio_id: negocioData.id
+        }
+      });
 
-      // If we haven't exceeded max retries, schedule a retry
-      if (retryCount < MAX_RETRIES) {
-        const retryDelay = getRetryDelay(retryCount);
-        logger.info(`[HubSpot Sync] Scheduling retry in ${retryDelay}ms`);
-        
-        setTimeout(() => {
-          syncStateToHubSpot(negocioData, retryCount + 1);
-        }, retryDelay);
+      if (amountError) {
+        logger.error(`[HubSpot Sync] Error syncing amount for negocio ${negocioData.id}:`, amountError);
       } else {
-        logger.error(`[HubSpot Sync] Max retries (${MAX_RETRIES}) exceeded for negocio ${negocioData.id}`);
-        toast({
-          variant: "destructive",
-          title: "Error de sincronización",
-          description: `No se pudo sincronizar el estado del negocio con HubSpot después de ${MAX_RETRIES} intentos`
-        });
+        logger.info(`[HubSpot Sync] Successfully synced state and amount for negocio ${negocioData.id}`);
       }
 
-      return { success: false, error, executionTime };
+    } catch (error) {
+      logger.error(`[HubSpot Sync] Unexpected error syncing negocio ${negocioData.id}:`, error);
+      toast({
+        variant: "destructive",
+        title: "Error de sincronización",
+        description: "Error al sincronizar con HubSpot"
+      });
     }
-  }, [getRetryDelay, toast]);
+  }, [toast]);
 
-  // Enhanced channel setup with auto-reconnection
+  // Simplified channel setup
   const setupChannel = useCallback(() => {
-    // Clear any existing timeout
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-
     // Clean up existing channel
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
@@ -89,13 +60,10 @@ export const useHubSpotBusinessStateSync = () => {
       isSubscribedRef.current = false;
     }
 
-    logger.info(`[HubSpot Sync] Setting up channel (attempt ${retryCountRef.current + 1})`);
-    
-    // Create optimized channel configuration
-    const channelName = `hubspot-sync-${Date.now()}`;
+    logger.info('[HubSpot Sync] Setting up real-time listener for business state changes');
     
     const channel = supabase
-      .channel(channelName)
+      .channel('hubspot-sync-channel')
       .on(
         'postgres_changes',
         {
@@ -105,15 +73,11 @@ export const useHubSpotBusinessStateSync = () => {
           filter: 'estado=neq.null'
         },
         async (payload) => {
-          logger.debug('[HubSpot Sync] Real-time payload received', payload);
-          
           const { new: newRecord, old: oldRecord } = payload;
           
-          // Enhanced validation
+          // Validate payload
           if (!newRecord?.id || !newRecord?.estado || !oldRecord?.estado) {
-            logger.warn('[HubSpot Sync] Invalid payload data, skipping', {
-              hasNewRecord: !!newRecord,
-              hasOldRecord: !!oldRecord,
+            logger.warn('[HubSpot Sync] Invalid payload, skipping', {
               newEstado: newRecord?.estado,
               oldEstado: oldRecord?.estado
             });
@@ -129,9 +93,9 @@ export const useHubSpotBusinessStateSync = () => {
               hubspot_id: newRecord.hubspot_id
             });
 
-            // Create sync log entry first
+            // Create sync log entry
             try {
-              const { data: logData } = await supabase.rpc('enqueue_hubspot_sync', {
+              const { data: logId } = await supabase.rpc('enqueue_hubspot_sync', {
                 p_negocio_id: newRecord.id,
                 p_operation_type: 'estado_change',
                 p_payload: {
@@ -145,80 +109,54 @@ export const useHubSpotBusinessStateSync = () => {
                 p_trigger_source: 'realtime'
               });
 
-              // Sync to HubSpot with the log ID
+              // Sync to HubSpot
               await syncStateToHubSpot({
                 id: newRecord.id,
                 estado_anterior: oldRecord.estado,
                 estado_nuevo: newRecord.estado,
                 hubspot_id: newRecord.hubspot_id,
-                sync_log_id: logData
+                sync_log_id: logId
               });
             } catch (error) {
-              logger.error('[HubSpot Sync] Error handling state change', error);
+              logger.error('[HubSpot Sync] Error handling state change:', error);
             }
-          } else {
-            logger.debug('[HubSpot Sync] State unchanged, skipping sync');
           }
         }
       )
       .subscribe((status) => {
         logger.info(`[HubSpot Sync] Channel status: ${status}`);
         
-        switch (status) {
-          case 'SUBSCRIBED':
-            logger.info('[HubSpot Sync] Successfully subscribed to business state changes');
-            isSubscribedRef.current = true;
-            retryCountRef.current = 0; // Reset retry count on successful connection
-            break;
-            
-          case 'CHANNEL_ERROR':
-          case 'TIMED_OUT':
-          case 'CLOSED':
-            logger.error(`[HubSpot Sync] Subscription error: ${status}`);
-            isSubscribedRef.current = false;
-            
-            // Auto-reconnect with exponential backoff
-            if (retryCountRef.current < MAX_RETRIES) {
-              const retryDelay = getRetryDelay(retryCountRef.current);
-              logger.info(`[HubSpot Sync] Scheduling reconnection in ${retryDelay}ms`);
-              
-              reconnectTimeoutRef.current = setTimeout(() => {
-                retryCountRef.current++;
-                setupChannel();
-              }, retryDelay);
-            } else {
-              logger.error(`[HubSpot Sync] Max reconnection attempts exceeded`);
-              toast({
-                variant: "destructive",
-                title: "Error de conexión",
-                description: "No se pudo establecer conexión con el sistema de sincronización"
-              });
+        if (status === 'SUBSCRIBED') {
+          logger.info('[HubSpot Sync] Successfully subscribed to business state changes');
+          isSubscribedRef.current = true;
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          logger.error(`[HubSpot Sync] Subscription error: ${status}`);
+          isSubscribedRef.current = false;
+          
+          // Simple reconnection after 5 seconds
+          setTimeout(() => {
+            if (!isSubscribedRef.current) {
+              setupChannel();
             }
-            break;
+          }, 5000);
         }
       });
 
     channelRef.current = channel;
-  }, [syncStateToHubSpot, getRetryDelay, toast]);
+  }, [syncStateToHubSpot]);
 
   useEffect(() => {
     // Prevent multiple subscriptions
     if (isSubscribedRef.current) {
-      logger.debug('[HubSpot Sync] Already subscribed, skipping');
       return;
     }
 
-    logger.info('[HubSpot Sync] Initializing enhanced real-time listener for business state changes');
+    logger.info('[HubSpot Sync] Initializing real-time listener for business state changes');
     setupChannel();
 
     // Cleanup subscription on unmount
     return () => {
       logger.info('[HubSpot Sync] Cleaning up subscription');
-      
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
-      }
       
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
@@ -226,7 +164,6 @@ export const useHubSpotBusinessStateSync = () => {
       }
       
       isSubscribedRef.current = false;
-      retryCountRef.current = 0;
     };
   }, [setupChannel]);
 };
