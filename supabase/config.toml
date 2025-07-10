@@ -1,1 +1,7 @@
 project_id = "ejvtuuvigcqpibpfcxch"
+
+[functions.hubspot-deal-update]
+verify_jwt = false
+
+[functions.hubspot-deal-amount-update]
+verify_jwt = false
