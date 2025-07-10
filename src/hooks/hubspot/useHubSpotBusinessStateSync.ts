@@ -54,6 +54,13 @@ export const useHubSpotBusinessStateSync = () => {
       }
 
       // Call the edge function to update HubSpot deal stage with proper headers
+      logger.info('[HubSpot Sync] Calling hubspot-deal-update with:', {
+        negocio_id: negocioData.id,
+        estado_anterior: negocioData.estado_anterior,
+        estado_nuevo: negocioData.estado_nuevo,
+        sync_log_id: negocioData.sync_log_id
+      });
+
       const { data: stateData, error: stateError } = await supabase.functions.invoke('hubspot-deal-update', {
         body: {
           negocio_id: negocioData.id,
@@ -66,6 +73,8 @@ export const useHubSpotBusinessStateSync = () => {
           'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
         }
       });
+
+      logger.info('[HubSpot Sync] hubspot-deal-update response:', { data: stateData, error: stateError });
 
       if (stateError) {
         logger.error(`[HubSpot Sync] Error syncing state for negocio ${negocioData.id}:`, stateError);

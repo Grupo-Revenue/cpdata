@@ -93,9 +93,17 @@ export const useManualHubSpotSync = () => {
       }
 
       // Call the edge function to update HubSpot deal stage
+      logger.info('[Manual HubSpot Sync] Calling hubspot-deal-update with:', {
+        negocio_id: negocio.id,
+        estado_anterior: negocio.estado, // For manual sync, we use current state as both anterior and nuevo
+        estado_nuevo: negocio.estado,
+        sync_log_id: logId
+      });
+
       const { data: stateData, error: stateError } = await supabase.functions.invoke('hubspot-deal-update', {
         body: {
           negocio_id: negocio.id,
+          estado_anterior: negocio.estado, // For manual sync, we use current state as both anterior and nuevo
           estado_nuevo: negocio.estado,
           sync_log_id: logId
         },
@@ -104,6 +112,8 @@ export const useManualHubSpotSync = () => {
           'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
         }
       });
+
+      logger.info('[Manual HubSpot Sync] hubspot-deal-update response:', { data: stateData, error: stateError });
 
       if (stateError) {
         logger.error(`[Manual HubSpot Sync] Error syncing state:`, stateError);

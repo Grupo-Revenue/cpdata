@@ -45,23 +45,47 @@ serve(async (req) => {
       }
     )
 
-    // Parse request body
-    const { negocio_id, estado_anterior, estado_nuevo, sync_log_id } = await req.json()
+    // Parse request body with better error handling
+    let requestBody;
+    try {
+      const bodyText = await req.text();
+      log('DEBUG', 'Received request body (text):', bodyText);
+      
+      if (!bodyText || bodyText.trim() === '') {
+        throw new Error('Empty request body');
+      }
+      
+      requestBody = JSON.parse(bodyText);
+      log('DEBUG', 'Parsed request body:', requestBody);
+    } catch (parseError) {
+      log('ERROR', 'Failed to parse request body', { error: parseError.message });
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { negocio_id, estado_anterior, estado_nuevo, sync_log_id } = requestBody;
     syncLogId = sync_log_id;
 
     if (!negocio_id || !estado_nuevo) {
       log('ERROR', 'Missing required parameters', {
         negocio_id,
         estado_nuevo,
-        received_body: { negocio_id, estado_anterior, estado_nuevo, sync_log_id }
+        estado_anterior,
+        received_body: requestBody
       });
       
       if (syncLogId) {
-        await updateSyncLog(supabaseClient, syncLogId, 'failed', 'Missing required parameters', Date.now() - startTime);
+        await updateSyncLog(supabaseClient, syncLogId, 'failed', 'Missing required parameters: negocio_id and estado_nuevo are required', Date.now() - startTime);
       }
       
       return new Response(
-        JSON.stringify({ error: 'Missing required parameters' }),
+        JSON.stringify({ 
+          error: 'Missing required parameters', 
+          details: 'negocio_id and estado_nuevo are required',
+          received: { negocio_id, estado_nuevo, estado_anterior }
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
