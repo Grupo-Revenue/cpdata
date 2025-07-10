@@ -16,12 +16,17 @@ export const useHubSpotBusinessStateSync = () => {
 
     console.log('🔄 [HubSpot State Sync] Initializing real-time listener for business state changes');
     
-    // Create unique channel name with timestamp to avoid conflicts
-    const channelName = `business-state-changes-${Date.now()}`;
+    // Create simple channel name for better reliability
+    const channelName = 'business-state-changes';
     
     // Set up real-time listener for business state changes
     const channel = supabase
-      .channel(channelName)
+      .channel(channelName, {
+        config: {
+          broadcast: { self: false },
+          presence: { key: channelName }
+        }
+      })
       .on(
         'postgres_changes',
         {
