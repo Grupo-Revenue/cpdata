@@ -84,16 +84,14 @@ serve(async (req) => {
       )
     }
 
-    // Get user's active HubSpot API key
+    // Get active HubSpot API key (global)
     const { data: apiKeyData, error: apiKeyError } = await supabaseClient
       .from('hubspot_api_keys')
       .select('api_key')
-      .eq('user_id', negocio.user_id)
       .eq('activo', true)
       .single()
 
     console.log('🔑 [HubSpot Amount Update] API key retrieval:', {
-      user_id: negocio.user_id,
       hasApiKey: !!apiKeyData,
       error: apiKeyError
     })
