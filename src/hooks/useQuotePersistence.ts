@@ -98,31 +98,14 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
           facturado: presupuestoData.facturado
         };
         
-        console.log('About to call actualizarPresupuestoEnSupabase with:', { presupuestoId, updateData, productCount: productos.length });
         await actualizarPresupuestoEnSupabase(presupuestoId, updateData, productos);
-        console.log('actualizarPresupuestoEnSupabase completed successfully');
-        
         toast({
           title: "Presupuesto actualizado",
           description: "El presupuesto ha sido actualizado exitosamente",
         });
       } else {
         console.log('Creating new presupuesto for negocio:', negocioId);
-        console.log('Presupuesto data:', presupuestoData);
-        console.log('Product count:', productos.length);
-        
-        if (!negocio) {
-          throw new Error('No se encontró el negocio. Refresque la página e intente nuevamente.');
-        }
-        
-        console.log('About to call crearPresupuesto');
-        const result = await crearPresupuesto(negocioId, presupuestoData);
-        console.log('crearPresupuesto result:', result);
-        
-        if (!result) {
-          throw new Error('Error al crear el presupuesto - no se recibió respuesta del servidor');
-        }
-        
+        await crearPresupuesto(negocioId, presupuestoData);
         toast({
           title: "Presupuesto creado",
           description: `El presupuesto ${quoteName} ha sido guardado exitosamente`,

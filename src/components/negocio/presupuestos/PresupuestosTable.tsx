@@ -27,7 +27,7 @@ const getEstadoBadgeVariant = (estado: string) => {
   switch (estado) {
     case 'aprobado':
       return 'default';
-    case 'publicado':
+    case 'enviado':
       return 'secondary';
     case 'rechazado':
       return 'destructive';
@@ -40,8 +40,8 @@ const getEstadoText = (estado: string) => {
   switch (estado) {
     case 'borrador':
       return 'Borrador';
-    case 'publicado':
-      return 'Publicado';
+    case 'enviado':
+      return 'Enviado';
     case 'aprobado':
       return 'Aprobado';
     case 'rechazado':
@@ -74,7 +74,7 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
   const presupuestos = negocio.presupuestos;
   const valorTotal = calcularValorNegocio(negocio);
   const presupuestosAprobados = presupuestos.filter(p => p.estado === 'aprobado').length;
-  const presupuestosPublicados = presupuestos.filter(p => p.estado === 'publicado').length;
+  const presupuestosEnviados = presupuestos.filter(p => p.estado === 'enviado').length;
 
   const handleEliminarPresupuesto = async (presupuestoId: string) => {
     if (confirm('¿Está seguro de que desea eliminar este presupuesto?')) {
@@ -104,7 +104,7 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
 
     setProcesandoEstado(presupuestoSeleccionado);
     try {
-      await onCambiarEstado(presupuestoSeleccionado, 'publicado', fechaVencimiento);
+      await onCambiarEstado(presupuestoSeleccionado, 'enviado', fechaVencimiento);
       
       setMostrarDialogoEnvio(false);
       setPresupuestoSeleccionado(null);
@@ -148,8 +148,8 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
                   {presupuestosAprobados > 0 && (
                     <span className="text-green-600">• {presupuestosAprobados} aprobados</span>
                   )}
-                  {presupuestosPublicados > 0 && (
-                    <span className="text-blue-600">• {presupuestosPublicados} publicados</span>
+                  {presupuestosEnviados > 0 && (
+                    <span className="text-blue-600">• {presupuestosEnviados} enviados</span>
                   )}
                 </div>
               </div>

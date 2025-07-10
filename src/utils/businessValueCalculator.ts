@@ -17,7 +17,7 @@ export const calculateBusinessValue = (negocio: Negocio): number => {
 
   // If no approved budgets, use sent budgets
   const sentTotal = negocio.presupuestos
-    .filter(p => p.estado === 'publicado')
+    .filter(p => p.estado === 'enviado')
     .reduce((sum, p) => sum + parseFloat(String(p.total || '0')), 0);
 
   if (sentTotal > 0) {

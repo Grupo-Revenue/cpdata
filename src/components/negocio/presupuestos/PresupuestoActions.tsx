@@ -48,7 +48,7 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
         );
         break;
 
-      case 'publicado':
+      case 'enviado':
         acciones.push(
           <Button
             key="aprobar"
@@ -102,7 +102,7 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
         >
           <FileText className="w-4 h-4" />
         </Button>
-        {(presupuesto.estado === 'borrador' || presupuesto.estado === 'publicado') && (
+        {(presupuesto.estado === 'borrador' || presupuesto.estado === 'enviado') && (
           <Button
             variant="outline"
             size="sm"

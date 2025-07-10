@@ -41,7 +41,7 @@ const PresupuestoItem: React.FC<PresupuestoItemProps> = ({
   const obtenerBadgeEstadoPresupuesto = (estado: string) => {
     const colores = {
       borrador: 'bg-slate-100 text-slate-700 border-slate-200',
-      publicado: 'bg-blue-100 text-blue-700 border-blue-200',
+      enviado: 'bg-blue-100 text-blue-700 border-blue-200',
       aprobado: 'bg-emerald-100 text-emerald-700 border-emerald-200',
       rechazado: 'bg-red-100 text-red-700 border-red-200',
       vencido: 'bg-orange-100 text-orange-700 border-orange-200',
@@ -89,7 +89,7 @@ const PresupuestoItem: React.FC<PresupuestoItemProps> = ({
               {presupuesto.fechaEnvio && (
                 <div className="flex items-center text-blue-600">
                   <Send className="w-4 h-4 mr-2" />
-                  <span>Publicado: {formatearFecha(presupuesto.fechaEnvio)}</span>
+                  <span>Enviado: {formatearFecha(presupuesto.fechaEnvio)}</span>
                 </div>
               )}
               {presupuesto.fechaVencimiento && (

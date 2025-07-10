@@ -36,8 +36,8 @@ const PresupuestoTableActions: React.FC<PresupuestoTableActionsProps> = ({
 
   const canEdit = presupuesto.estado === 'borrador';
   const canSend = presupuesto.estado === 'borrador' && onEnviarPresupuesto;
-  const canApprove = presupuesto.estado === 'publicado' && onCambiarEstado;
-  const canReject = ['publicado', 'aprobado'].includes(presupuesto.estado) && onCambiarEstado;
+  const canApprove = presupuesto.estado === 'enviado' && onCambiarEstado;
+  const canReject = ['enviado', 'aprobado'].includes(presupuesto.estado) && onCambiarEstado;
   const canMarkAsInvoiced = presupuesto.estado === 'aprobado' && !presupuesto.facturado;
 
   return (

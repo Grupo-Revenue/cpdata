@@ -27,9 +27,7 @@ const triggerHubSpotAmountSync = async (negocioId: string) => {
 
 export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoData: Omit<Presupuesto, 'id' | 'created_at' | 'updated_at'>): Promise<Presupuesto | null> => {
   try {
-    console.log('🔥 [crearPresupuestoEnSupabase] Starting presupuesto creation');
-    console.log('🔥 [crearPresupuestoEnSupabase] negocioId:', negocioId);
-    console.log('🔥 [crearPresupuestoEnSupabase] presupuestoData:', presupuestoData);
+    console.log('Creating presupuesto with data:', presupuestoData);
     
     // Clean the presupuesto data to only include database columns
     const cleanPresupuestoData = {
@@ -44,10 +42,9 @@ export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoD
       fecha_vencimiento: presupuestoData.fecha_vencimiento
     };
 
-    console.log('🔥 [crearPresupuestoEnSupabase] cleanPresupuestoData:', cleanPresupuestoData);
+    console.log('Clean presupuesto data for database:', cleanPresupuestoData);
     
     // Start a transaction by creating the main presupuesto first
-    console.log('🔥 [crearPresupuestoEnSupabase] About to insert into presupuestos table');
     const { data: presupuestoCreado, error: presupuestoError } = await supabase
       .from('presupuestos')
       .insert([cleanPresupuestoData])
@@ -55,17 +52,11 @@ export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoD
       .single();
 
     if (presupuestoError) {
-      console.error("🔥 [crearPresupuestoEnSupabase] Error creating presupuesto:", presupuestoError);
-      console.error("🔥 [crearPresupuestoEnSupabase] Error details:", {
-        message: presupuestoError.message,
-        details: presupuestoError.details,
-        hint: presupuestoError.hint,
-        code: presupuestoError.code
-      });
+      console.error("Error creating presupuesto:", presupuestoError);
       throw presupuestoError;
     }
 
-    console.log('🔥 [crearPresupuestoEnSupabase] Presupuesto created successfully:', presupuestoCreado);
+    console.log('Presupuesto created successfully:', presupuestoCreado);
 
     // Create the complete presupuesto object with the correct type
     let presupuestoCompleto: Presupuesto = {
