@@ -600,6 +600,15 @@ export type Database = {
         }
         Returns: string
       }
+      get_global_hubspot_token: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          user_id: string
+          created_at: string
+          activo: boolean
+        }[]
+      }
       get_hubspot_sync_stats: {
         Args: { p_user_id?: string }
         Returns: {
