@@ -84,7 +84,7 @@ export const useHubSpotBusinessStateSync = () => {
             return;
           }
           
-          // Only sync if the state actually changed
+          // Only sync if the state actually changed and it's not a manual update
           if (newRecord.estado !== oldRecord.estado) {
             logger.info('[HubSpot Sync] Business state changed', {
               negocio_id: newRecord.id,

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,9 +17,10 @@ import {
   DollarSign,
   TrendingUp
 } from 'lucide-react';
-import { Negocio } from '@/types';
+import { Negocio, EstadoNegocio } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
 import { calcularValorNegocio, formatBusinessStateForDisplay, getBusinessStateColors } from '@/utils/businessCalculations';
+import BusinessStateSelector from './BusinessStateSelector';
 
 
 interface BusinessDetailHeaderProps {
@@ -37,14 +38,19 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
 }) => {
   const navigate = useNavigate();
   const valorTotal = calcularValorNegocio(negocio);
-  
+  const [isUpdatingState, setIsUpdatingState] = useState(false);
   
   // Get company name for the title
   const empresaDisplay = negocio.productora?.nombre || negocio.clienteFinal?.nombre || 'Sin empresa';
 
-  const handleStateChange = (negocioId: string, nuevoEstado: string) => {
-    if (onCambiarEstado) {
-      onCambiarEstado(negocioId, nuevoEstado);
+  const handleStateChange = async (nuevoEstado: EstadoNegocio) => {
+    if (onCambiarEstado && !isUpdatingState) {
+      setIsUpdatingState(true);
+      try {
+        await onCambiarEstado(negocio.id, nuevoEstado);
+      } finally {
+        setIsUpdatingState(false);
+      }
     }
   };
 
@@ -98,12 +104,11 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
 
         {/* State Display */}
         <div className="flex items-end">
-          <Badge 
-            variant="outline"
-            className={getBusinessStateColors(negocio.estado)}
-          >
-            {formatBusinessStateForDisplay(negocio.estado)}
-          </Badge>
+          <BusinessStateSelector
+            currentState={negocio.estado}
+            onStateChange={handleStateChange}
+            isUpdating={isUpdatingState}
+          />
         </div>
       </div>
 

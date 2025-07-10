@@ -240,6 +240,7 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       }
     } catch (error) {
       console.error("Failed to update negocio state:", error);
+      throw error; // Re-throw to allow UI error handling
     }
   };
 
