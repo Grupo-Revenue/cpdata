@@ -13,7 +13,7 @@ import {
   eliminarPresupuestoEnSupabase,
   cambiarEstadoPresupuestoEnSupabase
 } from '@/services/presupuestoService';
-import { useHubSpotStateSync } from '@/hooks/hubspot/useHubSpotStateSync';
+import { useHubSpotDealStageSync } from '@/hooks/hubspot/useHubSpotDealStageSync';
 
 
 interface NegocioContextProps {
@@ -38,7 +38,7 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const [negocios, setNegocios] = useState<Negocio[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { syncStateToHubSpot } = useHubSpotStateSync();
+  const { syncDealStage } = useHubSpotDealStageSync();
 
 
   const obtenerNegocios = useCallback(async (forceRefresh = false) => {
@@ -82,8 +82,7 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   useEffect(() => {
     console.log('[NegocioContext] ==> COMPONENT MOUNTED, TRIGGERING INITIAL LOAD <==');
     obtenerNegocios();
-    
-  }, [obtenerNegocios, syncStateToHubSpot]);
+  }, [obtenerNegocios]);
 
   const refreshNegocios = async () => {
     console.log('[NegocioContext] ==> MANUAL REFRESH REQUESTED <==');
@@ -279,7 +278,7 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 estadoNuevo: estadoNuevoNegocio 
               });
               
-              await syncStateToHubSpot(negocioId, estadoAnteriorNegocio, estadoNuevoNegocio);
+              await syncDealStage(negocioId, estadoNuevoNegocio);
               console.log('✅ [NegocioContext] HubSpot sync completed after presupuesto change');
             } else {
               console.log('⚠️ [NegocioContext] Skipping HubSpot sync after presupuesto change:', {
@@ -304,53 +303,61 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   const cambiarEstadoNegocio = async (negocioId: string, nuevoEstado: EstadoNegocio): Promise<void> => {
     try {
-      console.log('🔄 [NegocioContext] ==> STARTING cambiarEstadoNegocio <==');
+      console.log('🔄 [NegocioContext] ==> CAMBIANDO ESTADO DE NEGOCIO <==');
       console.log('🔄 [NegocioContext] Negocio ID:', negocioId);
       console.log('🔄 [NegocioContext] Nuevo estado:', nuevoEstado);
       
-      // Get current state before updating
+      // 1. Obtener estado actual antes de actualizar
       const negocioActual = obtenerNegocio(negocioId);
       const estadoAnterior = negocioActual?.estado;
+      const tieneHubSpotId = !!negocioActual?.hubspot_id;
       
       console.log('🔄 [NegocioContext] Estado anterior:', estadoAnterior);
-      console.log('🔄 [NegocioContext] HubSpot ID:', negocioActual?.hubspot_id);
+      console.log('🔄 [NegocioContext] Tiene HubSpot ID:', tieneHubSpotId);
 
+      // 2. Actualizar en la base de datos
+      console.log('💾 [NegocioContext] Actualizando en base de datos...');
       const negocioActualizado = await cambiarEstadoNegocioEnSupabase(negocioId, nuevoEstado);
-      if (negocioActualizado) {
-        console.log('✅ [NegocioContext] Negocio actualizado en DB exitosamente');
-        
-        setNegocios(prevNegocios =>
-          prevNegocios.map(negocio =>
-            negocio.id === negocioId ? negocioActualizado : negocio
-          )
-        );
+      
+      if (!negocioActualizado) {
+        console.error('❌ [NegocioContext] Failed to update negocio in DB');
+        throw new Error('No se pudo actualizar el negocio en la base de datos');
+      }
 
-        // **FIX: Sync state change to HubSpot directly here**
-        if (estadoAnterior && estadoAnterior !== nuevoEstado && negocioActual?.hubspot_id) {
-          console.log('🚀 [NegocioContext] CALLING syncStateToHubSpot DIRECTLY...');
-          console.log('🚀 [NegocioContext] Params:', { negocioId, estadoAnterior, nuevoEstado });
-          
-          try {
-            await syncStateToHubSpot(negocioId, estadoAnterior, nuevoEstado);
-            console.log('✅ [NegocioContext] syncStateToHubSpot completed successfully');
-          } catch (syncError) {
-            console.error('❌ [NegocioContext] syncStateToHubSpot failed:', syncError);
-          }
-        } else {
-          console.log('⚠️ [NegocioContext] Skipping HubSpot sync:', {
-            hasEstadoAnterior: !!estadoAnterior,
-            statesEqual: estadoAnterior === nuevoEstado,
-            hasHubSpotId: !!negocioActual?.hubspot_id,
-            estadoAnterior,
-            nuevoEstado
-          });
+      console.log('✅ [NegocioContext] Negocio actualizado en DB exitosamente');
+      
+      // 3. Actualizar estado local
+      setNegocios(prevNegocios =>
+        prevNegocios.map(negocio =>
+          negocio.id === negocioId ? negocioActualizado : negocio
+        )
+      );
+
+      // 4. Sincronizar con HubSpot si es necesario
+      if (tieneHubSpotId && estadoAnterior !== nuevoEstado) {
+        console.log('🚀 [NegocioContext] Iniciando sincronización con HubSpot...');
+        
+        try {
+          await syncDealStage(negocioId, nuevoEstado);
+          console.log('✅ [NegocioContext] Sincronización con HubSpot completada');
+        } catch (syncError) {
+          console.error('❌ [NegocioContext] Error en sincronización con HubSpot:', syncError);
+          // No re-lanzamos el error para que no bloquee la actualización local
         }
       } else {
-        console.log('❌ [NegocioContext] Failed to update negocio in DB');
+        console.log('⚠️ [NegocioContext] Saltando sincronización con HubSpot:', {
+          tieneHubSpotId,
+          estadosCambiaron: estadoAnterior !== nuevoEstado,
+          estadoAnterior,
+          nuevoEstado
+        });
       }
+
+      console.log('🎉 [NegocioContext] Cambio de estado completado exitosamente');
+
     } catch (error) {
-      console.error("❌ [NegocioContext] Failed to update negocio state:", error);
-      throw error; // Re-throw to allow UI error handling
+      console.error("❌ [NegocioContext] Error al cambiar estado del negocio:", error);
+      throw error;
     }
   };
 
