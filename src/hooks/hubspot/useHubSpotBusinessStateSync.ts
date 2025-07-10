@@ -133,12 +133,15 @@ export const useHubSpotBusinessStateSync = () => {
           logger.error(`[HubSpot Sync] Subscription error: ${status}`);
           isSubscribedRef.current = false;
           
-          // Simple reconnection after 5 seconds
-          setTimeout(() => {
-            if (!isSubscribedRef.current) {
-              setupChannel();
-            }
-          }, 5000);
+          // Only reconnect on non-CLOSED errors to prevent infinite loops
+          if (status !== 'CLOSED') {
+            // Simple reconnection after 5 seconds
+            setTimeout(() => {
+              if (!isSubscribedRef.current) {
+                setupChannel();
+              }
+            }, 5000);
+          }
         }
       });
 
