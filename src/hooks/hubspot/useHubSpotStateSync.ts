@@ -9,7 +9,7 @@ export const useHubSpotStateSync = () => {
 
   const syncStateToHubSpot = useCallback(async (negocioId: string, estadoAnterior: EstadoNegocio, estadoNuevo: EstadoNegocio) => {
     try {
-      logger.info(`[HubSpot State Sync] Starting state sync for negocio ${negocioId}: ${estadoAnterior} → ${estadoNuevo}`);
+      console.log(`[HubSpot State Sync] Starting state sync for negocio ${negocioId}: ${estadoAnterior} → ${estadoNuevo}`);
 
       // Get business data to verify HubSpot ID
       const { data: negocioData, error: negocioError } = await supabase
@@ -19,28 +19,59 @@ export const useHubSpotStateSync = () => {
         .single();
 
       if (negocioError || !negocioData) {
-        logger.warn(`[HubSpot State Sync] Business not found: ${negocioId}`);
+        console.warn(`[HubSpot State Sync] Business not found: ${negocioId}`, negocioError);
+        toast({
+          variant: "destructive",
+          title: "Error de sincronización",
+          description: "Negocio no encontrado"
+        });
         return;
       }
 
       // Check if business has HubSpot ID
       if (!negocioData.hubspot_id) {
-        logger.warn(`[HubSpot State Sync] Business ${negocioId} has no HubSpot ID, skipping sync`);
+        console.warn(`[HubSpot State Sync] Business ${negocioId} has no HubSpot ID, skipping sync`);
+        toast({
+          variant: "destructive",
+          title: "Sincronización omitida",
+          description: "Este negocio no está conectado con HubSpot"
+        });
         return;
       }
+
+      console.log(`[HubSpot State Sync] Checking API key for user: ${negocioData.user_id}`);
 
       // Validate API key exists
       const { data: apiKeyData, error: apiKeyError } = await supabase
         .from('hubspot_api_keys')
-        .select('activo')
+        .select('api_key, activo')
         .eq('user_id', negocioData.user_id)
         .eq('activo', true)
-        .single();
+        .maybeSingle();
 
-      if (apiKeyError || !apiKeyData) {
-        logger.warn(`[HubSpot State Sync] No active HubSpot API key found for user`);
+      console.log(`[HubSpot State Sync] API key check result:`, { apiKeyData: !!apiKeyData, apiKeyError });
+
+      if (apiKeyError) {
+        console.error(`[HubSpot State Sync] Error checking API key:`, apiKeyError);
+        toast({
+          variant: "destructive",
+          title: "Error de configuración",
+          description: "Error al verificar la clave de HubSpot"
+        });
         return;
       }
+
+      if (!apiKeyData) {
+        console.warn(`[HubSpot State Sync] No active HubSpot API key found for user ${negocioData.user_id}`);
+        toast({
+          variant: "destructive",
+          title: "Configuración incompleta",
+          description: "No hay una clave de HubSpot activa configurada"
+        });
+        return;
+      }
+
+      console.log(`[HubSpot State Sync] Checking stage mapping for estado: ${estadoNuevo}`);
 
       // Validate stage mapping exists
       const { data: stageMappingData, error: stageMappingError } = await supabase
@@ -48,10 +79,27 @@ export const useHubSpotStateSync = () => {
         .select('stage_id')
         .eq('user_id', negocioData.user_id)
         .eq('estado_negocio', estadoNuevo)
-        .single();
+        .maybeSingle();
 
-      if (stageMappingError || !stageMappingData) {
-        logger.warn(`[HubSpot State Sync] No stage mapping found for estado: ${estadoNuevo}`);
+      console.log(`[HubSpot State Sync] Stage mapping check result:`, { stageMappingData, stageMappingError });
+
+      if (stageMappingError) {
+        console.error(`[HubSpot State Sync] Error checking stage mapping:`, stageMappingError);
+        toast({
+          variant: "destructive",
+          title: "Error de configuración",
+          description: "Error al verificar el mapeo de estados"
+        });
+        return;
+      }
+
+      if (!stageMappingData) {
+        console.warn(`[HubSpot State Sync] No stage mapping found for estado: ${estadoNuevo}`);
+        toast({
+          variant: "destructive",
+          title: "Configuración incompleta",
+          description: `No hay mapeo configurado para el estado: ${estadoNuevo}`
+        });
         return;
       }
 
