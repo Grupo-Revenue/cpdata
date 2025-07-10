@@ -58,7 +58,8 @@ const Navigation = () => {
                 <img 
                   src={brandConfig.logo_url} 
                   alt={brandConfig.nombre_empresa || 'Logo'} 
-                  className="h-10 w-auto max-w-[200px] object-contain"
+                  className="h-10 w-auto max-w-[200px] object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => window.location.href = '/'}
                   onError={(e) => {
                     console.error('Error loading logo:', e);
                     e.currentTarget.style.display = 'none';
@@ -69,7 +70,7 @@ const Navigation = () => {
                   }}
                 />
                 {/* Fallback icon if logo fails to load */}
-                <div className="hidden items-center space-x-3">
+                <div className="hidden items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.location.href = '/'}>
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
                     <Building2 className="h-6 w-6 text-white" />
                   </div>
@@ -82,7 +83,7 @@ const Navigation = () => {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.location.href = '/'}>
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
                   <Building2 className="h-6 w-6 text-white" />
                 </div>
