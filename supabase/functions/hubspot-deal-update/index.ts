@@ -13,16 +13,41 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
+    console.log('🔧 [HubSpot Deal Update] Request received:', {
+      method: req.method,
+      headers: Object.fromEntries(req.headers.entries()),
+      url: req.url
+    })
+
+    // Detect if call is from database trigger (uses Service Role Key) or frontend (uses Anon Key)
+    const authHeader = req.headers.get('Authorization')
+    const isFromTrigger = authHeader?.includes('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqdnR1dXZpZ2NxcGlicGZjeGNoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDM3ODQzMSwiZXhwIjoyMDY1OTU0NDMxfQ.u5kUfOa1Lw2qzmbFhQ0YhD1Qe_VwAGDgDa_oBTa7ZQ0')
+    
+    console.log('🔍 [HubSpot Deal Update] Call origin detected:', {
+      isFromTrigger,
+      authHeaderLength: authHeader?.length
+    })
+
+    // Initialize Supabase client with appropriate key
+    const supabaseKey = isFromTrigger 
+      ? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      : Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      supabaseKey,
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: isFromTrigger ? {} : { Authorization: authHeader! },
         },
       }
     )
+
+    console.log('✅ [HubSpot Deal Update] Supabase client initialized:', {
+      url: Deno.env.get('SUPABASE_URL'),
+      keyType: isFromTrigger ? 'SERVICE_ROLE' : 'ANON',
+      hasAuth: !!authHeader
+    })
 
     // Parse request body
     const { negocio_id, estado_anterior, estado_nuevo } = await req.json()
