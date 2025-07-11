@@ -20,6 +20,7 @@ const CrearPresupuesto: React.FC<CrearPresupuestoProps> = ({ negocioId, presupue
     productos,
     productosBiblioteca,
     loadingProductos,
+    isSaving,
     setStep,
     agregarProductoBiblioteca,
     eliminarProducto,
@@ -89,6 +90,7 @@ const CrearPresupuesto: React.FC<CrearPresupuestoProps> = ({ negocioId, presupue
             onVolver={volverASeleccion}
             onConfirmar={guardarPresupuesto}
             total={calcularTotal()}
+            isSaving={isSaving}
           />
         )}
       </div>

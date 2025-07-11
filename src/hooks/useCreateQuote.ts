@@ -35,7 +35,8 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
   const {
     negocio,
     presupuestoExistente,
-    guardarPresupuesto: baseSaveQuote
+    guardarPresupuesto: baseSaveQuote,
+    isSaving
   } = useQuotePersistence({ negocioId, presupuestoId, onCerrar });
 
   // Load existing quote data with proper memoization
@@ -92,6 +93,7 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
     productosBiblioteca,
     loadingProductos,
     presupuestoId,
+    isSaving,
     setStep,
     agregarProductoBiblioteca,
     eliminarProducto,

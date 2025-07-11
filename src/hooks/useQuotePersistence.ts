@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react';
 import { useNegocio } from '@/context/NegocioContext';
 import { ProductoPresupuesto } from '@/types';
 import { toast } from '@/hooks/use-toast';
@@ -12,12 +13,18 @@ interface UseQuotePersistenceProps {
 
 export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQuotePersistenceProps) => {
   const { obtenerNegocio, crearPresupuesto, actualizarPresupuesto } = useNegocio();
+  const [isSaving, setIsSaving] = useState(false);
 
   const negocio = obtenerNegocio(negocioId);
   const presupuestoExistente = presupuestoId ? 
     negocio?.presupuestos.find(p => p.id === presupuestoId) : null;
 
-  const guardarPresupuesto = async (productos: ProductoPresupuesto[]) => {
+  const guardarPresupuesto = useCallback(async (productos: ProductoPresupuesto[]) => {
+    if (isSaving) {
+      console.log('Ya hay un guardado en progreso, ignorando...');
+      return;
+    }
+
     if (productos.length === 0) {
       toast({
         title: "Sin productos",
@@ -26,6 +33,8 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
       });
       return;
     }
+
+    setIsSaving(true);
 
     console.log('Saving presupuesto with products:', productos);
 
@@ -152,13 +161,16 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
         description: errorMessage,
         variant: "destructive"
       });
+    } finally {
+      setIsSaving(false);
     }
-  };
+  }, [isSaving, presupuestoId, presupuestoExistente, negocio, negocioId, crearPresupuesto, onCerrar]);
 
   return {
     negocio,
     presupuestoExistente,
     presupuestoId,
-    guardarPresupuesto
+    guardarPresupuesto,
+    isSaving
   };
 };

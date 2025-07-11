@@ -12,6 +12,7 @@ interface QuoteEditViewProps {
   onVolver: () => void;
   onConfirmar: () => void;
   total: number;
+  isSaving?: boolean;
 }
 
 const QuoteEditView: React.FC<QuoteEditViewProps> = ({
@@ -20,7 +21,8 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
   onEliminarProducto,
   onVolver,
   onConfirmar,
-  total
+  total,
+  isSaving = false
 }) => {
   if (productos.length === 0) {
     return <EmptyProductsState onVolver={onVolver} />;
@@ -43,6 +45,7 @@ const QuoteEditView: React.FC<QuoteEditViewProps> = ({
           productos={productos}
           onVolver={onVolver}
           onConfirmar={onConfirmar}
+          isSaving={isSaving}
         />
       </div>
     </div>

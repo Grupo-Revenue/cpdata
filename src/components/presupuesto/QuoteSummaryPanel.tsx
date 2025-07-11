@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, ArrowLeft } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Loader2 } from 'lucide-react';
 import { ExtendedProductoPresupuesto } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
 import { calcularTotalesPresupuesto } from '@/utils/quoteCalculations';
@@ -12,12 +12,14 @@ interface QuoteSummaryPanelProps {
   productos: ExtendedProductoPresupuesto[];
   onVolver: () => void;
   onConfirmar: () => void;
+  isSaving?: boolean;
 }
 
 const QuoteSummaryPanel: React.FC<QuoteSummaryPanelProps> = ({
   productos,
   onVolver,
-  onConfirmar
+  onConfirmar,
+  isSaving = false
 }) => {
   const totales = calcularTotalesPresupuesto(productos);
 
@@ -74,16 +76,24 @@ const QuoteSummaryPanel: React.FC<QuoteSummaryPanelProps> = ({
           <Button 
             onClick={onConfirmar} 
             className="w-full bg-green-600 hover:bg-green-700"
-            disabled={productos.length === 0}
+            disabled={productos.length === 0 || isSaving}
             size="lg"
           >
-            Guardar Presupuesto
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              'Guardar Presupuesto'
+            )}
           </Button>
           
           <Button 
             onClick={onVolver}
             variant="outline" 
             className="w-full"
+            disabled={isSaving}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Agregar más productos
