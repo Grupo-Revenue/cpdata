@@ -67,7 +67,7 @@ export const usePublicBudgetData = (negocioId: string, presupuestoId: string): P
           ...p,
           sessions: Array.isArray(p.sessions) ? p.sessions as SessionAcreditacion[] : [],
           comentarios: undefined,
-          descuentoPorcentaje: undefined,
+          descuentoPorcentaje: 0, // Set default value instead of undefined
           precioUnitario: p.precio_unitario,
           linea_producto_id: undefined,
           originalLibraryDescription: undefined

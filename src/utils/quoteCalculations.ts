@@ -10,20 +10,25 @@ export interface QuoteTotals {
   total: number;
 }
 
-export const calcularTotalProducto = (cantidad: number, precioUnitario: number, descuentoPorcentaje: number): number => {
+export const calcularTotalProducto = (cantidad: number, precioUnitario: number, descuentoPorcentaje: number = 0): number => {
   const subtotalProducto = cantidad * precioUnitario;
-  const descuento = subtotalProducto * (descuentoPorcentaje / 100);
+  const descuento = subtotalProducto * ((descuentoPorcentaje || 0) / 100);
   return subtotalProducto - descuento;
 };
 
 export const calcularTotalesPresupuesto = (productos: ProductoPresupuesto[]): QuoteTotals => {
   const subtotal = productos.reduce((sum, producto) => {
-    return sum + (producto.cantidad * producto.precioUnitario);
+    const cantidad = producto.cantidad || 0;
+    const precioUnitario = producto.precioUnitario || producto.precio_unitario || 0;
+    return sum + (cantidad * precioUnitario);
   }, 0);
 
   const totalDescuentos = productos.reduce((sum, producto) => {
-    const subtotalProducto = producto.cantidad * producto.precioUnitario;
-    const descuento = subtotalProducto * (producto.descuentoPorcentaje / 100);
+    const cantidad = producto.cantidad || 0;
+    const precioUnitario = producto.precioUnitario || producto.precio_unitario || 0;
+    const descuentoPorcentaje = producto.descuentoPorcentaje || 0;
+    const subtotalProducto = cantidad * precioUnitario;
+    const descuento = subtotalProducto * (descuentoPorcentaje / 100);
     return sum + descuento;
   }, 0);
 
