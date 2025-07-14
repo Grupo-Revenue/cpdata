@@ -2,10 +2,12 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, Printer } from 'lucide-react';
+import { ArrowLeft, Download, Printer, Share } from 'lucide-react';
 import { useNegocio } from '@/context/NegocioContext';
 import PresupuestoPDFTemplate from '@/components/pdf/PresupuestoPDFTemplate';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import PublicLinkManager from '@/components/presupuesto/PublicLinkManager';
 
 const PresupuestoPDFView: React.FC = () => {
   const { negocioId, presupuestoId } = useParams<{ negocioId: string; presupuestoId: string }>();
@@ -85,6 +87,17 @@ const PresupuestoPDFView: React.FC = () => {
               </div>
             </div>
             <div className="flex space-x-2">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <Share className="w-4 h-4 mr-2" />
+                    Compartir
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <PublicLinkManager presupuestoId={presupuestoId!} />
+                </DialogContent>
+              </Dialog>
               <Button onClick={generatePDF} className="bg-blue-600 hover:bg-blue-700">
                 <Download className="w-4 h-4 mr-2" />
                 Descargar PDF

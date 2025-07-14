@@ -13,6 +13,7 @@ import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
 import PresupuestoPDFView from "./pages/PresupuestoPDFView";
+import PublicPresupuestoPDFView from "./pages/PublicPresupuestoPDFView";
 import NotFound from "./pages/NotFound";
 import { queryClient } from "@/utils/queryClient";
 import { Suspense } from "react";
@@ -56,11 +57,12 @@ const App = () => {
                         <Index />
                       </ProtectedRoute>
                     } />
-                    <Route path="/presupuesto/:negocioId/:presupuestoId/pdf" element={
-                      <ProtectedRoute>
-                        <PresupuestoPDFView />
-                      </ProtectedRoute>
-                    } />
+          <Route path="/presupuesto/:negocioId/:presupuestoId/pdf" element={
+            <ProtectedRoute>
+              <PresupuestoPDFView />
+            </ProtectedRoute>
+          } />
+          <Route path="/public/presupuesto/:publicId/pdf" element={<PublicPresupuestoPDFView />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
