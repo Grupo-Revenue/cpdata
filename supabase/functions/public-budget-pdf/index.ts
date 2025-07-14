@@ -33,11 +33,17 @@ Deno.serve(async (req) => {
       } catch {
         // If body parsing fails, try URL
         const url = new URL(req.url);
-        publicId = url.pathname.split('/').pop() || '';
+        const pathParts = url.pathname.split('/');
+        const lastPart = pathParts[pathParts.length - 1] || '';
+        // Remove .pdf extension if present
+        publicId = lastPart.replace('.pdf', '');
       }
     } else {
       const url = new URL(req.url);
-      publicId = url.pathname.split('/').pop() || '';
+      const pathParts = url.pathname.split('/');
+      const lastPart = pathParts[pathParts.length - 1] || '';
+      // Remove .pdf extension if present
+      publicId = lastPart.replace('.pdf', '');
     }
 
     if (!publicId) {
