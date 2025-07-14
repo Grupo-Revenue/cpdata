@@ -215,7 +215,8 @@ Deno.serve(async (req) => {
 
     // Generate public URL
     const presupuestoName = presupuesto.nombre.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
-    const publicUrl = `${Deno.env.get('SUPABASE_URL')?.replace('//', '//').replace('supabase.co', 'lovable.app') || 'https://your-domain.com'}/public/presupuesto/${presupuestoName}/${negocio_id}/${presupuesto_id}/view`;
+    const baseUrl = Deno.env.get('SUPABASE_URL')?.replace('ejvtuuvigcqpibpfcxch.supabase.co', 'ejvtuuvigcqpibpfcxch.lovable.app') || 'https://ejvtuuvigcqpibpfcxch.lovable.app';
+    const publicUrl = `${baseUrl}/public/presupuesto/${presupuestoName}/${negocio_id}/${presupuesto_id}/view`;
 
     let hubspotProperty = existing_property;
     let hubspotUpdateSuccess = true;
