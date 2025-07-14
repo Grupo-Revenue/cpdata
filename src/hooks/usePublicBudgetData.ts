@@ -31,39 +31,44 @@ export const usePublicBudgetData = (negocioId: string, presupuestoId: string): P
       setData(prev => ({ ...prev, loading: true, error: null }));
 
       try {
-        // Fetch presupuesto with products
-        const { data: presupuestoData, error: presupuestoError } = await supabase
-          .from('presupuestos')
-          .select(`
-            *,
-            productos_presupuesto (*)
-          `)
-          .eq('id', presupuestoId)
-          .in('estado', ['publicado', 'aprobado']) // Allow published and approved budgets
-          .single();
+        console.log('[usePublicBudgetData] Fetching public budget data for:', { negocioId, presupuestoId });
 
-        if (presupuestoError) {
+        // Use the secure function that bypasses RLS for public access
+        const { data: publicData, error: publicError } = await supabase
+          .rpc('get_public_budget_data', {
+            p_negocio_id: negocioId,
+            p_presupuesto_id: presupuestoId
+          });
+
+        console.log('[usePublicBudgetData] RPC response:', { publicData, publicError });
+
+        if (publicError) {
+          console.error('[usePublicBudgetData] RPC error:', publicError);
+          throw new Error(`Error al consultar datos públicos: ${publicError.message}`);
+        }
+
+        if (!publicData || publicData.length === 0) {
+          console.warn('[usePublicBudgetData] No public data found');
           throw new Error('Presupuesto no encontrado o no disponible públicamente');
         }
 
-        // Fetch negocio with related data
-        const { data: negocioData, error: negocioError } = await supabase
-          .from('negocios')
-          .select(`
-            *,
-            contactos!negocios_contacto_id_fkey (*),
-            empresas!negocios_productora_id_fkey (*),
-            cliente_final:empresas!negocios_cliente_final_id_fkey (*)
-          `)
-          .eq('id', negocioId)
-          .single();
+        const { presupuesto_data: rawPresupuestoData, negocio_data: rawNegocioData } = publicData[0];
+        
+        console.log('[usePublicBudgetData] Raw data received:', { 
+          presupuesto: rawPresupuestoData ? 'found' : 'missing',
+          negocio: rawNegocioData ? 'found' : 'missing'
+        });
 
-        if (negocioError) {
-          throw new Error('Negocio no encontrado');
+        if (!rawPresupuestoData || !rawNegocioData) {
+          throw new Error('Datos incompletos recibidos');
         }
 
+        // Type the JSONB data properly
+        const presupuestoData = rawPresupuestoData as any;
+        const negocioData = rawNegocioData as any;
+
         // Transform the data to match expected format
-        const productos: ExtendedProductoPresupuesto[] = (presupuestoData.productos_presupuesto || []).map(p => ({
+        const productos: ExtendedProductoPresupuesto[] = (presupuestoData.productos_presupuesto || []).map((p: any) => ({
           ...p,
           sessions: Array.isArray(p.sessions) ? p.sessions as SessionAcreditacion[] : [],
           comentarios: undefined,

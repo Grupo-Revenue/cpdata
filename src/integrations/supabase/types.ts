@@ -678,6 +678,13 @@ export type Database = {
           success_rate_percentage: number
         }[]
       }
+      get_public_budget_data: {
+        Args: { p_negocio_id: string; p_presupuesto_id: string }
+        Returns: {
+          presupuesto_data: Json
+          negocio_data: Json
+        }[]
+      }
       has_role: {
         Args: {
           _user_id: string
