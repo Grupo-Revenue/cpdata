@@ -72,6 +72,11 @@ export const usePublicLinkManager = ({ presupuestoId, negocioId }: UsePublicLink
       const newLink = data.link;
       setCurrentLink(newLink);
 
+      // Update link URL to use new development-friendly route
+      if (newLink) {
+        newLink.link_url = `${window.location.origin}/presupuesto/${negocioId}/${presupuestoId}/view`;
+      }
+
       // Show success message, with warning if HubSpot failed
       if (data.hubspot_updated) {
         toast({
@@ -129,6 +134,12 @@ export const usePublicLinkManager = ({ presupuestoId, negocioId }: UsePublicLink
       }
 
       const newLink = data.link;
+      
+      // Update link URL to use new development-friendly route
+      if (newLink) {
+        newLink.link_url = `${window.location.origin}/presupuesto/${negocioId}/${presupuestoId}/view`;
+      }
+      
       setCurrentLink(newLink);
 
       // Show success message, with warning if HubSpot failed

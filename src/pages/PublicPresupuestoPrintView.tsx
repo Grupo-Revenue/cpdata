@@ -1,74 +1,90 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
+import { usePublicBudgetData } from '@/hooks/usePublicBudgetData';
+import PresupuestoPDFTemplate from '@/components/pdf/PresupuestoPDFTemplate';
 
 const PublicPresupuestoPrintView: React.FC = () => {
   const { presupuestoName, negocioId, presupuestoId } = useParams<{ 
-    presupuestoName: string; 
+    presupuestoName?: string; 
     negocioId: string; 
     presupuestoId: string 
   }>();
 
-  return (
-    <div style={{ 
-      minHeight: '100vh', 
-      backgroundColor: '#f3f4f6', 
-      padding: '32px',
-      fontFamily: 'Arial, sans-serif'
-    }}>
-      <div style={{
-        maxWidth: '1024px',
-        margin: '0 auto',
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-        padding: '24px'
+  const { presupuesto, negocio, loading, error } = usePublicBudgetData(negocioId!, presupuestoId!);
+
+  if (loading) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f3f4f6'
       }}>
-        <h1 style={{ 
-          fontSize: '24px', 
-          fontWeight: 'bold', 
-          marginBottom: '16px',
-          color: '#111827'
+        <div style={{
+          padding: '24px',
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          textAlign: 'center' as const
         }}>
-          ✅ COMPONENTE PÚBLICO ACTUALIZADO Y FUNCIONANDO
-        </h1>
-        
-        <div style={{ marginBottom: '24px' }}>
-          <p style={{ color: '#059669', fontWeight: '600', fontSize: '18px' }}>
-            ✅ El componente público se está renderizando correctamente
-          </p>
-          <p style={{ color: '#6b7280', marginTop: '8px' }}>
-            Esto confirma que la ruta pública NO está siendo interceptada por las rutas protegidas
-          </p>
+          <div style={{ 
+            width: '32px', 
+            height: '32px', 
+            border: '3px solid #f3f4f6',
+            borderTop: '3px solid #3b82f6',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px'
+          }}></div>
+          <p style={{ color: '#6b7280' }}>Cargando presupuesto...</p>
         </div>
+      </div>
+    );
+  }
 
-        <div style={{ 
-          backgroundColor: '#f9fafb', 
-          padding: '16px', 
-          borderRadius: '6px',
-          marginTop: '16px'
+  if (error || !presupuesto || !negocio) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f3f4f6'
+      }}>
+        <div style={{
+          padding: '24px',
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          textAlign: 'center' as const,
+          maxWidth: '400px'
         }}>
-          <h3 style={{ color: '#374151', fontWeight: 'bold', marginBottom: '12px' }}>
-            Parámetros de la URL:
-          </h3>
-          <div style={{ color: '#374151' }}>
-            <p><strong>Nombre del Presupuesto:</strong> {presupuestoName}</p>
-            <p><strong>ID del Negocio:</strong> {negocioId}</p>
-            <p><strong>ID del Presupuesto:</strong> {presupuestoId}</p>
-          </div>
-        </div>
-
-        <div style={{ 
-          backgroundColor: '#ecfdf5', 
-          padding: '16px', 
-          borderRadius: '6px',
-          marginTop: '16px',
-          border: '1px solid #d1fae5'
-        }}>
-          <p style={{ color: '#065f46', fontWeight: '500' }}>
-            URL actual funcionando correctamente ✅
+          <h1 style={{ 
+            fontSize: '20px', 
+            fontWeight: 'bold', 
+            marginBottom: '16px',
+            color: '#dc2626'
+          }}>
+            Presupuesto no encontrado
+          </h1>
+          <p style={{ color: '#6b7280', marginBottom: '16px' }}>
+            {error || 'El presupuesto no existe o no está disponible públicamente.'}
+          </p>
+          <p style={{ color: '#6b7280', fontSize: '14px' }}>
+            Verifica que el enlace sea correcto y que el presupuesto esté publicado.
           </p>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div style={{ 
+      minHeight: '100vh', 
+      backgroundColor: '#f3f4f6'
+    }}>
+      <PresupuestoPDFTemplate presupuesto={presupuesto} negocio={negocio} />
     </div>
   );
 };

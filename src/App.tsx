@@ -34,8 +34,9 @@ const App = () => {
               </div>
             }>
               <Routes>
-                {/* Public route - no authentication required - MUST BE FIRST */}
+                {/* Public routes - no authentication required - MUST BE FIRST */}
                 <Route path="/public/presupuesto/:presupuestoName/:negocioId/:presupuestoId/view" element={<PublicPresupuestoPrintView />} />
+                <Route path="/presupuesto/:negocioId/:presupuestoId/view" element={<PublicPresupuestoPrintView />} />
                 
                 {/* Auth route */}
                 <Route path="/auth" element={<Auth />} />
