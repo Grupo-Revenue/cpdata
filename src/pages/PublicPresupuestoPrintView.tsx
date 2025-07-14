@@ -64,9 +64,13 @@ const PublicPresupuestoPrintView: React.FC = () => {
     );
   }
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header with actions - without Back and Share buttons */}
+      {/* Header with actions - only Download and Print buttons */}
       <div className="bg-white shadow-sm border-b no-print">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -81,7 +85,7 @@ const PublicPresupuestoPrintView: React.FC = () => {
                 <Download className="w-4 h-4 mr-2" />
                 Descargar PDF
               </Button>
-              <Button variant="outline" onClick={generatePDF}>
+              <Button variant="outline" onClick={handlePrint}>
                 <Printer className="w-4 h-4 mr-2" />
                 Imprimir
               </Button>

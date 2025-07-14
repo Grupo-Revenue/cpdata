@@ -24,54 +24,61 @@ const App = () => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <NegocioProvider>
-            <HubSpotSyncProvider>
-              <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <Suspense fallback={
-                  <div className="flex items-center justify-center min-h-screen">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                }>
-                  <Routes>
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/" element={
-                      <ProtectedRoute>
-                        <Index />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/settings" element={
-                      <ProtectedRoute>
-                        <Settings />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/admin" element={
-                      <ProtectedRoute>
-                        <Admin />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/negocio/:negocioId" element={
-                      <ProtectedRoute>
-                        <Index />
-                      </ProtectedRoute>
-                    } />
-          <Route path="/presupuesto/:negocioId/:presupuestoId/pdf" element={
-            <ProtectedRoute>
-              <PresupuestoPDFView />
-            </ProtectedRoute>
-          } />
-          <Route path="/public/presupuesto/:presupuestoName/:negocioId/:presupuestoId/view" element={<PublicPresupuestoPrintView />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </Suspense>
-              </BrowserRouter>
-              </TooltipProvider>
-            </HubSpotSyncProvider>
-          </NegocioProvider>
-        </AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Suspense fallback={
+              <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            }>
+              <Routes>
+                {/* Public route - no authentication required */}
+                <Route path="/public/presupuesto/:presupuestoName/:negocioId/:presupuestoId/view" element={<PublicPresupuestoPrintView />} />
+                
+                {/* Protected routes - require authentication */}
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/*" element={
+                  <AuthProvider>
+                    <NegocioProvider>
+                      <HubSpotSyncProvider>
+                        <Routes>
+                          <Route path="/" element={
+                            <ProtectedRoute>
+                              <Index />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/settings" element={
+                            <ProtectedRoute>
+                              <Settings />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/admin" element={
+                            <ProtectedRoute>
+                              <Admin />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/negocio/:negocioId" element={
+                            <ProtectedRoute>
+                              <Index />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/presupuesto/:negocioId/:presupuestoId/pdf" element={
+                            <ProtectedRoute>
+                              <PresupuestoPDFView />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </HubSpotSyncProvider>
+                    </NegocioProvider>
+                  </AuthProvider>
+                } />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
