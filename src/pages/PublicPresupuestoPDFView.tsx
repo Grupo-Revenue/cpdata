@@ -28,25 +28,20 @@ const PublicPresupuestoPDFView: React.FC = () => {
       }
 
       try {
-        // Call edge function with publicId in the URL
-        const response = await fetch(
-          `https://ejvtuuvigcqpibpfcxch.supabase.co/functions/v1/public-budget-pdf/${publicId}`,
+        // Call edge function using supabase client
+        const { data, error: functionError } = await supabase.functions.invoke(
+          'public-budget-pdf',
           {
             method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            body: { publicId }
           }
         );
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          setError(errorData.error || 'Error al cargar el presupuesto');
+        if (functionError) {
+          console.error('Edge function error:', functionError);
+          setError(functionError.message || 'Error al cargar el presupuesto');
           return;
         }
-
-        const data = await response.json();
-
 
         if (!data) {
           setError('No se encontraron datos del presupuesto');

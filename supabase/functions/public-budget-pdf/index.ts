@@ -23,9 +23,22 @@ Deno.serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get public link ID from URL
-    const url = new URL(req.url);
-    const publicId = url.pathname.split('/').pop();
+    // Get public link ID from request (supports both POST body and URL path)
+    let publicId: string;
+    
+    if (req.method === 'POST') {
+      try {
+        const body = await req.json();
+        publicId = body.publicId;
+      } catch {
+        // If body parsing fails, try URL
+        const url = new URL(req.url);
+        publicId = url.pathname.split('/').pop() || '';
+      }
+    } else {
+      const url = new URL(req.url);
+      publicId = url.pathname.split('/').pop() || '';
+    }
 
     if (!publicId) {
       return new Response(
