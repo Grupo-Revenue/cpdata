@@ -39,7 +39,7 @@ export const usePublicBudgetData = (negocioId: string, presupuestoId: string): P
             productos_presupuesto (*)
           `)
           .eq('id', presupuestoId)
-          .eq('estado', 'publicado') // Only allow published budgets
+          .in('estado', ['publicado', 'aprobado']) // Allow published and approved budgets
           .single();
 
         if (presupuestoError) {
