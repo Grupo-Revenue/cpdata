@@ -10,6 +10,7 @@ interface LinkRequest {
   negocio_id: string;
   regenerate?: boolean;
   existing_property?: string;
+  sync_from_hubspot?: boolean;
 }
 
 interface HubSpotProperty {
@@ -34,7 +35,157 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { presupuesto_id, negocio_id, regenerate = false, existing_property }: LinkRequest = await req.json();
+    const { presupuesto_id, negocio_id, regenerate = false, existing_property, sync_from_hubspot = false }: LinkRequest = await req.json();
+
+    // If sync_from_hubspot is true, try to recover the link from HubSpot
+    if (sync_from_hubspot) {
+      console.log('🔄 [HubSpot Link Manager] Attempting to sync link from HubSpot for presupuesto:', presupuesto_id);
+      
+      // Check if there's already a local record
+      const { data: existingLink } = await supabase
+        .from('public_budget_links')
+        .select('*')
+        .eq('presupuesto_id', presupuesto_id)
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      if (existingLink) {
+        console.log('✅ [HubSpot Link Manager] Link already exists locally');
+        return new Response(JSON.stringify({ 
+          success: true, 
+          link: existingLink,
+          message: 'Link already exists locally'
+        }), { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
+      }
+
+      // Get negocio data to check HubSpot ID
+      const { data: negocioData, error: negocioError } = await supabase
+        .from('negocios')
+        .select('hubspot_id, user_id')
+        .eq('id', negocio_id)
+        .single();
+
+      if (negocioError || !negocioData?.hubspot_id) {
+        console.log('⚠️ [HubSpot Link Manager] No HubSpot ID found for negocio:', negocio_id);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'No HubSpot integration found' 
+        }), { 
+          status: 404, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
+      }
+
+      // Get HubSpot API key
+      const { data: hubspotKey } = await supabase
+        .from('hubspot_api_keys')
+        .select('api_key')
+        .eq('user_id', negocioData.user_id)
+        .eq('activo', true)
+        .single();
+
+      if (!hubspotKey?.api_key) {
+        console.log('⚠️ [HubSpot Link Manager] No active HubSpot API key found');
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'No HubSpot API key configured' 
+        }), { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
+      }
+
+      try {
+        // Fetch deal properties from HubSpot
+        const hubspotResponse = await fetch(`https://api.hubapi.com/crm/v3/objects/deals/${negocioData.hubspot_id}?properties=${HUBSPOT_LINK_PROPERTIES.join(',')}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${hubspotKey.api_key}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (hubspotResponse.ok) {
+          const dealData = await hubspotResponse.json();
+          const properties = dealData.properties || {};
+          
+          // Look for any public link that matches our pattern
+          const linkPattern = new RegExp(`/public/presupuesto/.*/${negocio_id}/${presupuesto_id}/view$`);
+          
+          let foundUrl = null;
+          let foundProperty = null;
+          
+          for (const propName of HUBSPOT_LINK_PROPERTIES) {
+            const propValue = properties[propName];
+            if (propValue && linkPattern.test(propValue)) {
+              foundUrl = propValue;
+              foundProperty = propName;
+              break;
+            }
+          }
+          
+          if (foundUrl) {
+            // Create the missing local record
+            const { data: newLink, error: insertError } = await supabase
+              .from('public_budget_links')
+              .insert({
+                presupuesto_id,
+                negocio_id,
+                link_url: foundUrl,
+                hubspot_property: foundProperty,
+                is_active: true,
+                created_by: negocioData.user_id
+              })
+              .select()
+              .single();
+
+            if (insertError) {
+              console.error('❌ [HubSpot Link Manager] Error creating local link record:', insertError);
+              return new Response(JSON.stringify({ 
+                success: false, 
+                error: 'Failed to create local record' 
+              }), { 
+                status: 500, 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+              });
+            }
+
+            console.log('✅ [HubSpot Link Manager] Successfully synced link from HubSpot:', foundUrl);
+            return new Response(JSON.stringify({ 
+              success: true, 
+              link: newLink,
+              message: 'Link synced from HubSpot successfully',
+              hubspot_synced: true
+            }), { 
+              status: 200, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            });
+          }
+        }
+        
+        console.log('⚠️ [HubSpot Link Manager] No matching link found in HubSpot for presupuesto:', presupuesto_id);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'No link found in HubSpot' 
+        }), { 
+          status: 404, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
+        
+      } catch (hubspotError) {
+        console.error('❌ [HubSpot Link Manager] Error fetching from HubSpot:', hubspotError);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Error communicating with HubSpot' 
+        }), { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
+      }
+    }
 
     // Get presupuesto data
     const { data: presupuesto, error: presupuestoError } = await supabase

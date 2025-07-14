@@ -16,16 +16,23 @@ const PublicLinkDisplay: React.FC<PublicLinkDisplayProps> = ({ presupuestoId, ne
     currentLink, 
     isLoading, 
     getExistingLink,
-    createPublicLink
+    createPublicLink,
+    syncLinkFromHubSpot
   } = usePublicLinkManager({ presupuestoId, negocioId });
 
   useEffect(() => {
     const loadOrCreateLink = async () => {
       const existingLink = await getExistingLink();
       
-      // Si el presupuesto está publicado pero no tiene link, crear uno automáticamente
+      // Si el presupuesto está publicado pero no tiene link
       if (!existingLink && estadoPresupuesto === 'publicado') {
-        await createPublicLink();
+        // Primero intentar sincronizar desde HubSpot
+        const syncedLink = await syncLinkFromHubSpot();
+        
+        // Si no se pudo sincronizar, crear uno nuevo
+        if (!syncedLink) {
+          await createPublicLink();
+        }
       }
     };
     

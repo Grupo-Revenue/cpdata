@@ -161,11 +161,46 @@ export const usePublicLinkManager = ({ presupuestoId, negocioId }: UsePublicLink
     }
   };
 
+  const syncLinkFromHubSpot = async (): Promise<PublicLink | null> => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('hubspot-link-manager', {
+        body: { 
+          presupuesto_id: presupuestoId, 
+          negocio_id: negocioId,
+          sync_from_hubspot: true
+        }
+      });
+
+      if (error) {
+        console.error('Error syncing link from HubSpot:', error);
+        return null;
+      }
+
+      const syncedLink = data?.link as PublicLink;
+      if (syncedLink) {
+        setCurrentLink(syncedLink);
+        toast({
+          title: "Enlace sincronizado",
+          description: "El enlace ha sido recuperado desde HubSpot",
+        });
+      }
+      
+      return syncedLink;
+    } catch (error) {
+      console.error('Error syncing link from HubSpot:', error);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     currentLink,
     isLoading,
     getExistingLink,
     createPublicLink,
-    regenerateLink
+    regenerateLink,
+    syncLinkFromHubSpot
   };
 };
