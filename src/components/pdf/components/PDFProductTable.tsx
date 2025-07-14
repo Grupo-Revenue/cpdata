@@ -47,7 +47,7 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
         </thead>
         <tbody>
           {(presupuesto.productos || []).map((producto, index) => (
-            <React.Fragment key={producto.id}>
+            <React.Fragment key={`producto-${producto.id || index}`}>
               <tr className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                 <td className="border border-gray-400 p-3">
                   <div className="font-semibold text-gray-800">{producto.nombre}</div>
