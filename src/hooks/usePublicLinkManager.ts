@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 interface PublicLink {
   id: string;
   presupuesto_id: string;
+  negocio_id: string;
   link_url: string;
   hubspot_property: string | null;
   is_active: boolean;

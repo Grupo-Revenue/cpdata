@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Copy, Share, ExternalLink } from 'lucide-react';
+import { Copy, RefreshCw, ExternalLink, Share, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { usePublicLinkManager } from '@/hooks/usePublicLinkManager';
 
 interface PublicLinkManagerProps {
   presupuestoId: string;
@@ -11,38 +11,23 @@ interface PublicLinkManagerProps {
 }
 
 const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId, negocioId }) => {
-  const [publicUrl, setPublicUrl] = useState<string>('');
   const { toast } = useToast();
+  const { 
+    currentLink, 
+    isLoading, 
+    getExistingLink, 
+    regenerateLink 
+  } = usePublicLinkManager({ presupuestoId, negocioId });
 
   useEffect(() => {
-    generatePublicUrl();
+    getExistingLink();
   }, [presupuestoId, negocioId]);
 
-  const generatePublicUrl = async () => {
-    try {
-      const { data: presupuesto, error } = await supabase
-        .from('presupuestos')
-        .select('nombre')
-        .eq('id', presupuestoId)
-        .single();
-
-      if (error || !presupuesto) {
-        throw new Error('No se pudo obtener la información del presupuesto');
-      }
-
-      const presupuestoName = presupuesto.nombre.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
-      const url = `${window.location.origin}/public/presupuesto/${presupuestoName}/${negocioId}/${presupuestoId}/view`;
-      setPublicUrl(url);
-    } catch (error) {
-      console.error('Error generating public URL:', error);
-    }
-  };
-
   const handleCopyLink = async () => {
-    if (!publicUrl) return;
+    if (!currentLink?.link_url) return;
     
     try {
-      navigator.clipboard.writeText(publicUrl);
+      navigator.clipboard.writeText(currentLink.link_url);
       toast({
         title: "Link copiado",
         description: "El link público ha sido copiado al portapapeles",
@@ -58,8 +43,12 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId, ne
   };
 
   const handleOpenLink = () => {
-    if (!publicUrl) return;
-    window.open(publicUrl, '_blank');
+    if (!currentLink?.link_url) return;
+    window.open(currentLink.link_url, '_blank');
+  };
+
+  const handleRegenerateLink = async () => {
+    await regenerateLink();
   };
 
   return (
@@ -71,7 +60,7 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId, ne
         </p>
       </div>
 
-      {publicUrl ? (
+      {currentLink ? (
         <Card>
           <CardContent className="p-6">
             <div className="space-y-4">
@@ -79,10 +68,17 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId, ne
               <div className="bg-muted/50 rounded-lg p-3 border">
                 <div className="flex items-center gap-2">
                   <code className="flex-1 text-sm font-mono text-muted-foreground break-all">
-                    {publicUrl}
+                    {currentLink.link_url}
                   </code>
                 </div>
               </div>
+
+              {/* HubSpot Property Info */}
+              {currentLink.hubspot_property && (
+                <div className="text-xs text-muted-foreground">
+                  Sincronizado con HubSpot en: <span className="font-mono">{currentLink.hubspot_property}</span>
+                </div>
+              )}
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2">
@@ -91,6 +87,7 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId, ne
                   size="sm"
                   onClick={handleCopyLink}
                   className="flex items-center gap-2"
+                  disabled={isLoading}
                 >
                   <Copy className="h-4 w-4" />
                   Copiar Link
@@ -101,10 +98,31 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId, ne
                   size="sm"
                   onClick={handleOpenLink}
                   className="flex items-center gap-2"
+                  disabled={isLoading}
                 >
                   <ExternalLink className="h-4 w-4" />
                   Abrir
                 </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRegenerateLink}
+                  className="flex items-center gap-2"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  Regenerar Link
+                </Button>
+              </div>
+
+              {/* Access Count */}
+              <div className="text-xs text-muted-foreground">
+                Accesos: {currentLink.access_count || 0}
               </div>
             </div>
           </CardContent>
@@ -115,7 +133,15 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId, ne
             <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
               <Share className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h4 className="font-medium text-foreground mb-2">Generando link público...</h4>
+            <h4 className="font-medium text-foreground mb-2">
+              {isLoading ? 'Cargando...' : 'No hay link público disponible'}
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              {isLoading 
+                ? 'Verificando link existente...' 
+                : 'El link se creará automáticamente cuando se envíe el presupuesto'
+              }
+            </p>
           </CardContent>
         </Card>
       )}

@@ -240,6 +240,8 @@ export const eliminarPresupuestoEnSupabase = async (presupuestoId: string): Prom
 
 export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, nuevoEstado: EstadoPresupuesto, fechaVencimiento?: string): Promise<Presupuesto | null> => {
   try {
+    console.log('📝 [Presupuesto Service] Cambiando estado de presupuesto:', { presupuestoId, nuevoEstado });
+
     const updates: { estado: EstadoPresupuesto; fecha_vencimiento?: string } = { estado: nuevoEstado };
     if (fechaVencimiento) {
       updates.fecha_vencimiento = fechaVencimiento;
@@ -255,6 +257,31 @@ export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, 
     if (error) {
       console.error("Error updating presupuesto state:", error);
       throw error;
+    }
+
+    // Si el estado cambia a 'publicado', crear automáticamente el link público
+    if (nuevoEstado === 'publicado' && data?.negocio_id) {
+      try {
+        console.log('🔗 [Presupuesto Service] Creando link público automáticamente');
+        
+        const { error: linkError } = await supabase.functions.invoke('hubspot-link-manager', {
+          body: {
+            presupuesto_id: presupuestoId,
+            negocio_id: data.negocio_id,
+            regenerate: false
+          }
+        });
+
+        if (linkError) {
+          console.error('⚠️ [Presupuesto Service] Error creando link público:', linkError);
+          // No fallar el cambio de estado si falla la creación del link
+        } else {
+          console.log('✅ [Presupuesto Service] Link público creado exitosamente');
+        }
+      } catch (linkError) {
+        console.error('⚠️ [Presupuesto Service] Error inesperado creando link público:', linkError);
+        // No fallar el cambio de estado si falla la creación del link
+      }
     }
 
     // Trigger HubSpot amount sync after successful state change

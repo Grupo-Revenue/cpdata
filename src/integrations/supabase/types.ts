@@ -555,8 +555,11 @@ export type Database = {
           created_at: string
           created_by: string
           expires_at: string | null
+          hubspot_property: string | null
           id: string
           is_active: boolean
+          link_url: string | null
+          negocio_id: string | null
           presupuesto_id: string
           updated_at: string
         }
@@ -565,8 +568,11 @@ export type Database = {
           created_at?: string
           created_by: string
           expires_at?: string | null
+          hubspot_property?: string | null
           id?: string
           is_active?: boolean
+          link_url?: string | null
+          negocio_id?: string | null
           presupuesto_id: string
           updated_at?: string
         }
@@ -575,8 +581,11 @@ export type Database = {
           created_at?: string
           created_by?: string
           expires_at?: string | null
+          hubspot_property?: string | null
           id?: string
           is_active?: boolean
+          link_url?: string | null
+          negocio_id?: string | null
           presupuesto_id?: string
           updated_at?: string
         }
@@ -586,6 +595,13 @@ export type Database = {
             columns: ["presupuesto_id"]
             isOneToOne: false
             referencedRelation: "presupuestos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_budget_links_negocio_id_fkey"
+            columns: ["negocio_id"]
+            isOneToOne: false
+            referencedRelation: "negocios"
             referencedColumns: ["id"]
           },
         ]
