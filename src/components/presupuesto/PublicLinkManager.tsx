@@ -16,7 +16,7 @@ interface PublicLinkManagerProps {
 
 const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [expirationDays, setExpirationDays] = useState<string>('');
+  const [expirationDays, setExpirationDays] = useState<string>('never');
   const [publicLinks, setPublicLinks] = useState<PublicBudgetLink[]>([]);
   const { generatePublicLink, getPublicLinks, deactivateLink, deleteLink, isLoading } = usePublicBudgetLinks();
   const { toast } = useToast();
@@ -32,10 +32,10 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) 
 
   const handleCreateLink = async () => {
     try {
-      const expiresInDays = expirationDays ? parseInt(expirationDays) : undefined;
+      const expiresInDays = (expirationDays && expirationDays !== 'never') ? parseInt(expirationDays) : undefined;
       await generatePublicLink(presupuestoId, expiresInDays);
       setIsCreateDialogOpen(false);
-      setExpirationDays('');
+      setExpirationDays('never');
       loadPublicLinks();
     } catch (error) {
       // Error already handled in hook
@@ -123,7 +123,7 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) 
                     <SelectValue placeholder="Seleccionar expiración" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin expiración</SelectItem>
+                    <SelectItem value="never">Sin expiración</SelectItem>
                     <SelectItem value="1">1 día</SelectItem>
                     <SelectItem value="7">7 días</SelectItem>
                     <SelectItem value="30">30 días</SelectItem>
