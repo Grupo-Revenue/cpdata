@@ -1,106 +1,34 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Download, Printer } from 'lucide-react';
-import { usePublicBudgetData } from '@/hooks/usePublicBudgetData';
-import PresupuestoPDFTemplate from '@/components/pdf/PresupuestoPDFTemplate';
-import { usePDFGeneration } from '@/hooks/usePDFGeneration';
 
 const PublicPresupuestoPrintView: React.FC = () => {
-  const { presupuestoName, negocioId, presupuestoId } = useParams<{ presupuestoName: string; negocioId: string; presupuestoId: string }>();
-  const { presupuesto, negocio, loading, error } = usePublicBudgetData(negocioId!, presupuestoId!);
-  const { componentRef, generatePDF } = usePDFGeneration();
+  const { presupuestoName, negocioId, presupuestoId } = useParams<{ 
+    presupuestoName: string; 
+    negocioId: string; 
+    presupuestoId: string 
+  }>();
 
-  console.log('[PublicPresupuestoPrintView] Params:', { presupuestoName, negocioId, presupuestoId });
-  console.log('[PublicPresupuestoPrintView] Data:', { 
-    presupuesto: presupuesto ? 'found' : 'not found', 
-    negocio: negocio ? 'found' : 'not found',
-    loading,
-    error
+  // Debug: Simple test first
+  console.log('[PublicPresupuestoPrintView] Route working! Params:', { 
+    presupuestoName, 
+    negocioId, 
+    presupuestoId 
   });
 
-  if (!negocioId || !presupuestoId) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Presupuesto no encontrado</h1>
-          <p className="text-gray-600">Los parámetros del presupuesto son inválidos</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h1 className="text-xl text-gray-600">Cargando...</h1>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Error</h1>
-          <p className="text-gray-600 mb-4">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!negocio || !presupuesto) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Presupuesto no encontrado</h1>
-          <p className="text-gray-600">
-            {!negocio ? 'Negocio no encontrado' : 'Presupuesto no encontrado'}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const handlePrint = () => {
-    window.print();
-  };
-
+  // Temporary simple version for testing
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header with actions - only Download and Print buttons */}
-      <div className="bg-white shadow-sm border-b no-print">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">
-                Presupuesto {presupuesto.nombre}
-              </h1>
-              <p className="text-gray-600">Negocio #{negocio.numero} - {negocio.evento.nombreEvento}</p>
-            </div>
-            <div className="flex space-x-2">
-              <Button onClick={generatePDF} className="bg-blue-600 hover:bg-blue-700">
-                <Download className="w-4 h-4 mr-2" />
-                Descargar PDF
-              </Button>
-              <Button variant="outline" onClick={handlePrint}>
-                <Printer className="w-4 h-4 mr-2" />
-                Imprimir
-              </Button>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-100 p-8">
+      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-6">
+        <h1 className="text-2xl font-bold mb-4">Vista Pública de Presupuesto - Funcionando!</h1>
+        <div className="space-y-2">
+          <p><strong>Nombre del Presupuesto:</strong> {presupuestoName}</p>
+          <p><strong>ID del Negocio:</strong> {negocioId}</p>
+          <p><strong>ID del Presupuesto:</strong> {presupuestoId}</p>
         </div>
-      </div>
-
-      {/* PDF Content */}
-      <div className="py-8">
-        <PresupuestoPDFTemplate
-          ref={componentRef}
-          presupuesto={presupuesto}
-          negocio={negocio}
-        />
+        <div className="mt-6">
+          <p className="text-green-600">✅ La ruta pública está funcionando correctamente</p>
+          <p className="text-sm text-gray-600 mt-2">Este es un componente simplificado para confirmar que la ruta funciona</p>
+        </div>
       </div>
     </div>
   );
