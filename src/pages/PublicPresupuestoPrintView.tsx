@@ -29,7 +29,7 @@ const PublicPresupuestoPrintView: React.FC = () => {
           marginBottom: '16px',
           color: '#111827'
         }}>
-          🎯 RUTA PÚBLICA FUNCIONANDO
+          ✅ COMPONENTE PÚBLICO ACTUALIZADO Y FUNCIONANDO
         </h1>
         
         <div style={{ marginBottom: '24px' }}>
