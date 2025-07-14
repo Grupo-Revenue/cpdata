@@ -303,13 +303,20 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Database operations
+    // Database operations - deactivate existing links for this negocio
     if (regenerate) {
-      // Deactivate existing link
+      // Deactivate all existing links for this negocio
       await supabase
         .from('public_budget_links')
         .update({ is_active: false, updated_at: 'now()' })
-        .eq('presupuesto_id', presupuesto_id)
+        .eq('negocio_id', negocio_id)
+        .eq('is_active', true);
+    } else {
+      // For new links, also deactivate existing links for this negocio
+      await supabase
+        .from('public_budget_links')
+        .update({ is_active: false, updated_at: 'now()' })
+        .eq('negocio_id', negocio_id)
         .eq('is_active', true);
     }
 
@@ -356,11 +363,11 @@ Deno.serve(async (req) => {
 });
 
 function findAvailableProperty(currentProperties: Record<string, string>, newUrl: string): string {
-  // Check if the new URL already exists in any property
+  // Check if any property contains a link for the same negocio (not presupuesto)
   for (const property of HUBSPOT_LINK_PROPERTIES) {
     const existingValue = currentProperties[property];
     if (existingValue && isSimilarUrl(existingValue, newUrl)) {
-      return property; // Update existing property
+      return property; // Reuse existing property for same negocio
     }
   }
 
@@ -380,15 +387,16 @@ function isSimilarUrl(url1: string, url2: string): boolean {
     const u1 = new URL(url1);
     const u2 = new URL(url2);
     
-    // Compare path structure to see if they're for the same presupuesto
+    // Compare path structure to see if they're for the same negocio
     const path1Parts = u1.pathname.split('/');
     const path2Parts = u2.pathname.split('/');
     
-    // Check if they have the same presupuesto_id (last part before /view)
-    if (path1Parts.length >= 2 && path2Parts.length >= 2) {
-      const id1 = path1Parts[path1Parts.length - 2];
-      const id2 = path2Parts[path2Parts.length - 2];
-      return id1 === id2;
+    // URL format: /presupuesto/{negocio_id}/{presupuesto_id}/view
+    // Extract negocio_id (second part after /presupuesto/)
+    if (path1Parts.length >= 4 && path2Parts.length >= 4) {
+      const negocioId1 = path1Parts[2]; // /presupuesto/{negocio_id}/...
+      const negocioId2 = path2Parts[2]; // /presupuesto/{negocio_id}/...
+      return negocioId1 === negocioId2;
     }
     
     return false;
