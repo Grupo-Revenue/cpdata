@@ -2,12 +2,12 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, Printer, Share } from 'lucide-react';
+import { ArrowLeft, Download, Printer, ExternalLink } from 'lucide-react';
 import { useNegocio } from '@/context/NegocioContext';
 import PresupuestoPDFTemplate from '@/components/pdf/PresupuestoPDFTemplate';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import PublicLinkManager from '@/components/presupuesto/PublicLinkManager';
+import PublicLinkDisplay from '@/components/presupuesto/PublicLinkDisplay';
 
 const PresupuestoPDFView: React.FC = () => {
   const { negocioId, presupuestoId } = useParams<{ negocioId: string; presupuestoId: string }>();
@@ -90,15 +90,14 @@ const PresupuestoPDFView: React.FC = () => {
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="outline">
-                    <Share className="w-4 h-4 mr-2" />
-                    Compartir
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Ver Link Público
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <PublicLinkManager 
+                <DialogContent className="max-w-lg">
+                  <PublicLinkDisplay 
                     presupuestoId={presupuestoId!} 
                     negocioId={negocioId!} 
-                    estadoPresupuesto={presupuesto.estado}
                   />
                 </DialogContent>
               </Dialog>
