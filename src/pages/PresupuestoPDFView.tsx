@@ -97,7 +97,8 @@ const PresupuestoPDFView: React.FC = () => {
                 <DialogContent className="max-w-lg">
                   <PublicLinkDisplay 
                     presupuestoId={presupuestoId!} 
-                    negocioId={negocioId!} 
+                    negocioId={negocioId!}
+                    estadoPresupuesto={presupuesto.estado}
                   />
                 </DialogContent>
               </Dialog>
