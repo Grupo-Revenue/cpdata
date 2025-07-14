@@ -36,7 +36,7 @@ export const usePublicBudgetLinks = () => {
 
       if (error) throw error;
 
-      const publicUrl = `${window.location.origin}/public/presupuesto/${data.id}/pdf`;
+      const publicUrl = `${window.location.origin}/public/presupuesto/${data.id}.pdf`;
       
       toast({
         title: "Link público generado",

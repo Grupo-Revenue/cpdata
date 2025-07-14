@@ -62,7 +62,7 @@ const App = () => {
               <PresupuestoPDFView />
             </ProtectedRoute>
           } />
-          <Route path="/public/presupuesto/:publicId/pdf" element={<PublicPresupuestoPDFView />} />
+          <Route path="/public/presupuesto/:publicId.pdf" element={<PublicPresupuestoPDFView />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
