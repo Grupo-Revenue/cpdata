@@ -28,22 +28,22 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Suspense fallback={
-              <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            }>
-              <Routes>
-                {/* Public routes - no authentication required - MUST BE FIRST */}
-                <Route path="/public/presupuesto/:presupuestoName/:negocioId/:presupuestoId/view" element={<PublicPresupuestoPrintView />} />
-                <Route path="/presupuesto/:negocioId/:presupuestoId/view" element={<PublicPresupuestoPrintView />} />
-                
-                {/* Auth route */}
-                <Route path="/auth" element={<Auth />} />
-                
-                {/* Protected routes - require authentication */}
-                <Route path="/" element={
-                  <AuthProvider>
+            <AuthProvider>
+              <Suspense fallback={
+                <div className="flex items-center justify-center min-h-screen">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              }>
+                <Routes>
+                  {/* Public routes - no authentication required - MUST BE FIRST */}
+                  <Route path="/public/presupuesto/:presupuestoName/:negocioId/:presupuestoId/view" element={<PublicPresupuestoPrintView />} />
+                  <Route path="/presupuesto/:negocioId/:presupuestoId/view" element={<PublicPresupuestoPrintView />} />
+                  
+                  {/* Auth route */}
+                  <Route path="/auth" element={<Auth />} />
+                  
+                  {/* Protected routes - require authentication */}
+                  <Route path="/" element={
                     <NegocioProvider>
                       <HubSpotSyncProvider>
                         <ProtectedRoute>
@@ -51,10 +51,8 @@ const App = () => {
                         </ProtectedRoute>
                       </HubSpotSyncProvider>
                     </NegocioProvider>
-                  </AuthProvider>
-                } />
-                <Route path="/settings" element={
-                  <AuthProvider>
+                  } />
+                  <Route path="/settings" element={
                     <NegocioProvider>
                       <HubSpotSyncProvider>
                         <ProtectedRoute>
@@ -62,10 +60,8 @@ const App = () => {
                         </ProtectedRoute>
                       </HubSpotSyncProvider>
                     </NegocioProvider>
-                  </AuthProvider>
-                } />
-                <Route path="/admin" element={
-                  <AuthProvider>
+                  } />
+                  <Route path="/admin" element={
                     <NegocioProvider>
                       <HubSpotSyncProvider>
                         <ProtectedRoute>
@@ -73,10 +69,8 @@ const App = () => {
                         </ProtectedRoute>
                       </HubSpotSyncProvider>
                     </NegocioProvider>
-                  </AuthProvider>
-                } />
-                <Route path="/negocio/:negocioId" element={
-                  <AuthProvider>
+                  } />
+                  <Route path="/negocio/:negocioId" element={
                     <NegocioProvider>
                       <HubSpotSyncProvider>
                         <ProtectedRoute>
@@ -84,10 +78,8 @@ const App = () => {
                         </ProtectedRoute>
                       </HubSpotSyncProvider>
                     </NegocioProvider>
-                  </AuthProvider>
-                } />
-                <Route path="/presupuesto/:negocioId/:presupuestoId/pdf" element={
-                  <AuthProvider>
+                  } />
+                  <Route path="/presupuesto/:negocioId/:presupuestoId/pdf" element={
                     <NegocioProvider>
                       <HubSpotSyncProvider>
                         <ProtectedRoute>
@@ -95,11 +87,11 @@ const App = () => {
                         </ProtectedRoute>
                       </HubSpotSyncProvider>
                     </NegocioProvider>
-                  </AuthProvider>
-                } />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
+                  } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>
