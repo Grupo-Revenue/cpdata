@@ -65,17 +65,21 @@ export const usePublicBudgetData = (negocioId: string, presupuestoId: string): P
         // Transform the data to match expected format
         const transformedPresupuesto: Presupuesto = {
           ...presupuestoData,
-          productos: presupuestoData.productos_presupuesto || []
+          productos: presupuestoData.productos_presupuesto?.map(producto => ({
+            ...producto,
+            sessions: producto.sessions ? (producto.sessions as any) : undefined
+          })) || [],
+          fechaCreacion: presupuestoData.created_at,
+          fechaEnvio: presupuestoData.fecha_envio || undefined,
+          fechaAprobacion: presupuestoData.fecha_aprobacion || undefined,
+          fechaRechazo: presupuestoData.fecha_rechazo || undefined,
+          fechaVencimiento: presupuestoData.fecha_vencimiento || undefined
         };
 
         const transformedNegocio: Negocio = {
-          id: negocioData.id,
-          numero: negocioData.numero,
-          estado: negocioData.estado,
-          created_at: negocioData.created_at,
-          updated_at: negocioData.updated_at,
-          hubspot_id: negocioData.hubspot_id,
-          fecha_cierre: negocioData.fecha_cierre,
+          // Include all required database fields
+          ...negocioData,
+          // Add extended properties
           contacto: negocioData.contactos,
           productora: negocioData.empresas,
           clienteFinal: negocioData.cliente_final,
@@ -88,6 +92,8 @@ export const usePublicBudgetData = (negocioId: string, presupuestoId: string): P
             cantidadAsistentes: negocioData.cantidad_asistentes,
             horasAcreditacion: negocioData.horas_acreditacion
           },
+          fechaCreacion: negocioData.created_at,
+          fechaCierre: negocioData.fecha_cierre || undefined,
           presupuestos: [transformedPresupuesto]
         };
 
