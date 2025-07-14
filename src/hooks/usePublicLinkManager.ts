@@ -40,8 +40,17 @@ export const usePublicLinkManager = ({ presupuestoId, negocioId }: UsePublicLink
         return null;
       }
 
-      setCurrentLink(data as PublicLink);
-      return data as PublicLink;
+      if (data) {
+        // Always use the correct URL format for the current environment
+        const updatedLink = {
+          ...data,
+          link_url: `${window.location.origin}/presupuesto/${negocioId}/${presupuestoId}/view`
+        } as PublicLink;
+        setCurrentLink(updatedLink);
+        return updatedLink;
+      }
+
+      return null;
     } catch (error) {
       console.error('Error getting existing link:', error);
       return null;
@@ -70,12 +79,14 @@ export const usePublicLinkManager = ({ presupuestoId, negocioId }: UsePublicLink
       }
 
       const newLink = data.link;
-      setCurrentLink(newLink);
-
-      // Update link URL to use new development-friendly route
-      if (newLink) {
-        newLink.link_url = `${window.location.origin}/presupuesto/${negocioId}/${presupuestoId}/view`;
-      }
+      
+      // Always set the correct URL format for the current environment
+      const updatedLink = {
+        ...newLink,
+        link_url: `${window.location.origin}/presupuesto/${negocioId}/${presupuestoId}/view`
+      } as PublicLink;
+      
+      setCurrentLink(updatedLink);
 
       // Show success message, with warning if HubSpot failed
       if (data.hubspot_updated) {
@@ -135,12 +146,13 @@ export const usePublicLinkManager = ({ presupuestoId, negocioId }: UsePublicLink
 
       const newLink = data.link;
       
-      // Update link URL to use new development-friendly route
-      if (newLink) {
-        newLink.link_url = `${window.location.origin}/presupuesto/${negocioId}/${presupuestoId}/view`;
-      }
+      // Always set the correct URL format for the current environment
+      const updatedLink = {
+        ...newLink,
+        link_url: `${window.location.origin}/presupuesto/${negocioId}/${presupuestoId}/view`
+      } as PublicLink;
       
-      setCurrentLink(newLink);
+      setCurrentLink(updatedLink);
 
       // Show success message, with warning if HubSpot failed
       if (data.hubspot_updated) {
@@ -190,14 +202,21 @@ export const usePublicLinkManager = ({ presupuestoId, negocioId }: UsePublicLink
 
       const syncedLink = data?.link as PublicLink;
       if (syncedLink) {
-        setCurrentLink(syncedLink);
+        // Always set the correct URL format for the current environment
+        const updatedLink = {
+          ...syncedLink,
+          link_url: `${window.location.origin}/presupuesto/${negocioId}/${presupuestoId}/view`
+        } as PublicLink;
+        
+        setCurrentLink(updatedLink);
         toast({
           title: "Enlace sincronizado",
           description: "El enlace ha sido recuperado desde HubSpot",
         });
+        return updatedLink;
       }
       
-      return syncedLink;
+      return null;
     } catch (error) {
       console.error('Error syncing link from HubSpot:', error);
       return null;
