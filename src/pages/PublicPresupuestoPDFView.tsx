@@ -32,7 +32,6 @@ const PublicPresupuestoPDFView: React.FC = () => {
         const { data, error: functionError } = await supabase.functions.invoke(
           'public-budget-pdf',
           {
-            method: 'GET',
             body: { publicId }
           }
         );
