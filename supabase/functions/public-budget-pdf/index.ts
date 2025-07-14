@@ -47,6 +47,7 @@ Deno.serve(async (req) => {
     }
 
     if (!publicId) {
+      console.log('No publicId provided');
       return new Response(
         JSON.stringify({ error: 'ID de link público requerido' }),
         { 
@@ -55,6 +56,8 @@ Deno.serve(async (req) => {
         }
       );
     }
+
+    console.log('Processing public link request for ID:', publicId);
 
     // Verify public link exists and is active
     const { data: publicLink, error: linkError } = await supabase
@@ -65,7 +68,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (linkError || !publicLink) {
-      console.log('Link no encontrado:', linkError);
+      console.log('Link no encontrado:', { publicId, linkError, publicLink });
       return new Response(
         JSON.stringify({ error: 'Link público no encontrado o inactivo' }),
         { 
@@ -75,8 +78,11 @@ Deno.serve(async (req) => {
       );
     }
 
+    console.log('Public link found:', { publicId, presupuestoId: publicLink.presupuesto_id, isActive: publicLink.is_active });
+
     // Check if link has expired
     if (publicLink.expires_at && new Date(publicLink.expires_at) < new Date()) {
+      console.log('Link expired:', { publicId, expiresAt: publicLink.expires_at });
       return new Response(
         JSON.stringify({ error: 'Link público ha expirado' }),
         { 
@@ -97,7 +103,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (presupuestoError || !presupuesto) {
-      console.log('Presupuesto no encontrado:', presupuestoError);
+      console.log('Presupuesto no encontrado:', { presupuestoId: publicLink.presupuesto_id, presupuestoError });
       return new Response(
         JSON.stringify({ error: 'Presupuesto no encontrado' }),
         { 
@@ -106,6 +112,8 @@ Deno.serve(async (req) => {
         }
       );
     }
+
+    console.log('Presupuesto found:', { presupuestoId: presupuesto.id, nombre: presupuesto.nombre });
 
     // Get business data - simplified query to handle null foreign keys
     const { data: negocio, error: negocioError } = await supabase
@@ -118,7 +126,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (negocioError || !negocio) {
-      console.log('Negocio no encontrado:', negocioError);
+      console.log('Negocio no encontrado:', { negocioId: presupuesto.negocio_id, negocioError });
       return new Response(
         JSON.stringify({ error: 'Negocio no encontrado' }),
         { 
@@ -127,6 +135,8 @@ Deno.serve(async (req) => {
         }
       );
     }
+
+    console.log('Negocio found:', { negocioId: negocio.id, nombreEvento: negocio.nombre_evento });
 
     // Get empresa data separately to handle null values
     let clienteFinal = null;
@@ -159,7 +169,8 @@ Deno.serve(async (req) => {
       .from('public_budget_links')
       .update({ access_count: publicLink.access_count + 1 })
       .eq('id', publicId)
-      .then(() => console.log('Access count updated'));
+      .then(() => console.log('Access count updated'))
+      .catch(err => console.log('Error updating access count:', err));
 
     // Return budget data
     const budgetData: BudgetData = {
@@ -170,6 +181,7 @@ Deno.serve(async (req) => {
       negocio
     };
 
+    console.log('Returning budget data successfully');
     return new Response(
       JSON.stringify(budgetData),
       { 

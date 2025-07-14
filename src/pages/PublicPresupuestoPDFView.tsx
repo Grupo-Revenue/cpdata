@@ -13,9 +13,7 @@ interface BudgetData {
 }
 
 const PublicPresupuestoPDFView: React.FC = () => {
-  const { publicId: rawPublicId } = useParams<{ publicId: string }>();
-  // Remove .pdf extension if present
-  const publicId = rawPublicId?.replace(/\.pdf$/, '');
+  const { publicId } = useParams<{ publicId: string }>();
   const { componentRef, generatePDF } = usePDFGeneration();
   const [budgetData, setBudgetData] = useState<BudgetData | null>(null);
   const [isLoading, setIsLoading] = useState(true);

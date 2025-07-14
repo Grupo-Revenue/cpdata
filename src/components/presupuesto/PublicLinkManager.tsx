@@ -44,7 +44,7 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) 
   };
 
   const handleCopyLink = (linkId: string) => {
-    const url = `${window.location.origin}/public/presupuesto/${linkId}.pdf`;
+    const url = `${window.location.origin}/public/presupuesto/${linkId}/pdf`;
     navigator.clipboard.writeText(url);
     toast({
       title: "Link copiado",
@@ -164,7 +164,7 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) 
         ) : (
           <div className="space-y-4">
             {publicLinks.map((link) => {
-              const fullUrl = `${window.location.origin}/public/presupuesto/${link.id}.pdf`;
+              const fullUrl = `${window.location.origin}/public/presupuesto/${link.id}/pdf`;
               const isExpired = link.expires_at && new Date(link.expires_at) < new Date();
               const canInteract = link.is_active && !isExpired;
               
