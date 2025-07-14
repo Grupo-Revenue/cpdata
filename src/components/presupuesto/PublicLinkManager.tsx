@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Copy, Share, Trash2, Eye, EyeOff, Plus, ExternalLink, Clock } from 'lucide-react';
 import { usePublicBudgetLinks, PublicBudgetLink } from '@/hooks/usePublicBudgetLinks';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
