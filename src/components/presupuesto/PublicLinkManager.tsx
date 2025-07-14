@@ -8,20 +8,30 @@ import { usePublicLinkManager } from '@/hooks/usePublicLinkManager';
 interface PublicLinkManagerProps {
   presupuestoId: string;
   negocioId: string;
+  estadoPresupuesto?: string;
 }
 
-const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId, negocioId }) => {
+const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId, negocioId, estadoPresupuesto }) => {
   const { toast } = useToast();
   const { 
     currentLink, 
     isLoading, 
     getExistingLink, 
+    createPublicLink,
     regenerateLink 
   } = usePublicLinkManager({ presupuestoId, negocioId });
 
   useEffect(() => {
-    getExistingLink();
-  }, [presupuestoId, negocioId]);
+    const fetchAndCreateLink = async () => {
+      const existingLink = await getExistingLink();
+      // Si no hay link pero el presupuesto está publicado, crear automáticamente
+      if (!existingLink && estadoPresupuesto === 'publicado') {
+        await createPublicLink();
+      }
+    };
+    
+    fetchAndCreateLink();
+  }, [presupuestoId, negocioId, estadoPresupuesto]);
 
   const handleCopyLink = async () => {
     if (!currentLink?.link_url) return;

@@ -95,7 +95,11 @@ const PresupuestoPDFView: React.FC = () => {
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
-                  <PublicLinkManager presupuestoId={presupuestoId!} negocioId={negocioId!} />
+                  <PublicLinkManager 
+                    presupuestoId={presupuestoId!} 
+                    negocioId={negocioId!} 
+                    estadoPresupuesto={presupuesto.estado}
+                  />
                 </DialogContent>
               </Dialog>
               <Button onClick={generatePDF} className="bg-blue-600 hover:bg-blue-700">
