@@ -13,7 +13,7 @@ import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
 import PresupuestoPDFView from "./pages/PresupuestoPDFView";
-import PublicPresupuestoPDFView from "./pages/PublicPresupuestoPDFView";
+
 import PublicPresupuestoPrintView from "./pages/PublicPresupuestoPrintView";
 import NotFound from "./pages/NotFound";
 import { queryClient } from "@/utils/queryClient";
@@ -63,8 +63,7 @@ const App = () => {
               <PresupuestoPDFView />
             </ProtectedRoute>
           } />
-          <Route path="/public/presupuesto/:presupuestoName/:publicId/pdf" element={<PublicPresupuestoPDFView />} />
-          <Route path="/public/presupuesto/:negocioId/:presupuestoId/view" element={<PublicPresupuestoPrintView />} />
+          <Route path="/public/presupuesto/:presupuestoName/:negocioId/:presupuestoId/view" element={<PublicPresupuestoPrintView />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>

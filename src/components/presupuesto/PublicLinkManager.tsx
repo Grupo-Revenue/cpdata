@@ -1,52 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Copy, Share, Trash2, Eye, EyeOff, Plus, ExternalLink, Clock } from 'lucide-react';
-import { usePublicBudgetLinks, PublicBudgetLink } from '@/hooks/usePublicBudgetLinks';
+import { Card, CardContent } from '@/components/ui/card';
+import { Copy, Share, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
 
 interface PublicLinkManagerProps {
   presupuestoId: string;
+  negocioId: string;
 }
 
-const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) => {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [expirationDays, setExpirationDays] = useState<string>('never');
-  const [publicLinks, setPublicLinks] = useState<PublicBudgetLink[]>([]);
-  const { generatePublicLink, getPublicLinks, deactivateLink, deleteLink, isLoading } = usePublicBudgetLinks();
+const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId, negocioId }) => {
+  const [publicUrl, setPublicUrl] = useState<string>('');
   const { toast } = useToast();
 
-  const loadPublicLinks = async () => {
-    const links = await getPublicLinks(presupuestoId);
-    setPublicLinks(links);
-  };
-
   useEffect(() => {
-    loadPublicLinks();
-  }, [presupuestoId]);
+    generatePublicUrl();
+  }, [presupuestoId, negocioId]);
 
-  const handleCreateLink = async () => {
+  const generatePublicUrl = async () => {
     try {
-      const expDays = expirationDays === 'never' ? undefined : parseInt(expirationDays);
-      await generatePublicLink(presupuestoId, expDays);
-      
-      setIsCreateDialogOpen(false);
-      loadPublicLinks();
-    } catch (error) {
-      // Error already handled in hook
-    }
-  };
-
-  const handleCopyLink = async (linkId: string) => {
-    try {
-      // Get presupuesto name
       const { data: presupuesto, error } = await supabase
         .from('presupuestos')
         .select('nombre')
@@ -58,11 +31,21 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) 
       }
 
       const presupuestoName = presupuesto.nombre.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
-      const publicUrl = `${window.location.origin}/public/presupuesto/${presupuestoName}/${linkId}.pdf`;
+      const url = `${window.location.origin}/public/presupuesto/${presupuestoName}/${negocioId}/${presupuestoId}/view`;
+      setPublicUrl(url);
+    } catch (error) {
+      console.error('Error generating public URL:', error);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!publicUrl) return;
+    
+    try {
       navigator.clipboard.writeText(publicUrl);
       toast({
         title: "Link copiado",
-        description: "El link ha sido copiado al portapapeles",
+        description: "El link público ha sido copiado al portapapeles",
       });
     } catch (error) {
       console.error('Error copying link:', error);
@@ -74,257 +57,69 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) 
     }
   };
 
-  const handleDeactivateLink = async (linkId: string) => {
-    try {
-      await deactivateLink(linkId);
-      loadPublicLinks();
-    } catch (error) {
-      // Error already handled in hook
-    }
-  };
-
-  const handleDeleteLink = async (linkId: string) => {
-    try {
-      await deleteLink(linkId);
-      loadPublicLinks();
-    } catch (error) {
-      // Error already handled in hook
-    }
-  };
-
-  const getStatusBadge = (link: PublicBudgetLink) => {
-    if (!link.is_active) {
-      return <Badge variant="secondary">Inactivo</Badge>;
-    }
-    
-    if (link.expires_at && new Date(link.expires_at) < new Date()) {
-      return <Badge variant="destructive">Expirado</Badge>;
-    }
-    
-    return <Badge variant="default">Activo</Badge>;
-  };
-
-  const getExpirationText = (expiresAt: string | null) => {
-    if (!expiresAt) return 'Sin expiración';
-    
-    const expirationDate = new Date(expiresAt);
-    const now = new Date();
-    
-    if (expirationDate < now) {
-      return `Expiró ${formatDistanceToNow(expirationDate, { addSuffix: true, locale: es })}`;
-    }
-    
-    return `Expira ${formatDistanceToNow(expirationDate, { addSuffix: true, locale: es })}`;
+  const handleOpenLink = () => {
+    if (!publicUrl) return;
+    window.open(publicUrl, '_blank');
   };
 
   return (
-    <TooltipProvider>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-xl font-semibold text-foreground">Links Públicos</h3>
-            <p className="text-muted-foreground mt-1">
-              Comparte este presupuesto sin necesidad de autenticación
-            </p>
-          </div>
-          
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2" size="default">
-                <Plus className="h-4 w-4" />
-                Crear Link
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle className="text-lg">Crear Link Público</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-6">
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">
-                    Expiración (opcional)
-                  </label>
-                  <Select value={expirationDays} onValueChange={setExpirationDays}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar expiración" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="never">Sin expiración</SelectItem>
-                      <SelectItem value="1">1 día</SelectItem>
-                      <SelectItem value="7">7 días</SelectItem>
-                      <SelectItem value="30">30 días</SelectItem>
-                      <SelectItem value="90">90 días</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex gap-3 justify-end pt-2">
-                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleCreateLink} disabled={isLoading}>
-                    {isLoading ? 'Creando...' : 'Crear Link'}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {publicLinks.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="py-12 text-center">
-              <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                <Share className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h4 className="font-medium text-foreground mb-2">No hay links públicos</h4>
-              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                Crea un link público para compartir este presupuesto con clientes externos
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {publicLinks.map((link) => {
-              const isExpired = link.expires_at && new Date(link.expires_at) < new Date();
-              const canInteract = link.is_active && !isExpired;
-              
-              return (
-                <Card key={link.id} className="transition-all hover:shadow-md">
-                  <CardContent className="p-6">
-                    <div className="space-y-4">
-                      {/* Status and Stats Row */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {getStatusBadge(link)}
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Eye className="h-4 w-4" />
-                            <span>{link.access_count} accesos</span>
-                          </div>
-                          {link.expires_at && (
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <Clock className="h-4 w-4" />
-                              <span>{getExpirationText(link.expires_at)}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* URL Display */}
-                      <div className="bg-muted/50 rounded-lg p-3 border">
-                        <div className="flex items-center gap-2">
-                          <code className="flex-1 text-sm font-mono text-muted-foreground break-all">
-                            Link generado (usar botón copiar para obtener URL)
-                          </code>
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex items-center gap-2">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => handleCopyLink(link.id)}
-                              disabled={!canInteract}
-                              className="flex items-center gap-2"
-                            >
-                              <Copy className="h-4 w-4" />
-                              Copiar Link
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {!canInteract ? 'Link no disponible' : 'Copiar al portapapeles'}
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={async () => {
-                                try {
-                                  const { data: presupuesto, error } = await supabase
-                                    .from('presupuestos')
-                                    .select('nombre')
-                                    .eq('id', presupuestoId)
-                                    .single();
-
-                                  if (error || !presupuesto) {
-                                    throw new Error('No se pudo obtener la información del presupuesto');
-                                  }
-
-                                  const presupuestoName = presupuesto.nombre.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
-                                  window.open(`/public/presupuesto/${presupuestoName}/${link.id}.pdf`, '_blank');
-                                } catch (error) {
-                                  console.error('Error opening link:', error);
-                                  toast({
-                                    title: "Error",
-                                    description: "No se pudo abrir el link",
-                                    variant: "destructive",
-                                  });
-                                }
-                              }}
-                              disabled={!canInteract}
-                              className="flex items-center gap-2"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                              Abrir
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            Abrir en nueva pestaña
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <div className="flex-1" />
-
-                        {link.is_active ? (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeactivateLink(link.id)}
-                                disabled={isLoading}
-                              >
-                                <EyeOff className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Desactivar link
-                            </TooltipContent>
-                          </Tooltip>
-                        ) : (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteLink(link.id)}
-                                disabled={isLoading}
-                                className="text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Eliminar permanentemente
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-xl font-semibold text-foreground">Link Público</h3>
+        <p className="text-muted-foreground mt-1">
+          Comparte este presupuesto sin necesidad de autenticación
+        </p>
       </div>
-    </TooltipProvider>
+
+      {publicUrl ? (
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {/* URL Display */}
+              <div className="bg-muted/50 rounded-lg p-3 border">
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-sm font-mono text-muted-foreground break-all">
+                    {publicUrl}
+                  </code>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleCopyLink}
+                  className="flex items-center gap-2"
+                >
+                  <Copy className="h-4 w-4" />
+                  Copiar Link
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleOpenLink}
+                  className="flex items-center gap-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Abrir
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border-dashed">
+          <CardContent className="py-12 text-center">
+            <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+              <Share className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h4 className="font-medium text-foreground mb-2">Generando link público...</h4>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 };
 

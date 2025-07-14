@@ -7,11 +7,11 @@ import PresupuestoPDFTemplate from '@/components/pdf/PresupuestoPDFTemplate';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
 
 const PublicPresupuestoPrintView: React.FC = () => {
-  const { negocioId, presupuestoId } = useParams<{ negocioId: string; presupuestoId: string }>();
+  const { presupuestoName, negocioId, presupuestoId } = useParams<{ presupuestoName: string; negocioId: string; presupuestoId: string }>();
   const { presupuesto, negocio, loading, error } = usePublicBudgetData(negocioId!, presupuestoId!);
   const { componentRef, generatePDF } = usePDFGeneration();
 
-  console.log('[PublicPresupuestoPrintView] Params:', { negocioId, presupuestoId });
+  console.log('[PublicPresupuestoPrintView] Params:', { presupuestoName, negocioId, presupuestoId });
   console.log('[PublicPresupuestoPrintView] Data:', { 
     presupuesto: presupuesto ? 'found' : 'not found', 
     negocio: negocio ? 'found' : 'not found',
