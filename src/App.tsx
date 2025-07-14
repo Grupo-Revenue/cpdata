@@ -34,47 +34,69 @@ const App = () => {
               </div>
             }>
               <Routes>
-                {/* Public route - no authentication required */}
+                {/* Public route - no authentication required - MUST BE FIRST */}
                 <Route path="/public/presupuesto/:presupuestoName/:negocioId/:presupuestoId/view" element={<PublicPresupuestoPrintView />} />
                 
-                {/* Protected routes - require authentication */}
+                {/* Auth route */}
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/*" element={
+                
+                {/* Protected routes - require authentication */}
+                <Route path="/" element={
                   <AuthProvider>
                     <NegocioProvider>
                       <HubSpotSyncProvider>
-                        <Routes>
-                          <Route path="/" element={
-                            <ProtectedRoute>
-                              <Index />
-                            </ProtectedRoute>
-                          } />
-                          <Route path="/settings" element={
-                            <ProtectedRoute>
-                              <Settings />
-                            </ProtectedRoute>
-                          } />
-                          <Route path="/admin" element={
-                            <ProtectedRoute>
-                              <Admin />
-                            </ProtectedRoute>
-                          } />
-                          <Route path="/negocio/:negocioId" element={
-                            <ProtectedRoute>
-                              <Index />
-                            </ProtectedRoute>
-                          } />
-                          <Route path="/presupuesto/:negocioId/:presupuestoId/pdf" element={
-                            <ProtectedRoute>
-                              <PresupuestoPDFView />
-                            </ProtectedRoute>
-                          } />
-                          <Route path="*" element={<NotFound />} />
-                        </Routes>
+                        <ProtectedRoute>
+                          <Index />
+                        </ProtectedRoute>
                       </HubSpotSyncProvider>
                     </NegocioProvider>
                   </AuthProvider>
                 } />
+                <Route path="/settings" element={
+                  <AuthProvider>
+                    <NegocioProvider>
+                      <HubSpotSyncProvider>
+                        <ProtectedRoute>
+                          <Settings />
+                        </ProtectedRoute>
+                      </HubSpotSyncProvider>
+                    </NegocioProvider>
+                  </AuthProvider>
+                } />
+                <Route path="/admin" element={
+                  <AuthProvider>
+                    <NegocioProvider>
+                      <HubSpotSyncProvider>
+                        <ProtectedRoute>
+                          <Admin />
+                        </ProtectedRoute>
+                      </HubSpotSyncProvider>
+                    </NegocioProvider>
+                  </AuthProvider>
+                } />
+                <Route path="/negocio/:negocioId" element={
+                  <AuthProvider>
+                    <NegocioProvider>
+                      <HubSpotSyncProvider>
+                        <ProtectedRoute>
+                          <Index />
+                        </ProtectedRoute>
+                      </HubSpotSyncProvider>
+                    </NegocioProvider>
+                  </AuthProvider>
+                } />
+                <Route path="/presupuesto/:negocioId/:presupuestoId/pdf" element={
+                  <AuthProvider>
+                    <NegocioProvider>
+                      <HubSpotSyncProvider>
+                        <ProtectedRoute>
+                          <PresupuestoPDFView />
+                        </ProtectedRoute>
+                      </HubSpotSyncProvider>
+                    </NegocioProvider>
+                  </AuthProvider>
+                } />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
           </BrowserRouter>
