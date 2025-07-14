@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Presupuesto, Negocio } from '@/types';
+import { Presupuesto, Negocio, ExtendedProductoPresupuesto, SessionAcreditacion } from '@/types';
 
 interface PublicBudgetData {
   presupuesto: Presupuesto | null;
@@ -63,12 +63,19 @@ export const usePublicBudgetData = (negocioId: string, presupuestoId: string): P
         }
 
         // Transform the data to match expected format
+        const productos: ExtendedProductoPresupuesto[] = (presupuestoData.productos_presupuesto || []).map(p => ({
+          ...p,
+          sessions: Array.isArray(p.sessions) ? p.sessions as SessionAcreditacion[] : [],
+          comentarios: undefined,
+          descuentoPorcentaje: undefined,
+          precioUnitario: p.precio_unitario,
+          linea_producto_id: undefined,
+          originalLibraryDescription: undefined
+        }));
+
         const transformedPresupuesto: Presupuesto = {
           ...presupuestoData,
-          productos: presupuestoData.productos_presupuesto?.map(producto => ({
-            ...producto,
-            sessions: producto.sessions ? (producto.sessions as any) : undefined
-          })) || [],
+          productos,
           fechaCreacion: presupuestoData.created_at,
           fechaEnvio: presupuestoData.fecha_envio || undefined,
           fechaAprobacion: presupuestoData.fecha_aprobacion || undefined,
@@ -77,9 +84,7 @@ export const usePublicBudgetData = (negocioId: string, presupuestoId: string): P
         };
 
         const transformedNegocio: Negocio = {
-          // Include all required database fields
           ...negocioData,
-          // Add extended properties
           contacto: negocioData.contactos,
           productora: negocioData.empresas,
           clienteFinal: negocioData.cliente_final,
@@ -88,8 +93,8 @@ export const usePublicBudgetData = (negocioId: string, presupuestoId: string): P
             tipoEvento: negocioData.tipo_evento,
             fechaEvento: negocioData.fecha_evento,
             locacion: negocioData.locacion,
-            cantidadInvitados: negocioData.cantidad_invitados,
-            cantidadAsistentes: negocioData.cantidad_asistentes,
+            cantidadInvitados: negocioData.cantidad_invitados || 0,
+            cantidadAsistentes: negocioData.cantidad_asistentes || 0,
             horasAcreditacion: negocioData.horas_acreditacion
           },
           fechaCreacion: negocioData.created_at,

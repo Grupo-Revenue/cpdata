@@ -34,23 +34,66 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) 
 
   const handleCreateLink = async () => {
     try {
-      const expiresInDays = (expirationDays && expirationDays !== 'never') ? parseInt(expirationDays) : undefined;
-      await generatePublicLink(presupuestoId, expiresInDays);
+      // Get negocio ID from presupuesto
+      const { data: presupuesto, error } = await supabase
+        .from('presupuestos')
+        .select('negocio_id')
+        .eq('id', presupuestoId)
+        .single();
+
+      if (error || !presupuesto) {
+        throw new Error('No se pudo obtener la información del presupuesto');
+      }
+
+      const publicUrl = `${window.location.origin}/public/presupuesto/${presupuesto.negocio_id}/${presupuestoId}/view`;
+      
+      // Copy to clipboard
+      navigator.clipboard.writeText(publicUrl);
+      
+      toast({
+        title: "Link público generado",
+        description: "El link ha sido copiado al portapapeles",
+      });
+
       setIsCreateDialogOpen(false);
-      setExpirationDays('never');
       loadPublicLinks();
     } catch (error) {
-      // Error already handled in hook
+      console.error('Error creating public link:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar el link público",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleCopyLink = (linkId: string) => {
-    const url = `${window.location.origin}/public/presupuesto/${linkId}/pdf`;
-    navigator.clipboard.writeText(url);
-    toast({
-      title: "Link copiado",
-      description: "El link ha sido copiado al portapapeles",
-    });
+  const handleCopyLink = async (linkId: string) => {
+    try {
+      // Get negocio ID from presupuesto
+      const { data: presupuesto, error } = await supabase
+        .from('presupuestos')
+        .select('negocio_id')
+        .eq('id', presupuestoId)
+        .single();
+
+      if (error || !presupuesto) {
+        throw new Error('No se pudo obtener la información del presupuesto');
+      }
+
+      const publicUrl = `${window.location.origin}/public/presupuesto/${presupuesto.negocio_id}/${presupuestoId}/view`;
+      navigator.clipboard.writeText(publicUrl);
+      toast({
+        title: "Link copiado",
+        description: "El link ha sido copiado al portapapeles",
+      });
+    } catch (error) {
+      console.error('Error copying link:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo copiar el link",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeactivateLink = async (linkId: string) => {
@@ -165,7 +208,7 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) 
         ) : (
           <div className="space-y-4">
             {publicLinks.map((link) => {
-              const fullUrl = `${window.location.origin}/public/presupuesto/${link.id}/pdf`;
+              const fullUrl = `${window.location.origin}/public/presupuesto/${presupuestoId}/view`;
               const isExpired = link.expires_at && new Date(link.expires_at) < new Date();
               const canInteract = link.is_active && !isExpired;
               
@@ -224,7 +267,28 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) 
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => window.open(fullUrl, '_blank')}
+                              onClick={async () => {
+                                try {
+                                  const { data: presupuesto, error } = await supabase
+                                    .from('presupuestos')
+                                    .select('negocio_id')
+                                    .eq('id', presupuestoId)
+                                    .single();
+
+                                  if (error || !presupuesto) {
+                                    throw new Error('No se pudo obtener la información del presupuesto');
+                                  }
+
+                                  window.open(`/public/presupuesto/${presupuesto.negocio_id}/${presupuestoId}/view`, '_blank');
+                                } catch (error) {
+                                  console.error('Error opening link:', error);
+                                  toast({
+                                    title: "Error",
+                                    description: "No se pudo abrir el link",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
                               disabled={!canInteract}
                               className="flex items-center gap-2"
                             >
