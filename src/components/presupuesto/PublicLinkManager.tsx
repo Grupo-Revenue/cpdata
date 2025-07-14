@@ -46,10 +46,10 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) 
 
   const handleCopyLink = async (linkId: string) => {
     try {
-      // Get negocio ID from presupuesto
+      // Get presupuesto name
       const { data: presupuesto, error } = await supabase
         .from('presupuestos')
-        .select('negocio_id')
+        .select('nombre')
         .eq('id', presupuestoId)
         .single();
 
@@ -57,7 +57,8 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) 
         throw new Error('No se pudo obtener la información del presupuesto');
       }
 
-      const publicUrl = `${window.location.origin}/public/presupuesto/${presupuesto.negocio_id}/${presupuestoId}/view`;
+      const presupuestoName = presupuesto.nombre.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+      const publicUrl = `${window.location.origin}/public/presupuesto/${presupuestoName}/${linkId}.pdf`;
       navigator.clipboard.writeText(publicUrl);
       toast({
         title: "Link copiado",
@@ -185,7 +186,6 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) 
         ) : (
           <div className="space-y-4">
             {publicLinks.map((link) => {
-              const fullUrl = `${window.location.origin}/public/presupuesto/${presupuestoId}/view`;
               const isExpired = link.expires_at && new Date(link.expires_at) < new Date();
               const canInteract = link.is_active && !isExpired;
               
@@ -213,8 +213,8 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) 
                       {/* URL Display */}
                       <div className="bg-muted/50 rounded-lg p-3 border">
                         <div className="flex items-center gap-2">
-                          <code className="flex-1 text-sm font-mono text-foreground break-all">
-                            {fullUrl}
+                          <code className="flex-1 text-sm font-mono text-muted-foreground break-all">
+                            Link generado (usar botón copiar para obtener URL)
                           </code>
                         </div>
                       </div>
@@ -248,7 +248,7 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) 
                                 try {
                                   const { data: presupuesto, error } = await supabase
                                     .from('presupuestos')
-                                    .select('negocio_id')
+                                    .select('nombre')
                                     .eq('id', presupuestoId)
                                     .single();
 
@@ -256,7 +256,8 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) 
                                     throw new Error('No se pudo obtener la información del presupuesto');
                                   }
 
-                                  window.open(`/public/presupuesto/${presupuesto.negocio_id}/${presupuestoId}/view`, '_blank');
+                                  const presupuestoName = presupuesto.nombre.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+                                  window.open(`/public/presupuesto/${presupuestoName}/${link.id}.pdf`, '_blank');
                                 } catch (error) {
                                   console.error('Error opening link:', error);
                                   toast({

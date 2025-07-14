@@ -24,6 +24,15 @@ export const usePublicBudgetLinks = () => {
         ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString()
         : null;
 
+      // Get presupuesto name for URL
+      const { data: presupuesto, error: presupuestoError } = await supabase
+        .from('presupuestos')
+        .select('nombre')
+        .eq('id', presupuestoId)
+        .single();
+
+      if (presupuestoError) throw presupuestoError;
+
       const { data, error } = await supabase
         .from('public_budget_links')
         .insert({
@@ -36,7 +45,9 @@ export const usePublicBudgetLinks = () => {
 
       if (error) throw error;
 
-      const publicUrl = `${window.location.origin}/public/presupuesto/${data.id}.pdf`;
+      // Create URL with presupuesto name
+      const presupuestoName = presupuesto.nombre.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+      const publicUrl = `${window.location.origin}/public/presupuesto/${presupuestoName}/${data.id}.pdf`;
       
       toast({
         title: "Link público generado",
