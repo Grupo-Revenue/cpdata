@@ -34,36 +34,13 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId }) 
 
   const handleCreateLink = async () => {
     try {
-      // Get negocio ID from presupuesto
-      const { data: presupuesto, error } = await supabase
-        .from('presupuestos')
-        .select('negocio_id')
-        .eq('id', presupuestoId)
-        .single();
-
-      if (error || !presupuesto) {
-        throw new Error('No se pudo obtener la información del presupuesto');
-      }
-
-      const publicUrl = `${window.location.origin}/public/presupuesto/${presupuesto.negocio_id}/${presupuestoId}/view`;
+      const expDays = expirationDays === 'never' ? undefined : parseInt(expirationDays);
+      await generatePublicLink(presupuestoId, expDays);
       
-      // Copy to clipboard
-      navigator.clipboard.writeText(publicUrl);
-      
-      toast({
-        title: "Link público generado",
-        description: "El link ha sido copiado al portapapeles",
-      });
-
       setIsCreateDialogOpen(false);
       loadPublicLinks();
     } catch (error) {
-      console.error('Error creating public link:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo generar el link público",
-        variant: "destructive",
-      });
+      // Error already handled in hook
     }
   };
 
