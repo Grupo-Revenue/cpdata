@@ -88,14 +88,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get business data
+    // Get business data - simplified query to handle null foreign keys
     const { data: negocio, error: negocioError } = await supabase
       .from('negocios')
       .select(`
         *,
-        contactos (*),
-        empresas!negocios_cliente_final_id_fkey (*),
-        productora:empresas!negocios_productora_id_fkey (*)
+        contactos (*)
       `)
       .eq('id', presupuesto.negocio_id)
       .single();
@@ -110,6 +108,32 @@ Deno.serve(async (req) => {
         }
       );
     }
+
+    // Get empresa data separately to handle null values
+    let clienteFinal = null;
+    let productora = null;
+
+    if (negocio.cliente_final_id) {
+      const { data: clienteData } = await supabase
+        .from('empresas')
+        .select('*')
+        .eq('id', negocio.cliente_final_id)
+        .single();
+      clienteFinal = clienteData;
+    }
+
+    if (negocio.productora_id) {
+      const { data: productoraData } = await supabase
+        .from('empresas')
+        .select('*')
+        .eq('id', negocio.productora_id)
+        .single();
+      productora = productoraData;
+    }
+
+    // Add empresa data to negocio object
+    negocio.empresas = clienteFinal;
+    negocio.productora = productora;
 
     // Increment access count in background
     supabase
