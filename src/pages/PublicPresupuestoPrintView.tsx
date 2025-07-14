@@ -1,4 +1,13 @@
-const PublicPresupuestoPrintView = () => {
+import React from 'react';
+import { useParams } from 'react-router-dom';
+
+const PublicPresupuestoPrintView: React.FC = () => {
+  const { presupuestoName, negocioId, presupuestoId } = useParams<{ 
+    presupuestoName: string; 
+    negocioId: string; 
+    presupuestoId: string 
+  }>();
+
   return (
     <div style={{ 
       minHeight: '100vh', 
@@ -38,8 +47,25 @@ const PublicPresupuestoPrintView = () => {
           borderRadius: '6px',
           marginTop: '16px'
         }}>
-          <p style={{ color: '#374151', fontWeight: '500' }}>
-            URL de prueba funcionando: /public/presupuesto/17704a/19fd6e99-2e0e-4484-904e-4dc98769fd66/8ffa4887-cad9-4645-b25a-ea040adbf677/view
+          <h3 style={{ color: '#374151', fontWeight: 'bold', marginBottom: '12px' }}>
+            Parámetros de la URL:
+          </h3>
+          <div style={{ color: '#374151' }}>
+            <p><strong>Nombre del Presupuesto:</strong> {presupuestoName}</p>
+            <p><strong>ID del Negocio:</strong> {negocioId}</p>
+            <p><strong>ID del Presupuesto:</strong> {presupuestoId}</p>
+          </div>
+        </div>
+
+        <div style={{ 
+          backgroundColor: '#ecfdf5', 
+          padding: '16px', 
+          borderRadius: '6px',
+          marginTop: '16px',
+          border: '1px solid #d1fae5'
+        }}>
+          <p style={{ color: '#065f46', fontWeight: '500' }}>
+            URL actual funcionando correctamente ✅
           </p>
         </div>
       </div>
