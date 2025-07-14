@@ -19,7 +19,18 @@ export const usePublicBudgetData = (negocioId: string, presupuestoId: string): P
 
   useEffect(() => {
     const fetchPublicBudgetData = async () => {
+      console.log('[usePublicBudgetData] Starting fetch process...');
+      console.log('[usePublicBudgetData] Input validation:', { 
+        negocioId, 
+        presupuestoId,
+        negocioIdType: typeof negocioId,
+        presupuestoIdType: typeof presupuestoId,
+        negocioIdLength: negocioId?.length,
+        presupuestoIdLength: presupuestoId?.length
+      });
+      
       if (!negocioId || !presupuestoId) {
+        console.error('[usePublicBudgetData] Missing required parameters');
         setData(prev => ({ 
           ...prev, 
           loading: false, 
@@ -28,10 +39,15 @@ export const usePublicBudgetData = (negocioId: string, presupuestoId: string): P
         return;
       }
 
+      console.log('[usePublicBudgetData] Setting loading state...');
       setData(prev => ({ ...prev, loading: true, error: null }));
 
       try {
-        console.log('[usePublicBudgetData] Fetching public budget data for:', { negocioId, presupuestoId });
+        console.log('[usePublicBudgetData] Calling Supabase RPC function...');
+        console.log('[usePublicBudgetData] Parameters:', { 
+          p_negocio_id: negocioId, 
+          p_presupuesto_id: presupuestoId 
+        });
 
         // Use the secure function that bypasses RLS for public access
         const { data: publicData, error: publicError } = await supabase
@@ -40,26 +56,48 @@ export const usePublicBudgetData = (negocioId: string, presupuestoId: string): P
             p_presupuesto_id: presupuestoId
           });
 
-        console.log('[usePublicBudgetData] RPC response:', { publicData, publicError });
+        console.log('[usePublicBudgetData] RPC call completed');
+        console.log('[usePublicBudgetData] Response data:', publicData);
+        console.log('[usePublicBudgetData] Response error:', publicError);
 
         if (publicError) {
-          console.error('[usePublicBudgetData] RPC error:', publicError);
+          console.error('[usePublicBudgetData] RPC error details:', {
+            message: publicError.message,
+            details: publicError.details,
+            hint: publicError.hint,
+            code: publicError.code
+          });
           throw new Error(`Error al consultar datos públicos: ${publicError.message}`);
         }
 
         if (!publicData || publicData.length === 0) {
-          console.warn('[usePublicBudgetData] No public data found');
+          console.warn('[usePublicBudgetData] No data returned from RPC');
+          console.warn('[usePublicBudgetData] This could mean:');
+          console.warn('  - Budget does not exist');
+          console.warn('  - Budget is not in "publicado" or "aprobado" state');
+          console.warn('  - Negocio does not exist');
           throw new Error('Presupuesto no encontrado o no disponible públicamente');
         }
 
-        const { presupuesto_data: rawPresupuestoData, negocio_data: rawNegocioData } = publicData[0];
+        console.log('[usePublicBudgetData] Data array length:', publicData.length);
+        const result = publicData[0];
+        console.log('[usePublicBudgetData] First result structure:', Object.keys(result || {}));
         
-        console.log('[usePublicBudgetData] Raw data received:', { 
-          presupuesto: rawPresupuestoData ? 'found' : 'missing',
-          negocio: rawNegocioData ? 'found' : 'missing'
+        const { presupuesto_data: rawPresupuestoData, negocio_data: rawNegocioData } = result;
+        
+        console.log('[usePublicBudgetData] Extracted raw data:', { 
+          presupuestoExists: !!rawPresupuestoData,
+          negocioExists: !!rawNegocioData,
+          presupuestoDataType: typeof rawPresupuestoData,
+          negocioDataType: typeof rawNegocioData
         });
 
         if (!rawPresupuestoData || !rawNegocioData) {
+          console.error('[usePublicBudgetData] Missing data in response:', {
+            rawPresupuestoData: !!rawPresupuestoData,
+            rawNegocioData: !!rawNegocioData,
+            fullResult: result
+          });
           throw new Error('Datos incompletos recibidos');
         }
 
@@ -107,6 +145,10 @@ export const usePublicBudgetData = (negocioId: string, presupuestoId: string): P
           presupuestos: [transformedPresupuesto]
         };
 
+        console.log('[usePublicBudgetData] Setting final data state...');
+        console.log('[usePublicBudgetData] Transformed presupuesto:', transformedPresupuesto.nombre);
+        console.log('[usePublicBudgetData] Transformed negocio:', transformedNegocio.numero);
+        
         setData({
           presupuesto: transformedPresupuesto,
           negocio: transformedNegocio,
@@ -114,8 +156,14 @@ export const usePublicBudgetData = (negocioId: string, presupuestoId: string): P
           error: null
         });
 
+        console.log('[usePublicBudgetData] Data fetch completed successfully');
+
       } catch (error) {
-        console.error('Error fetching public budget data:', error);
+        console.error('[usePublicBudgetData] Error in fetch process:', {
+          error,
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        });
         setData({
           presupuesto: null,
           negocio: null,
