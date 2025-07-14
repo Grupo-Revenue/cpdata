@@ -1,33 +1,46 @@
-import React from 'react';
-import { useParams } from 'react-router-dom';
-
-const PublicPresupuestoPrintView: React.FC = () => {
-  const { presupuestoName, negocioId, presupuestoId } = useParams<{ 
-    presupuestoName: string; 
-    negocioId: string; 
-    presupuestoId: string 
-  }>();
-
-  // Debug: Simple test first
-  console.log('[PublicPresupuestoPrintView] Route working! Params:', { 
-    presupuestoName, 
-    negocioId, 
-    presupuestoId 
-  });
-
-  // Temporary simple version for testing
+const PublicPresupuestoPrintView = () => {
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold mb-4">Vista Pública de Presupuesto - Funcionando!</h1>
-        <div className="space-y-2">
-          <p><strong>Nombre del Presupuesto:</strong> {presupuestoName}</p>
-          <p><strong>ID del Negocio:</strong> {negocioId}</p>
-          <p><strong>ID del Presupuesto:</strong> {presupuestoId}</p>
+    <div style={{ 
+      minHeight: '100vh', 
+      backgroundColor: '#f3f4f6', 
+      padding: '32px',
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      <div style={{
+        maxWidth: '1024px',
+        margin: '0 auto',
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+        padding: '24px'
+      }}>
+        <h1 style={{ 
+          fontSize: '24px', 
+          fontWeight: 'bold', 
+          marginBottom: '16px',
+          color: '#111827'
+        }}>
+          🎯 RUTA PÚBLICA FUNCIONANDO
+        </h1>
+        
+        <div style={{ marginBottom: '24px' }}>
+          <p style={{ color: '#059669', fontWeight: '600', fontSize: '18px' }}>
+            ✅ El componente público se está renderizando correctamente
+          </p>
+          <p style={{ color: '#6b7280', marginTop: '8px' }}>
+            Esto confirma que la ruta pública NO está siendo interceptada por las rutas protegidas
+          </p>
         </div>
-        <div className="mt-6">
-          <p className="text-green-600">✅ La ruta pública está funcionando correctamente</p>
-          <p className="text-sm text-gray-600 mt-2">Este es un componente simplificado para confirmar que la ruta funciona</p>
+
+        <div style={{ 
+          backgroundColor: '#f9fafb', 
+          padding: '16px', 
+          borderRadius: '6px',
+          marginTop: '16px'
+        }}>
+          <p style={{ color: '#374151', fontWeight: '500' }}>
+            URL de prueba funcionando: /public/presupuesto/17704a/19fd6e99-2e0e-4484-904e-4dc98769fd66/8ffa4887-cad9-4645-b25a-ea040adbf677/view
+          </p>
         </div>
       </div>
     </div>
