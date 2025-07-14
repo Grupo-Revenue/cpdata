@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
           const properties = dealData.properties || {};
           
           // Look for any public link that matches our pattern
-          const linkPattern = new RegExp(`/public/presupuesto/.*/${negocio_id}/${presupuesto_id}/view$`);
+          const linkPattern = new RegExp(`/presupuesto/${negocio_id}/${presupuesto_id}/view$`);
           
           let foundUrl = null;
           let foundProperty = null;
@@ -213,10 +213,20 @@ Deno.serve(async (req) => {
       console.log('⚠️ [HubSpot Link Manager] Negocio sin HubSpot ID, solo creando link local');
     }
 
-    // Generate public URL
-    const presupuestoName = presupuesto.nombre.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
-    const baseUrl = Deno.env.get('SUPABASE_URL')?.replace('ejvtuuvigcqpibpfcxch.supabase.co', 'ejvtuuvigcqpibpfcxch.lovable.app') || 'https://ejvtuuvigcqpibpfcxch.lovable.app';
-    const publicUrl = `${baseUrl}/public/presupuesto/${presupuestoName}/${negocio_id}/${presupuesto_id}/view`;
+    // Generate public URL - detect environment from request origin
+    const origin = req.headers.get('origin') || req.headers.get('referer');
+    let baseUrl = 'https://ejvtuuvigcqpibpfcxch.lovable.app'; // fallback
+    
+    if (origin) {
+      try {
+        const url = new URL(origin);
+        baseUrl = url.origin;
+      } catch {
+        // Use fallback if origin parsing fails
+      }
+    }
+    
+    const publicUrl = `${baseUrl}/presupuesto/${negocio_id}/${presupuesto_id}/view`;
 
     let hubspotProperty = existing_property;
     let hubspotUpdateSuccess = true;
