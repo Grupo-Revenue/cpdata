@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Producto, LineaProducto, ProductFormData } from '../types/producto.types';
@@ -137,8 +137,9 @@ export const useProductos = () => {
     }
   };
 
-  const eliminarProducto = async (id: string) => {
+  const eliminarProducto = useCallback(async (id: string) => {
     try {
+      console.log('Eliminando producto con ID:', id);
       const { error } = await supabase
         .from('productos_biblioteca')
         .delete()
@@ -160,7 +161,7 @@ export const useProductos = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [toast, cargarProductos]);
 
   return {
     productos,

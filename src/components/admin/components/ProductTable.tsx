@@ -46,10 +46,13 @@ const ProductTable: React.FC<ProductTableProps> = ({
   };
 
   const handleConfirmDelete = () => {
-    if (productToDelete) {
+    if (productToDelete && onDeleteProduct) {
+      console.log('Confirmando eliminación del producto:', productToDelete.id);
       onDeleteProduct(productToDelete.id);
       setDeleteDialogOpen(false);
       setProductToDelete(null);
+    } else {
+      console.error('onDeleteProduct no está disponible o productToDelete es null');
     }
   };
   if (productos.length === 0) {
