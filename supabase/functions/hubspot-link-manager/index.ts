@@ -303,22 +303,16 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Database operations - deactivate existing links for this negocio
+    // Database operations
     if (regenerate) {
-      // Deactivate all existing links for this negocio
+      // Only deactivate the specific presupuesto's link when regenerating
       await supabase
         .from('public_budget_links')
         .update({ is_active: false, updated_at: 'now()' })
-        .eq('negocio_id', negocio_id)
-        .eq('is_active', true);
-    } else {
-      // For new links, also deactivate existing links for this negocio
-      await supabase
-        .from('public_budget_links')
-        .update({ is_active: false, updated_at: 'now()' })
-        .eq('negocio_id', negocio_id)
+        .eq('presupuesto_id', presupuesto_id)
         .eq('is_active', true);
     }
+    // For new links, don't deactivate existing links - each presupuesto keeps its own link
 
     // Create new link record
     const { data: linkData, error: linkError } = await supabase
@@ -363,23 +357,25 @@ Deno.serve(async (req) => {
 });
 
 function findAvailableProperty(currentProperties: Record<string, string>, newUrl: string): string {
-  // Check if any property contains a link for the same negocio (not presupuesto)
+  // First check if the exact same link already exists (same presupuesto)
   for (const property of HUBSPOT_LINK_PROPERTIES) {
     const existingValue = currentProperties[property];
-    if (existingValue && isSimilarUrl(existingValue, newUrl)) {
-      return property; // Reuse existing property for same negocio
+    if (existingValue && existingValue === newUrl) {
+      console.log(`🔄 [HubSpot Link Manager] Exact link already exists in ${property}`);
+      return property; // Return the property where the exact link exists
     }
   }
 
-  // Find first available property
+  // Find first available property in ascending order
   for (const property of HUBSPOT_LINK_PROPERTIES) {
     if (!currentProperties[property] || currentProperties[property].trim() === '') {
+      console.log(`📍 [HubSpot Link Manager] Using empty property: ${property}`);
       return property;
     }
   }
 
-  // If all properties are occupied, use the first one
-  return HUBSPOT_LINK_PROPERTIES[0];
+  // If all properties are occupied, throw error - no more space available
+  throw new Error('No hay propiedades disponibles. Máximo 10 links por negocio alcanzado.');
 }
 
 function isSimilarUrl(url1: string, url2: string): boolean {
@@ -387,16 +383,16 @@ function isSimilarUrl(url1: string, url2: string): boolean {
     const u1 = new URL(url1);
     const u2 = new URL(url2);
     
-    // Compare path structure to see if they're for the same negocio
+    // Compare path structure to see if they're for the same presupuesto
     const path1Parts = u1.pathname.split('/');
     const path2Parts = u2.pathname.split('/');
     
     // URL format: /presupuesto/{negocio_id}/{presupuesto_id}/view
-    // Extract negocio_id (second part after /presupuesto/)
+    // Extract presupuesto_id (third part after /presupuesto/)
     if (path1Parts.length >= 4 && path2Parts.length >= 4) {
-      const negocioId1 = path1Parts[2]; // /presupuesto/{negocio_id}/...
-      const negocioId2 = path2Parts[2]; // /presupuesto/{negocio_id}/...
-      return negocioId1 === negocioId2;
+      const presupuestoId1 = path1Parts[3]; // /presupuesto/{negocio_id}/{presupuesto_id}/...
+      const presupuestoId2 = path2Parts[3]; // /presupuesto/{negocio_id}/{presupuesto_id}/...
+      return presupuestoId1 === presupuestoId2;
     }
     
     return false;
