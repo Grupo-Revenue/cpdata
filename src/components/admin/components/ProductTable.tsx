@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
@@ -10,7 +10,17 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Edit, Package } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Edit, Package, Trash2 } from 'lucide-react';
 import { formatearPrecio } from '@/utils/formatters';
 import { Producto } from '../types/producto.types';
 
@@ -18,13 +28,30 @@ interface ProductTableProps {
   productos: Producto[];
   onEditProduct: (producto: Producto) => void;
   onToggleActive: (id: string, activo: boolean) => void;
+  onDeleteProduct: (id: string) => void;
 }
 
 const ProductTable: React.FC<ProductTableProps> = ({
   productos,
   onEditProduct,
-  onToggleActive
+  onToggleActive,
+  onDeleteProduct
 }) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Producto | null>(null);
+
+  const handleDeleteClick = (producto: Producto) => {
+    setProductToDelete(producto);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (productToDelete) {
+      onDeleteProduct(productToDelete.id);
+      setDeleteDialogOpen(false);
+      setProductToDelete(null);
+    }
+  };
   if (productos.length === 0) {
     return (
       <div className="text-center py-8">
@@ -36,66 +63,92 @@ const ProductTable: React.FC<ProductTableProps> = ({
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Nombre</TableHead>
-          <TableHead>Línea de Producto</TableHead>
-          <TableHead>Precio Base</TableHead>
-          <TableHead>Estado</TableHead>
-          <TableHead>Acciones</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {productos.map((producto) => (
-          <TableRow key={producto.id}>
-            <TableCell>
-              <div>
-                <div className="font-medium">{producto.nombre}</div>
-                {producto.descripcion && (
-                  <div className="text-sm text-gray-500">{producto.descripcion}</div>
-                )}
-              </div>
-            </TableCell>
-            <TableCell>
-              {producto.linea_producto ? (
-                <Badge variant="outline">
-                  {producto.linea_producto.nombre}
-                </Badge>
-              ) : (
-                <span className="text-gray-400">Sin asignar</span>
-              )}
-            </TableCell>
-            <TableCell>
-              {formatearPrecio(producto.precio_base)}
-            </TableCell>
-            <TableCell>
-              <Badge variant={producto.activo ? "default" : "secondary"}>
-                {producto.activo ? 'Activo' : 'Inactivo'}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onEditProduct(producto)}
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={producto.activo ? "destructive" : "default"}
-                  size="sm"
-                  onClick={() => onToggleActive(producto.id, producto.activo)}
-                >
-                  {producto.activo ? 'Desactivar' : 'Activar'}
-                </Button>
-              </div>
-            </TableCell>
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nombre</TableHead>
+            <TableHead>Línea de Producto</TableHead>
+            <TableHead>Precio Base</TableHead>
+            <TableHead>Estado</TableHead>
+            <TableHead>Acciones</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {productos.map((producto) => (
+            <TableRow key={producto.id}>
+              <TableCell>
+                <div>
+                  <div className="font-medium">{producto.nombre}</div>
+                  {producto.descripcion && (
+                    <div className="text-sm text-gray-500">{producto.descripcion}</div>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                {producto.linea_producto ? (
+                  <Badge variant="outline">
+                    {producto.linea_producto.nombre}
+                  </Badge>
+                ) : (
+                  <span className="text-gray-400">Sin asignar</span>
+                )}
+              </TableCell>
+              <TableCell>
+                {formatearPrecio(producto.precio_base)}
+              </TableCell>
+              <TableCell>
+                <Badge variant={producto.activo ? "default" : "secondary"}>
+                  {producto.activo ? 'Activo' : 'Inactivo'}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onEditProduct(producto)}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant={producto.activo ? "destructive" : "default"}
+                    size="sm"
+                    onClick={() => onToggleActive(producto.id, producto.activo)}
+                  >
+                    {producto.activo ? 'Desactivar' : 'Activar'}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDeleteClick(producto)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El producto "{productToDelete?.nombre}" será eliminado permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete}>
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

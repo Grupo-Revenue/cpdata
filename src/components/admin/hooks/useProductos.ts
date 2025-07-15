@@ -137,6 +137,31 @@ export const useProductos = () => {
     }
   };
 
+  const eliminarProducto = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('productos_biblioteca')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Producto eliminado",
+        description: "El producto se eliminó correctamente"
+      });
+      
+      cargarProductos();
+    } catch (error) {
+      console.error('Error eliminando producto:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el producto",
+        variant: "destructive"
+      });
+    }
+  };
+
   return {
     productos,
     lineasProducto,
@@ -144,6 +169,7 @@ export const useProductos = () => {
     cargarLineasProducto,
     cargarProductos,
     guardarProducto,
-    toggleActivoProducto
+    toggleActivoProducto,
+    eliminarProducto
   };
 };

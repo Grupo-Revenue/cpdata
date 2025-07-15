@@ -16,7 +16,8 @@ const AdminProductos: React.FC = () => {
     cargarLineasProducto,
     cargarProductos,
     guardarProducto,
-    toggleActivoProducto
+    toggleActivoProducto,
+    eliminarProducto
   } = useProductos();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -101,6 +102,7 @@ const AdminProductos: React.FC = () => {
             productos={productos}
             onEditProduct={editarProducto}
             onToggleActive={toggleActivoProducto}
+            onDeleteProduct={eliminarProducto}
           />
         </CardContent>
       </Card>
