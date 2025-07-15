@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Edit, Package, Trash2 } from 'lucide-react';
+import { Edit, Package, Trash2, Eye, EyeOff } from 'lucide-react';
 import { formatearPrecio } from '@/utils/formatters';
 import { Producto } from '../types/producto.types';
 
@@ -106,20 +106,26 @@ const ProductTable: React.FC<ProductTableProps> = ({
                 </Badge>
               </TableCell>
               <TableCell>
-                <div className="flex space-x-2">
+                <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => onEditProduct(producto)}
+                    className="hover:bg-accent hover:text-accent-foreground"
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
                   <Button
-                    variant={producto.activo ? "destructive" : "default"}
+                    variant={producto.activo ? "outline" : "default"}
                     size="sm"
                     onClick={() => onToggleActive(producto.id, producto.activo)}
+                    className={producto.activo 
+                      ? "text-business-parcial-foreground border-business-parcial-foreground hover:bg-business-parcial" 
+                      : "bg-business-aceptado text-business-aceptado-foreground hover:bg-business-aceptado/80"
+                    }
                   >
-                    {producto.activo ? 'Desactivar' : 'Activar'}
+                    {producto.activo ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    <span className="ml-1">{producto.activo ? 'Desactivar' : 'Activar'}</span>
                   </Button>
                   <Button
                     variant="destructive"
