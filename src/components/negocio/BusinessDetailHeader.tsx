@@ -47,7 +47,10 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
         <Button
           variant="outline"
           size="sm"
-          onClick={onVolver}
+          onClick={() => {
+            onVolver();
+            navigate("/");
+          }}
           className="h-8 px-3"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
