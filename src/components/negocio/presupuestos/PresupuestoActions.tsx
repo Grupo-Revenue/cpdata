@@ -106,7 +106,7 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
         >
           <FileText className="w-4 h-4" />
         </Button>
-        {(presupuesto.estado === 'borrador' || presupuesto.estado === 'publicado') && isAuthenticated && hasPermission(PERMISSIONS.EDIT_BUDGETS) && (
+        {(presupuesto.estado === 'borrador' || presupuesto.estado === 'publicado') && isAuthenticated && (
           <Button
             variant="outline"
             size="sm"
@@ -116,7 +116,7 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
             <Edit className="w-4 h-4" />
           </Button>
         )}
-        {isAuthenticated && hasPermission(PERMISSIONS.DELETE_BUSINESS) && (
+        {isAuthenticated && (
           <Button
             variant="outline"
             size="sm"

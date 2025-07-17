@@ -37,12 +37,12 @@ const PresupuestoTableActions: React.FC<PresupuestoTableActionsProps> = ({
   const { hasPermission, isAuthenticated } = usePermissions();
   const isProcessing = eliminandoPresupuesto === presupuesto.id || procesandoEstado === presupuesto.id || facturandoPresupuesto;
 
-  const canEdit = presupuesto.estado === 'borrador' && isAuthenticated && hasPermission(PERMISSIONS.EDIT_BUDGETS);
+  const canEdit = presupuesto.estado === 'borrador' && isAuthenticated;
   const canSend = presupuesto.estado === 'borrador' && onEnviarPresupuesto && isAuthenticated;
   const canApprove = presupuesto.estado === 'publicado' && onCambiarEstado && isAuthenticated;
   const canReject = ['publicado', 'aprobado'].includes(presupuesto.estado) && onCambiarEstado && isAuthenticated;
   const canMarkAsInvoiced = presupuesto.estado === 'aprobado' && !presupuesto.facturado && isAuthenticated;
-  const canDelete = isAuthenticated && hasPermission(PERMISSIONS.DELETE_BUSINESS);
+  const canDelete = isAuthenticated;
 
   return (
     <div className="flex items-center justify-center">
