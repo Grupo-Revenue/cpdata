@@ -27,13 +27,16 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
   eliminandoPresupuesto,
   procesandoEstado
 }) => {
-  const { isAuthenticated } = usePermissions();
+  const { isAuthenticated, userRoles } = usePermissions();
   
-  console.log('🔍 [PresupuestoActions] Debug info:', {
-    presupuestoId: presupuesto.id,
-    estado: presupuesto.estado,
-    facturado: presupuesto.facturado,
+  console.log('🎯 [PresupuestoActions] Context:', {
+    presupuesto: presupuesto ? {
+      id: presupuesto.id,
+      estado: presupuesto.estado,
+      facturado: presupuesto.facturado
+    } : null,
     isAuthenticated,
+    userRole: userRoles[0],
     eliminandoPresupuesto,
     procesandoEstado
   });
@@ -151,7 +154,8 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
         >
           <FileText className="w-4 h-4" />
         </Button>
-        {(presupuesto.estado === 'borrador' || presupuesto.estado === 'publicado') && isAuthenticated && (
+        {/* Simplificar validaciones - solo verificar autenticación y estado no facturado */}
+        {isAuthenticated && !isInvoiced && (
           <Button
             variant="outline"
             size="sm"
@@ -161,7 +165,7 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
             <Edit className="w-4 h-4" />
           </Button>
         )}
-        {isAuthenticated && (
+        {isAuthenticated && !isInvoiced && (
           <Button
             variant="outline"
             size="sm"

@@ -243,9 +243,26 @@ export const eliminarPresupuestoEnSupabase = async (presupuestoId: string): Prom
 };
 
 export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, nuevoEstado: EstadoPresupuesto, fechaVencimiento?: string): Promise<Presupuesto | null> => {
+  console.log('🔄 [presupuestoService] Cambiando estado de presupuesto:', {
+    presupuestoId,
+    nuevoEstado,
+    fechaVencimiento,
+    timestamp: new Date().toISOString()
+  });
+
   try {
-    console.log('📝 [Presupuesto Service] === INICIO CAMBIO ESTADO DB ===');
-    console.log('📝 [Presupuesto Service] Parámetros:', { presupuestoId, nuevoEstado, fechaVencimiento });
+    // Verificar autenticación del usuario
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('❌ [presupuestoService] Error de autenticación:', authError);
+      throw new Error('Usuario no autenticado');
+    }
+
+    console.log('✅ [presupuestoService] Usuario autenticado:', {
+      userId: user.id,
+      email: user.email
+    });
 
     // Validar parámetros
     if (!presupuestoId || !nuevoEstado) {
@@ -257,8 +274,9 @@ export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, 
       updates.fecha_vencimiento = fechaVencimiento;
     }
 
-    console.log('📝 [Presupuesto Service] Updates a enviar:', updates);
-
+    // Actualizar el presupuesto en Supabase con logging detallado
+    console.log('📝 [presupuestoService] Actualizando presupuesto con datos:', updates);
+    
     const { data, error } = await supabase
       .from('presupuestos')
       .update(updates)
@@ -267,11 +285,21 @@ export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, 
       .single();
 
     if (error) {
-      console.error("❌ [Presupuesto Service] Error updating presupuesto state:", error);
-      console.error("❌ [Presupuesto Service] Error details:", error.details);
-      console.error("❌ [Presupuesto Service] Error hint:", error.hint);
-      console.error("❌ [Presupuesto Service] Error code:", error.code);
-      console.error("❌ [Presupuesto Service] Error message:", error.message);
+      console.error('❌ [presupuestoService] Error al actualizar presupuesto:', {
+        error,
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        presupuestoId,
+        updateData: updates
+      });
+      
+      // Diagnóstico específico para errores de RLS
+      if (error.message?.includes('permission denied') || error.code === '42501') {
+        console.error('🔒 [presupuestoService] Error de permisos RLS detectado');
+        throw new Error('No tienes permisos para modificar este presupuesto. Verifica tu autenticación.');
+      }
       
       // Proporcionar error más específico para el usuario
       let userMessage = 'Error al actualizar el estado del presupuesto';
