@@ -29,6 +29,10 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
 }) => {
   const { hasPermission, isAuthenticated } = usePermissions();
   
+  // Check if budget can be modified
+  const canModifyState = !presupuesto.facturado && isAuthenticated;
+  const isInvoiced = presupuesto.facturado;
+  
   const obtenerAccionesEstado = () => {
     const acciones = [];
 
@@ -62,6 +66,8 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
               onClick={() => {
                 console.log('🔍 [DEBUG] Aprobar presupuesto clicked');
                 console.log('🔍 [DEBUG] isAuthenticated:', isAuthenticated);
+                console.log('🔍 [DEBUG] canModifyState:', canModifyState);
+                console.log('🔍 [DEBUG] isInvoiced:', isInvoiced);
                 console.log('🔍 [DEBUG] presupuesto.id:', presupuesto.id);
                 console.log('🔍 [DEBUG] About to call onCambiarEstado');
                 try {
@@ -71,8 +77,9 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
                   console.error('❌ [DEBUG] Error calling onCambiarEstado:', error);
                 }
               }}
-              className="text-emerald-600 hover:text-emerald-700 border-emerald-200 hover:bg-emerald-50"
-              disabled={procesandoEstado === presupuesto.id}
+              className="text-emerald-600 hover:text-emerald-700 border-emerald-200 hover:bg-emerald-50 disabled:opacity-50"
+              disabled={procesandoEstado === presupuesto.id || !canModifyState}
+              title={isInvoiced ? "No se puede cambiar el estado de un presupuesto facturado" : "Aprobar presupuesto"}
             >
               {procesandoEstado === presupuesto.id ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -87,6 +94,8 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
               onClick={() => {
                 console.log('🔍 [DEBUG] Rechazar presupuesto clicked');
                 console.log('🔍 [DEBUG] isAuthenticated:', isAuthenticated);
+                console.log('🔍 [DEBUG] canModifyState:', canModifyState);
+                console.log('🔍 [DEBUG] isInvoiced:', isInvoiced);
                 console.log('🔍 [DEBUG] presupuesto.id:', presupuesto.id);
                 console.log('🔍 [DEBUG] About to call onCambiarEstado');
                 try {
@@ -96,8 +105,9 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
                   console.error('❌ [DEBUG] Error calling onCambiarEstado:', error);
                 }
               }}
-              className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
-              disabled={procesandoEstado === presupuesto.id}
+              className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50 disabled:opacity-50"
+              disabled={procesandoEstado === presupuesto.id || !canModifyState}
+              title={isInvoiced ? "No se puede cambiar el estado de un presupuesto facturado" : "Rechazar presupuesto"}
             >
               {procesandoEstado === presupuesto.id ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

@@ -242,17 +242,51 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       console.log('📊 [NegocioContext] Estado anterior del negocio:', estadoAnteriorNegocio);
       
       // Validar que el presupuesto existe en el negocio
-      const presupuestoExiste = negocioActual.presupuestos?.some(p => p.id === presupuestoId);
-      if (!presupuestoExiste) {
+      const presupuestoActual = negocioActual.presupuestos?.find(p => p.id === presupuestoId);
+      if (!presupuestoActual) {
         console.error('❌ [NegocioContext] Presupuesto no encontrado en negocio:', presupuestoId);
         throw new Error(`Presupuesto no encontrado: ${presupuestoId}`);
+      }
+      
+      console.log('📝 [NegocioContext] Presupuesto encontrado:', { 
+        id: presupuestoActual.id, 
+        estado: presupuestoActual.estado, 
+        facturado: presupuestoActual.facturado,
+        nombre: presupuestoActual.nombre 
+      });
+      
+      // Validar reglas de negocio para cambios de estado
+      if (presupuestoActual.facturado) {
+        console.error('❌ [NegocioContext] No se puede cambiar estado de presupuesto facturado');
+        throw new Error('No se puede cambiar el estado de un presupuesto que ya ha sido facturado');
+      }
+      
+      // Validar transiciones de estado válidas
+      const transicionesValidas = {
+        'borrador': ['publicado', 'cancelado'],
+        'publicado': ['aprobado', 'rechazado', 'vencido', 'cancelado'],
+        'aprobado': ['rechazado'], // Solo permitir rechazar desde aprobado si no está facturado
+        'rechazado': ['aprobado'], // Permitir reactivar un presupuesto rechazado
+        'vencido': ['aprobado'], // Permitir aprobar un presupuesto vencido
+        'cancelado': ['borrador'] // Permitir reactivar un presupuesto cancelado
+      };
+      
+      const transicionPermitida = transicionesValidas[presupuestoActual.estado]?.includes(nuevoEstado);
+      if (!transicionPermitida) {
+        console.error('❌ [NegocioContext] Transición de estado no válida:', {
+          estadoActual: presupuestoActual.estado,
+          nuevoEstado,
+          transicionesPermitidas: transicionesValidas[presupuestoActual.estado]
+        });
+        throw new Error(`No se puede cambiar el estado de "${presupuestoActual.estado}" a "${nuevoEstado}"`);
       }
       
       console.log('📝 [NegocioContext] Iniciando cambio de estado en Supabase...');
       const presupuestoActualizado = await cambiarEstadoPresupuestoEnSupabase(presupuestoId, nuevoEstado, fechaVencimiento);
       
       if (!presupuestoActualizado) {
-        throw new Error('Failed to update presupuesto state in database');
+        console.error('❌ [NegocioContext] No se recibieron datos actualizados del servidor');
+        throw new Error('No se pudo actualizar el estado del presupuesto en la base de datos');
       }
 
       console.log('✅ [NegocioContext] Presupuesto estado actualizado en DB:', {
@@ -326,7 +360,26 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       console.error("❌ [NegocioContext] === ERROR CAMBIO ESTADO PRESUPUESTO ===");
       console.error("❌ [NegocioContext] Error details:", error);
       console.error("❌ [NegocioContext] Stack trace:", error instanceof Error ? error.stack : 'No stack trace');
-      throw error;
+      console.error("❌ [NegocioContext] Parámetros del error:", { negocioId, presupuestoId, nuevoEstado, fechaVencimiento });
+      
+      // Crear un error más específico para el usuario
+      let errorMessage = 'Error al cambiar el estado del presupuesto';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('facturado')) {
+          errorMessage = 'No se puede cambiar el estado de un presupuesto ya facturado';
+        } else if (error.message.includes('no válida')) {
+          errorMessage = error.message;
+        } else if (error.message.includes('not found')) {
+          errorMessage = 'Presupuesto no encontrado';
+        } else if (error.message.includes('policy')) {
+          errorMessage = 'No tienes permisos para realizar esta acción';
+        }
+      }
+      
+      const customError = new Error(errorMessage);
+      console.error("❌ [NegocioContext] Causa original del error:", error);
+      throw customError;
     }
   };
   const cambiarEstadoNegocio = async (negocioId: string, nuevoEstado: EstadoNegocio): Promise<void> => {

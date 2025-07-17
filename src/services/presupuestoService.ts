@@ -267,7 +267,22 @@ export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, 
       console.error("❌ [Presupuesto Service] Error details:", error.details);
       console.error("❌ [Presupuesto Service] Error hint:", error.hint);
       console.error("❌ [Presupuesto Service] Error code:", error.code);
-      throw error;
+      console.error("❌ [Presupuesto Service] Error message:", error.message);
+      
+      // Proporcionar error más específico para el usuario
+      let userMessage = 'Error al actualizar el estado del presupuesto';
+      
+      if (error.message) {
+        if (error.message.includes('violates check constraint') || error.message.includes('violates row-level security')) {
+          userMessage = 'No tienes permisos para realizar esta acción o el presupuesto no se puede cambiar a este estado';
+        } else if (error.message.includes('not found')) {
+          userMessage = 'El presupuesto no fue encontrado';
+        } else if (error.code === 'PGRST116') {
+          userMessage = 'No se encontró el presupuesto o no tienes permisos para modificarlo';
+        }
+      }
+      
+      throw new Error(userMessage);
     }
 
     if (!data) {
