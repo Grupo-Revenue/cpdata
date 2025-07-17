@@ -53,36 +53,38 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
         break;
 
       case 'publicado':
-        acciones.push(
-          <Button
-            key="aprobar"
-            variant="outline"
-            size="sm"
-            onClick={() => onCambiarEstado(presupuesto.id, 'aprobado')}
-            className="text-emerald-600 hover:text-emerald-700 border-emerald-200 hover:bg-emerald-50"
-            disabled={procesandoEstado === presupuesto.id}
-          >
-            {procesandoEstado === presupuesto.id ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Check className="w-4 h-4" />
-            )}
-          </Button>,
-          <Button
-            key="rechazar"
-            variant="outline"
-            size="sm"
-            onClick={() => onCambiarEstado(presupuesto.id, 'rechazado')}
-            className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
-            disabled={procesandoEstado === presupuesto.id}
-          >
-            {procesandoEstado === presupuesto.id ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <X className="w-4 h-4" />
-            )}
-          </Button>
-        );
+        if (isAuthenticated) {
+          acciones.push(
+            <Button
+              key="aprobar"
+              variant="outline"
+              size="sm"
+              onClick={() => onCambiarEstado(presupuesto.id, 'aprobado')}
+              className="text-emerald-600 hover:text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+              disabled={procesandoEstado === presupuesto.id}
+            >
+              {procesandoEstado === presupuesto.id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4" />
+              )}
+            </Button>,
+            <Button
+              key="rechazar"
+              variant="outline"
+              size="sm"
+              onClick={() => onCambiarEstado(presupuesto.id, 'rechazado')}
+              className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
+              disabled={procesandoEstado === presupuesto.id}
+            >
+              {procesandoEstado === presupuesto.id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <X className="w-4 h-4" />
+              )}
+            </Button>
+          );
+        }
         break;
     }
 
