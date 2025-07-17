@@ -269,6 +269,49 @@ export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, 
       throw new Error('Parámetros inválidos: presupuestoId y nuevoEstado son requeridos');
     }
 
+    // Verificar propiedad del negocio antes de actualizar
+    console.log('🔍 [presupuestoService] Verificando propiedad del presupuesto...');
+    
+    const { data: presupuestoData, error: selectError } = await supabase
+      .from('presupuestos')
+      .select(`
+        id,
+        negocio_id,
+        negocios!inner(
+          id,
+          user_id,
+          numero
+        )
+      `)
+      .eq('id', presupuestoId)
+      .single();
+
+    if (selectError) {
+      console.error('❌ [presupuestoService] Error al verificar presupuesto:', selectError);
+      throw new Error('Error al verificar el presupuesto');
+    }
+
+    if (!presupuestoData) {
+      console.error('❌ [presupuestoService] Presupuesto no encontrado');
+      throw new Error('Presupuesto no encontrado');
+    }
+
+    console.log('📋 [presupuestoService] Datos del presupuesto:', {
+      presupuestoId: presupuestoData.id,
+      negocioId: presupuestoData.negocio_id,
+      propietario: presupuestoData.negocios.user_id,
+      usuarioActual: user.id,
+      numeroNegocio: presupuestoData.negocios.numero
+    });
+
+    // Verificar si el usuario es propietario del negocio
+    if (presupuestoData.negocios.user_id !== user.id) {
+      console.error('🚫 [presupuestoService] Usuario no es propietario del negocio');
+      throw new Error(`No puedes modificar presupuestos del negocio #${presupuestoData.negocios.numero} porque no te pertenece`);
+    }
+
+    console.log('✅ [presupuestoService] Usuario es propietario, procediendo con actualización...');
+
     const updates: { estado: EstadoPresupuesto; fecha_vencimiento?: string } = { estado: nuevoEstado };
     if (fechaVencimiento) {
       updates.fecha_vencimiento = fechaVencimiento;
