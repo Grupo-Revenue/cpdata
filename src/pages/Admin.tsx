@@ -10,6 +10,9 @@ import { Home } from 'lucide-react';
 
 import { UserTable } from '@/components/admin/UserTable';
 import AdminProductos from '@/components/admin/AdminProductos';
+import { ProtectedFeature } from '@/components/ProtectedFeature';
+import { PERMISSIONS } from '@/constants/permissions';
+import { ACCESS_DENIED_MESSAGES } from '@/components/AccessDeniedInfo';
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState("usuarios");
@@ -87,41 +90,55 @@ const Admin = () => {
   }
 
   return (
-    <div className="container mx-auto px-6 py-8">
-      <div className="mb-8 flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Panel de Administración</h1>
-          <p className="text-gray-600">Gestiona usuarios, productos y configuración del sistema</p>
+    <ProtectedFeature permission={PERMISSIONS.ACCESS_ADMIN}>
+      <div className="container mx-auto px-6 py-8">
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Panel de Administración</h1>
+            <p className="text-gray-600">Gestiona usuarios, productos y configuración del sistema</p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2"
+          >
+            <Home className="h-4 w-4" />
+            Volver al Inicio
+          </Button>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2"
-        >
-          <Home className="h-4 w-4" />
-          Volver al Inicio
-        </Button>
-      </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList>
-          <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
-          <TabsTrigger value="productos">Productos</TabsTrigger>
-        </TabsList>
-        <TabsContent value="usuarios">
-          <UserTable 
-            email={email}
-            password={password}
-            setEmail={setEmail}
-            setPassword={setPassword}
-            handleCreateUser={handleCreateUser}
-          />
-        </TabsContent>
-        <TabsContent value="productos">
-          <AdminProductos />
-        </TabsContent>
-      </Tabs>
-    </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList>
+            <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
+            <TabsTrigger value="productos">Productos</TabsTrigger>
+          </TabsList>
+          <TabsContent value="usuarios">
+            <ProtectedFeature 
+              permission={PERMISSIONS.CREATE_USERS}
+              showInlineInfo={true}
+              infoMessage={ACCESS_DENIED_MESSAGES.CREATE_USERS}
+            >
+              <UserTable 
+                email={email}
+                password={password}
+                setEmail={setEmail}
+                setPassword={setPassword}
+                handleCreateUser={handleCreateUser}
+              />
+            </ProtectedFeature>
+          </TabsContent>
+          <TabsContent value="productos">
+            <ProtectedFeature 
+              permission={PERMISSIONS.CREATE_PRODUCTS}
+              showInlineInfo={true}
+              infoMessage={ACCESS_DENIED_MESSAGES.CREATE_PRODUCTS}
+            >
+              <AdminProductos />
+            </ProtectedFeature>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </ProtectedFeature>
   );
 };
 

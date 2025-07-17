@@ -3,6 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useBrandConfig } from '@/hooks/useBrandConfig';
 import { useHubSpotConnectionStatus } from '@/hooks/useHubSpotConnectionStatus';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PERMISSIONS } from '@/constants/permissions';
+import { UserRoleIndicator } from '@/components/UserRoleIndicator';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
@@ -16,9 +19,10 @@ import {
 import { LogOut, Settings, Shield, Building2 } from 'lucide-react';
 
 const Navigation = () => {
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut } = useAuth();
   const { config: brandConfig, loading: configLoading } = useBrandConfig();
   const { isConnected: hubspotConnected, isChecking: checkingConnection } = useHubSpotConnectionStatus();
+  const { hasPermission } = usePermissions();
 
   if (!user) return null;
 
@@ -143,6 +147,9 @@ const Navigation = () => {
                         <p className="text-xs leading-none text-muted-foreground mt-1">
                           {user.email}
                         </p>
+                        <div className="mt-2">
+                          <UserRoleIndicator variant="outline" className="text-xs" />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -157,7 +164,7 @@ const Navigation = () => {
                   </div>
                 </DropdownMenuItem>
                 
-                {isAdmin && (
+                {hasPermission(PERMISSIONS.ACCESS_ADMIN) && (
                   <DropdownMenuItem className="cursor-pointer p-3 rounded-lg hover:bg-accent/10 transition-colors" onClick={navigateToAdmin}>
                     <Shield className="mr-3 h-4 w-4 text-accent" />
                     <div className="flex flex-col">
