@@ -73,21 +73,30 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const [isToolbarVisible, setIsToolbarVisible] = useState(false);
-  const [lastValue, setLastValue] = useState(value);
+  const [lastValue, setLastValue] = useState(value || '');
   const isUpdatingRef = useRef(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Initialize content on mount
+  useEffect(() => {
+    if (!editorRef.current || isInitialized) return;
+    
+    if (value) {
+      editorRef.current.innerHTML = value;
+      setLastValue(value);
+    }
+    setIsInitialized(true);
+  }, []);
 
   // Update content when value prop changes (from external source)
   useEffect(() => {
-    if (!editorRef.current) return;
-    
-    console.log('RichTextEditor useEffect:', { value, lastValue, isUpdating: isUpdatingRef.current });
+    if (!editorRef.current || !isInitialized) return;
     
     // Update content if value changed and we're not in the middle of an internal update
     if (value !== lastValue && !isUpdatingRef.current) {
-      console.log('Updating editor content:', value);
       const cursorPosition = saveCursorPosition(editorRef.current);
       editorRef.current.innerHTML = value || '';
-      setLastValue(value);
+      setLastValue(value || '');
       
       // Restore cursor position after a brief delay to ensure DOM is updated
       setTimeout(() => {
@@ -96,7 +105,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         }
       }, 0);
     }
-  }, [value]);
+  }, [value, lastValue, isInitialized]);
 
   const executeCommand = useCallback((command: string, value?: string) => {
     const editor = editorRef.current;
