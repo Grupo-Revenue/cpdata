@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Edit, Package, Trash2, Eye, EyeOff } from 'lucide-react';
-import { formatearPrecio } from '@/utils/formatters';
+import { formatearPrecio, stripHtml } from '@/utils/formatters';
 import { Producto } from '../types/producto.types';
 
 interface ProductTableProps {
@@ -84,7 +84,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
                 <div>
                   <div className="font-medium">{producto.nombre}</div>
                   {producto.descripcion && (
-                    <div className="text-sm text-gray-500">{producto.descripcion}</div>
+                    <div className="text-sm text-gray-500">{stripHtml(producto.descripcion, 100)}</div>
                   )}
                 </div>
               </TableCell>

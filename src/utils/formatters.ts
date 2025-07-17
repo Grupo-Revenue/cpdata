@@ -21,3 +21,19 @@ export const parsearPrecio = (precioString: string): number => {
   const numeroLimpio = precioString.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');
   return parseFloat(numeroLimpio) || 0;
 };
+
+export const stripHtml = (html: string, maxLength?: number): string => {
+  if (!html) return '';
+  
+  // Crear un elemento temporal para extraer solo el texto
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  const text = temp.textContent || temp.innerText || '';
+  
+  // Aplicar truncamiento si se especifica
+  if (maxLength && text.length > maxLength) {
+    return text.substring(0, maxLength) + '...';
+  }
+  
+  return text;
+};
