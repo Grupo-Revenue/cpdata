@@ -3,6 +3,8 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, FileText, Loader2, Send, Check, X } from 'lucide-react';
 import { Presupuesto } from '@/types';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PERMISSIONS } from '@/constants/permissions';
 
 interface PresupuestoActionsProps {
   presupuesto: Presupuesto;
@@ -25,6 +27,8 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
   eliminandoPresupuesto,
   procesandoEstado
 }) => {
+  const { hasPermission, isAuthenticated } = usePermissions();
+  
   const obtenerAccionesEstado = () => {
     const acciones = [];
 
@@ -102,7 +106,7 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
         >
           <FileText className="w-4 h-4" />
         </Button>
-        {(presupuesto.estado === 'borrador' || presupuesto.estado === 'publicado') && (
+        {(presupuesto.estado === 'borrador' || presupuesto.estado === 'publicado') && isAuthenticated && hasPermission(PERMISSIONS.EDIT_BUDGETS) && (
           <Button
             variant="outline"
             size="sm"
@@ -112,19 +116,21 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
             <Edit className="w-4 h-4" />
           </Button>
         )}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onEliminarPresupuesto(presupuesto.id)}
-          className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
-          disabled={eliminandoPresupuesto === presupuesto.id}
-        >
-          {eliminandoPresupuesto === presupuesto.id ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Trash2 className="w-4 h-4" />
-          )}
-        </Button>
+        {isAuthenticated && hasPermission(PERMISSIONS.DELETE_BUSINESS) && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onEliminarPresupuesto(presupuesto.id)}
+            className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
+            disabled={eliminandoPresupuesto === presupuesto.id}
+          >
+            {eliminandoPresupuesto === presupuesto.id ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Trash2 className="w-4 h-4" />
+            )}
+          </Button>
+        )}
       </div>
     </div>
   );

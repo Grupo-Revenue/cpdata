@@ -5,6 +5,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { MoreHorizontal, Edit, Trash2, FileText, Send, CheckCircle, XCircle, DollarSign } from 'lucide-react';
 import { Presupuesto } from '@/types';
 import { usePresupuestoActions } from '@/hooks/usePresupuestoActions';
+import { usePermissions } from '@/hooks/usePermissions';
+import { PERMISSIONS } from '@/constants/permissions';
 
 interface PresupuestoTableActionsProps {
   presupuesto: Presupuesto;
@@ -32,13 +34,15 @@ const PresupuestoTableActions: React.FC<PresupuestoTableActionsProps> = ({
   onRefresh
 }) => {
   const { marcarComoFacturado, loading: facturandoPresupuesto } = usePresupuestoActions(negocioId, onRefresh);
+  const { hasPermission, isAuthenticated } = usePermissions();
   const isProcessing = eliminandoPresupuesto === presupuesto.id || procesandoEstado === presupuesto.id || facturandoPresupuesto;
 
-  const canEdit = presupuesto.estado === 'borrador';
-  const canSend = presupuesto.estado === 'borrador' && onEnviarPresupuesto;
-  const canApprove = presupuesto.estado === 'publicado' && onCambiarEstado;
-  const canReject = ['publicado', 'aprobado'].includes(presupuesto.estado) && onCambiarEstado;
-  const canMarkAsInvoiced = presupuesto.estado === 'aprobado' && !presupuesto.facturado;
+  const canEdit = presupuesto.estado === 'borrador' && isAuthenticated && hasPermission(PERMISSIONS.EDIT_BUDGETS);
+  const canSend = presupuesto.estado === 'borrador' && onEnviarPresupuesto && isAuthenticated;
+  const canApprove = presupuesto.estado === 'publicado' && onCambiarEstado && isAuthenticated;
+  const canReject = ['publicado', 'aprobado'].includes(presupuesto.estado) && onCambiarEstado && isAuthenticated;
+  const canMarkAsInvoiced = presupuesto.estado === 'aprobado' && !presupuesto.facturado && isAuthenticated;
+  const canDelete = isAuthenticated && hasPermission(PERMISSIONS.DELETE_BUSINESS);
 
   return (
     <div className="flex items-center justify-center">
@@ -97,14 +101,18 @@ const PresupuestoTableActions: React.FC<PresupuestoTableActionsProps> = ({
             </>
           )}
           
-          <DropdownMenuSeparator />
-          <DropdownMenuItem 
-            onClick={() => onEliminarPresupuesto(presupuesto.id)}
-            className="text-red-600 focus:text-red-600"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Eliminar
-          </DropdownMenuItem>
+          {canDelete && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => onEliminarPresupuesto(presupuesto.id)}
+                className="text-red-600 focus:text-red-600"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Eliminar
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
