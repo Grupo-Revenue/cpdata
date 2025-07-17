@@ -59,7 +59,18 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
               key="aprobar"
               variant="outline"
               size="sm"
-              onClick={() => onCambiarEstado(presupuesto.id, 'aprobado')}
+              onClick={() => {
+                console.log('🔍 [DEBUG] Aprobar presupuesto clicked');
+                console.log('🔍 [DEBUG] isAuthenticated:', isAuthenticated);
+                console.log('🔍 [DEBUG] presupuesto.id:', presupuesto.id);
+                console.log('🔍 [DEBUG] About to call onCambiarEstado');
+                try {
+                  onCambiarEstado(presupuesto.id, 'aprobado');
+                  console.log('✅ [DEBUG] onCambiarEstado called successfully');
+                } catch (error) {
+                  console.error('❌ [DEBUG] Error calling onCambiarEstado:', error);
+                }
+              }}
               className="text-emerald-600 hover:text-emerald-700 border-emerald-200 hover:bg-emerald-50"
               disabled={procesandoEstado === presupuesto.id}
             >
@@ -73,7 +84,18 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
               key="rechazar"
               variant="outline"
               size="sm"
-              onClick={() => onCambiarEstado(presupuesto.id, 'rechazado')}
+              onClick={() => {
+                console.log('🔍 [DEBUG] Rechazar presupuesto clicked');
+                console.log('🔍 [DEBUG] isAuthenticated:', isAuthenticated);
+                console.log('🔍 [DEBUG] presupuesto.id:', presupuesto.id);
+                console.log('🔍 [DEBUG] About to call onCambiarEstado');
+                try {
+                  onCambiarEstado(presupuesto.id, 'rechazado');
+                  console.log('✅ [DEBUG] onCambiarEstado called successfully');
+                } catch (error) {
+                  console.error('❌ [DEBUG] Error calling onCambiarEstado:', error);
+                }
+              }}
               className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
               disabled={procesandoEstado === presupuesto.id}
             >
@@ -84,6 +106,8 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
               )}
             </Button>
           );
+        } else {
+          console.log('🚫 [DEBUG] User not authenticated - hiding approve/reject buttons');
         }
         break;
     }
