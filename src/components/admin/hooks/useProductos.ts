@@ -66,18 +66,18 @@ export const useProductos = () => {
     }
 
     try {
-      const productoData = {
+      const baseProductoData = {
         nombre: formData.nombre,
         descripcion: formData.descripcion || null,
         precio_base: parseFloat(formData.precio_base),
         linea_producto_id: formData.linea_producto_id === 'none' ? null : formData.linea_producto_id,
-        activo: true
       };
 
       if (editingProduct) {
+        // Para edición, no incluir el campo 'activo' para mantener el estado actual
         const { error } = await supabase
           .from('productos_biblioteca')
-          .update(productoData)
+          .update(baseProductoData)
           .eq('id', editingProduct.id);
 
         if (error) throw error;
@@ -87,6 +87,12 @@ export const useProductos = () => {
           description: "El producto se actualizó correctamente"
         });
       } else {
+        // Para creación, incluir 'activo: true' por defecto
+        const productoData = {
+          ...baseProductoData,
+          activo: true
+        };
+
         const { error } = await supabase
           .from('productos_biblioteca')
           .insert([productoData]);
