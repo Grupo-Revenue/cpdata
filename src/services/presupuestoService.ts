@@ -209,6 +209,10 @@ export const actualizarPresupuestoEnSupabase = async (
 
 export const eliminarPresupuestoEnSupabase = async (presupuestoId: string): Promise<boolean> => {
   try {
+    console.log('🗑️ [eliminarPresupuestoEnSupabase] === INICIO ELIMINACIÓN DB ===');
+    console.log('🗑️ [eliminarPresupuestoEnSupabase] Presupuesto ID:', presupuestoId);
+    console.log('🗑️ [eliminarPresupuestoEnSupabase] Usuario actual:', (await supabase.auth.getUser()).data.user?.id);
+    
     // Get negocio_id before deleting for HubSpot sync
     const { data: presupuesto } = await supabase
       .from('presupuestos')

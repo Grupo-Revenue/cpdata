@@ -14,6 +14,8 @@ import {
   cambiarEstadoPresupuestoEnSupabase
 } from '@/services/presupuestoService';
 import { useHubSpotDealStageSync } from '@/hooks/hubspot/useHubSpotDealStageSync';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 
 interface NegocioContextProps {
@@ -39,6 +41,7 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { syncDealStage } = useHubSpotDealStageSync();
+  const { user } = useAuth();
 
 
   const obtenerNegocios = useCallback(async (forceRefresh = false) => {
@@ -189,36 +192,71 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
   };
 
   const eliminarPresupuesto = async (negocioId: string, presupuestoId: string): Promise<boolean> => {
-    // Get the current business to check budget count before deletion
-    const negocioActual = obtenerNegocio(negocioId);
-    const presupuestosAntesDeEliminar = negocioActual?.presupuestos?.length || 0;
-    
-    const eliminado = await eliminarPresupuestoEnSupabase(presupuestoId);
-    if (eliminado) {
-      // Optimistically update the negocios state
-      setNegocios(prevNegocios =>
-        prevNegocios.map(negocio =>
-          negocio.id === negocioId
-            ? {
-                ...negocio,
-                presupuestos: negocio.presupuestos.filter(presupuesto => presupuesto.id !== presupuestoId)
-              }
-            : negocio
-        )
-      );
-
-      // Check if this deletion results in zero budgets
-      const presupuestosAfterDeletion = presupuestosAntesDeEliminar - 1;
+    try {
+      console.log('🗑️ [NegocioContext] === INICIO ELIMINACIÓN PRESUPUESTO ===');
+      console.log('🗑️ [NegocioContext] Eliminando presupuesto:', presupuestoId);
+      console.log('🗑️ [NegocioContext] Usuario autenticado:', !!user);
       
-      if (presupuestosAfterDeletion === 0) {
-        console.log('[NegocioContext] Business has zero budgets after deletion, refreshing page...');
-        // Small delay to ensure the database trigger has processed
-        setTimeout(() => {
-          window.location.reload();
-        }, 500);
+      if (!user) {
+        throw new Error('Usuario no autenticado');
       }
+      
+      // Get the current business to check budget count before deletion
+      const negocioActual = obtenerNegocio(negocioId);
+      const presupuestosAntesDeEliminar = negocioActual?.presupuestos?.length || 0;
+      
+      const eliminado = await eliminarPresupuestoEnSupabase(presupuestoId);
+      if (eliminado) {
+        // Optimistically update the negocios state
+        setNegocios(prevNegocios =>
+          prevNegocios.map(negocio =>
+            negocio.id === negocioId
+              ? {
+                  ...negocio,
+                  presupuestos: negocio.presupuestos.filter(presupuesto => presupuesto.id !== presupuestoId)
+                }
+              : negocio
+          )
+        );
+
+        // Check if this deletion results in zero budgets
+        const presupuestosAfterDeletion = presupuestosAntesDeEliminar - 1;
+        
+        if (presupuestosAfterDeletion === 0) {
+          console.log('[NegocioContext] Business has zero budgets after deletion, refreshing page...');
+          // Small delay to ensure the database trigger has processed
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+        }
+        
+        console.log('✅ [NegocioContext] Presupuesto eliminado exitosamente');
+        toast.success('Presupuesto eliminado correctamente');
+        return true;
+      } else {
+        console.error('❌ [NegocioContext] No se pudo eliminar el presupuesto');
+        toast.error('Error al eliminar el presupuesto');
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ [NegocioContext] === ERROR ELIMINACIÓN PRESUPUESTO ===');
+      console.error('❌ [NegocioContext] Error details:', error);
+      
+      let errorMessage = 'Error al eliminar el presupuesto';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('policy') || error.message.includes('permission')) {
+          errorMessage = 'No tienes permisos para eliminar este presupuesto';
+        } else if (error.message.includes('not found')) {
+          errorMessage = 'Presupuesto no encontrado';
+        } else if (error.message.includes('autenticado')) {
+          errorMessage = 'Debes iniciar sesión para realizar esta acción';
+        }
+      }
+      
+      toast.error(errorMessage);
+      return false;
     }
-    return eliminado;
   };
 
   const cambiarEstadoPresupuesto = async (negocioId: string, presupuestoId: string, nuevoEstado: EstadoPresupuesto, fechaVencimiento?: string): Promise<void> => {

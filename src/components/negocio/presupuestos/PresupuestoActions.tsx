@@ -27,7 +27,16 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
   eliminandoPresupuesto,
   procesandoEstado
 }) => {
-  const { hasPermission, isAuthenticated } = usePermissions();
+  const { isAuthenticated } = usePermissions();
+  
+  console.log('🔍 [PresupuestoActions] Debug info:', {
+    presupuestoId: presupuesto.id,
+    estado: presupuesto.estado,
+    facturado: presupuesto.facturado,
+    isAuthenticated,
+    eliminandoPresupuesto,
+    procesandoEstado
+  });
   
   // Check if budget can be modified
   const canModifyState = !presupuesto.facturado && isAuthenticated;
