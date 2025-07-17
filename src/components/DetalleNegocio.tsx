@@ -21,12 +21,12 @@ const DetalleNegocio: React.FC<DetalleNegocioProps> = ({ negocioId, onVolver }) 
   const [presupuestoEditando, setPresupuestoEditando] = useState<string | null>(null);
   const { syncAmountToHubSpot } = useHubSpotSync();
 
-  console.log('[DetalleNegocio] Rendering with negocioId:', negocioId);
-  console.log('[DetalleNegocio] Loading state:', loading);
+  console.log('📋 [DetalleNegocio] Rendering with negocioId:', negocioId);
+  console.log('📋 [DetalleNegocio] Loading state:', loading);
   
   const negocio = obtenerNegocio(negocioId);
-  console.log('[DetalleNegocio] Found negocio:', negocio ? 'YES' : 'NO');
-  console.log('[DetalleNegocio] Negocio ID match:', negocio?.id === negocioId);
+  console.log('📋 [DetalleNegocio] Found negocio:', negocio ? 'YES' : 'NO');
+  console.log('📋 [DetalleNegocio] Negocio data:', negocio ? { id: negocio.id, numero: negocio.numero } : 'none');
 
   // Sync amount to HubSpot when entering this view
   useEffect(() => {

@@ -26,20 +26,18 @@ const Index = () => {
     if (negocioId && !loading && negocios.length > 0) {
       const negocio = obtenerNegocio(negocioId);
       if (negocio && vistaActual !== 'detalle-negocio') {
+        console.log('📍 [Index] Navigating to business detail:', negocioId);
         navegarADetalleNegocio(negocioId);
+      } else if (!negocio && !loading) {
+        console.error('❌ [Index] Business not found for URL param:', negocioId);
+        logger.error('Business not found for URL param', null, { 
+          negocioId, 
+          availableIds: negocios.map(n => n.id),
+          totalNegocios: negocios.length 
+        });
       }
     }
   }, [negocioId, negocios, loading, obtenerNegocio, navegarADetalleNegocio, vistaActual]);
-
-  // Verify business data when navigating to detail view
-  useEffect(() => {
-    if (vistaActual === 'detalle-negocio' && negocioSeleccionado) {
-      const negocio = obtenerNegocio(negocioSeleccionado);
-      if (!negocio) {
-        logger.error('Negocio not found for ID', null, { negocioSeleccionado, availableIds: negocios.map(n => n.id) });
-      }
-    }
-  }, [vistaActual, negocioSeleccionado, obtenerNegocio, negocios]);
 
   const LoadingFallback = () => (
     <div className="flex items-center justify-center min-h-screen">
@@ -56,7 +54,20 @@ const Index = () => {
     );
   }
 
+  // Don't render business detail view until we have the data
   if (vistaActual === 'detalle-negocio' && negocioSeleccionado) {
+    // Wait for data to be loaded before rendering
+    if (loading) {
+      return <LoadingFallback />;
+    }
+    
+    // Check if business exists in loaded data
+    const negocio = obtenerNegocio(negocioSeleccionado);
+    if (!negocio) {
+      console.error('❌ [Index] Business not found in loaded data:', negocioSeleccionado);
+      return <LoadingFallback />;
+    }
+    
     return (
       <BusinessDetailView
         negocioId={negocioSeleccionado}
