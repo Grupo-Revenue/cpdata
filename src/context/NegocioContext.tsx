@@ -223,40 +223,65 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   const cambiarEstadoPresupuesto = async (negocioId: string, presupuestoId: string, nuevoEstado: EstadoPresupuesto, fechaVencimiento?: string): Promise<void> => {
     try {
-      console.log('🔄 [NegocioContext] ==> STARTING cambiarEstadoPresupuesto <==');
-      console.log('🔄 [NegocioContext] Presupuesto ID:', presupuestoId);
-      console.log('🔄 [NegocioContext] Nuevo estado presupuesto:', nuevoEstado);
+      console.log('🔄 [NegocioContext] === INICIO CAMBIO ESTADO PRESUPUESTO ===');
+      console.log('🔄 [NegocioContext] Parámetros:', { negocioId, presupuestoId, nuevoEstado, fechaVencimiento });
+      console.log('🔄 [NegocioContext] Negocios disponibles en contexto:', negocios.length);
+      console.log('🔄 [NegocioContext] Loading estado:', loading);
       
-      // Get current business state before updating
+      // Validar que el negocio existe en el contexto
       const negocioActual = obtenerNegocio(negocioId);
-      const estadoAnteriorNegocio = negocioActual?.estado;
+      if (!negocioActual) {
+        console.error('❌ [NegocioContext] Negocio no encontrado en contexto:', negocioId);
+        console.error('❌ [NegocioContext] IDs disponibles:', negocios.map(n => n.id));
+        throw new Error(`Negocio no encontrado en contexto: ${negocioId}`);
+      }
       
-      console.log('🔄 [NegocioContext] Estado anterior negocio:', estadoAnteriorNegocio);
-      console.log('🔄 [NegocioContext] HubSpot ID:', negocioActual?.hubspot_id);
-
+      console.log('✅ [NegocioContext] Negocio encontrado:', { id: negocioActual.id, numero: negocioActual.numero });
+      
+      const estadoAnteriorNegocio = negocioActual.estado;
+      console.log('📊 [NegocioContext] Estado anterior del negocio:', estadoAnteriorNegocio);
+      
+      // Validar que el presupuesto existe en el negocio
+      const presupuestoExiste = negocioActual.presupuestos?.some(p => p.id === presupuestoId);
+      if (!presupuestoExiste) {
+        console.error('❌ [NegocioContext] Presupuesto no encontrado en negocio:', presupuestoId);
+        throw new Error(`Presupuesto no encontrado: ${presupuestoId}`);
+      }
+      
+      console.log('📝 [NegocioContext] Iniciando cambio de estado en Supabase...');
       const presupuestoActualizado = await cambiarEstadoPresupuestoEnSupabase(presupuestoId, nuevoEstado, fechaVencimiento);
-      if (presupuestoActualizado) {
-        console.log('✅ [NegocioContext] Presupuesto actualizado en DB exitosamente');
-        
-        // Update local state first
-        setNegocios(prevNegocios =>
-          prevNegocios.map(negocio =>
-            negocio.id === negocioId
-              ? {
-                  ...negocio,
-                  presupuestos: negocio.presupuestos.map(presupuesto =>
-                    presupuesto.id === presupuestoId ? { ...presupuesto, ...presupuestoActualizado } : presupuesto
-                  )
-                }
-              : negocio
-          )
-        );
+      
+      if (!presupuestoActualizado) {
+        throw new Error('Failed to update presupuesto state in database');
+      }
 
-        // **FIX: Trigger business state recalculation and HubSpot sync**
-        // Wait a bit for the database trigger to recalculate the business state
+      console.log('✅ [NegocioContext] Presupuesto estado actualizado en DB:', {
+        id: presupuestoActualizado.id,
+        estado: presupuestoActualizado.estado,
+        nombre: presupuestoActualizado.nombre
+      });
+      
+      // Update local state first
+      setNegocios(prevNegocios =>
+        prevNegocios.map(negocio =>
+          negocio.id === negocioId
+            ? {
+                ...negocio,
+                presupuestos: negocio.presupuestos.map(presupuesto =>
+                  presupuesto.id === presupuestoId ? { ...presupuesto, ...presupuestoActualizado } : presupuesto
+                )
+              }
+            : negocio
+        )
+      );
+
+      // Wait for DB trigger to calculate new business state and sync with HubSpot if needed
+      if (estadoAnteriorNegocio) {
+        console.log('⏳ [NegocioContext] Esperando trigger de DB para recalcular estado...');
         setTimeout(async () => {
           try {
-            console.log('🔄 [NegocioContext] Refreshing business state after presupuesto change...');
+            console.log('🔄 [NegocioContext] Refreshing business data after state change...');
+            
             // Refresh the business data to get the updated state calculated by the trigger
             await refreshNegocios();
             
@@ -295,12 +320,15 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
           }
         }, 1000); // Wait 1 second for DB trigger to complete
       }
+      
+      console.log('✅ [NegocioContext] === FIN CAMBIO ESTADO PRESUPUESTO ===');
     } catch (error) {
-      console.error("❌ [NegocioContext] Failed to update presupuesto state:", error);
+      console.error("❌ [NegocioContext] === ERROR CAMBIO ESTADO PRESUPUESTO ===");
+      console.error("❌ [NegocioContext] Error details:", error);
+      console.error("❌ [NegocioContext] Stack trace:", error instanceof Error ? error.stack : 'No stack trace');
       throw error;
     }
   };
-
   const cambiarEstadoNegocio = async (negocioId: string, nuevoEstado: EstadoNegocio): Promise<void> => {
     try {
       console.log('🔄 [NegocioContext] ==> CAMBIANDO ESTADO DE NEGOCIO <==');

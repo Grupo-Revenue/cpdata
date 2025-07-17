@@ -240,12 +240,20 @@ export const eliminarPresupuestoEnSupabase = async (presupuestoId: string): Prom
 
 export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, nuevoEstado: EstadoPresupuesto, fechaVencimiento?: string): Promise<Presupuesto | null> => {
   try {
-    console.log('📝 [Presupuesto Service] Cambiando estado de presupuesto:', { presupuestoId, nuevoEstado });
+    console.log('📝 [Presupuesto Service] === INICIO CAMBIO ESTADO DB ===');
+    console.log('📝 [Presupuesto Service] Parámetros:', { presupuestoId, nuevoEstado, fechaVencimiento });
+
+    // Validar parámetros
+    if (!presupuestoId || !nuevoEstado) {
+      throw new Error('Parámetros inválidos: presupuestoId y nuevoEstado son requeridos');
+    }
 
     const updates: { estado: EstadoPresupuesto; fecha_vencimiento?: string } = { estado: nuevoEstado };
     if (fechaVencimiento) {
       updates.fecha_vencimiento = fechaVencimiento;
     }
+
+    console.log('📝 [Presupuesto Service] Updates a enviar:', updates);
 
     const { data, error } = await supabase
       .from('presupuestos')
@@ -255,9 +263,23 @@ export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, 
       .single();
 
     if (error) {
-      console.error("Error updating presupuesto state:", error);
+      console.error("❌ [Presupuesto Service] Error updating presupuesto state:", error);
+      console.error("❌ [Presupuesto Service] Error details:", error.details);
+      console.error("❌ [Presupuesto Service] Error hint:", error.hint);
+      console.error("❌ [Presupuesto Service] Error code:", error.code);
       throw error;
     }
+
+    if (!data) {
+      console.error("❌ [Presupuesto Service] No data returned from update");
+      throw new Error('No se recibieron datos del servidor después de la actualización');
+    }
+
+    console.log('✅ [Presupuesto Service] Presupuesto actualizado exitosamente:', {
+      id: data.id,
+      estado: data.estado,
+      nombre: data.nombre
+    });
 
     // Si el estado cambia a 'publicado', crear automáticamente el link público
     if (nuevoEstado === 'publicado' && data?.negocio_id) {
@@ -286,12 +308,22 @@ export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, 
 
     // Trigger HubSpot amount sync after successful state change
     if (data?.negocio_id) {
-      await triggerHubSpotAmountSync(data.negocio_id);
+      try {
+        console.log('💰 [Presupuesto Service] Triggering HubSpot amount sync...');
+        await triggerHubSpotAmountSync(data.negocio_id);
+        console.log('✅ [Presupuesto Service] HubSpot amount sync triggered successfully');
+      } catch (syncError) {
+        console.error('⚠️ [Presupuesto Service] Error triggering HubSpot amount sync:', syncError);
+        // No fallar el cambio de estado si falla la sincronización
+      }
     }
 
+    console.log('✅ [Presupuesto Service] === FIN CAMBIO ESTADO DB ===');
     return data as Presupuesto;
   } catch (error) {
-    console.error("Failed to update presupuesto state:", error);
+    console.error("❌ [Presupuesto Service] === ERROR CAMBIO ESTADO DB ===");
+    console.error("❌ [Presupuesto Service] Error details:", error);
+    console.error("❌ [Presupuesto Service] Stack trace:", error instanceof Error ? error.stack : 'No stack trace');
     return null;
   }
 };

@@ -25,7 +25,29 @@ export const useBusinessDetailActions = (negocioId: string) => {
   };
 
   const handleCambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string): Promise<void> => {
-    await cambiarEstadoPresupuesto(negocioId, presupuestoId, nuevoEstado as EstadoPresupuesto, fechaVencimiento);
+    try {
+      console.log('🚀 [BusinessDetailActions] === INICIO CAMBIO ESTADO ===');
+      console.log('🚀 [BusinessDetailActions] Parámetros:', { negocioId, presupuestoId, nuevoEstado, fechaVencimiento });
+      
+      await cambiarEstadoPresupuesto(negocioId, presupuestoId, nuevoEstado as EstadoPresupuesto, fechaVencimiento);
+      
+      console.log('✅ [BusinessDetailActions] Cambio de estado completado exitosamente');
+      
+      toast({
+        title: "Estado actualizado",
+        description: "El estado del presupuesto se ha actualizado correctamente."
+      });
+    } catch (error) {
+      console.error('❌ [BusinessDetailActions] Error cambiando estado:', error);
+      
+      toast({
+        variant: "destructive",
+        title: "Error al cambiar estado",
+        description: error instanceof Error ? error.message : "No se pudo cambiar el estado del presupuesto."
+      });
+      
+      throw error;
+    }
   };
 
   const handleRefresh = async () => {
