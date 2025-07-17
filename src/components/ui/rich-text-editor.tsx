@@ -78,9 +78,15 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   // Update content when value prop changes (from external source)
   useEffect(() => {
-    if (editorRef.current && value !== lastValue && !isUpdatingRef.current) {
+    if (!editorRef.current) return;
+    
+    console.log('RichTextEditor useEffect:', { value, lastValue, isUpdating: isUpdatingRef.current });
+    
+    // Update content if value changed and we're not in the middle of an internal update
+    if (value !== lastValue && !isUpdatingRef.current) {
+      console.log('Updating editor content:', value);
       const cursorPosition = saveCursorPosition(editorRef.current);
-      editorRef.current.innerHTML = value;
+      editorRef.current.innerHTML = value || '';
       setLastValue(value);
       
       // Restore cursor position after a brief delay to ensure DOM is updated
@@ -90,7 +96,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         }
       }, 0);
     }
-  }, [value, lastValue]);
+  }, [value]);
 
   const executeCommand = useCallback((command: string, value?: string) => {
     const editor = editorRef.current;
