@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Search, Package, Plus } from 'lucide-react';
 import { ProductoBiblioteca } from '@/hooks/useProductosBiblioteca';
-import { formatearPrecio } from '@/utils/formatters';
+import { formatearPrecio, stripHtml } from '@/utils/formatters';
 import { ProductoPresupuesto } from '@/types';
 
 interface ProductsSelectionTableProps {
@@ -148,7 +148,7 @@ const ProductsSelectionTable: React.FC<ProductsSelectionTableProps> = ({
                       <div>
                         <div className="font-medium">{producto.nombre}</div>
                         {producto.descripcion && (
-                          <div className="text-sm text-gray-600">{producto.descripcion}</div>
+                          <div className="text-sm text-gray-600">{stripHtml(producto.descripcion, 100)}</div>
                         )}
                       </div>
                     </TableCell>
