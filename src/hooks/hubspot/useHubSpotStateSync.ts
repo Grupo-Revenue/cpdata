@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -9,10 +10,9 @@ export const useHubSpotStateSync = () => {
   const syncStateToHubSpot = useCallback(async (negocioId: string, estadoAnterior: EstadoNegocio, estadoNuevo: EstadoNegocio) => {
     console.log(`🔄 [HubSpot State Sync] STARTING sync for ${negocioId}: ${estadoAnterior} → ${estadoNuevo}`);
     console.log('🔄 [HubSpot State Sync] Function called at:', new Date().toISOString());
-    console.log('🔄 [HubSpot State Sync] Input params:', { negocioId, estadoAnterior, estadoNuevo });
     
     try {
-      // Step 1: Get business data
+      // Step 1: Verify business exists and has HubSpot ID
       console.log('📊 [HubSpot State Sync] Step 1: Getting business data...');
       const { data: negocioData, error: negocioError } = await supabase
         .from('negocios')
@@ -37,9 +37,49 @@ export const useHubSpotStateSync = () => {
         return;
       }
 
-      // Step 2: Call edge function
-      console.log('🚀 [HubSpot State Sync] Step 2: Calling edge function...');
-      const { data, error } = await supabase.functions.invoke('hubspot-deal-update', {
+      // Step 2: Check if we have an active global HubSpot API key
+      console.log('🔑 [HubSpot State Sync] Step 2: Checking for active HubSpot API key...');
+      const { data: apiKeyData, error: apiKeyError } = await supabase
+        .from('hubspot_api_keys')
+        .select('activo')
+        .eq('activo', true)
+        .maybeSingle();
+
+      console.log('🔑 [HubSpot State Sync] API key check result:', { hasApiKey: !!apiKeyData, error: apiKeyError });
+
+      if (apiKeyError || !apiKeyData) {
+        console.warn(`[HubSpot State Sync] No active HubSpot API key found`);
+        toast({
+          variant: "destructive",
+          title: "Error de configuración",
+          description: "No se encontró una API key activa de HubSpot"
+        });
+        return;
+      }
+
+      // Step 3: Check if we have stage mapping for this state
+      console.log('🎯 [HubSpot State Sync] Step 3: Checking stage mapping...');
+      const { data: stageMappingData, error: stageMappingError } = await supabase
+        .from('hubspot_stage_mapping')
+        .select('stage_id')
+        .eq('estado_negocio', estadoNuevo)
+        .maybeSingle();
+
+      console.log('🎯 [HubSpot State Sync] Stage mapping result:', { hasMapping: !!stageMappingData, error: stageMappingError });
+
+      if (stageMappingError || !stageMappingData) {
+        console.warn(`[HubSpot State Sync] No stage mapping found for estado: ${estadoNuevo}`);
+        toast({
+          variant: "destructive",
+          title: "Error de configuración",
+          description: `No se encontró mapeo de etapa para el estado: ${estadoNuevo}`
+        });
+        return;
+      }
+
+      // Step 4: Call the edge function to update HubSpot deal stage
+      console.log('🚀 [HubSpot State Sync] Step 4: Calling edge function...');
+      const { data: syncData, error: syncError } = await supabase.functions.invoke('hubspot-deal-update', {
         body: {
           negocio_id: negocioId,
           estado_anterior: estadoAnterior,
@@ -47,35 +87,35 @@ export const useHubSpotStateSync = () => {
         }
       });
 
-      console.log('🚀 [HubSpot State Sync] Edge function result:', { data, error });
+      console.log('🚀 [HubSpot State Sync] Edge function result:', { data: syncData, error: syncError });
 
-      if (error) {
-        console.error('❌ [HubSpot State Sync] Edge function error:', error);
+      if (syncError) {
+        console.error(`[HubSpot State Sync] Error syncing state for negocio ${negocioId}:`, syncError);
         toast({
           variant: "destructive",
           title: "Error de sincronización",
-          description: `Error: ${error.message}`
+          description: "Error al actualizar estado en HubSpot"
         });
         return;
       }
 
-      if (data?.success) {
+      if (syncData?.success) {
         console.log('✅ [HubSpot State Sync] SUCCESS - Deal stage updated successfully');
         toast({
           title: "Estado sincronizado",
           description: "Estado actualizado en HubSpot correctamente"
         });
       } else {
-        console.error('❌ [HubSpot State Sync] Edge function returned error:', data);
+        console.error('❌ [HubSpot State Sync] Edge function returned error:', syncData);
         toast({
           variant: "destructive",
           title: "Error de sincronización",
-          description: data?.error || "Error desconocido al sincronizar"
+          description: syncData?.error || "Error desconocido al sincronizar"
         });
       }
 
     } catch (error) {
-      console.error('💥 [HubSpot State Sync] Unexpected error:', error);
+      console.error(`💥 [HubSpot State Sync] Unexpected error syncing negocio ${negocioId}:`, error);
       toast({
         variant: "destructive",
         title: "Error de sincronización",

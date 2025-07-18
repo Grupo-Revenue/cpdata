@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -28,26 +29,13 @@ serve(async (req) => {
       authHeaderLength: authHeader?.length
     })
 
-    // Initialize Supabase client with appropriate key
-    const supabaseKey = isFromTrigger 
-      ? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      : Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    
+    // Initialize Supabase client with service role for database operations
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      supabaseKey,
-      {
-        global: {
-          headers: isFromTrigger ? {} : { Authorization: authHeader! },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    console.log('✅ [HubSpot Deal Update] Supabase client initialized:', {
-      url: Deno.env.get('SUPABASE_URL'),
-      keyType: isFromTrigger ? 'SERVICE_ROLE' : 'ANON',
-      hasAuth: !!authHeader
-    })
+    console.log('✅ [HubSpot Deal Update] Supabase client initialized with SERVICE_ROLE')
 
     // Parse request body
     const { negocio_id, estado_anterior, estado_nuevo } = await req.json()
@@ -102,45 +90,50 @@ serve(async (req) => {
       )
     }
 
-    // Get user's active HubSpot API key
+    // Get the global active HubSpot API key (not user-specific)
     const { data: apiKeyData, error: apiKeyError } = await supabaseClient
       .from('hubspot_api_keys')
-      .select('api_key')
-      .eq('user_id', negocio.user_id)
+      .select('api_key, user_id')
       .eq('activo', true)
-      .single()
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
-    console.log('🔑 [HubSpot Deal Update] API key retrieval:', {
-      user_id: negocio.user_id,
+    console.log('🔑 [HubSpot Deal Update] Global API key retrieval:', {
       hasApiKey: !!apiKeyData,
+      apiKeyUserId: apiKeyData?.user_id,
+      businessUserId: negocio.user_id,
       error: apiKeyError
     })
 
     if (apiKeyError || !apiKeyData) {
-      console.error('❌ [HubSpot Deal Update] Error getting HubSpot API key:', apiKeyError)
+      console.error('❌ [HubSpot Deal Update] Error getting global HubSpot API key:', apiKeyError)
       return new Response(
-        JSON.stringify({ error: 'No active HubSpot API key found' }),
+        JSON.stringify({ error: 'No active global HubSpot API key found' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Get stage mapping for the new state
+    // Get stage mapping for the new state (global mapping, not user-specific)
     const { data: stageMapping, error: mappingError } = await supabaseClient
       .from('hubspot_stage_mapping')
-      .select('stage_id')
-      .eq('user_id', negocio.user_id)
+      .select('stage_id, user_id')
       .eq('estado_negocio', estado_nuevo)
-      .single()
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
     console.log('🎯 [HubSpot Deal Update] Stage mapping retrieval:', {
-      user_id: negocio.user_id,
       estado_nuevo,
       stageMapping,
       error: mappingError
     })
 
     if (mappingError || !stageMapping) {
-      console.warn('⚠️ [HubSpot Deal Update] No stage mapping found for this state:', { estado_nuevo, user_id: negocio.user_id, error: mappingError })
+      console.warn('⚠️ [HubSpot Deal Update] No stage mapping found for this state:', { 
+        estado_nuevo, 
+        error: mappingError 
+      })
       return new Response(
         JSON.stringify({ message: 'No stage mapping configured for this state' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -151,15 +144,6 @@ serve(async (req) => {
       dealId: negocio.hubspot_id,
       stageId: stageMapping.stage_id,
       estado_nuevo
-    })
-
-    console.log('🚀 [HubSpot Deal Update] Sending PATCH request to HubSpot:', {
-      url: `https://api.hubapi.com/crm/v3/objects/deals/${negocio.hubspot_id}`,
-      body: {
-        properties: {
-          dealstage: stageMapping.stage_id
-        }
-      }
     })
 
     // Update deal stage in HubSpot
@@ -179,23 +163,50 @@ serve(async (req) => {
       }
     )
 
+    const responseText = await updateResponse.text()
+    console.log('📡 [HubSpot Deal Update] HubSpot API response:', {
+      status: updateResponse.status,
+      statusText: updateResponse.statusText,
+      responseText: responseText.substring(0, 500) // Log first 500 chars
+    })
+
     if (!updateResponse.ok) {
-      const errorText = await updateResponse.text()
-      console.error('❌ [HubSpot Deal Update] HubSpot API error:', errorText)
+      console.error('❌ [HubSpot Deal Update] HubSpot API error:', {
+        status: updateResponse.status,
+        statusText: updateResponse.statusText,
+        response: responseText
+      })
       return new Response(
         JSON.stringify({ 
           error: 'Failed to update deal stage in HubSpot',
-          details: errorText
+          details: responseText
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const updatedDeal = await updateResponse.json()
+    const updatedDeal = JSON.parse(responseText)
     console.log('✅ [HubSpot Deal Update] Successfully updated HubSpot deal stage:', {
       dealId: updatedDeal.id,
       stageId: stageMapping.stage_id
     })
+
+    // Update the sync log status to success
+    const updateLogResult = await supabaseClient
+      .from('hubspot_sync_log')
+      .update({
+        status: 'success',
+        processed_at: new Date().toISOString(),
+        response_payload: updatedDeal,
+        execution_time_ms: Date.now() // Simple execution time tracking
+      })
+      .eq('negocio_id', negocio_id)
+      .eq('operation_type', 'estado_change')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    console.log('📝 [HubSpot Deal Update] Sync log updated:', updateLogResult)
 
     return new Response(
       JSON.stringify({ 
