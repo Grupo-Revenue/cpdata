@@ -304,13 +304,7 @@ export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, 
       numeroNegocio: presupuestoData.negocios.numero
     });
 
-    // Verificar si el usuario es propietario del negocio
-    if (presupuestoData.negocios.user_id !== user.id) {
-      console.error('🚫 [presupuestoService] Usuario no es propietario del negocio');
-      throw new Error(`No puedes modificar presupuestos del negocio #${presupuestoData.negocios.numero} porque no te pertenece`);
-    }
-
-    console.log('✅ [presupuestoService] Usuario es propietario, procediendo con actualización...');
+    console.log('✅ [presupuestoService] Usuario autorizado, procediendo con actualización...');
 
     const updates: { estado: EstadoPresupuesto; fecha_vencimiento?: string } = { estado: nuevoEstado };
     if (fechaVencimiento) {
