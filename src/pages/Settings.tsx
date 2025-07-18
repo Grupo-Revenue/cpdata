@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import DashboardLayout from "@/components/layouts/DashboardLayout";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Profile from "@/components/settings/Profile"
 import Brand from "@/components/settings/Brand"
