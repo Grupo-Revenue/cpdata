@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Users, Edit, Trash2, FileText, Send, Check, X, Loader2 } from 'lucide-react';
 import { Presupuesto } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
+import { getQuoteStatusColors, getQuoteStatusText } from '@/utils/quoteCalculations';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -38,18 +38,6 @@ const CompactPresupuestosList: React.FC<CompactPresupuestosListProps> = ({
     } catch {
       return fecha;
     }
-  };
-
-  const obtenerBadgeEstadoPresupuesto = (estado: string) => {
-    const colores = {
-      borrador: 'bg-slate-100 text-slate-700 border-slate-200',
-      publicado: 'bg-blue-100 text-blue-700 border-blue-200',
-      aprobado: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-      rechazado: 'bg-red-100 text-red-700 border-red-200',
-      vencido: 'bg-orange-100 text-orange-700 border-orange-200',
-      cancelado: 'bg-slate-100 text-slate-700 border-slate-200'
-    };
-    return colores[estado as keyof typeof colores] || 'bg-slate-100 text-slate-700 border-slate-200';
   };
 
   const handleEliminarPresupuesto = async (presupuestoId: string) => {
@@ -148,9 +136,9 @@ const CompactPresupuestosList: React.FC<CompactPresupuestosListProps> = ({
                 <h4 className="font-semibold text-slate-900">{presupuesto.nombre}</h4>
                 <Badge 
                   variant="outline"
-                  className={`${obtenerBadgeEstadoPresupuesto(presupuesto.estado)} border text-xs`}
+                  className={`${getQuoteStatusColors(presupuesto.estado)} border text-xs`}
                 >
-                  {presupuesto.estado.charAt(0).toUpperCase() + presupuesto.estado.slice(1)}
+                  {getQuoteStatusText(presupuesto.estado)}
                 </Badge>
               </div>
               

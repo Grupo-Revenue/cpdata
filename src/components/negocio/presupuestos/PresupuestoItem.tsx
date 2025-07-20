@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Send, Check, X } from 'lucide-react';
 import { Presupuesto } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
+import { getQuoteStatusColors, getQuoteStatusText } from '@/utils/quoteCalculations';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import PresupuestoActions from './PresupuestoActions';
@@ -38,18 +38,6 @@ const PresupuestoItem: React.FC<PresupuestoItemProps> = ({
     }
   };
 
-  const obtenerBadgeEstadoPresupuesto = (estado: string) => {
-    const colores = {
-      borrador: 'bg-slate-100 text-slate-700 border-slate-200',
-      publicado: 'bg-blue-100 text-blue-700 border-blue-200',
-      aprobado: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-      rechazado: 'bg-red-100 text-red-700 border-red-200',
-      vencido: 'bg-orange-100 text-orange-700 border-orange-200',
-      cancelado: 'bg-slate-100 text-slate-700 border-slate-200'
-    };
-    return colores[estado as keyof typeof colores] || 'bg-slate-100 text-slate-700 border-slate-200';
-  };
-
   return (
     <Card className="hover:shadow-md transition-all duration-200 border-slate-200 border-l-4 border-l-slate-900">
       <CardContent className="p-6">
@@ -59,9 +47,9 @@ const PresupuestoItem: React.FC<PresupuestoItemProps> = ({
               <h3 className="text-xl font-bold text-slate-900">{presupuesto.nombre}</h3>
               <Badge 
                 variant="outline"
-                className={`${obtenerBadgeEstadoPresupuesto(presupuesto.estado)} border font-medium`}
+                className={`${getQuoteStatusColors(presupuesto.estado)} border font-medium`}
               >
-                {presupuesto.estado.charAt(0).toUpperCase() + presupuesto.estado.slice(1)}
+                {getQuoteStatusText(presupuesto.estado)}
               </Badge>
             </div>
             

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,9 +8,9 @@ import { Plus, Calendar, FileText } from 'lucide-react';
 import { Negocio, Presupuesto } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
 import { calcularValorNegocio } from '@/utils/businessCalculations';
+import { getQuoteStatusBadgeVariant, getQuoteStatusText } from '@/utils/quoteCalculations';
 import PresupuestoTableActions from './PresupuestoTableActions';
 import PresupuestoEstadoDialog from './PresupuestoEstadoDialog';
-
 
 interface PresupuestosTableProps {
   negocio: Negocio;
@@ -22,38 +21,6 @@ interface PresupuestosTableProps {
   onCambiarEstado?: (presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string) => Promise<void>;
   onRefresh: () => void;
 }
-
-const getEstadoBadgeVariant = (estado: string) => {
-  switch (estado) {
-    case 'aprobado':
-      return 'default';
-    case 'publicado':
-      return 'secondary';
-    case 'rechazado':
-      return 'destructive';
-    default:
-      return 'outline';
-  }
-};
-
-const getEstadoText = (estado: string) => {
-  switch (estado) {
-    case 'borrador':
-      return 'Borrador';
-    case 'publicado':
-      return 'Publicado';
-    case 'aprobado':
-      return 'Aprobado';
-    case 'rechazado':
-      return 'Rechazado';
-    case 'vencido':
-      return 'Vencido';
-    case 'cancelado':
-      return 'Cancelado';
-    default:
-      return estado;
-  }
-};
 
 const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
   negocio,
@@ -215,10 +182,10 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
                       
                       <TableCell>
                         <Badge 
-                          variant={getEstadoBadgeVariant(presupuesto.estado)}
+                          variant={getQuoteStatusBadgeVariant(presupuesto.estado)}
                           className="font-medium"
                         >
-                          {getEstadoText(presupuesto.estado)}
+                          {getQuoteStatusText(presupuesto.estado)}
                         </Badge>
                       </TableCell>
                       
