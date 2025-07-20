@@ -8,7 +8,7 @@ import { Plus, Calendar, FileText } from 'lucide-react';
 import { Negocio, Presupuesto } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
 import { calcularValorNegocio } from '@/utils/businessCalculations';
-import { getQuoteStatusBadgeVariant, getQuoteStatusText } from '@/utils/quoteCalculations';
+import { getQuoteStatusColors, getQuoteStatusText } from '@/utils/quoteCalculations';
 import PresupuestoTableActions from './PresupuestoTableActions';
 import PresupuestoEstadoDialog from './PresupuestoEstadoDialog';
 
@@ -182,8 +182,7 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
                       
                       <TableCell>
                         <Badge 
-                          variant={getQuoteStatusBadgeVariant(presupuesto.estado)}
-                          className="font-medium"
+                          className={`font-medium ${getQuoteStatusColors(presupuesto.estado)}`}
                         >
                           {getQuoteStatusText(presupuesto.estado)}
                         </Badge>
