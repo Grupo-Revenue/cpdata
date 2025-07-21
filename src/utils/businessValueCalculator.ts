@@ -24,10 +24,10 @@ export const calculateBusinessValue = (negocio: Negocio): number => {
     return sentTotal;
   }
 
-  // If no sent budgets, use draft budgets
-  const draftTotal = negocio.presupuestos
-    .filter(p => p.estado === 'borrador')
+  // If no sent budgets, use rejected budgets
+  const rejectedTotal = negocio.presupuestos
+    .filter(p => p.estado === 'rechazado')
     .reduce((sum, p) => sum + parseFloat(String(p.total || '0')), 0);
 
-  return draftTotal;
+  return rejectedTotal;
 };

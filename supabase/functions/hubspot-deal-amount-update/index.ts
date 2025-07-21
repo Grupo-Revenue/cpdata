@@ -107,7 +107,7 @@ serve(async (req) => {
     // Calculate business amount if not provided
     let businessAmount = amount;
     if (businessAmount === undefined || businessAmount === null) {
-      // Calculate total value based on presupuestos priority:
+      // Calculate total value based on presupuestos priority (excluding drafts):
       // 1. Sum all approved budgets first (highest priority)
       const approvedTotal = negocio.presupuestos
         .filter(p => p.estado === 'aprobado')
@@ -118,17 +118,17 @@ serve(async (req) => {
       } else {
         // 2. If no approved budgets, use sent budgets
         const sentTotal = negocio.presupuestos
-          .filter(p => p.estado === 'enviado')
+          .filter(p => p.estado === 'publicado')
           .reduce((sum, p) => sum + parseFloat(String(p.total || '0')), 0);
 
         if (sentTotal > 0) {
           businessAmount = sentTotal;
         } else {
-          // 3. If no sent budgets, use draft budgets
-          const draftTotal = negocio.presupuestos
-            .filter(p => p.estado === 'borrador')
+          // 3. If no sent budgets, use rejected budgets
+          const rejectedTotal = negocio.presupuestos
+            .filter(p => p.estado === 'rechazado')
             .reduce((sum, p) => sum + parseFloat(String(p.total || '0')), 0);
-          businessAmount = draftTotal;
+          businessAmount = rejectedTotal;
         }
       }
     }
@@ -142,7 +142,8 @@ serve(async (req) => {
       originalAmount: amount,
       calculatedAmount: businessAmount,
       trigger_source: trigger_source || 'unknown',
-      presupuestos_count: negocio.presupuestos?.length || 0
+      presupuestos_count: negocio.presupuestos?.length || 0,
+      excluded_drafts: negocio.presupuestos?.filter(p => p.estado === 'borrador').length || 0
     })
 
     // Update deal amount in HubSpot

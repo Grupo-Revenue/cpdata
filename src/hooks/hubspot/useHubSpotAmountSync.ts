@@ -1,7 +1,8 @@
+
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { calcularValorNegocio } from '@/utils/businessCalculations';
+import { calculateBusinessValue } from '@/utils/businessValueCalculator';
 
 export const useHubSpotAmountSync = () => {
   const { toast } = useToast();
@@ -37,20 +38,22 @@ export const useHubSpotAmountSync = () => {
         return;
       }
 
-      // Calculate new total value
-      const newAmount = calcularValorNegocio(negocioData as any);
+      // Calculate new total value using the updated calculator
+      const newAmount = calculateBusinessValue(negocioData as any);
       
       console.log('💰 [HubSpot Amount Sync] Calculated new business amount:', {
         negocio_id: negocioId,
         new_amount: newAmount,
-        hubspot_id: negocioData.hubspot_id
+        hubspot_id: negocioData.hubspot_id,
+        excluded_drafts: negocioData.presupuestos?.filter(p => p.estado === 'borrador').length || 0
       });
 
       // Call edge function to update amount in HubSpot
       const { data, error } = await supabase.functions.invoke('hubspot-deal-amount-update', {
         body: {
           negocio_id: negocioId,
-          amount: newAmount
+          amount: newAmount,
+          trigger_source: 'manual_sync'
         }
       });
 
