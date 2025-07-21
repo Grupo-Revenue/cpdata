@@ -25,6 +25,33 @@ const triggerHubSpotAmountSync = async (negocioId: string) => {
   }
 };
 
+// Function to create public link for approved/invoiced presupuestos
+const createPublicLinkIfEligible = async (presupuestoId: string, negocioId: string, estado: string, facturado: boolean) => {
+  const shouldCreateLink = estado === 'publicado' || estado === 'aprobado' || facturado;
+  
+  if (shouldCreateLink) {
+    try {
+      console.log('🔗 [Presupuesto Service] Creating public link for presupuesto:', presupuestoId, { estado, facturado });
+      
+      const { error: linkError } = await supabase.functions.invoke('hubspot-link-manager', {
+        body: {
+          presupuesto_id: presupuestoId,
+          negocio_id: negocioId,
+          regenerate: false
+        }
+      });
+
+      if (linkError) {
+        console.error('⚠️ [Presupuesto Service] Error creating public link:', linkError);
+      } else {
+        console.log('✅ [Presupuesto Service] Public link created successfully');
+      }
+    } catch (linkError) {
+      console.error('⚠️ [Presupuesto Service] Unexpected error creating public link:', linkError);
+    }
+  }
+};
+
 export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoData: Omit<Presupuesto, 'id' | 'created_at' | 'updated_at'>): Promise<Presupuesto | null> => {
   try {
     console.log('🔥 [crearPresupuestoEnSupabase] Starting presupuesto creation');
@@ -124,6 +151,14 @@ export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoD
     // Trigger HubSpot amount sync after successful presupuesto creation
     await triggerHubSpotAmountSync(negocioId);
     
+    // Create public link if presupuesto is eligible
+    await createPublicLinkIfEligible(
+      presupuestoCreado.id, 
+      negocioId, 
+      presupuestoCreado.estado, 
+      presupuestoCreado.facturado || false
+    );
+    
     return presupuestoCompleto;
   } catch (error) {
     console.error("Failed to create presupuesto:", error);
@@ -199,6 +234,14 @@ export const actualizarPresupuestoEnSupabase = async (
 
     // Trigger HubSpot amount sync after successful presupuesto update
     await triggerHubSpotAmountSync(negocioId);
+
+    // Create public link if presupuesto is eligible
+    await createPublicLinkIfEligible(
+      presupuestoId, 
+      negocioId, 
+      data.estado, 
+      data.facturado || false
+    );
 
     return data as Presupuesto;
   } catch (error) {
@@ -277,6 +320,7 @@ export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, 
       .select(`
         id,
         negocio_id,
+        facturado,
         negocios!inner(
           id,
           user_id,
@@ -301,7 +345,8 @@ export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, 
       negocioId: presupuestoData.negocio_id,
       propietario: presupuestoData.negocios.user_id,
       usuarioActual: user.id,
-      numeroNegocio: presupuestoData.negocios.numero
+      numeroNegocio: presupuestoData.negocios.numero,
+      facturado: presupuestoData.facturado
     });
 
     console.log('✅ [presupuestoService] Usuario autorizado, procediendo con actualización...');
@@ -362,33 +407,17 @@ export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, 
     console.log('✅ [Presupuesto Service] Presupuesto actualizado exitosamente:', {
       id: data.id,
       estado: data.estado,
-      nombre: data.nombre
+      nombre: data.nombre,
+      facturado: data.facturado
     });
 
-    // Si el estado cambia a 'publicado', crear automáticamente el link público
-    if (nuevoEstado === 'publicado' && data?.negocio_id) {
-      try {
-        console.log('🔗 [Presupuesto Service] Creando link público automáticamente');
-        
-        const { error: linkError } = await supabase.functions.invoke('hubspot-link-manager', {
-          body: {
-            presupuesto_id: presupuestoId,
-            negocio_id: data.negocio_id,
-            regenerate: false
-          }
-        });
-
-        if (linkError) {
-          console.error('⚠️ [Presupuesto Service] Error creando link público:', linkError);
-          // No fallar el cambio de estado si falla la creación del link
-        } else {
-          console.log('✅ [Presupuesto Service] Link público creado exitosamente');
-        }
-      } catch (linkError) {
-        console.error('⚠️ [Presupuesto Service] Error inesperado creando link público:', linkError);
-        // No fallar el cambio de estado si falla la creación del link
-      }
-    }
+    // Crear link público si el presupuesto es elegible (publicado, aprobado o facturado)
+    await createPublicLinkIfEligible(
+      presupuestoId, 
+      data.negocio_id, 
+      data.estado, 
+      data.facturado || false
+    );
 
     // Trigger HubSpot amount sync after successful state change
     if (data?.negocio_id) {

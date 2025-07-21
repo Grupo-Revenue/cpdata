@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Copy, ExternalLink, Eye } from 'lucide-react';
+import { Copy, ExternalLink, Eye, Plus, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePublicLinkManager } from '@/hooks/usePublicLinkManager';
 
@@ -8,9 +9,15 @@ interface PublicLinkDisplayProps {
   presupuestoId: string;
   negocioId: string;
   estadoPresupuesto: string;
+  facturado?: boolean;
 }
 
-const PublicLinkDisplay: React.FC<PublicLinkDisplayProps> = ({ presupuestoId, negocioId, estadoPresupuesto }) => {
+const PublicLinkDisplay: React.FC<PublicLinkDisplayProps> = ({ 
+  presupuestoId, 
+  negocioId, 
+  estadoPresupuesto, 
+  facturado = false 
+}) => {
   const { toast } = useToast();
   const { 
     currentLink, 
@@ -20,24 +27,36 @@ const PublicLinkDisplay: React.FC<PublicLinkDisplayProps> = ({ presupuestoId, ne
     syncLinkFromHubSpot
   } = usePublicLinkManager({ presupuestoId, negocioId });
 
+  const [isCreatingLink, setIsCreatingLink] = useState(false);
+
+  // Determine if the presupuesto is eligible for public links
+  const isEligibleForLink = estadoPresupuesto === 'publicado' || 
+                           estadoPresupuesto === 'aprobado' || 
+                           facturado;
+
   useEffect(() => {
     const loadOrCreateLink = async () => {
+      console.log('🔗 [PublicLinkDisplay] Loading link for:', { presupuestoId, estadoPresupuesto, facturado, isEligible: isEligibleForLink });
+      
       const existingLink = await getExistingLink();
       
-      // Si el presupuesto está publicado pero no tiene link
-      if (!existingLink && estadoPresupuesto === 'publicado') {
+      // Si el presupuesto es elegible pero no tiene link, intentar crear uno automáticamente
+      if (!existingLink && isEligibleForLink) {
+        console.log('🔗 [PublicLinkDisplay] No existing link found, attempting to create for eligible presupuesto');
+        
         // Primero intentar sincronizar desde HubSpot
         const syncedLink = await syncLinkFromHubSpot();
         
-        // Si no se pudo sincronizar, crear uno nuevo
+        // Si no se pudo sincronizar, crear uno nuevo automáticamente
         if (!syncedLink) {
+          console.log('🔗 [PublicLinkDisplay] No synced link, creating new one automatically');
           await createPublicLink();
         }
       }
     };
     
     loadOrCreateLink();
-  }, [presupuestoId, negocioId, estadoPresupuesto]);
+  }, [presupuestoId, negocioId, estadoPresupuesto, facturado, isEligibleForLink]);
 
   const handleCopyLink = async () => {
     if (!currentLink?.link_url) return;
@@ -64,6 +83,51 @@ const PublicLinkDisplay: React.FC<PublicLinkDisplayProps> = ({ presupuestoId, ne
     }
   };
 
+  const handleCreateLink = async () => {
+    setIsCreatingLink(true);
+    try {
+      await createPublicLink();
+      toast({
+        title: "Link creado",
+        description: "El enlace público ha sido creado exitosamente.",
+      });
+    } catch (error) {
+      console.error('Error creating link:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo crear el enlace público.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingLink(false);
+    }
+  };
+
+  const handleSyncFromHubSpot = async () => {
+    try {
+      const syncedLink = await syncLinkFromHubSpot();
+      if (syncedLink) {
+        toast({
+          title: "Link sincronizado",
+          description: "El enlace ha sido recuperado desde HubSpot.",
+        });
+      } else {
+        toast({
+          title: "No encontrado",
+          description: "No se encontró un enlace en HubSpot para este presupuesto.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error syncing from HubSpot:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo sincronizar desde HubSpot.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="text-center py-8">
@@ -73,14 +137,55 @@ const PublicLinkDisplay: React.FC<PublicLinkDisplayProps> = ({ presupuestoId, ne
     );
   }
 
+  // Show different content based on presupuesto status and link availability
+  if (!isEligibleForLink) {
+    return (
+      <div className="text-center py-8">
+        <Eye className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-lg font-semibold mb-2">Link no disponible</h3>
+        <p className="text-muted-foreground">
+          Los enlaces públicos están disponibles solo para presupuestos publicados, aprobados o facturados.
+        </p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Estado actual: <span className="font-medium">{estadoPresupuesto}</span>
+          {facturado && <span className="text-green-600 ml-2">• Facturado</span>}
+        </p>
+      </div>
+    );
+  }
+
   if (!currentLink) {
     return (
       <div className="text-center py-8">
         <Eye className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Enlace no disponible</h3>
-        <p className="text-muted-foreground">
-          Este presupuesto no tiene un enlace público o aún no ha sido enviado.
+        <h3 className="text-lg font-semibold mb-2">Sin enlace público</h3>
+        <p className="text-muted-foreground mb-4">
+          Este presupuesto es elegible para un enlace público pero no tiene uno creado.
         </p>
+        
+        <div className="flex flex-col sm:flex-row gap-2 justify-center">
+          <Button
+            onClick={handleCreateLink}
+            disabled={isCreatingLink}
+            className="flex items-center gap-2"
+          >
+            {isCreatingLink ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
+            {isCreatingLink ? 'Creando...' : 'Crear Link'}
+          </Button>
+          
+          <Button
+            variant="outline"
+            onClick={handleSyncFromHubSpot}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Sincronizar desde HubSpot
+          </Button>
+        </div>
       </div>
     );
   }
@@ -126,6 +231,12 @@ const PublicLinkDisplay: React.FC<PublicLinkDisplayProps> = ({ presupuestoId, ne
             </span>
           )}
         </div>
+
+        {currentLink.hubspot_property && (
+          <div className="text-xs text-muted-foreground">
+            Sincronizado con HubSpot: <span className="font-mono">{currentLink.hubspot_property}</span>
+          </div>
+        )}
 
         <div className="flex space-x-2">
           <Button onClick={handleCopyLink} className="flex-1">

@@ -1,7 +1,8 @@
+
 import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Copy, RefreshCw, ExternalLink, Share, Loader2 } from 'lucide-react';
+import { Copy, RefreshCw, ExternalLink, Share, Loader2, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePublicLinkManager } from '@/hooks/usePublicLinkManager';
 
@@ -9,9 +10,15 @@ interface PublicLinkManagerProps {
   presupuestoId: string;
   negocioId: string;
   estadoPresupuesto?: string;
+  facturado?: boolean;
 }
 
-const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId, negocioId, estadoPresupuesto }) => {
+const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ 
+  presupuestoId, 
+  negocioId, 
+  estadoPresupuesto,
+  facturado = false
+}) => {
   const { toast } = useToast();
   const { 
     currentLink, 
@@ -21,17 +28,26 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId, ne
     regenerateLink 
   } = usePublicLinkManager({ presupuestoId, negocioId });
 
+  // Determine if the presupuesto is eligible for public links
+  const isEligibleForLink = estadoPresupuesto === 'publicado' || 
+                           estadoPresupuesto === 'aprobado' || 
+                           facturado;
+
   useEffect(() => {
     const fetchAndCreateLink = async () => {
+      console.log('🔗 [PublicLinkManager] Checking for existing link:', { presupuestoId, estadoPresupuesto, facturado });
+      
       const existingLink = await getExistingLink();
-      // Si no hay link pero el presupuesto está publicado, crear automáticamente
-      if (!existingLink && estadoPresupuesto === 'publicado') {
+      
+      // Si no hay link pero el presupuesto es elegible, crear automáticamente
+      if (!existingLink && isEligibleForLink) {
+        console.log('🔗 [PublicLinkManager] Creating link automatically for eligible presupuesto');
         await createPublicLink();
       }
     };
     
     fetchAndCreateLink();
-  }, [presupuestoId, negocioId, estadoPresupuesto]);
+  }, [presupuestoId, negocioId, estadoPresupuesto, facturado, isEligibleForLink]);
 
   const handleCopyLink = async () => {
     if (!currentLink?.link_url) return;
@@ -60,6 +76,42 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId, ne
   const handleRegenerateLink = async () => {
     await regenerateLink();
   };
+
+  const handleCreateLink = async () => {
+    await createPublicLink();
+  };
+
+  // Show eligibility message if presupuesto is not eligible
+  if (!isEligibleForLink) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-xl font-semibold text-foreground">Link Público</h3>
+          <p className="text-muted-foreground mt-1">
+            Comparte este presupuesto sin necesidad de autenticación
+          </p>
+        </div>
+
+        <Card className="border-dashed">
+          <CardContent className="py-12 text-center">
+            <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+              <Share className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h4 className="font-medium text-foreground mb-2">
+              Link no disponible
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              Los enlaces públicos están disponibles solo para presupuestos publicados, aprobados o facturados.
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Estado actual: <span className="font-medium">{estadoPresupuesto}</span>
+              {facturado && <span className="text-green-600 ml-2">• Facturado</span>}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -144,14 +196,21 @@ const PublicLinkManager: React.FC<PublicLinkManagerProps> = ({ presupuestoId, ne
               <Share className="h-8 w-8 text-muted-foreground" />
             </div>
             <h4 className="font-medium text-foreground mb-2">
-              {isLoading ? 'Cargando...' : 'No hay link público disponible'}
+              {isLoading ? 'Cargando...' : 'Sin link público'}
             </h4>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mb-4">
               {isLoading 
                 ? 'Verificando link existente...' 
-                : 'El link se creará automáticamente cuando se envíe el presupuesto'
+                : 'Este presupuesto es elegible para un enlace público'
               }
             </p>
+            
+            {!isLoading && (
+              <Button onClick={handleCreateLink} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Crear Link
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
