@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Copy, ExternalLink, Eye, Plus, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePublicLinkManager } from '@/hooks/usePublicLinkManager';
+import LinkRecoveryPanel from './LinkRecoveryPanel';
 
 interface PublicLinkDisplayProps {
   presupuestoId: string;
@@ -28,6 +29,7 @@ const PublicLinkDisplay: React.FC<PublicLinkDisplayProps> = ({
   } = usePublicLinkManager({ presupuestoId, negocioId });
 
   const [isCreatingLink, setIsCreatingLink] = useState(false);
+  const [showRecoveryPanel, setShowRecoveryPanel] = useState(false);
 
   // Determine if the presupuesto is eligible for public links
   const isEligibleForLink = estadoPresupuesto === 'publicado' || 
@@ -36,21 +38,25 @@ const PublicLinkDisplay: React.FC<PublicLinkDisplayProps> = ({
 
   useEffect(() => {
     const loadOrCreateLink = async () => {
-      console.log('🔗 [PublicLinkDisplay] Loading link for:', { presupuestoId, estadoPresupuesto, facturado, isEligible: isEligibleForLink });
+      console.log('🔗 [PublicLinkDisplay] Loading link for:', { 
+        presupuestoId, 
+        estadoPresupuesto, 
+        facturado, 
+        isEligible: isEligibleForLink 
+      });
       
       const existingLink = await getExistingLink();
       
-      // Si el presupuesto es elegible pero no tiene link, intentar crear uno automáticamente
+      // Si el presupuesto es elegible pero no tiene link, mostrar panel de recuperación
       if (!existingLink && isEligibleForLink) {
-        console.log('🔗 [PublicLinkDisplay] No existing link found, attempting to create for eligible presupuesto');
+        console.log('🔗 [PublicLinkDisplay] No existing link found for eligible presupuesto');
+        setShowRecoveryPanel(true);
         
-        // Primero intentar sincronizar desde HubSpot
+        // Intentar sincronizar desde HubSpot primero
         const syncedLink = await syncLinkFromHubSpot();
         
-        // Si no se pudo sincronizar, crear uno nuevo automáticamente
-        if (!syncedLink) {
-          console.log('🔗 [PublicLinkDisplay] No synced link, creating new one automatically');
-          await createPublicLink();
+        if (syncedLink) {
+          setShowRecoveryPanel(false);
         }
       }
     };
@@ -87,6 +93,7 @@ const PublicLinkDisplay: React.FC<PublicLinkDisplayProps> = ({
     setIsCreatingLink(true);
     try {
       await createPublicLink();
+      setShowRecoveryPanel(false);
       toast({
         title: "Link creado",
         description: "El enlace público ha sido creado exitosamente.",
@@ -107,6 +114,7 @@ const PublicLinkDisplay: React.FC<PublicLinkDisplayProps> = ({
     try {
       const syncedLink = await syncLinkFromHubSpot();
       if (syncedLink) {
+        setShowRecoveryPanel(false);
         toast({
           title: "Link sincronizado",
           description: "El enlace ha sido recuperado desde HubSpot.",
@@ -126,6 +134,12 @@ const PublicLinkDisplay: React.FC<PublicLinkDisplayProps> = ({
         variant: "destructive",
       });
     }
+  };
+
+  const handleLinkCreated = () => {
+    // Refresh the link data
+    getExistingLink();
+    setShowRecoveryPanel(false);
   };
 
   if (isLoading) {
@@ -156,36 +170,47 @@ const PublicLinkDisplay: React.FC<PublicLinkDisplayProps> = ({
 
   if (!currentLink) {
     return (
-      <div className="text-center py-8">
-        <Eye className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Sin enlace público</h3>
-        <p className="text-muted-foreground mb-4">
-          Este presupuesto es elegible para un enlace público pero no tiene uno creado.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row gap-2 justify-center">
-          <Button
-            onClick={handleCreateLink}
-            disabled={isCreatingLink}
-            className="flex items-center gap-2"
-          >
-            {isCreatingLink ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : (
-              <Plus className="w-4 h-4" />
-            )}
-            {isCreatingLink ? 'Creando...' : 'Crear Link'}
-          </Button>
+      <div className="space-y-6">
+        <div className="text-center py-8">
+          <Eye className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Sin enlace público</h3>
+          <p className="text-muted-foreground mb-4">
+            Este presupuesto es elegible para un enlace público pero no tiene uno creado.
+          </p>
           
-          <Button
-            variant="outline"
-            onClick={handleSyncFromHubSpot}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Sincronizar desde HubSpot
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <Button
+              onClick={handleCreateLink}
+              disabled={isCreatingLink}
+              className="flex items-center gap-2"
+            >
+              {isCreatingLink ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )}
+              {isCreatingLink ? 'Creando...' : 'Crear Link'}
+            </Button>
+            
+            <Button
+              variant="outline"
+              onClick={handleSyncFromHubSpot}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Sincronizar desde HubSpot
+            </Button>
+          </div>
         </div>
+
+        {/* Panel de recuperación y diagnóstico */}
+        {showRecoveryPanel && (
+          <LinkRecoveryPanel
+            presupuestoId={presupuestoId}
+            negocioId={negocioId}
+            onLinkCreated={handleLinkCreated}
+          />
+        )}
       </div>
     );
   }
@@ -249,6 +274,15 @@ const PublicLinkDisplay: React.FC<PublicLinkDisplayProps> = ({
           </Button>
         </div>
       </div>
+
+      {/* Panel de diagnóstico opcional */}
+      {showRecoveryPanel && (
+        <LinkRecoveryPanel
+          presupuestoId={presupuestoId}
+          negocioId={negocioId}
+          onLinkCreated={handleLinkCreated}
+        />
+      )}
     </div>
   );
 };

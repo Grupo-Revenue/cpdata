@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
@@ -11,6 +12,7 @@ interface LinkRequest {
   regenerate?: boolean;
   existing_property?: string;
   sync_from_hubspot?: boolean;
+  recovery_mode?: boolean;
 }
 
 interface HubSpotProperty {
@@ -35,7 +37,22 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { presupuesto_id, negocio_id, regenerate = false, existing_property, sync_from_hubspot = false }: LinkRequest = await req.json();
+    const { 
+      presupuesto_id, 
+      negocio_id, 
+      regenerate = false, 
+      existing_property, 
+      sync_from_hubspot = false,
+      recovery_mode = false 
+    }: LinkRequest = await req.json();
+
+    console.log('🔗 [HubSpot Link Manager] Request params:', {
+      presupuesto_id,
+      negocio_id,
+      regenerate,
+      sync_from_hubspot,
+      recovery_mode
+    });
 
     // If sync_from_hubspot is true, try to recover the link from HubSpot
     if (sync_from_hubspot) {
@@ -190,12 +207,32 @@ Deno.serve(async (req) => {
     // Get presupuesto data
     const { data: presupuesto, error: presupuestoError } = await supabase
       .from('presupuestos')
-      .select('nombre')
+      .select('nombre, estado, facturado')
       .eq('id', presupuesto_id)
       .single();
 
     if (presupuestoError || !presupuesto) {
+      console.error('❌ [HubSpot Link Manager] Presupuesto not found:', presupuestoError);
       throw new Error('Presupuesto no encontrado');
+    }
+
+    // Verify presupuesto is eligible for public link
+    const isEligible = presupuesto.estado === 'publicado' || 
+                      presupuesto.estado === 'aprobado' || 
+                      presupuesto.facturado;
+
+    if (!isEligible && !recovery_mode) {
+      console.log('⚠️ [HubSpot Link Manager] Presupuesto not eligible for public link:', {
+        estado: presupuesto.estado,
+        facturado: presupuesto.facturado
+      });
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Presupuesto not eligible for public link' 
+      }), { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
     }
 
     // Get negocio data
@@ -206,6 +243,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (negocioError || !negocio) {
+      console.error('❌ [HubSpot Link Manager] Negocio not found:', negocioError);
       throw new Error('Negocio no encontrado');
     }
 
@@ -321,7 +359,7 @@ Deno.serve(async (req) => {
         presupuesto_id,
         negocio_id,
         link_url: publicUrl,
-        hubspot_property,
+        hubspot_property: hubspotProperty,
         is_active: true,
         created_by: negocio.user_id
       })
@@ -329,6 +367,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (linkError) {
+      console.error('❌ [HubSpot Link Manager] Error creating link:', linkError);
       throw new Error(`Error creating link: ${linkError.message}`);
     }
 
@@ -338,7 +377,8 @@ Deno.serve(async (req) => {
       success: true,
       link: linkData,
       hubspot_updated: hubspotUpdateSuccess,
-      hubspot_property: hubspotProperty
+      hubspot_property: hubspotProperty,
+      recovery_mode
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
