@@ -96,16 +96,11 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Get HubSpot API key
-      const { data: hubspotKey } = await supabase
-        .from('hubspot_api_keys')
-        .select('api_key')
-        .eq('user_id', negocioData.user_id)
-        .eq('activo', true)
-        .single();
-
-      if (!hubspotKey?.api_key) {
-        console.log('⚠️ [HubSpot Link Manager] No active HubSpot API key found');
+      // Get HubSpot API key with fallback to global key
+      const apiKey = await getHubSpotApiKey(supabase, negocioData.user_id);
+      
+      if (!apiKey) {
+        console.log('⚠️ [HubSpot Link Manager] No HubSpot API key found (user or global)');
         return new Response(JSON.stringify({ 
           success: false, 
           error: 'No HubSpot API key configured' 
@@ -120,7 +115,7 @@ Deno.serve(async (req) => {
         const hubspotResponse = await fetch(`https://api.hubapi.com/crm/v3/objects/deals/${negocioData.hubspot_id}?properties=${HUBSPOT_LINK_PROPERTIES.join(',')}`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${hubspotKey.api_key}`,
+            'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json'
           }
         });
@@ -247,10 +242,6 @@ Deno.serve(async (req) => {
       throw new Error('Negocio no encontrado');
     }
 
-    if (!negocio.hubspot_id) {
-      console.log('⚠️ [HubSpot Link Manager] Negocio sin HubSpot ID, solo creando link local');
-    }
-
     // Generate public URL - detect environment from request origin
     const origin = req.headers.get('origin') || req.headers.get('referer');
     let baseUrl = 'https://ejvtuuvigcqpibpfcxch.lovable.app'; // fallback
@@ -272,24 +263,21 @@ Deno.serve(async (req) => {
     // HubSpot integration (only if we have hubspot_id)
     if (negocio.hubspot_id) {
       try {
-        // Get HubSpot API key
-        const { data: hubspotKey } = await supabase
-          .from('hubspot_api_keys')
-          .select('api_key')
-          .eq('user_id', negocio.user_id)
-          .eq('activo', true)
-          .single();
+        // Get HubSpot API key with fallback to global key
+        const apiKey = await getHubSpotApiKey(supabase, negocio.user_id);
 
-        if (!hubspotKey?.api_key) {
-          console.log('⚠️ [HubSpot Link Manager] No active HubSpot API key found');
+        if (!apiKey) {
+          console.log('⚠️ [HubSpot Link Manager] No HubSpot API key found (user or global)');
           hubspotUpdateSuccess = false;
         } else {
+          console.log('🔑 [HubSpot Link Manager] Using HubSpot API key for user:', negocio.user_id);
+          
           // Get current HubSpot deal properties
           const hubspotResponse = await fetch(
             `https://api.hubapi.com/crm/v3/objects/deals/${negocio.hubspot_id}?properties=${HUBSPOT_LINK_PROPERTIES.join(',')}`,
             {
               headers: {
-                'Authorization': `Bearer ${hubspotKey.api_key}`,
+                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
               },
             }
@@ -307,13 +295,15 @@ Deno.serve(async (req) => {
               hubspotProperty = findAvailableProperty(currentProperties, publicUrl);
             }
 
+            console.log(`🔄 [HubSpot Link Manager] Updating HubSpot property ${hubspotProperty} with URL: ${publicUrl}`);
+
             // Update HubSpot with the link
             const updateResponse = await fetch(
               `https://api.hubapi.com/crm/v3/objects/deals/${negocio.hubspot_id}`,
               {
                 method: 'PATCH',
                 headers: {
-                  'Authorization': `Bearer ${hubspotKey.api_key}`,
+                  'Authorization': `Bearer ${apiKey}`,
                   'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
@@ -325,13 +315,15 @@ Deno.serve(async (req) => {
             );
 
             if (!updateResponse.ok) {
-              console.error('❌ [HubSpot Link Manager] Failed to update HubSpot deal');
+              const errorData = await updateResponse.text();
+              console.error('❌ [HubSpot Link Manager] Failed to update HubSpot deal:', errorData);
               hubspotUpdateSuccess = false;
             } else {
-              console.log(`✅ [HubSpot Link Manager] Updated HubSpot property: ${hubspotProperty}`);
+              console.log(`✅ [HubSpot Link Manager] Successfully updated HubSpot property: ${hubspotProperty}`);
             }
           } else {
-            console.error('❌ [HubSpot Link Manager] Failed to get HubSpot deal data');
+            const errorData = await hubspotResponse.text();
+            console.error('❌ [HubSpot Link Manager] Failed to get HubSpot deal data:', errorData);
             hubspotUpdateSuccess = false;
           }
         }
@@ -339,6 +331,8 @@ Deno.serve(async (req) => {
         console.error('❌ [HubSpot Link Manager] HubSpot error:', hubspotError);
         hubspotUpdateSuccess = false;
       }
+    } else {
+      console.log('ℹ️ [HubSpot Link Manager] No HubSpot ID for negocio, skipping HubSpot sync');
     }
 
     // Database operations
@@ -350,7 +344,6 @@ Deno.serve(async (req) => {
         .eq('presupuesto_id', presupuesto_id)
         .eq('is_active', true);
     }
-    // For new links, don't deactivate existing links - each presupuesto keeps its own link
 
     // Create new link record
     const { data: linkData, error: linkError } = await supabase
@@ -372,6 +365,11 @@ Deno.serve(async (req) => {
     }
 
     console.log('✅ [HubSpot Link Manager] Link management completed successfully');
+    console.log('📊 [HubSpot Link Manager] Final result:', {
+      link_created: !!linkData,
+      hubspot_updated: hubspotUpdateSuccess,
+      hubspot_property: hubspotProperty
+    });
 
     return new Response(JSON.stringify({
       success: true,
@@ -396,6 +394,43 @@ Deno.serve(async (req) => {
   }
 });
 
+// Helper function to get HubSpot API key with fallback to global key
+async function getHubSpotApiKey(supabase: any, userId: string): Promise<string | null> {
+  console.log('🔑 [HubSpot Link Manager] Looking for API key for user:', userId);
+  
+  // First try to get user-specific API key
+  const { data: userKey } = await supabase
+    .from('hubspot_api_keys')
+    .select('api_key')
+    .eq('user_id', userId)
+    .eq('activo', true)
+    .single();
+
+  if (userKey?.api_key) {
+    console.log('✅ [HubSpot Link Manager] Found user-specific API key');
+    return userKey.api_key;
+  }
+
+  console.log('🔍 [HubSpot Link Manager] No user-specific key found, trying global key...');
+  
+  // If no user-specific key, try to get global key
+  const { data: globalKey } = await supabase
+    .from('hubspot_api_keys')
+    .select('api_key')
+    .eq('activo', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (globalKey?.api_key) {
+    console.log('✅ [HubSpot Link Manager] Found global API key as fallback');
+    return globalKey.api_key;
+  }
+
+  console.log('❌ [HubSpot Link Manager] No API key found (user or global)');
+  return null;
+}
+
 function findAvailableProperty(currentProperties: Record<string, string>, newUrl: string): string {
   // First check if the exact same link already exists (same presupuesto)
   for (const property of HUBSPOT_LINK_PROPERTIES) {
@@ -416,27 +451,4 @@ function findAvailableProperty(currentProperties: Record<string, string>, newUrl
 
   // If all properties are occupied, throw error - no more space available
   throw new Error('No hay propiedades disponibles. Máximo 10 links por negocio alcanzado.');
-}
-
-function isSimilarUrl(url1: string, url2: string): boolean {
-  try {
-    const u1 = new URL(url1);
-    const u2 = new URL(url2);
-    
-    // Compare path structure to see if they're for the same presupuesto
-    const path1Parts = u1.pathname.split('/');
-    const path2Parts = u2.pathname.split('/');
-    
-    // URL format: /presupuesto/{negocio_id}/{presupuesto_id}/view
-    // Extract presupuesto_id (third part after /presupuesto/)
-    if (path1Parts.length >= 4 && path2Parts.length >= 4) {
-      const presupuestoId1 = path1Parts[3]; // /presupuesto/{negocio_id}/{presupuesto_id}/...
-      const presupuestoId2 = path2Parts[3]; // /presupuesto/{negocio_id}/{presupuesto_id}/...
-      return presupuestoId1 === presupuestoId2;
-    }
-    
-    return false;
-  } catch {
-    return false;
-  }
 }

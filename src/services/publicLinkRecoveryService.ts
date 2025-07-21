@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 interface PresupuestoSinLink {
   id: string;
@@ -87,6 +86,12 @@ export const publicLinkRecoveryService = {
       }
 
       console.log(`✅ [Link Recovery] Link creado exitosamente para ${presupuestoId}`);
+      console.log(`📊 [Link Recovery] HubSpot sync result:`, {
+        presupuesto_id: presupuestoId,
+        hubspot_updated: data.hubspot_updated,
+        hubspot_property: data.hubspot_property
+      });
+      
       return true;
     } catch (error) {
       console.error(`❌ [Link Recovery] Error inesperado creando link para ${presupuestoId}:`, error);
@@ -109,16 +114,20 @@ export const publicLinkRecoveryService = {
     let failed = 0;
 
     for (const presupuesto of presupuestosSinLink) {
+      console.log(`🔄 [Link Recovery] Procesando presupuesto: ${presupuesto.nombre} (${presupuesto.id})`);
+      
       const created = await this.createLinkForPresupuesto(presupuesto.id, presupuesto.negocio_id);
       
       if (created) {
         success++;
+        console.log(`✅ [Link Recovery] Éxito: ${presupuesto.nombre}`);
       } else {
         failed++;
+        console.log(`❌ [Link Recovery] Fallo: ${presupuesto.nombre}`);
       }
 
       // Pequeña pausa entre creaciones para no sobrecargar
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     console.log(`📊 [Link Recovery] Recuperación completada: ${success} exitosos, ${failed} fallidos de ${presupuestosSinLink.length} total`);
