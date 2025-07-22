@@ -35,7 +35,7 @@ const HubSpotSyncDebugger: React.FC<HubSpotSyncDebuggerProps> = ({ negocioId }) 
           user_id,
           presupuestos:presupuestos(
             id,
-            numero,
+            nombre,
             total,
             estado,
             facturado
@@ -68,7 +68,7 @@ const HubSpotSyncDebugger: React.FC<HubSpotSyncDebuggerProps> = ({ negocioId }) 
         },
         presupuestos: negocioData.presupuestos?.map(p => ({
           id: p.id,
-          numero: p.numero,
+          nombre: p.nombre,
           total: p.total,
           estado: p.estado,
           facturado: p.facturado,
@@ -185,7 +185,7 @@ const HubSpotSyncDebugger: React.FC<HubSpotSyncDebuggerProps> = ({ negocioId }) 
               <div className="space-y-2">
                 {debugResults.presupuestos?.map((p: any) => (
                   <div key={p.id} className="text-sm border-l-2 border-gray-300 pl-3">
-                    <p><strong>#{p.numero}</strong> - ${p.total?.toLocaleString()} - {p.estado}</p>
+                    <p><strong>{p.nombre}</strong> - ${p.total?.toLocaleString()} - {p.estado}</p>
                     <p className="text-xs text-muted-foreground">
                       {p.incluido_en_calculo ? '✅ Incluido en cálculo' : '❌ Excluido del cálculo'}
                       {p.facturado && ' • Facturado'}

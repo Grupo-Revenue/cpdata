@@ -49,7 +49,7 @@ export const cambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstad
     // Get current state and negocio_id first
     const { data: currentData, error: currentError } = await supabase
       .from('presupuestos')
-      .select('estado, negocio_id, numero')
+      .select('estado, negocio_id, nombre')
       .eq('id', presupuestoId)
       .single();
 
@@ -61,7 +61,7 @@ export const cambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstad
     const negocioId = currentData.negocio_id;
 
     logPresupuestoAction('STATE_CHANGE_DETAILS', presupuestoId, {
-      numero: currentData.numero,
+      nombre: currentData.nombre,
       estado_anterior: estadoAnterior,
       estado_nuevo: nuevoEstado,
       negocio_id: negocioId
@@ -70,7 +70,7 @@ export const cambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstad
     // Update the state
     const { data, error } = await supabase
       .from('presupuestos')
-      .update({ estado: nuevoEstado })
+      .update({ estado: nuevoEstado as any })
       .eq('id', presupuestoId)
       .select()
       .single();
@@ -113,7 +113,7 @@ export const marcarComoFacturado = async (presupuestoId: string) => {
     // Get negocio_id first
     const { data: presupuestoData, error: presupuestoError } = await supabase
       .from('presupuestos')
-      .select('negocio_id, numero, estado')
+      .select('negocio_id, nombre, estado')
       .eq('id', presupuestoId)
       .single();
 
@@ -128,7 +128,7 @@ export const marcarComoFacturado = async (presupuestoId: string) => {
     if (error) throw error;
 
     logPresupuestoAction('MARKED_INVOICED', presupuestoId, {
-      numero: presupuestoData.numero,
+      nombre: presupuestoData.nombre,
       estado: presupuestoData.estado,
       negocio_id: presupuestoData.negocio_id
     });
@@ -143,4 +143,97 @@ export const marcarComoFacturado = async (presupuestoId: string) => {
     toast.error('Error al marcar como facturado');
     throw error;
   }
+};
+
+// Functions for missing exports - maintaining existing signatures
+export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoData: any) => {
+  try {
+    const { data, error } = await supabase
+      .from('presupuestos')
+      .insert([{
+        negocio_id: negocioId,
+        ...presupuestoData
+      }])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    // Transform to ExtendedPresupuesto format
+    return {
+      ...data,
+      fechaCreacion: data.created_at,
+      fechaEnvio: data.fecha_envio,
+      fechaAprobacion: data.fecha_aprobacion,
+      fechaRechazo: data.fecha_rechazo,
+      fechaVencimiento: data.fecha_vencimiento
+    };
+  } catch (error) {
+    console.error('Error creating presupuesto:', error);
+    throw error;
+  }
+};
+
+export const actualizarPresupuestoEnSupabase = async (presupuestoId: string, updates: any, productos?: any) => {
+  try {
+    const { data, error } = await supabase
+      .from('presupuestos')
+      .update(updates)
+      .eq('id', presupuestoId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    // If productos are provided, update them too
+    if (productos && Array.isArray(productos)) {
+      // Delete existing products
+      await supabase
+        .from('productos_presupuesto')
+        .delete()
+        .eq('presupuesto_id', presupuestoId);
+      
+      // Insert new products
+      if (productos.length > 0) {
+        await supabase
+          .from('productos_presupuesto')
+          .insert(productos.map(p => ({
+            ...p,
+            presupuesto_id: presupuestoId
+          })));
+      }
+    }
+    
+    // Transform to ExtendedPresupuesto format
+    return {
+      ...data,
+      fechaCreacion: data.created_at,
+      fechaEnvio: data.fecha_envio,
+      fechaAprobacion: data.fecha_aprobacion,
+      fechaRechazo: data.fecha_rechazo,
+      fechaVencimiento: data.fecha_vencimiento
+    };
+  } catch (error) {
+    console.error('Error updating presupuesto:', error);
+    throw error;
+  }
+};
+
+export const eliminarPresupuestoEnSupabase = async (presupuestoId: string) => {
+  try {
+    const { error } = await supabase
+      .from('presupuestos')
+      .delete()
+      .eq('id', presupuestoId);
+    
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error deleting presupuesto:', error);
+    throw error;
+  }
+};
+
+export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string) => {
+  return await cambiarEstadoPresupuesto(presupuestoId, nuevoEstado);
 };
