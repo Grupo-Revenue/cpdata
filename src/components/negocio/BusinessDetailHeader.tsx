@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,14 +12,12 @@ import {
   MapPin, 
   Users, 
   Phone,
-  Mail,
-  DollarSign,
-  TrendingUp
+  Mail
 } from 'lucide-react';
 import { Negocio } from '@/types';
-import { formatearPrecio } from '@/utils/formatters';
 import { calculateBusinessValue } from '@/utils/businessValueCalculator';
 import { formatBusinessStateForDisplay, getBusinessStateColors } from '@/utils/businessCalculations';
+import BusinessValueSection from './sections/BusinessValueSection';
 
 interface BusinessDetailHeaderProps {
   negocio: Negocio;
@@ -37,35 +36,8 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
   // Get company name for the title
   const empresaDisplay = negocio.productora?.nombre || negocio.clienteFinal?.nombre || 'Sin empresa';
 
-  // Calculate breakdown for display
-  const approvedTotal = negocio.presupuestos
-    .filter(p => p.estado === 'aprobado')
-    .reduce((sum, p) => sum + (p.total || 0), 0);
-  
-  const rejectedTotal = negocio.presupuestos
-    .filter(p => p.estado === 'rechazado')
-    .reduce((sum, p) => sum + (p.total || 0), 0);
-
-  const sentTotal = negocio.presupuestos
-    .filter(p => p.estado === 'publicado')
-    .reduce((sum, p) => sum + (p.total || 0), 0);
-
-  const hasApprovedBudgets = approvedTotal > 0;
-  const hasRejectedBudgets = rejectedTotal > 0;
-  const hasSentBudgets = sentTotal > 0;
-
-  // Determine the label based on what's being shown
-  let valueLabel = 'Valor Total';
-  if (hasApprovedBudgets) {
-    valueLabel = hasRejectedBudgets ? 'Valor Aprobado' : 'Valor Total';
-  } else if (hasSentBudgets) {
-    valueLabel = 'Valor Enviado';
-  } else if (hasRejectedBudgets) {
-    valueLabel = 'Valor Rechazado';
-  }
-
   return (
-    <div className="space-y-4 mb-6">
+    <div className="space-y-6 mb-6">
       {/* Back Button Above Title */}
       <div className="flex items-center justify-between">
         <Button
@@ -83,54 +55,29 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
       </div>
 
       {/* Main Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-6">
-          <div>
+      <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+        {/* Title Section */}
+        <div className="flex-1">
+          <div className="flex items-center space-x-3 mb-2">
             <h1 className="text-2xl font-bold text-slate-900">
               {empresaDisplay} - Negocio #{negocio.numero}
             </h1>
-            <p className="text-lg text-slate-600 mt-1">{negocio.evento.nombreEvento}</p>
+            <Badge 
+              variant="outline"
+              className={getBusinessStateColors(negocio.estado)}
+            >
+              {formatBusinessStateForDisplay(negocio.estado)}
+            </Badge>
           </div>
-          
-          {/* Integrated Business Value */}
-          <div className="flex items-center space-x-3 px-4 py-2 bg-slate-50 rounded-lg border">
-            <div className="p-2 bg-slate-100 rounded-lg">
-              <DollarSign className="w-5 h-5 text-slate-700" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-600 font-medium">
-                {valueLabel}
-              </p>
-              <div className="flex items-baseline space-x-2">
-                <span className="text-xl font-bold text-slate-900">
-                  {formatearPrecio(valorTotal)}
-                </span>
-                {valorTotal > 0 && (
-                  <div className="flex items-center space-x-1 text-emerald-600">
-                    <TrendingUp className="w-3 h-3" />
-                    <span className="text-xs font-medium">Activo</span>
-                  </div>
-                )}
-              </div>
-              {hasApprovedBudgets && hasRejectedBudgets && (
-                <div className="text-xs text-slate-500 mt-1">
-                  <span className="text-emerald-600">Aprobado: {formatearPrecio(approvedTotal)}</span>
-                  {' | '}
-                  <span className="text-red-500">Rechazado: {formatearPrecio(rejectedTotal)}</span>
-                </div>
-              )}
-            </div>
-          </div>
+          <p className="text-lg text-slate-600">{negocio.evento.nombreEvento}</p>
         </div>
 
-        {/* State Display and Test Buttons */}
-        <div className="flex items-end space-x-3">
-          <Badge 
-            variant="outline"
-            className={getBusinessStateColors(negocio.estado)}
-          >
-            {formatBusinessStateForDisplay(negocio.estado)}
-          </Badge>
+        {/* Business Value Section */}
+        <div className="lg:w-80">
+          <BusinessValueSection 
+            valorNegocio={valorTotal}
+            presupuestos={negocio.presupuestos}
+          />
         </div>
       </div>
 
