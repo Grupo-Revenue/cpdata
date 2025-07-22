@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { processContactForBusiness } from '@/services/contactService';
@@ -7,9 +8,6 @@ import { useNegocio } from '@/context/NegocioContext';
 import { WizardState } from '@/components/wizard/types';
 import { useHubSpotDealCreation } from '@/hooks/useHubSpotDealCreation';
 import { useHubSpotAmountSync } from '@/hooks/hubspot/useHubSpotAmountSync';
-
-// Helper function removed - now using the robust service
-// The processCompanyForBusiness function is now in empresaService.ts
 
 interface BusinessCreationParams {
   wizardState: WizardState;
@@ -53,10 +51,9 @@ export const createBusinessFromWizard = async ({
     wasUpdated: contactResult.wasUpdated
   });
 
-  // Contact processed successfully - consolidated notification will be shown at the end
-
   // Step 2: Handle productora - find or create with HubSpot sync
   let productoraId = null;
+  let productoraHubSpotId = null;
   if (tipoCliente === 'productora' && productora.nombre) {
     console.log('[WizardService] Processing productora:', productora.nombre);
     
@@ -74,9 +71,10 @@ export const createBusinessFromWizard = async ({
     }
 
     productoraId = productoraResult.empresaId;
+    productoraHubSpotId = productoraResult.hubspotId;
     console.log('[WizardService] Productora processed:', {
       empresaId: productoraId,
-      hubspotId: productoraResult.hubspotId,
+      hubspotId: productoraHubSpotId,
       wasCreated: productoraResult.wasCreated,
       wasUpdated: productoraResult.wasUpdated
     });
@@ -84,6 +82,7 @@ export const createBusinessFromWizard = async ({
 
   // Step 3: Handle cliente final - find or create with HubSpot sync
   let clienteFinalId = null;
+  let clienteFinalHubSpotId = null;
   if ((tipoCliente === 'cliente_final' || tieneClienteFinal) && clienteFinal.nombre) {
     console.log('[WizardService] Processing cliente final:', clienteFinal.nombre);
     
@@ -101,9 +100,10 @@ export const createBusinessFromWizard = async ({
     }
 
     clienteFinalId = clienteFinalResult.empresaId;
+    clienteFinalHubSpotId = clienteFinalResult.hubspotId;
     console.log('[WizardService] Cliente final processed:', {
       empresaId: clienteFinalId,
-      hubspotId: clienteFinalResult.hubspotId,
+      hubspotId: clienteFinalHubSpotId,
       wasCreated: clienteFinalResult.wasCreated,
       wasUpdated: clienteFinalResult.wasUpdated
     });
@@ -148,17 +148,16 @@ export const createBusinessFromWizard = async ({
 
   // Step 6: Create deal in HubSpot with all associations using robust service
   console.log('[WizardService] Creating deal in HubSpot...');
+  let hubspotDealId = null;
   try {
     // Get HubSpot IDs for contact and companies from local database
     const contactHubSpotId = contactResult.hubspotId;
-    let productoraHubSpotId = null;
-    let clienteFinalHubSpotId = null;
 
     const userId = (await supabase.auth.getUser()).data.user?.id;
     if (!userId) throw new Error('Usuario no autenticado');
 
     // Get productora HubSpot ID from local database if exists
-    if (tipoCliente === 'productora' && productora.nombre && productoraId) {
+    if (tipoCliente === 'productora' && productora.nombre && productoraId && !productoraHubSpotId) {
       const { data: productoraData, error: productoraError } = await supabase
         .from('empresas')
         .select('hubspot_id')
@@ -172,7 +171,7 @@ export const createBusinessFromWizard = async ({
     }
 
     // Get cliente final HubSpot ID from local database if exists
-    if ((tipoCliente === 'cliente_final' || tieneClienteFinal) && clienteFinal.nombre && clienteFinalId) {
+    if ((tipoCliente === 'cliente_final' || tieneClienteFinal) && clienteFinal.nombre && clienteFinalId && !clienteFinalHubSpotId) {
       const { data: clienteFinalData, error: clienteFinalError } = await supabase
         .from('empresas')
         .select('hubspot_id')
@@ -212,6 +211,7 @@ export const createBusinessFromWizard = async ({
     );
     
     if (dealResult.success) {
+      hubspotDealId = dealResult.hubspotId;
       console.log('[WizardService] Deal processing completed:', {
         hubspotId: dealResult.hubspotId,
         wasCreated: dealResult.wasCreated,
@@ -226,7 +226,42 @@ export const createBusinessFromWizard = async ({
     // Business was already created successfully, just log the HubSpot sync issue
   }
 
-  // Step 7: Show single success message at the end
+  // Step 7: NEW - Create bidirectional associations in HubSpot
+  if (hubspotDealId && contactResult.hubspotId) {
+    console.log('[WizardService] Creating bidirectional associations in HubSpot...');
+    try {
+      const { data: associationsResult, error: associationsError } = await supabase.functions.invoke('hubspot-associations', {
+        body: {
+          negocioId: negocioCreado.id,
+          contactHubSpotId: contactResult.hubspotId,
+          productoraHubSpotId: productoraHubSpotId,
+          clienteFinalHubSpotId: clienteFinalHubSpotId,
+          tipoCliente: tipoCliente,
+          hubspotDealId: hubspotDealId
+        }
+      });
+
+      if (associationsError) {
+        console.error('[WizardService] Error creating associations:', associationsError);
+        // Don't fail the entire process - associations are nice-to-have
+      } else if (associationsResult?.success) {
+        console.log('[WizardService] Associations created successfully:', {
+          totalCreated: associationsResult.summary?.totalCreated || 0,
+          totalErrors: associationsResult.summary?.totalErrors || 0
+        });
+      }
+    } catch (error) {
+      console.error('[WizardService] Error calling associations function:', error);
+      // Don't fail the entire process
+    }
+  } else {
+    console.log('[WizardService] Skipping associations - missing HubSpot IDs:', {
+      hubspotDealId,
+      contactHubSpotId: contactResult.hubspotId
+    });
+  }
+
+  // Step 8: Show single success message at the end
   console.log('[WizardService] Business creation process completed successfully');
   toast({
     title: "Negocio creado exitosamente",
