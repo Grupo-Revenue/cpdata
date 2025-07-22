@@ -10,6 +10,7 @@ import { Home } from 'lucide-react';
 
 import { UserTable } from '@/components/admin/UserTable';
 import AdminProductos from '@/components/admin/AdminProductos';
+import BusinessNumberingAudit from '@/components/admin/BusinessNumberingAudit';
 import { ProtectedFeature } from '@/components/ProtectedFeature';
 import { PERMISSIONS } from '@/constants/permissions';
 import { ACCESS_DENIED_MESSAGES } from '@/components/AccessDeniedInfo';
@@ -111,6 +112,7 @@ const Admin = () => {
           <TabsList>
             <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
             <TabsTrigger value="productos">Productos</TabsTrigger>
+            <TabsTrigger value="auditoria">Auditoría</TabsTrigger>
           </TabsList>
           <TabsContent value="usuarios">
             <ProtectedFeature 
@@ -134,6 +136,15 @@ const Admin = () => {
               infoMessage={ACCESS_DENIED_MESSAGES.CREATE_PRODUCTS}
             >
               <AdminProductos />
+            </ProtectedFeature>
+          </TabsContent>
+          <TabsContent value="auditoria">
+            <ProtectedFeature 
+              permission={PERMISSIONS.ACCESS_ADMIN}
+              showInlineInfo={true}
+              infoMessage={ACCESS_DENIED_MESSAGES.ADMIN_ACCESS}
+            >
+              <BusinessNumberingAudit />
             </ProtectedFeature>
           </TabsContent>
         </Tabs>

@@ -108,21 +108,29 @@ export const crearNegocioEnSupabase = async (negocioData: any): Promise<Negocio 
       }
     }
 
-    // Get next business number
-    const { data: counterData, error: counterError } = await supabase
-      .from('contadores_usuario')
-      .select('contador_negocio')
-      .eq('user_id', userId)
-      .single();
+    // Get next business number atomically using the new function
+    const { data: nextNumberData, error: numberError } = await supabase
+      .rpc('get_next_business_number', { p_user_id: userId });
 
-    if (counterError) throw counterError;
+    if (numberError) throw numberError;
+    
+    const nextNumber = nextNumberData;
+    
+    // Log the number assignment for auditing
+    await supabase
+      .rpc('log_business_number_assignment', {
+        p_user_id: userId,
+        p_business_number: nextNumber,
+        p_status: 'assigned',
+        p_notes: 'Number assigned for new business creation'
+      });
 
-    // Create the negocio
+    // Create the negocio with the atomically assigned number
     const { data, error } = await supabase
       .from('negocios')
       .insert([{
         user_id: userId,
-        numero: counterData.contador_negocio,
+        numero: negocioData.numero || nextNumber, // Use provided number or generated one
         contacto_id: contactoId,
         productora_id: productoraId,
         cliente_final_id: clienteFinalId,
@@ -160,14 +168,28 @@ export const crearNegocioEnSupabase = async (negocioData: any): Promise<Negocio 
 
     if (error) {
       console.error("Error creating negocio:", error);
+      
+      // Log the failed creation for auditing
+      await supabase
+        .rpc('log_business_number_assignment', {
+          p_user_id: userId,
+          p_business_number: negocioData.numero || nextNumber,
+          p_status: 'failed',
+          p_notes: `Business creation failed: ${error.message}`
+        });
+      
       throw error;
     }
 
-    // Update counter
+    // Log successful business creation
     await supabase
-      .from('contadores_usuario')
-      .update({ contador_negocio: counterData.contador_negocio + 1 })
-      .eq('user_id', userId);
+      .rpc('log_business_number_assignment', {
+        p_user_id: userId,
+        p_business_number: data.numero,
+        p_negocio_id: data.id,
+        p_status: 'used',
+        p_notes: 'Business created successfully'
+      });
 
     const transformedNegocio = {
       ...data,

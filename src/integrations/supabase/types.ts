@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_number_audit: {
+        Row: {
+          assigned_at: string | null
+          business_number: number
+          created_at: string | null
+          id: string
+          negocio_id: string | null
+          notes: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          business_number: number
+          created_at?: string | null
+          id?: string
+          negocio_id?: string | null
+          notes?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          business_number?: number
+          created_at?: string | null
+          id?: string
+          negocio_id?: string | null
+          notes?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       configuracion_marca: {
         Row: {
           color_primario: string | null
@@ -643,6 +676,16 @@ export type Database = {
         Args: { negocio_id_param: string }
         Returns: Database["public"]["Enums"]["estado_negocio"]
       }
+      check_business_numbering_consistency: {
+        Args: { p_user_id: string }
+        Returns: {
+          issue_type: string
+          description: string
+          expected_number: number
+          actual_number: number
+          negocio_id: string
+        }[]
+      }
       check_is_admin: {
         Args: { _user_id: string }
         Returns: boolean
@@ -678,6 +721,10 @@ export type Database = {
           success_rate_percentage: number
         }[]
       }
+      get_next_business_number: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
       get_public_budget_data: {
         Args: { p_negocio_id: string; p_presupuesto_id: string }
         Returns: {
@@ -695,6 +742,16 @@ export type Database = {
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      log_business_number_assignment: {
+        Args: {
+          p_user_id: string
+          p_business_number: number
+          p_negocio_id?: string
+          p_status?: string
+          p_notes?: string
+        }
+        Returns: string
       }
       marcar_presupuesto_facturado: {
         Args: { presupuesto_id_param: string }

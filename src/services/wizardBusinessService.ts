@@ -109,17 +109,8 @@ export const createBusinessFromWizard = async ({
     });
   }
 
-  // Step 4: Generate unique correlative for the business
-  console.log('[WizardService] Generating unique correlative number...');
-  const correlativeResult = await hubspotDealOperations.generateUniqueCorrelative();
-  
-  if (!correlativeResult.success) {
-    throw new Error(`Error generando número correlativo: ${correlativeResult.error}`);
-  }
-
-  const numeroCorrelativo = correlativeResult.correlative; // Now comes as "#17662"
-  const numeroSinFormato = parseInt(numeroCorrelativo.replace('#', '')); // Extract number for database
-  console.log('[WizardService] Generated correlative:', numeroCorrelativo);
+  // Step 4: The number will be generated atomically by the database function
+  console.log('[WizardService] Number will be assigned atomically during business creation...');
 
   // Step 5: Create the business in local database first
   const negocioData = {
@@ -143,8 +134,8 @@ export const createBusinessFromWizard = async ({
     cantidad_asistentes: parseInt(evento.cantidad_asistentes) || 0,
     cantidad_invitados: parseInt(evento.cantidad_invitados) || 0,
     locacion: evento.locacion,
-    fecha_cierre: fechaCierre || undefined,
-    numero: numeroSinFormato // Add the correlative number
+    fecha_cierre: fechaCierre || undefined
+    // Number will be assigned atomically by the database function
   };
 
   console.log('[WizardService] Creating business with data:', negocioData);
@@ -196,7 +187,7 @@ export const createBusinessFromWizard = async ({
 
     // Prepare deal data for HubSpot
     const hubspotDealData = {
-      nombre_correlativo: numeroCorrelativo,
+      nombre_correlativo: `#${negocioCreado.numero}`,
       tipo_evento: evento.tipo_evento,
       nombre_evento: evento.nombre_evento,
       valor_negocio: 0, // Default value, can be updated later
@@ -239,7 +230,7 @@ export const createBusinessFromWizard = async ({
   console.log('[WizardService] Business creation process completed successfully');
   toast({
     title: "Negocio creado exitosamente",
-    description: `El negocio ${numeroCorrelativo} ha sido creado correctamente.`,
+    description: `El negocio #${negocioCreado.numero} ha sido creado correctamente.`,
   });
 
   return negocioCreado.id;
