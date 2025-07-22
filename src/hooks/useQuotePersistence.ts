@@ -3,7 +3,6 @@ import { useNegocio } from '@/context/NegocioContext';
 import { ProductoPresupuesto } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { generateQuoteName } from '@/utils/quoteNameGenerator';
-import { actualizarPresupuestoEnSupabase } from '@/services/presupuestoService';
 
 interface UseQuotePersistenceProps {
   negocioId: string;
@@ -21,11 +20,12 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
 
   const guardarPresupuesto = useCallback(async (productos: ProductoPresupuesto[]) => {
     if (isSaving) {
-      console.log('Ya hay un guardado en progreso, ignorando...');
+      console.log('💡 [useQuotePersistence] Save operation already in progress, ignoring...');
       return;
     }
 
     if (productos.length === 0) {
+      console.warn('⚠️ [useQuotePersistence] No products to save');
       toast({
         title: "Sin productos",
         description: "Debe agregar al menos un producto al presupuesto",
@@ -36,70 +36,100 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
 
     setIsSaving(true);
 
-    console.log('Saving presupuesto with products:', productos);
-
-    // Calculate total from products
-    const total = productos.reduce((sum, producto) => {
-      return sum + (producto.cantidad * producto.precio_unitario);
-    }, 0);
-
-    // Generate quote name using business number + sequential letter format
-    let quoteName: string;
-    if (presupuestoId) {
-      // For updates, keep the existing name
-      quoteName = presupuestoExistente?.nombre || `Presupuesto ${new Date().toLocaleDateString()}`;
-    } else {
-      // For new quotes, generate name using business number + letter
-      if (negocio) {
-        quoteName = generateQuoteName(negocio, negocio.presupuestos || []);
-      } else {
-        quoteName = `Presupuesto ${new Date().toLocaleDateString()}`;
-      }
-    }
-
-    // Create clean presupuesto data with only database-compatible properties
-    const presupuestoData = {
-      nombre: quoteName,
-      estado: 'borrador' as const,
-      total,
-      facturado: false,
-      negocio_id: negocioId,
-      fecha_envio: null,
-      fecha_aprobacion: null,
-      fecha_rechazo: null,
-      fecha_vencimiento: null,
-      fechaCreacion: new Date().toISOString(),
-      fechaEnvio: null,
-      fechaAprobacion: null,
-      fechaRechazo: null,
-      // Convert products to the basic format expected by the service
-      productos: productos.map(producto => ({
-        id: producto.id || `temp-${Date.now()}-${Math.random()}`,
-        nombre: producto.nombre,
-        descripcion: producto.descripcion || '',
-        cantidad: producto.cantidad,
-        precio_unitario: producto.precio_unitario,
-        total: producto.cantidad * producto.precio_unitario,
-        created_at: new Date().toISOString(),
-        presupuesto_id: presupuestoId || '',
-        // Add extended properties for compatibility
-        comentarios: producto.comentarios || '',
-        descuentoPorcentaje: producto.descuentoPorcentaje || 0,
-        precioUnitario: producto.precio_unitario,
-        sessions: producto.sessions || undefined
-      }))
-    };
-
     try {
+      console.log('💾 [useQuotePersistence] Starting save operation:', {
+        presupuestoId,
+        negocioId,
+        productCount: productos.length,
+        isUpdate: !!presupuestoId
+      });
+
+      // Calculate total from products
+      const total = productos.reduce((sum, producto) => {
+        const productTotal = producto.cantidad * producto.precio_unitario;
+        console.log(`📊 [useQuotePersistence] Product calculation: ${producto.nombre} = ${producto.cantidad} × ${producto.precio_unitario} = ${productTotal}`);
+        return sum + productTotal;
+      }, 0);
+
+      console.log('📊 [useQuotePersistence] Total calculated:', total);
+
+      // Generate quote name using business number + sequential letter format
+      let quoteName: string;
       if (presupuestoId) {
-        console.log('Updating existing presupuesto:', presupuestoId);
-        console.log('Products with sessions to update:', productos.map(p => ({ 
-          nombre: p.nombre, 
-          sessions: p.sessions, 
-          sessionCount: p.sessions?.length || 0 
-        })));
+        // For updates, keep the existing name
+        quoteName = presupuestoExistente?.nombre || `Presupuesto ${new Date().toLocaleDateString()}`;
+        console.log('🏷️ [useQuotePersistence] Using existing quote name:', quoteName);
+      } else {
+        // For new quotes, generate name using business number + letter
+        if (negocio) {
+          quoteName = generateQuoteName(negocio, negocio.presupuestos || []);
+          console.log('🏷️ [useQuotePersistence] Generated new quote name:', quoteName);
+        } else {
+          quoteName = `Presupuesto ${new Date().toLocaleDateString()}`;
+          console.log('🏷️ [useQuotePersistence] Using fallback quote name:', quoteName);
+        }
+      }
+
+      // Validate business exists
+      if (!negocio) {
+        throw new Error('No se encontró el negocio. Refresque la página e intente nuevamente.');
+      }
+
+      // Create clean presupuesto data with proper validation
+      const presupuestoData = {
+        nombre: quoteName,
+        estado: 'borrador' as const,
+        total: Number(total) || 0,
+        facturado: false,
+        negocio_id: negocioId,
+        fecha_envio: null,
+        fecha_aprobacion: null,
+        fecha_rechazo: null,
+        fecha_vencimiento: null,
+        fechaCreacion: new Date().toISOString(),
+        fechaEnvio: null,
+        fechaAprobacion: null,
+        fechaRechazo: null,
+        // Convert products to the format expected by the service
+        productos: productos.map(producto => {
+          const cleanProduct = {
+            id: producto.id || `temp-${Date.now()}-${Math.random()}`,
+            nombre: producto.nombre || 'Producto sin nombre',
+            descripcion: producto.descripcion || '',
+            cantidad: Number(producto.cantidad) || 1,
+            precio_unitario: Number(producto.precio_unitario) || 0,
+            total: Number(producto.cantidad || 1) * Number(producto.precio_unitario || 0),
+            created_at: new Date().toISOString(),
+            presupuesto_id: presupuestoId || '',
+            // Add extended properties for compatibility
+            comentarios: producto.comentarios || '',
+            descuentoPorcentaje: Number(producto.descuentoPorcentaje) || 0,
+            precioUnitario: Number(producto.precio_unitario) || 0,
+            sessions: producto.sessions || null
+          };
+          
+          console.log('🔧 [useQuotePersistence] Cleaned product:', {
+            nombre: cleanProduct.nombre,
+            cantidad: cleanProduct.cantidad,
+            precio_unitario: cleanProduct.precio_unitario,
+            sessions: cleanProduct.sessions ? 'has sessions' : 'no sessions'
+          });
+          
+          return cleanProduct;
+        })
+      };
+
+      console.log('📋 [useQuotePersistence] Final presupuesto data:', {
+        nombre: presupuestoData.nombre,
+        total: presupuestoData.total,
+        productCount: presupuestoData.productos.length,
+        negocio_id: presupuestoData.negocio_id
+      });
+
+      if (presupuestoId) {
+        console.log('🔄 [useQuotePersistence] Updating existing presupuesto:', presupuestoId);
         
-        // For updates, update presupuesto and products with sessions
+        // For updates, update presupuesto using context method
         const updateData = {
           nombre: presupuestoData.nombre,
           estado: presupuestoData.estado,
@@ -107,30 +137,44 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
           facturado: presupuestoData.facturado
         };
         
-        console.log('About to call actualizarPresupuestoEnSupabase with:', { presupuestoId, updateData, productCount: productos.length });
-        await actualizarPresupuestoEnSupabase(presupuestoId, updateData, productos);
-        console.log('actualizarPresupuestoEnSupabase completed successfully');
+        console.log('🔄 [useQuotePersistence] Calling actualizarPresupuesto with:', {
+          negocioId,
+          presupuestoId,
+          updateData,
+          productCount: productos.length
+        });
+        
+        const result = await actualizarPresupuesto(negocioId, presupuestoId, updateData);
+        
+        if (!result) {
+          throw new Error('No se recibió confirmación de la actualización del presupuesto');
+        }
+        
+        console.log('✅ [useQuotePersistence] Presupuesto updated successfully:', result.id);
         
         toast({
           title: "Presupuesto actualizado",
           description: "El presupuesto ha sido actualizado exitosamente",
         });
       } else {
-        console.log('Creating new presupuesto for negocio:', negocioId);
-        console.log('Presupuesto data:', presupuestoData);
-        console.log('Product count:', productos.length);
+        console.log('🆕 [useQuotePersistence] Creating new presupuesto');
         
-        if (!negocio) {
-          throw new Error('No se encontró el negocio. Refresque la página e intente nuevamente.');
-        }
+        console.log('🆕 [useQuotePersistence] Calling crearPresupuesto with:', {
+          negocioId,
+          presupuestoData: {
+            nombre: presupuestoData.nombre,
+            total: presupuestoData.total,
+            productCount: presupuestoData.productos.length
+          }
+        });
         
-        console.log('About to call crearPresupuesto');
         const result = await crearPresupuesto(negocioId, presupuestoData);
-        console.log('crearPresupuesto result:', result);
         
         if (!result) {
-          throw new Error('Error al crear el presupuesto - no se recibió respuesta del servidor');
+          throw new Error('No se recibió confirmación de la creación del presupuesto');
         }
+        
+        console.log('✅ [useQuotePersistence] Presupuesto created successfully:', result.id);
         
         toast({
           title: "Presupuesto creado",
@@ -139,18 +183,29 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
       }
 
       // Close and return to business detail page after successful save
+      console.log('🚀 [useQuotePersistence] Save operation completed, closing...');
       onCerrar();
+      
     } catch (error) {
-      console.error('Error saving presupuesto:', error);
+      console.error('❌ [useQuotePersistence] Error saving presupuesto:', error);
       
       // Provide more specific error messages
       let errorMessage = "No se pudo guardar el presupuesto";
       if (error instanceof Error) {
-        console.error('Detailed error:', error.message);
+        console.error('❌ [useQuotePersistence] Detailed error:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+        
         if (error.message.includes('productos')) {
           errorMessage = "Error al guardar los productos del presupuesto";
         } else if (error.message.includes('column') || error.message.includes('does not exist')) {
           errorMessage = "Error de estructura de datos. Contacte al administrador.";
+        } else if (error.message.includes('not found') || error.message.includes('no encontró')) {
+          errorMessage = "Datos no encontrados. Refresque la página e intente nuevamente.";
+        } else if (error.message.includes('permission') || error.message.includes('policy')) {
+          errorMessage = "No tiene permisos para realizar esta operación";
         } else {
           errorMessage = error.message;
         }
@@ -163,8 +218,9 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
       });
     } finally {
       setIsSaving(false);
+      console.log('🏁 [useQuotePersistence] Save operation finished');
     }
-  }, [isSaving, presupuestoId, presupuestoExistente, negocio, negocioId, crearPresupuesto, onCerrar]);
+  }, [isSaving, presupuestoId, presupuestoExistente, negocio, negocioId, crearPresupuesto, actualizarPresupuesto, onCerrar]);
 
   return {
     negocio,

@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { EstadoPresupuesto } from '@/types';
 
 // Enhanced logging for presupuesto service
 const logPresupuestoAction = (action: string, presupuestoId: string, details?: any) => {
@@ -39,7 +40,7 @@ const triggerHubSpotAmountSync = async (negocioId: string, trigger_source: strin
   }
 };
 
-export const cambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstado: string) => {
+export const cambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstado: EstadoPresupuesto) => {
   try {
     logPresupuestoAction('CHANGING_STATE', presupuestoId, { 
       nuevo_estado: nuevoEstado,
@@ -54,7 +55,8 @@ export const cambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstad
       .single();
 
     if (currentError || !currentData) {
-      throw new Error(`Error getting current presupuesto data: ${currentError?.message}`);
+      console.error('❌ [Presupuesto Service] Error getting current presupuesto:', currentError);
+      throw new Error(`Error obteniendo datos del presupuesto: ${currentError?.message || 'Presupuesto no encontrado'}`);
     }
 
     const estadoAnterior = currentData.estado;
@@ -70,14 +72,19 @@ export const cambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstad
     // Update the state
     const { data, error } = await supabase
       .from('presupuestos')
-      .update({ estado: nuevoEstado as any })
+      .update({ estado: nuevoEstado })
       .eq('id', presupuestoId)
       .select()
       .single();
 
     if (error) {
       console.error('❌ [Presupuesto Service] Error updating state:', error);
-      throw error;
+      throw new Error(`Error actualizando estado: ${error.message}`);
+    }
+
+    if (!data) {
+      console.error('❌ [Presupuesto Service] No data returned after update');
+      throw new Error('No se recibieron datos después de actualizar el estado');
     }
 
     logPresupuestoAction('STATE_UPDATED', presupuestoId, {
@@ -101,7 +108,8 @@ export const cambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstad
 
   } catch (error) {
     console.error('❌ [Presupuesto Service] Error in cambiarEstadoPresupuesto:', error);
-    toast.error('Error al cambiar estado del presupuesto');
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido al cambiar estado';
+    toast.error(`Error: ${errorMessage}`);
     throw error;
   }
 };
@@ -118,14 +126,18 @@ export const marcarComoFacturado = async (presupuestoId: string) => {
       .single();
 
     if (presupuestoError || !presupuestoData) {
-      throw new Error(`Error getting presupuesto data: ${presupuestoError?.message}`);
+      console.error('❌ [Presupuesto Service] Error getting presupuesto data:', presupuestoError);
+      throw new Error(`Error obteniendo datos del presupuesto: ${presupuestoError?.message || 'Presupuesto no encontrado'}`);
     }
 
     const { error } = await supabase.rpc('marcar_presupuesto_facturado', {
       presupuesto_id_param: presupuestoId
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ [Presupuesto Service] Error marking as invoiced:', error);
+      throw new Error(`Error marcando como facturado: ${error.message}`);
+    }
 
     logPresupuestoAction('MARKED_INVOICED', presupuestoId, {
       nombre: presupuestoData.nombre,
@@ -140,7 +152,8 @@ export const marcarComoFacturado = async (presupuestoId: string) => {
     
   } catch (error) {
     console.error('❌ [Presupuesto Service] Error marking as invoiced:', error);
-    toast.error('Error al marcar como facturado');
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    toast.error(`Error al marcar como facturado: ${errorMessage}`);
     throw error;
   }
 };
@@ -148,34 +161,90 @@ export const marcarComoFacturado = async (presupuestoId: string) => {
 // Functions for missing exports - maintaining existing signatures
 export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoData: any) => {
   try {
-    const { data, error } = await supabase
+    console.log('🆕 [Presupuesto Service] Creating new presupuesto:', { negocioId, presupuestoData });
+
+    // Validate required fields
+    if (!presupuestoData.nombre || !presupuestoData.productos || presupuestoData.productos.length === 0) {
+      throw new Error('Datos del presupuesto incompletos: faltan nombre o productos');
+    }
+
+    // Create the presupuesto first
+    const { data: presupuesto, error: presupuestoError } = await supabase
       .from('presupuestos')
       .insert([{
         negocio_id: negocioId,
-        ...presupuestoData
+        nombre: presupuestoData.nombre,
+        estado: presupuestoData.estado || 'borrador',
+        total: presupuestoData.total || 0,
+        facturado: presupuestoData.facturado || false,
+        fecha_vencimiento: presupuestoData.fecha_vencimiento || null
       }])
       .select()
       .single();
     
-    if (error) throw error;
+    if (presupuestoError) {
+      console.error('❌ [Presupuesto Service] Error creating presupuesto:', presupuestoError);
+      throw new Error(`Error creando presupuesto: ${presupuestoError.message}`);
+    }
+
+    if (!presupuesto) {
+      throw new Error('No se recibieron datos del presupuesto creado');
+    }
+
+    console.log('✅ [Presupuesto Service] Presupuesto created successfully:', presupuesto.id);
+
+    // Insert products
+    if (presupuestoData.productos && presupuestoData.productos.length > 0) {
+      const productosToInsert = presupuestoData.productos.map((producto: any) => ({
+        presupuesto_id: presupuesto.id,
+        nombre: producto.nombre,
+        descripcion: producto.descripcion || '',
+        cantidad: producto.cantidad || 1,
+        precio_unitario: producto.precio_unitario || producto.precioUnitario || 0,
+        total: (producto.cantidad || 1) * (producto.precio_unitario || producto.precioUnitario || 0),
+        sessions: producto.sessions || null
+      }));
+
+      console.log('📦 [Presupuesto Service] Inserting products:', productosToInsert.length);
+
+      const { error: productosError } = await supabase
+        .from('productos_presupuesto')
+        .insert(productosToInsert);
+      
+      if (productosError) {
+        console.error('❌ [Presupuesto Service] Error inserting products:', productosError);
+        // Try to clean up the presupuesto if products failed
+        await supabase.from('presupuestos').delete().eq('id', presupuesto.id);
+        throw new Error(`Error creando productos: ${productosError.message}`);
+      }
+
+      console.log('✅ [Presupuesto Service] Products inserted successfully');
+    }
     
     // Transform to ExtendedPresupuesto format
-    return {
-      ...data,
-      fechaCreacion: data.created_at,
-      fechaEnvio: data.fecha_envio,
-      fechaAprobacion: data.fecha_aprobacion,
-      fechaRechazo: data.fecha_rechazo,
-      fechaVencimiento: data.fecha_vencimiento
+    const result = {
+      ...presupuesto,
+      fechaCreacion: presupuesto.created_at,
+      fechaEnvio: presupuesto.fecha_envio,
+      fechaAprobacion: presupuesto.fecha_aprobacion,
+      fechaRechazo: presupuesto.fecha_rechazo,
+      fechaVencimiento: presupuesto.fecha_vencimiento,
+      productos: presupuestoData.productos || []
     };
+
+    console.log('🎉 [Presupuesto Service] Presupuesto creation completed successfully');
+    return result;
   } catch (error) {
-    console.error('Error creating presupuesto:', error);
+    console.error('❌ [Presupuesto Service] Error creating presupuesto:', error);
     throw error;
   }
 };
 
-export const actualizarPresupuestoEnSupabase = async (presupuestoId: string, updates: any, productos?: any) => {
+export const actualizarPresupuestoEnSupabase = async (presupuestoId: string, updates: any, productos?: any[]) => {
   try {
+    console.log('🔄 [Presupuesto Service] Updating presupuesto:', { presupuestoId, updates, productosCount: productos?.length || 0 });
+
+    // Update presupuesto
     const { data, error } = await supabase
       .from('presupuestos')
       .update(updates)
@@ -183,29 +252,59 @@ export const actualizarPresupuestoEnSupabase = async (presupuestoId: string, upd
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('❌ [Presupuesto Service] Error updating presupuesto:', error);
+      throw new Error(`Error actualizando presupuesto: ${error.message}`);
+    }
+
+    if (!data) {
+      throw new Error('No se recibieron datos después de actualizar el presupuesto');
+    }
+
+    console.log('✅ [Presupuesto Service] Presupuesto updated successfully');
     
     // If productos are provided, update them too
     if (productos && Array.isArray(productos)) {
+      console.log('📦 [Presupuesto Service] Updating products...');
+
       // Delete existing products
-      await supabase
+      const { error: deleteError } = await supabase
         .from('productos_presupuesto')
         .delete()
         .eq('presupuesto_id', presupuestoId);
+
+      if (deleteError) {
+        console.error('❌ [Presupuesto Service] Error deleting existing products:', deleteError);
+        throw new Error(`Error eliminando productos existentes: ${deleteError.message}`);
+      }
       
       // Insert new products
       if (productos.length > 0) {
-        await supabase
+        const productosToInsert = productos.map(p => ({
+          presupuesto_id: presupuestoId,
+          nombre: p.nombre,
+          descripcion: p.descripcion || '',
+          cantidad: p.cantidad || 1,
+          precio_unitario: p.precio_unitario || p.precioUnitario || 0,
+          total: (p.cantidad || 1) * (p.precio_unitario || p.precioUnitario || 0),
+          sessions: p.sessions || null
+        }));
+
+        const { error: insertError } = await supabase
           .from('productos_presupuesto')
-          .insert(productos.map(p => ({
-            ...p,
-            presupuesto_id: presupuestoId
-          })));
+          .insert(productosToInsert);
+
+        if (insertError) {
+          console.error('❌ [Presupuesto Service] Error inserting updated products:', insertError);
+          throw new Error(`Error insertando productos actualizados: ${insertError.message}`);
+        }
+
+        console.log('✅ [Presupuesto Service] Products updated successfully');
       }
     }
     
     // Transform to ExtendedPresupuesto format
-    return {
+    const result = {
       ...data,
       fechaCreacion: data.created_at,
       fechaEnvio: data.fecha_envio,
@@ -213,27 +312,37 @@ export const actualizarPresupuestoEnSupabase = async (presupuestoId: string, upd
       fechaRechazo: data.fecha_rechazo,
       fechaVencimiento: data.fecha_vencimiento
     };
+
+    console.log('🎉 [Presupuesto Service] Presupuesto update completed successfully');
+    return result;
   } catch (error) {
-    console.error('Error updating presupuesto:', error);
+    console.error('❌ [Presupuesto Service] Error updating presupuesto:', error);
     throw error;
   }
 };
 
 export const eliminarPresupuestoEnSupabase = async (presupuestoId: string) => {
   try {
+    console.log('🗑️ [Presupuesto Service] Deleting presupuesto:', presupuestoId);
+
     const { error } = await supabase
       .from('presupuestos')
       .delete()
       .eq('id', presupuestoId);
     
-    if (error) throw error;
+    if (error) {
+      console.error('❌ [Presupuesto Service] Error deleting presupuesto:', error);
+      throw new Error(`Error eliminando presupuesto: ${error.message}`);
+    }
+
+    console.log('✅ [Presupuesto Service] Presupuesto deleted successfully');
     return true;
   } catch (error) {
-    console.error('Error deleting presupuesto:', error);
+    console.error('❌ [Presupuesto Service] Error deleting presupuesto:', error);
     throw error;
   }
 };
 
-export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, nuevoEstado: string, fechaVencimiento?: string) => {
+export const cambiarEstadoPresupuestoEnSupabase = async (presupuestoId: string, nuevoEstado: EstadoPresupuesto, fechaVencimiento?: string) => {
   return await cambiarEstadoPresupuesto(presupuestoId, nuevoEstado);
 };
