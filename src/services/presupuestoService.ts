@@ -70,7 +70,7 @@ export const cambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstad
     // Update the state
     const { data, error } = await supabase
       .from('presupuestos')
-      .update({ estado: nuevoEstado as any })
+      .update({ estado: nuevoEstado })
       .eq('id', presupuestoId)
       .select()
       .single();
