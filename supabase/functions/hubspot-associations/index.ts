@@ -227,12 +227,12 @@ serve(async (req) => {
         5, 'HUBSPOT_DEFINED'
       );
 
-      // Empresa Productora → Empresa Cliente Final (si existe)
+      // CORRECCIÓN: Empresa Productora → Empresa Cliente Final (si existe) - associationTypeId: 1, USER_DEFINED
       if (clienteFinalHubSpotId) {
         await createAssociation(
           'companies', productoraHubSpotId,
           'companies', clienteFinalHubSpotId,
-          3, 'HUBSPOT_DEFINED'
+          1, 'USER_DEFINED'
         );
       }
 
