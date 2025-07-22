@@ -41,44 +41,46 @@ const BusinessValueSection: React.FC<BusinessValueSectionProps> = ({ valorNegoci
   }
 
   return (
-    <div className="bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200 rounded-xl p-6 shadow-sm">
-      <div className="flex items-start space-x-4">
+    <div className="bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200 rounded-xl p-4 shadow-sm">
+      <div className="flex items-start space-x-3">
         {/* Icon */}
-        <div className="flex-shrink-0 p-3 bg-white rounded-xl shadow-sm border">
-          <DollarSign className="w-6 h-6 text-slate-700" />
+        <div className="flex-shrink-0 p-2 bg-white rounded-lg shadow-sm border">
+          <DollarSign className="w-5 h-5 text-slate-700" />
         </div>
         
         {/* Main Content */}
         <div className="flex-1 min-w-0">
-          {/* Value Label */}
-          <p className="text-sm font-medium text-slate-600 mb-2">
-            {valueLabel}
-          </p>
-          
-          {/* Main Value */}
-          <div className="flex items-baseline space-x-3 mb-3">
-            <span className="text-3xl font-bold text-slate-900">
-              {formatearPrecio(valorNegocio)}
-            </span>
+          {/* Value Label and Badge in same row */}
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-sm font-medium text-slate-600">
+              {valueLabel}
+            </p>
             {valorNegocio > 0 && (
-              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 px-2 py-1">
+              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 px-2 py-0.5 text-xs">
                 <TrendingUp className="w-3 h-3 mr-1" />
                 Activo
               </Badge>
             )}
           </div>
           
-          {/* Breakdown */}
+          {/* Main Value */}
+          <div className="mb-2">
+            <span className="text-2xl font-bold text-slate-900">
+              {formatearPrecio(valorNegocio)}
+            </span>
+          </div>
+          
+          {/* Breakdown - more compact */}
           {(hasApprovedBudgets || hasRejectedBudgets) && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {hasApprovedBudgets && (
-                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">
+                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 text-xs px-2 py-0.5">
                   <CheckCircle className="w-3 h-3 mr-1" />
                   Aprobado: {formatearPrecio(approvedTotal)}
                 </Badge>
               )}
               {hasRejectedBudgets && (
-                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 hover:bg-red-50">
+                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 hover:bg-red-50 text-xs px-2 py-0.5">
                   <XCircle className="w-3 h-3 mr-1" />
                   Rechazado: {formatearPrecio(rejectedTotal)}
                 </Badge>
@@ -86,10 +88,10 @@ const BusinessValueSection: React.FC<BusinessValueSectionProps> = ({ valorNegoci
             </div>
           )}
           
-          {/* Info text for clarity */}
+          {/* Info text - more concise */}
           {hasApprovedBudgets && hasRejectedBudgets && (
-            <p className="text-xs text-slate-500 mt-2">
-              El valor mostrado corresponde únicamente a presupuestos aprobados
+            <p className="text-xs text-slate-500 mt-1">
+              Valor mostrado solo incluye presupuestos aprobados
             </p>
           )}
         </div>
