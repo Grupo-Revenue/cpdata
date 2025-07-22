@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -105,10 +104,10 @@ serve(async (req) => {
       )
     }
 
-    // Calculate business amount if not provided using UPDATED LOGIC
+    // Calculate business amount if not provided using CORRECTED LOGIC
     let businessAmount = amount;
     if (businessAmount === undefined || businessAmount === null) {
-      // NEW CALCULATION LOGIC: Consider rejected budgets as subtractions when approved exist
+      // CORRECTED CALCULATION LOGIC: Approved budgets predominate (no subtraction)
       const approvedTotal = negocio.presupuestos
         .filter(p => p.estado === 'aprobado')
         .reduce((sum, p) => sum + parseFloat(String(p.total || '0')), 0);
@@ -128,13 +127,12 @@ serve(async (req) => {
         total_budgets: negocio.presupuestos.length
       });
 
-      // If there are approved budgets, subtract rejected ones
+      // If there are approved budgets, use only their sum (no subtraction)
       if (approvedTotal > 0) {
-        businessAmount = Math.max(0, approvedTotal - rejectedTotal); // Ensure non-negative
-        console.log('✅ [HubSpot Amount Update] Using approved minus rejected logic:', {
+        businessAmount = approvedTotal;
+        console.log('✅ [HubSpot Amount Update] Using approved budgets total:', {
           approved: approvedTotal,
-          rejected: rejectedTotal,
-          net_amount: businessAmount
+          result: businessAmount
         });
       } else if (sentTotal > 0) {
         // If no approved budgets, use sent budgets

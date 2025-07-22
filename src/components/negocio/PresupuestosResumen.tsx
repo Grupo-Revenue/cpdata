@@ -14,7 +14,7 @@ const PresupuestosResumen: React.FC<PresupuestosResumenProps> = ({ presupuestos 
   const presupuestosAprobados = presupuestos.filter(p => p.estado === 'aprobado').length;
   const presupuestosPublicados = presupuestos.filter(p => p.estado === 'publicado').length;
 
-  // Calculate value using the new logic
+  // Calculate value using the corrected logic (approved budgets predominate)
   const approvedTotal = presupuestos
     .filter(p => p.estado === 'aprobado')
     .reduce((sum, p) => sum + (p.total || 0), 0);
@@ -27,14 +27,19 @@ const PresupuestosResumen: React.FC<PresupuestosResumenProps> = ({ presupuestos 
     .filter(p => p.estado === 'publicado')
     .reduce((sum, p) => sum + (p.total || 0), 0);
 
-  // Apply the same logic as businessValueCalculator
+  // Apply the corrected logic: approved budgets predominate (no subtraction)
   let valorTotal = 0;
+  let valueLabel = 'Valor Total';
+  
   if (approvedTotal > 0) {
-    valorTotal = Math.max(0, approvedTotal - rejectedTotal);
+    valorTotal = approvedTotal;
+    valueLabel = rejectedTotal > 0 ? 'Valor Aprobado' : 'Valor Total';
   } else if (sentTotal > 0) {
     valorTotal = sentTotal;
+    valueLabel = 'Valor Enviado';
   } else {
     valorTotal = rejectedTotal;
+    valueLabel = 'Valor Rechazado';
   }
 
   const stats = [
@@ -47,7 +52,7 @@ const PresupuestosResumen: React.FC<PresupuestosResumenProps> = ({ presupuestos 
       textColor: 'text-blue-700'
     },
     {
-      label: approvedTotal > 0 && rejectedTotal > 0 ? 'Valor Neto' : 'Valor Total',
+      label: valueLabel,
       value: formatearPrecio(valorTotal),
       icon: DollarSign,
       color: 'bg-green-500',

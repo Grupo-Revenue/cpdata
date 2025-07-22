@@ -27,15 +27,13 @@ export const calculateBusinessValue = (negocio: Negocio): number => {
     total_budgets: negocio.presupuestos.length
   });
 
-  // NEW LOGIC: If there are approved budgets, subtract rejected ones
+  // UPDATED LOGIC: If there are approved budgets, use only their sum (no subtraction)
   if (approvedTotal > 0) {
-    const netValue = Math.max(0, approvedTotal - rejectedTotal); // Ensure non-negative
-    console.log('✅ [Business Value Calculator] Using approved minus rejected logic:', {
+    console.log('✅ [Business Value Calculator] Using approved budgets total:', {
       approved: approvedTotal,
-      rejected: rejectedTotal,
-      net_value: netValue
+      result: approvedTotal
     });
-    return netValue;
+    return approvedTotal;
   }
 
   // If no approved budgets, use sent budgets

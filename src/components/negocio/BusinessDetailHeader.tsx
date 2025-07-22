@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,14 +13,12 @@ import {
   Phone,
   Mail,
   DollarSign,
-  TrendingUp,
-  RefreshCw
+  TrendingUp
 } from 'lucide-react';
 import { Negocio } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
 import { calculateBusinessValue } from '@/utils/businessValueCalculator';
 import { formatBusinessStateForDisplay, getBusinessStateColors } from '@/utils/businessCalculations';
-
 
 interface BusinessDetailHeaderProps {
   negocio: Negocio;
@@ -49,9 +46,23 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
     .filter(p => p.estado === 'rechazado')
     .reduce((sum, p) => sum + (p.total || 0), 0);
 
+  const sentTotal = negocio.presupuestos
+    .filter(p => p.estado === 'publicado')
+    .reduce((sum, p) => sum + (p.total || 0), 0);
+
   const hasApprovedBudgets = approvedTotal > 0;
   const hasRejectedBudgets = rejectedTotal > 0;
-  const isNetCalculation = hasApprovedBudgets && hasRejectedBudgets;
+  const hasSentBudgets = sentTotal > 0;
+
+  // Determine the label based on what's being shown
+  let valueLabel = 'Valor Total';
+  if (hasApprovedBudgets) {
+    valueLabel = hasRejectedBudgets ? 'Valor Aprobado' : 'Valor Total';
+  } else if (hasSentBudgets) {
+    valueLabel = 'Valor Enviado';
+  } else if (hasRejectedBudgets) {
+    valueLabel = 'Valor Rechazado';
+  }
 
   return (
     <div className="space-y-4 mb-6">
@@ -88,7 +99,7 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
             </div>
             <div>
               <p className="text-xs text-slate-600 font-medium">
-                {isNetCalculation ? 'Valor Neto' : 'Valor Total'}
+                {valueLabel}
               </p>
               <div className="flex items-baseline space-x-2">
                 <span className="text-xl font-bold text-slate-900">
@@ -101,11 +112,11 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
                   </div>
                 )}
               </div>
-              {isNetCalculation && (
+              {hasApprovedBudgets && hasRejectedBudgets && (
                 <div className="text-xs text-slate-500 mt-1">
-                  <span className="text-emerald-600">+{formatearPrecio(approvedTotal)}</span>
-                  {' '}
-                  <span className="text-red-500">-{formatearPrecio(rejectedTotal)}</span>
+                  <span className="text-emerald-600">Aprobado: {formatearPrecio(approvedTotal)}</span>
+                  {' | '}
+                  <span className="text-red-500">Rechazado: {formatearPrecio(rejectedTotal)}</span>
                 </div>
               )}
             </div>
@@ -120,7 +131,6 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
           >
             {formatBusinessStateForDisplay(negocio.estado)}
           </Badge>
-          
         </div>
       </div>
 
