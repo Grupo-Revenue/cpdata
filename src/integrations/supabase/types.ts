@@ -700,6 +700,16 @@ export type Database = {
         }
         Returns: string
       }
+      fix_all_user_counters: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          old_counter: number
+          max_used_number: number
+          new_counter: number
+          correction_applied: boolean
+        }[]
+      }
       get_global_hubspot_token: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -764,6 +774,16 @@ export type Database = {
       retry_failed_hubspot_syncs: {
         Args: { p_user_id?: string }
         Returns: number
+      }
+      run_numbering_system_maintenance: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          maintenance_type: string
+          affected_users: number
+          corrections_made: number
+          issues_found: number
+          status: string
+        }[]
       }
     }
     Enums: {

@@ -101,11 +101,64 @@ export const useBusinessNumberingAudit = () => {
     }
   }, []);
 
+  const runSystemMaintenance = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.rpc('run_numbering_system_maintenance');
+
+      if (error) throw error;
+      
+      toast({
+        title: "Mantenimiento completado",
+        description: `${data?.[0]?.corrections_made || 0} correcciones aplicadas`,
+      });
+      return { success: true, results: data };
+    } catch (error) {
+      console.error('Error running maintenance:', error);
+      toast({
+        title: "Error",
+        description: "Error en el mantenimiento del sistema",
+        variant: "destructive"
+      });
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fixAllCounters = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.rpc('fix_all_user_counters');
+
+      if (error) throw error;
+      
+      const corrections = data?.filter((r: any) => r.correction_applied)?.length || 0;
+      toast({
+        title: "Corrección completada",
+        description: `${corrections} contadores corregidos`,
+      });
+      return { success: true, results: data };
+    } catch (error) {
+      console.error('Error fixing counters:', error);
+      toast({
+        title: "Error",
+        description: "Error corrigiendo contadores",
+        variant: "destructive"
+      });
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     loading,
     issues,
     checkConsistency,
     logNumberAssignment,
-    getNextNumber
+    getNextNumber,
+    runSystemMaintenance,
+    fixAllCounters
   };
 };

@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { RefreshCw, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { RefreshCw, AlertTriangle, CheckCircle, XCircle, Clock, Wrench, Settings } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useBusinessNumberingAudit } from '@/hooks/useBusinessNumberingAudit';
 
 interface AuditEntry {
   id: string;
@@ -43,6 +44,8 @@ const BusinessNumberingAudit: React.FC = () => {
   const [userCounters, setUserCounters] = useState<UserCounter[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  
+  const { runSystemMaintenance, fixAllCounters, loading: auditLoading } = useBusinessNumberingAudit();
 
   const fetchAuditData = async () => {
     try {
@@ -144,10 +147,34 @@ const BusinessNumberingAudit: React.FC = () => {
             Monitoreo y auditoría del sistema de números correlativos únicos
           </p>
         </div>
-        <Button onClick={fetchAuditData} disabled={refreshing}>
-          <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          Actualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={async () => {
+              await fixAllCounters();
+              fetchAuditData();
+            }} 
+            disabled={auditLoading || refreshing}
+            variant="outline"
+          >
+            <Wrench className={`w-4 h-4 mr-2 ${auditLoading ? 'animate-spin' : ''}`} />
+            Corregir Contadores
+          </Button>
+          <Button 
+            onClick={async () => {
+              await runSystemMaintenance();
+              fetchAuditData();
+            }} 
+            disabled={auditLoading || refreshing}
+            variant="outline"
+          >
+            <Settings className={`w-4 h-4 mr-2 ${auditLoading ? 'animate-spin' : ''}`} />
+            Mantenimiento
+          </Button>
+          <Button onClick={fetchAuditData} disabled={refreshing}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Actualizar
+          </Button>
+        </div>
       </div>
 
       {/* Consistency Issues */}
