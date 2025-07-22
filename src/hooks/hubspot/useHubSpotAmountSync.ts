@@ -41,11 +41,13 @@ export const useHubSpotAmountSync = () => {
       // Calculate new total value using the updated calculator
       const newAmount = calculateBusinessValue(negocioData as any);
       
-      console.log('💰 [HubSpot Amount Sync] Calculated new business amount:', {
+      console.log('💰 [HubSpot Amount Sync] Calculated new business amount using updated logic:', {
         negocio_id: negocioId,
         new_amount: newAmount,
         hubspot_id: negocioData.hubspot_id,
-        excluded_drafts: negocioData.presupuestos?.filter(p => p.estado === 'borrador').length || 0
+        excluded_drafts: negocioData.presupuestos?.filter(p => p.estado === 'borrador').length || 0,
+        approved_count: negocioData.presupuestos?.filter(p => p.estado === 'aprobado').length || 0,
+        rejected_count: negocioData.presupuestos?.filter(p => p.estado === 'rechazado').length || 0
       });
 
       // Call edge function to update amount in HubSpot

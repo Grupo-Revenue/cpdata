@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -104,32 +105,45 @@ serve(async (req) => {
       )
     }
 
-    // Calculate business amount if not provided
+    // Calculate business amount if not provided using UPDATED LOGIC
     let businessAmount = amount;
     if (businessAmount === undefined || businessAmount === null) {
-      // Calculate total value based on presupuestos priority (excluding drafts):
-      // 1. Sum all approved budgets first (highest priority)
+      // NEW CALCULATION LOGIC: Consider rejected budgets as subtractions when approved exist
       const approvedTotal = negocio.presupuestos
         .filter(p => p.estado === 'aprobado')
         .reduce((sum, p) => sum + parseFloat(String(p.total || '0')), 0);
 
-      if (approvedTotal > 0) {
-        businessAmount = approvedTotal;
-      } else {
-        // 2. If no approved budgets, use sent budgets
-        const sentTotal = negocio.presupuestos
-          .filter(p => p.estado === 'publicado')
-          .reduce((sum, p) => sum + parseFloat(String(p.total || '0')), 0);
+      const rejectedTotal = negocio.presupuestos
+        .filter(p => p.estado === 'rechazado')
+        .reduce((sum, p) => sum + parseFloat(String(p.total || '0')), 0);
 
-        if (sentTotal > 0) {
-          businessAmount = sentTotal;
-        } else {
-          // 3. If no sent budgets, use rejected budgets
-          const rejectedTotal = negocio.presupuestos
-            .filter(p => p.estado === 'rechazado')
-            .reduce((sum, p) => sum + parseFloat(String(p.total || '0')), 0);
-          businessAmount = rejectedTotal;
-        }
+      const sentTotal = negocio.presupuestos
+        .filter(p => p.estado === 'publicado')
+        .reduce((sum, p) => sum + parseFloat(String(p.total || '0')), 0);
+
+      console.log('📊 [HubSpot Amount Update] Budget totals calculated:', {
+        approved_total: approvedTotal,
+        rejected_total: rejectedTotal,
+        sent_total: sentTotal,
+        total_budgets: negocio.presupuestos.length
+      });
+
+      // If there are approved budgets, subtract rejected ones
+      if (approvedTotal > 0) {
+        businessAmount = Math.max(0, approvedTotal - rejectedTotal); // Ensure non-negative
+        console.log('✅ [HubSpot Amount Update] Using approved minus rejected logic:', {
+          approved: approvedTotal,
+          rejected: rejectedTotal,
+          net_amount: businessAmount
+        });
+      } else if (sentTotal > 0) {
+        // If no approved budgets, use sent budgets
+        businessAmount = sentTotal;
+        console.log('📤 [HubSpot Amount Update] Using sent budgets total:', businessAmount);
+      } else {
+        // If no sent budgets, use rejected budgets as fallback
+        businessAmount = rejectedTotal;
+        console.log('📉 [HubSpot Amount Update] Using rejected budgets as fallback:', businessAmount);
       }
     }
 

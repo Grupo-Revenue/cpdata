@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { EstadoPresupuesto } from '@/types';
@@ -50,7 +49,7 @@ export const cambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstad
     // Get current state and negocio_id first
     const { data: currentData, error: currentError } = await supabase
       .from('presupuestos')
-      .select('estado, negocio_id, nombre')
+      .select('estado, negocio_id, nombre, total')
       .eq('id', presupuestoId)
       .single();
 
@@ -61,12 +60,14 @@ export const cambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstad
 
     const estadoAnterior = currentData.estado;
     const negocioId = currentData.negocio_id;
+    const presupuestoTotal = currentData.total;
 
     logPresupuestoAction('STATE_CHANGE_DETAILS', presupuestoId, {
       nombre: currentData.nombre,
       estado_anterior: estadoAnterior,
       estado_nuevo: nuevoEstado,
-      negocio_id: negocioId
+      negocio_id: negocioId,
+      total: presupuestoTotal
     });
 
     // Update the state
@@ -93,11 +94,16 @@ export const cambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstad
     });
 
     // Check if the state change affects business value calculation
-    const statesAffectingValue = ['aprobado', 'publicado', 'rechazado', 'borrador'];
+    // IMPORTANT: Now rejections will affect the calculation when approved budgets exist
+    const statesAffectingValue = ['aprobado', 'publicado', 'rechazado', 'vencido', 'borrador'];
     const shouldSyncAmount = statesAffectingValue.includes(estadoAnterior) || statesAffectingValue.includes(nuevoEstado);
 
     if (shouldSyncAmount) {
-      console.log('🔄 [Presupuesto Service] State change affects business value, triggering HubSpot sync');
+      console.log('🔄 [Presupuesto Service] State change affects business value, triggering HubSpot sync:', {
+        estado_anterior: estadoAnterior,
+        estado_nuevo: nuevoEstado,
+        trigger_reason: 'state_change_affects_calculation'
+      });
       await triggerHubSpotAmountSync(negocioId, 'presupuesto_state_change');
     } else {
       console.log('ℹ️ [Presupuesto Service] State change does not affect business value, skipping sync');
@@ -233,6 +239,8 @@ export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoD
     };
 
     console.log('🎉 [Presupuesto Service] Presupuesto creation completed successfully');
+    await triggerHubSpotAmountSync(negocioId, 'presupuesto_created');
+    
     return result;
   } catch (error) {
     console.error('❌ [Presupuesto Service] Error creating presupuesto:', error);
@@ -243,6 +251,17 @@ export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoD
 export const actualizarPresupuestoEnSupabase = async (presupuestoId: string, updates: any, productos?: any[]) => {
   try {
     console.log('🔄 [Presupuesto Service] Updating presupuesto:', { presupuestoId, updates, productosCount: productos?.length || 0 });
+
+    // Get negocio_id for later HubSpot sync
+    const { data: currentPresupuesto, error: currentError } = await supabase
+      .from('presupuestos')
+      .select('negocio_id, total')
+      .eq('id', presupuestoId)
+      .single();
+
+    if (currentError || !currentPresupuesto) {
+      throw new Error(`Error obteniendo presupuesto actual: ${currentError?.message}`);
+    }
 
     // Update presupuesto
     const { data, error } = await supabase
@@ -314,6 +333,12 @@ export const actualizarPresupuestoEnSupabase = async (presupuestoId: string, upd
     };
 
     console.log('🎉 [Presupuesto Service] Presupuesto update completed successfully');
+    
+    // Trigger HubSpot amount sync if total changed
+    if (updates.total !== undefined) {
+      await triggerHubSpotAmountSync(currentPresupuesto.negocio_id, 'presupuesto_total_updated');
+    }
+    
     return result;
   } catch (error) {
     console.error('❌ [Presupuesto Service] Error updating presupuesto:', error);
@@ -325,6 +350,18 @@ export const eliminarPresupuestoEnSupabase = async (presupuestoId: string) => {
   try {
     console.log('🗑️ [Presupuesto Service] Deleting presupuesto:', presupuestoId);
 
+    // Get presupuesto details before deletion for HubSpot sync
+    const { data: presupuestoData, error: presupuestoError } = await supabase
+      .from('presupuestos')
+      .select('negocio_id, total, estado, nombre')
+      .eq('id', presupuestoId)
+      .single();
+
+    if (presupuestoError || !presupuestoData) {
+      console.error('❌ [Presupuesto Service] Error getting presupuesto before deletion:', presupuestoError);
+      throw new Error(`Error obteniendo presupuesto: ${presupuestoError?.message}`);
+    }
+
     const { error } = await supabase
       .from('presupuestos')
       .delete()
@@ -335,7 +372,16 @@ export const eliminarPresupuestoEnSupabase = async (presupuestoId: string) => {
       throw new Error(`Error eliminando presupuesto: ${error.message}`);
     }
 
-    console.log('✅ [Presupuesto Service] Presupuesto deleted successfully');
+    console.log('✅ [Presupuesto Service] Presupuesto deleted successfully:', {
+      id: presupuestoId,
+      negocio_id: presupuestoData.negocio_id,
+      deleted_total: presupuestoData.total,
+      deleted_estado: presupuestoData.estado
+    });
+
+    // Trigger HubSpot amount sync after deletion
+    await triggerHubSpotAmountSync(presupuestoData.negocio_id, 'presupuesto_deleted');
+    
     return true;
   } catch (error) {
     console.error('❌ [Presupuesto Service] Error deleting presupuesto:', error);
