@@ -104,29 +104,29 @@ serve(async (req) => {
     const associationsCreated = [];
     const associationErrors = [];
 
-    // Helper function to create bidirectional association
-    const createBidirectionalAssociation = async (
+    // Helper function to create association using HubSpot API v4
+    const createAssociation = async (
       fromObjectType: string,
       fromObjectId: string,
       toObjectType: string,
       toObjectId: string,
       associationTypeId: number,
-      associationCategory: string = 'HUBSPOT_DEFINED'
+      associationCategory: string = 'USER_DEFINED'
     ) => {
-      console.log(`Creating bidirectional association: ${fromObjectType}(${fromObjectId}) ↔ ${toObjectType}(${toObjectId}) with typeId: ${associationTypeId}`);
+      console.log(`Creating association: ${fromObjectType}(${fromObjectId}) → ${toObjectType}(${toObjectId}) with typeId: ${associationTypeId}`);
 
       try {
-        // Check if association already exists (from -> to)
-        const checkResponse = await fetch(
-          `https://api.hubapi.com/crm/v3/objects/${fromObjectType}/${fromObjectId}/associations/${toObjectType}`,
-          {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${hubspotApiKey}`,
-              'Content-Type': 'application/json'
-            }
+        // First check if association already exists
+        const checkUrl = `https://api.hubapi.com/crm/v4/objects/${fromObjectType}/${fromObjectId}/associations/${toObjectType}`;
+        console.log(`Checking existing associations at: ${checkUrl}`);
+        
+        const checkResponse = await fetch(checkUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${hubspotApiKey}`,
+            'Content-Type': 'application/json'
           }
-        );
+        });
 
         let associationExists = false;
         if (checkResponse.ok) {
@@ -135,46 +135,56 @@ serve(async (req) => {
             assoc.toObjectId === toObjectId && 
             assoc.associationTypes?.some((type: any) => type.typeId === associationTypeId)
           );
+        } else {
+          console.log(`Check response status: ${checkResponse.status} - ${await checkResponse.text()}`);
         }
 
         if (!associationExists) {
-          // Create association from -> to
-          const createResponse = await fetch(
-            `https://api.hubapi.com/crm/v3/objects/${fromObjectType}/${fromObjectId}/associations/${toObjectType}/${toObjectId}`,
+          // Create association using correct v4 format
+          const createUrl = `https://api.hubapi.com/crm/v4/objects/${fromObjectType}/${fromObjectId}/associations/${toObjectType}/${toObjectId}`;
+          console.log(`Creating association at: ${createUrl}`);
+          
+          const requestBody = [
             {
-              method: 'PUT',
-              headers: {
-                'Authorization': `Bearer ${hubspotApiKey}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                types: [{
-                  associationCategory,
-                  associationTypeId
-                }]
-              })
+              associationCategory,
+              associationTypeId
             }
-          );
+          ];
+          
+          console.log(`Request body:`, JSON.stringify(requestBody, null, 2));
+
+          const createResponse = await fetch(createUrl, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${hubspotApiKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+          });
 
           if (!createResponse.ok) {
             const errorText = await createResponse.text();
+            console.error(`Failed to create association ${fromObjectType} -> ${toObjectType}: ${createResponse.status} - ${errorText}`);
             throw new Error(`Failed to create association ${fromObjectType} -> ${toObjectType}: ${createResponse.status} - ${errorText}`);
           }
+
+          const responseData = await createResponse.json();
+          console.log(`Association created successfully:`, responseData);
 
           associationsCreated.push({
             from: `${fromObjectType}(${fromObjectId})`,
             to: `${toObjectType}(${toObjectId})`,
             typeId: associationTypeId,
-            direction: 'bidirectional'
+            category: associationCategory
           });
 
-          console.log(`✓ Association created: ${fromObjectType}(${fromObjectId}) ↔ ${toObjectType}(${toObjectId})`);
+          console.log(`✓ Association created: ${fromObjectType}(${fromObjectId}) → ${toObjectType}(${toObjectId})`);
         } else {
-          console.log(`→ Association already exists: ${fromObjectType}(${fromObjectId}) ↔ ${toObjectType}(${toObjectId})`);
+          console.log(`→ Association already exists: ${fromObjectType}(${fromObjectId}) → ${toObjectType}(${toObjectId})`);
         }
 
       } catch (error) {
-        console.error(`Error creating association ${fromObjectType} ↔ ${toObjectType}:`, error);
+        console.error(`Error creating association ${fromObjectType} → ${toObjectType}:`, error);
         associationErrors.push({
           from: `${fromObjectType}(${fromObjectId})`,
           to: `${toObjectType}(${toObjectId})`,
@@ -187,39 +197,39 @@ serve(async (req) => {
     if (tipoCliente === 'productora' && productoraHubSpotId) {
       console.log('Creating associations for Productora business type');
 
-      // Contacto ↔ Empresa Productora (associationTypeId: 3)
-      await createBidirectionalAssociation(
+      // Contacto → Empresa Productora (associationTypeId: 3, USER_DEFINED)
+      await createAssociation(
         'contacts', contactHubSpotId,
         'companies', productoraHubSpotId,
         3, 'USER_DEFINED'
       );
 
-      // Contacto ↔ Empresa Cliente Final (associationTypeId: 5) - si existe
+      // Contacto → Empresa Cliente Final (associationTypeId: 5, USER_DEFINED) - si existe
       if (clienteFinalHubSpotId) {
-        await createBidirectionalAssociation(
+        await createAssociation(
           'contacts', contactHubSpotId,
           'companies', clienteFinalHubSpotId,
           5, 'USER_DEFINED'
         );
       }
 
-      // Contacto ↔ Negocio (HUBSPOT_DEFINED)
-      await createBidirectionalAssociation(
+      // Contacto → Negocio (standard association)
+      await createAssociation(
         'contacts', contactHubSpotId,
         'deals', hubspotDealId,
         3, 'HUBSPOT_DEFINED'
       );
 
-      // Negocio ↔ Empresa Productora (HUBSPOT_DEFINED)
-      await createBidirectionalAssociation(
+      // Negocio → Empresa Productora (standard association)
+      await createAssociation(
         'deals', hubspotDealId,
         'companies', productoraHubSpotId,
         5, 'HUBSPOT_DEFINED'
       );
 
-      // Empresa Productora ↔ Empresa Cliente Final (si existe)
+      // Empresa Productora → Empresa Cliente Final (si existe)
       if (clienteFinalHubSpotId) {
-        await createBidirectionalAssociation(
+        await createAssociation(
           'companies', productoraHubSpotId,
           'companies', clienteFinalHubSpotId,
           3, 'HUBSPOT_DEFINED'
@@ -229,22 +239,22 @@ serve(async (req) => {
     } else if (tipoCliente === 'cliente_final' && clienteFinalHubSpotId) {
       console.log('Creating associations for Cliente Final business type');
 
-      // Contacto ↔ Empresa Cliente Final (associationTypeId: 5)
-      await createBidirectionalAssociation(
+      // Contacto → Empresa Cliente Final (associationTypeId: 5, USER_DEFINED)
+      await createAssociation(
         'contacts', contactHubSpotId,
         'companies', clienteFinalHubSpotId,
         5, 'USER_DEFINED'
       );
 
-      // Contacto ↔ Negocio (HUBSPOT_DEFINED)
-      await createBidirectionalAssociation(
+      // Contacto → Negocio (standard association)
+      await createAssociation(
         'contacts', contactHubSpotId,
         'deals', hubspotDealId,
         3, 'HUBSPOT_DEFINED'
       );
 
-      // Negocio ↔ Empresa Cliente Final (HUBSPOT_DEFINED)
-      await createBidirectionalAssociation(
+      // Negocio → Empresa Cliente Final (standard association)
+      await createAssociation(
         'deals', hubspotDealId,
         'companies', clienteFinalHubSpotId,
         5, 'HUBSPOT_DEFINED'
