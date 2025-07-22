@@ -1,7 +1,8 @@
 
 import { useState, useMemo } from 'react';
 import { useNegocio } from '@/context/NegocioContext';
-import { calcularValorNegocio, analyzeBusinessState } from '@/utils/businessCalculations';
+import { calculateBusinessValue } from '@/utils/businessValueCalculator';
+import { analyzeBusinessState } from '@/utils/businessCalculations';
 import { Negocio } from '@/types';
 
 export const useBusinessTableLogic = () => {
@@ -83,7 +84,7 @@ export const useBusinessTableLogic = () => {
       showInconsistenciesOnly
     });
 
-    // Ordenar
+    // Ordenar usando la nueva función de cálculo de valor
     filtered.sort((a, b) => {
       let comparison = 0;
       
@@ -95,7 +96,7 @@ export const useBusinessTableLogic = () => {
           comparison = new Date(a.fechaCreacion).getTime() - new Date(b.fechaCreacion).getTime();
           break;
         case 'valor':
-          comparison = calcularValorNegocio(a) - calcularValorNegocio(b);
+          comparison = calculateBusinessValue(a) - calculateBusinessValue(b);
           break;
       }
 

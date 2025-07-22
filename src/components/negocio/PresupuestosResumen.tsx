@@ -11,9 +11,31 @@ interface PresupuestosResumenProps {
 
 const PresupuestosResumen: React.FC<PresupuestosResumenProps> = ({ presupuestos }) => {
   const totalPresupuestos = presupuestos.length;
-  const valorTotal = presupuestos.reduce((sum, p) => sum + p.total, 0);
   const presupuestosAprobados = presupuestos.filter(p => p.estado === 'aprobado').length;
   const presupuestosPublicados = presupuestos.filter(p => p.estado === 'publicado').length;
+
+  // Calculate value using the new logic
+  const approvedTotal = presupuestos
+    .filter(p => p.estado === 'aprobado')
+    .reduce((sum, p) => sum + (p.total || 0), 0);
+  
+  const rejectedTotal = presupuestos
+    .filter(p => p.estado === 'rechazado')
+    .reduce((sum, p) => sum + (p.total || 0), 0);
+
+  const sentTotal = presupuestos
+    .filter(p => p.estado === 'publicado')
+    .reduce((sum, p) => sum + (p.total || 0), 0);
+
+  // Apply the same logic as businessValueCalculator
+  let valorTotal = 0;
+  if (approvedTotal > 0) {
+    valorTotal = Math.max(0, approvedTotal - rejectedTotal);
+  } else if (sentTotal > 0) {
+    valorTotal = sentTotal;
+  } else {
+    valorTotal = rejectedTotal;
+  }
 
   const stats = [
     {
@@ -25,7 +47,7 @@ const PresupuestosResumen: React.FC<PresupuestosResumenProps> = ({ presupuestos 
       textColor: 'text-blue-700'
     },
     {
-      label: 'Valor Total',
+      label: approvedTotal > 0 && rejectedTotal > 0 ? 'Valor Neto' : 'Valor Total',
       value: formatearPrecio(valorTotal),
       icon: DollarSign,
       color: 'bg-green-500',

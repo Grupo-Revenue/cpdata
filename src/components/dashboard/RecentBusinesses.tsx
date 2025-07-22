@@ -7,7 +7,8 @@ import { useNegocio } from '@/context/NegocioContext';
 import { Building2, Plus, Calendar, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { calcularValorNegocio, obtenerEstadoNegocioInfo, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
+import { calculateBusinessValue } from '@/utils/businessValueCalculator';
+import { obtenerEstadoNegocioInfo, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
 import { formatearPrecio } from '@/utils/formatters';
 
 interface RecentBusinessesProps {
@@ -53,7 +54,7 @@ const RecentBusinesses: React.FC<RecentBusinessesProps> = ({ onCrearNegocio, onV
         ) : (
           <div className="space-y-3">
             {negociosRecientes.map((negocio) => {
-              const valorNegocio = calcularValorNegocio(negocio);
+              const valorNegocio = calculateBusinessValue(negocio);
               const { colorEstado } = obtenerEstadoNegocioInfo(negocio);
               
               return (

@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Eye, Calendar, Building2, User } from 'lucide-react';
 import { Negocio } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
-import { useCalcularValorNegocio, getBusinessStateColors, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
+import { calculateBusinessValue } from '@/utils/businessValueCalculator';
+import { getBusinessStateColors, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
 import { Badge } from '@/components/ui/badge';
 import { logger } from '@/utils/logger';
 
@@ -15,7 +16,7 @@ interface BusinessTableRowProps {
 }
 
 const BusinessTableRow: React.FC<BusinessTableRowProps> = React.memo(({ negocio, onVerNegocio }) => {
-  const valorTotal = useCalcularValorNegocio(negocio);
+  const valorTotal = calculateBusinessValue(negocio);
   
   const obtenerNombreEmpresa = React.useMemo(() => {
     if (negocio.productora) {

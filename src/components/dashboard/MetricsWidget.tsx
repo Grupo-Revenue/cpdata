@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Building2, FileText, TrendingUp, Target, CheckCircle, Clock } from 'lucide-react';
 import { useNegocio } from '@/context/NegocioContext';
-import { calcularValorNegocio } from '@/utils/businessCalculations';
+import { calculateBusinessValue } from '@/utils/businessValueCalculator';
 import { formatearPrecio } from '@/utils/formatters';
 
 const MetricsWidget: React.FC = () => {
@@ -17,8 +17,8 @@ const MetricsWidget: React.FC = () => {
   ).length;
   const negociosCerrados = negocios.filter(n => n.estado === 'negocio_cerrado').length;
 
-  // Calculate total value of all businesses
-  const valorTotal = negocios.reduce((total, negocio) => total + calcularValorNegocio(negocio), 0);
+  // Calculate total value using the corrected business value calculation
+  const valorTotal = negocios.reduce((total, negocio) => total + calculateBusinessValue(negocio), 0);
 
   const metrics = [
     {

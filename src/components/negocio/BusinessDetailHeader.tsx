@@ -19,7 +19,8 @@ import {
 } from 'lucide-react';
 import { Negocio } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
-import { calcularValorNegocio, formatBusinessStateForDisplay, getBusinessStateColors } from '@/utils/businessCalculations';
+import { calculateBusinessValue } from '@/utils/businessValueCalculator';
+import { formatBusinessStateForDisplay, getBusinessStateColors } from '@/utils/businessCalculations';
 
 
 interface BusinessDetailHeaderProps {
@@ -34,11 +35,23 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
   onCrearPresupuesto
 }) => {
   const navigate = useNavigate();
-  const valorTotal = calcularValorNegocio(negocio);
+  const valorTotal = calculateBusinessValue(negocio);
   
   // Get company name for the title
   const empresaDisplay = negocio.productora?.nombre || negocio.clienteFinal?.nombre || 'Sin empresa';
 
+  // Calculate breakdown for display
+  const approvedTotal = negocio.presupuestos
+    .filter(p => p.estado === 'aprobado')
+    .reduce((sum, p) => sum + (p.total || 0), 0);
+  
+  const rejectedTotal = negocio.presupuestos
+    .filter(p => p.estado === 'rechazado')
+    .reduce((sum, p) => sum + (p.total || 0), 0);
+
+  const hasApprovedBudgets = approvedTotal > 0;
+  const hasRejectedBudgets = rejectedTotal > 0;
+  const isNetCalculation = hasApprovedBudgets && hasRejectedBudgets;
 
   return (
     <div className="space-y-4 mb-6">
@@ -74,7 +87,9 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
               <DollarSign className="w-5 h-5 text-slate-700" />
             </div>
             <div>
-              <p className="text-xs text-slate-600 font-medium">Valor Total</p>
+              <p className="text-xs text-slate-600 font-medium">
+                {isNetCalculation ? 'Valor Neto' : 'Valor Total'}
+              </p>
               <div className="flex items-baseline space-x-2">
                 <span className="text-xl font-bold text-slate-900">
                   {formatearPrecio(valorTotal)}
@@ -86,6 +101,13 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
                   </div>
                 )}
               </div>
+              {isNetCalculation && (
+                <div className="text-xs text-slate-500 mt-1">
+                  <span className="text-emerald-600">+{formatearPrecio(approvedTotal)}</span>
+                  {' '}
+                  <span className="text-red-500">-{formatearPrecio(rejectedTotal)}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

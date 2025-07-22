@@ -1,12 +1,16 @@
 
 import { Negocio } from '@/types';
 import { useMemo } from 'react';
+import { calculateBusinessValue } from './businessValueCalculator';
 
 /**
- * Calcula el valor total del negocio sumando todos los presupuestos
+ * Calcula el valor total del negocio usando la nueva lógica:
+ * - Si hay presupuestos aprobados: aprobados - rechazados (no negativo)
+ * - Si no hay aprobados pero hay publicados: suma de publicados
+ * - Si solo hay rechazados: suma de rechazados
  */
 export const calcularValorNegocio = (negocio: Negocio): number => {
-  return negocio.presupuestos.reduce((total, presupuesto) => total + presupuesto.total, 0);
+  return calculateBusinessValue(negocio);
 };
 
 // Memoized version for use in components
