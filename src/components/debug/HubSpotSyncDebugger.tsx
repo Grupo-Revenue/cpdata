@@ -32,7 +32,11 @@ interface SyncLog {
   request_payload: any;
 }
 
-const HubSpotSyncDebugger = () => {
+interface HubSpotSyncDebuggerProps {
+  negocioId?: string;
+}
+
+const HubSpotSyncDebugger: React.FC<HubSpotSyncDebuggerProps> = ({ negocioId }) => {
   const [businesses, setBusinesses] = useState<DebugBusiness[]>([]);
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
   const [loading, setLoading] = useState(false);
