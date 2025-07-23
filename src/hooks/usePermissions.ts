@@ -1,3 +1,4 @@
+
 import { useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { ROLE_PERMISSIONS, Permission, Role } from '@/constants/permissions';
@@ -11,7 +12,7 @@ export const usePermissions = () => {
     // Si es admin, tiene el rol admin
     if (isAdmin) return ['admin'];
     
-    // Todos los demás usuarios tienen rol 'user'
+    // Todos los demás usuarios tienen rol 'user' por defecto
     return ['user'];
   }, [user, isAdmin, loading]);
 
@@ -62,6 +63,14 @@ export const usePermissions = () => {
     return userRoles.includes(role);
   };
 
+  const canManageUsers = (): boolean => {
+    return hasPermission('manage_roles') || hasPermission('create_users') || hasPermission('view_all_users');
+  };
+
+  const canAccessAdmin = (): boolean => {
+    return hasPermission('access_admin');
+  };
+
   return {
     permissions,
     userRoles,
@@ -69,6 +78,8 @@ export const usePermissions = () => {
     hasAnyPermission,
     hasAllPermissions,
     isUserRole,
+    canManageUsers,
+    canAccessAdmin,
     isAdmin,
     loading,
     isAuthenticated: !!user && !loading,
