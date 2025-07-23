@@ -93,6 +93,42 @@ export const cambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstad
       new_data: data
     });
 
+    // Auto-generate public link when state changes to "publicado"
+    if (nuevoEstado === 'publicado') {
+      try {
+        console.log('🔗 [Presupuesto Service] Auto-generating public link for published presupuesto:', {
+          presupuesto_id: presupuestoId,
+          negocio_id: negocioId
+        });
+
+        const { data: linkData, error: linkError } = await supabase.functions.invoke('hubspot-link-manager', {
+          body: {
+            presupuesto_id: presupuestoId,
+            negocio_id: negocioId,
+            regenerate: false
+          }
+        });
+
+        if (linkError) {
+          console.error('❌ [Presupuesto Service] Error creating public link:', linkError);
+          toast.error('Presupuesto publicado pero falló la generación del link público');
+        } else if (linkData && linkData.success) {
+          console.log('✅ [Presupuesto Service] Public link created successfully:', linkData.link?.id);
+          if (linkData.hubspot_updated) {
+            toast.success(`Presupuesto publicado y link sincronizado con HubSpot`);
+          } else {
+            toast.success('Presupuesto publicado. Link creado pero la sincronización con HubSpot falló');
+          }
+        } else {
+          console.error('❌ [Presupuesto Service] Link creation failed:', linkData);
+          toast.error('Presupuesto publicado pero falló la generación del link público');
+        }
+      } catch (linkGenerationError) {
+        console.error('❌ [Presupuesto Service] Unexpected error creating public link:', linkGenerationError);
+        toast.error('Presupuesto publicado pero falló la generación del link público');
+      }
+    }
+
     // Check if the state change affects business value calculation
     // IMPORTANT: Now rejections will affect the calculation when approved budgets exist
     const statesAffectingValue = ['aprobado', 'publicado', 'rechazado', 'vencido', 'borrador'];
@@ -109,7 +145,11 @@ export const cambiarEstadoPresupuesto = async (presupuestoId: string, nuevoEstad
       console.log('ℹ️ [Presupuesto Service] State change does not affect business value, skipping sync');
     }
 
-    toast.success(`Presupuesto actualizado a ${nuevoEstado}`);
+    // Update toast message if not already shown by link generation
+    if (nuevoEstado !== 'publicado') {
+      toast.success(`Presupuesto actualizado a ${nuevoEstado}`);
+    }
+
     return data;
 
   } catch (error) {
