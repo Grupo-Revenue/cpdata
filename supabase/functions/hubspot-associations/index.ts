@@ -220,14 +220,14 @@ serve(async (req) => {
         3, 'HUBSPOT_DEFINED'
       );
 
-      // Negocio → Empresa Productora (standard association)
+      // Negocio → Empresa Productora (UPDATED: associationTypeId: 7, USER_DEFINED)
       await createAssociation(
         'deals', hubspotDealId,
         'companies', productoraHubSpotId,
-        5, 'HUBSPOT_DEFINED'
+        7, 'USER_DEFINED'
       );
 
-      // CORRECCIÓN: Empresa Productora → Empresa Cliente Final (si existe) - associationTypeId: 1, USER_DEFINED
+      // Empresa Productora → Empresa Cliente Final (si existe) - associationTypeId: 1, USER_DEFINED
       if (clienteFinalHubSpotId) {
         await createAssociation(
           'companies', productoraHubSpotId,
@@ -253,11 +253,11 @@ serve(async (req) => {
         3, 'HUBSPOT_DEFINED'
       );
 
-      // Negocio → Empresa Cliente Final (standard association)
+      // Negocio → Empresa Cliente Final (UPDATED: associationTypeId: 9, USER_DEFINED)
       await createAssociation(
         'deals', hubspotDealId,
         'companies', clienteFinalHubSpotId,
-        5, 'HUBSPOT_DEFINED'
+        9, 'USER_DEFINED'
       );
     }
 
