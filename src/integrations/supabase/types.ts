@@ -128,6 +128,24 @@ export type Database = {
         }
         Relationships: []
       }
+      contador_global: {
+        Row: {
+          id: number
+          ultimo_numero: number
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          ultimo_numero?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          ultimo_numero?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contadores_usuario: {
         Row: {
           contador_negocio: number
@@ -732,7 +750,7 @@ export type Database = {
         }[]
       }
       get_next_business_number: {
-        Args: { p_user_id: string }
+        Args: Record<PropertyKey, never> | { p_user_id: string }
         Returns: number
       }
       get_public_budget_data: {

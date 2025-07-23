@@ -108,9 +108,9 @@ export const crearNegocioEnSupabase = async (negocioData: any): Promise<Negocio 
       }
     }
 
-    // Get next business number atomically using the new function
+    // Get next business number atomically using the global function
     const { data: nextNumberData, error: numberError } = await supabase
-      .rpc('get_next_business_number', { p_user_id: userId });
+      .rpc('get_next_business_number');
 
     if (numberError) throw numberError;
     
