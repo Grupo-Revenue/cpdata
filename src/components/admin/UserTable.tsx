@@ -154,7 +154,7 @@ export const UserTable: React.FC<UserTableProps> = ({
         .from('user_roles')
         .insert({
           user_id: userId,
-          role: newRole
+          role: newRole as 'admin' | 'user'
         });
 
       if (insertError) {
