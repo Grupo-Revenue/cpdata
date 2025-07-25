@@ -193,9 +193,9 @@ serve(async (req) => {
       }
     };
 
-    // Create associations based on business type
+    // Handle contact associations based on client type
     if (tipoCliente === 'productora' && productoraHubSpotId) {
-      console.log('Creating associations for Productora business type');
+      console.log('Creating contact associations for Productora business type');
 
       // Contacto → Empresa Productora (associationTypeId: 3, USER_DEFINED)
       await createAssociation(
@@ -213,31 +213,8 @@ serve(async (req) => {
         );
       }
 
-      // Contacto → Negocio (standard association)
-      await createAssociation(
-        'contacts', contactHubSpotId,
-        'deals', hubspotDealId,
-        3, 'HUBSPOT_DEFINED'
-      );
-
-      // Negocio → Empresa Productora (UPDATED: associationTypeId: 7, USER_DEFINED)
-      await createAssociation(
-        'deals', hubspotDealId,
-        'companies', productoraHubSpotId,
-        7, 'USER_DEFINED'
-      );
-
-      // Empresa Productora → Empresa Cliente Final (si existe) - associationTypeId: 1, USER_DEFINED
-      if (clienteFinalHubSpotId) {
-        await createAssociation(
-          'companies', productoraHubSpotId,
-          'companies', clienteFinalHubSpotId,
-          1, 'USER_DEFINED'
-        );
-      }
-
     } else if (tipoCliente === 'cliente_final' && clienteFinalHubSpotId) {
-      console.log('Creating associations for Cliente Final business type');
+      console.log('Creating contact associations for Cliente Final business type');
 
       // Contacto → Empresa Cliente Final (associationTypeId: 5, USER_DEFINED)
       await createAssociation(
@@ -245,19 +222,44 @@ serve(async (req) => {
         'companies', clienteFinalHubSpotId,
         5, 'USER_DEFINED'
       );
+    }
 
-      // Contacto → Negocio (standard association)
+    // Always associate Contact with Deal (standard association)
+    await createAssociation(
+      'contacts', contactHubSpotId,
+      'deals', hubspotDealId,
+      3, 'HUBSPOT_DEFINED'
+    );
+
+    // INDEPENDENT DEAL → COMPANY ASSOCIATIONS (regardless of tipoCliente)
+    console.log('Creating Deal → Company associations based on existing IDs');
+    
+    // Deal → Productora (associationTypeId: 7) if Productora exists
+    if (hubspotDealId && productoraHubSpotId) {
+      console.log(`Creating Deal → Productora association: ${hubspotDealId} → ${productoraHubSpotId}`);
       await createAssociation(
-        'contacts', contactHubSpotId,
         'deals', hubspotDealId,
-        3, 'HUBSPOT_DEFINED'
+        'companies', productoraHubSpotId,
+        7, 'USER_DEFINED'
       );
+    }
 
-      // Negocio → Empresa Cliente Final (UPDATED: associationTypeId: 9, USER_DEFINED)
+    // Deal → Cliente Final (associationTypeId: 9) if Cliente Final exists
+    if (hubspotDealId && clienteFinalHubSpotId) {
+      console.log(`Creating Deal → Cliente Final association: ${hubspotDealId} → ${clienteFinalHubSpotId}`);
       await createAssociation(
         'deals', hubspotDealId,
         'companies', clienteFinalHubSpotId,
         9, 'USER_DEFINED'
+      );
+    }
+
+    // Company → Company association (Productora → Cliente Final) if both exist
+    if (productoraHubSpotId && clienteFinalHubSpotId) {
+      await createAssociation(
+        'companies', productoraHubSpotId,
+        'companies', clienteFinalHubSpotId,
+        1, 'USER_DEFINED'
       );
     }
 
