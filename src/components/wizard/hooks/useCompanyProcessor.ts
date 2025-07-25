@@ -71,24 +71,48 @@ export const useCompanyProcessor = () => {
 
           // Now save/update in local database
           console.log('[useCompanyProcessor] Saving productora to local database...');
-          const { data: existingProductora, error: searchError } = await supabase
-            .from('empresas')
-            .select('id')
-            .eq('user_id', userId)
-            .eq('nombre', productora.nombre)
-            .eq('tipo', 'productora')
-            .maybeSingle();
+          
+          // First check if a company with this hubspot_id already exists (any user)
+          let existingProductora = null;
+          if (hubspotId) {
+            const { data: hubspotExisting, error: hubspotSearchError } = await supabase
+              .from('empresas')
+              .select('id, user_id')
+              .eq('hubspot_id', hubspotId)
+              .maybeSingle();
 
-          if (searchError) throw searchError;
+            if (hubspotSearchError) throw hubspotSearchError;
+            
+            if (hubspotExisting) {
+              existingProductora = hubspotExisting;
+              console.log('[useCompanyProcessor] Found existing company with hubspot_id:', hubspotId);
+            }
+          }
+
+          // If no company found by hubspot_id, check by name, type and user
+          if (!existingProductora) {
+            const { data: nameExisting, error: nameSearchError } = await supabase
+              .from('empresas')
+              .select('id, user_id')
+              .eq('user_id', userId)
+              .eq('nombre', productora.nombre)
+              .eq('tipo', 'productora')
+              .maybeSingle();
+
+            if (nameSearchError) throw nameSearchError;
+            existingProductora = nameExisting;
+          }
 
           if (existingProductora) {
             // Update existing productora
             const { error: updateError } = await supabase
               .from('empresas')
               .update({
+                nombre: productora.nombre,
                 rut: productora.rut,
                 direccion: productora.direccion,
                 sitio_web: productora.sitio_web,
+                user_id: userId, // Ensure user_id is updated if needed
                 hubspot_id: hubspotId
               })
               .eq('id', existingProductora.id);
@@ -163,24 +187,48 @@ export const useCompanyProcessor = () => {
 
           // Now save/update in local database
           console.log('[useCompanyProcessor] Saving cliente final to local database...');
-          const { data: existingCliente, error: searchError } = await supabase
-            .from('empresas')
-            .select('id')
-            .eq('user_id', userId)
-            .eq('nombre', clienteFinal.nombre)
-            .eq('tipo', 'cliente_final')
-            .maybeSingle();
+          
+          // First check if a company with this hubspot_id already exists (any user)
+          let existingCliente = null;
+          if (hubspotId) {
+            const { data: hubspotExisting, error: hubspotSearchError } = await supabase
+              .from('empresas')
+              .select('id, user_id')
+              .eq('hubspot_id', hubspotId)
+              .maybeSingle();
 
-          if (searchError) throw searchError;
+            if (hubspotSearchError) throw hubspotSearchError;
+            
+            if (hubspotExisting) {
+              existingCliente = hubspotExisting;
+              console.log('[useCompanyProcessor] Found existing company with hubspot_id:', hubspotId);
+            }
+          }
+
+          // If no company found by hubspot_id, check by name, type and user
+          if (!existingCliente) {
+            const { data: nameExisting, error: nameSearchError } = await supabase
+              .from('empresas')
+              .select('id, user_id')
+              .eq('user_id', userId)
+              .eq('nombre', clienteFinal.nombre)
+              .eq('tipo', 'cliente_final')
+              .maybeSingle();
+
+            if (nameSearchError) throw nameSearchError;
+            existingCliente = nameExisting;
+          }
 
           if (existingCliente) {
             // Update existing cliente final
             const { error: updateError } = await supabase
               .from('empresas')
               .update({
+                nombre: clienteFinal.nombre,
                 rut: clienteFinal.rut,
                 direccion: clienteFinal.direccion,
                 sitio_web: clienteFinal.sitio_web,
+                user_id: userId, // Ensure user_id is updated if needed
                 hubspot_id: hubspotId
               })
               .eq('id', existingCliente.id);
