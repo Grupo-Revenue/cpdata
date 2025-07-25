@@ -27,7 +27,18 @@ export const calculateBusinessValue = (negocio: Negocio): number => {
     total_budgets: negocio.presupuestos.length
   });
 
-  // UPDATED LOGIC: If there are approved budgets, use only their sum (no subtraction)
+  // NEW LOGIC: Sum approved and published budgets when both exist
+  if (approvedTotal > 0 && sentTotal > 0) {
+    const combinedTotal = approvedTotal + sentTotal;
+    console.log('🔄 [Business Value Calculator] Using combined approved + published total:', {
+      approved: approvedTotal,
+      published: sentTotal,
+      combined: combinedTotal
+    });
+    return combinedTotal;
+  }
+
+  // If only approved budgets exist, use their sum
   if (approvedTotal > 0) {
     console.log('✅ [Business Value Calculator] Using approved budgets total:', {
       approved: approvedTotal,

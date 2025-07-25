@@ -27,16 +27,19 @@ const PresupuestosResumen: React.FC<PresupuestosResumenProps> = ({ presupuestos 
     .filter(p => p.estado === 'publicado')
     .reduce((sum, p) => sum + (p.total || 0), 0);
 
-  // Apply the corrected logic: approved budgets predominate (no subtraction)
+  // NEW LOGIC: Sum approved and published when both exist
   let valorTotal = 0;
   let valueLabel = 'Valor Total';
   
-  if (approvedTotal > 0) {
+  if (approvedTotal > 0 && sentTotal > 0) {
+    valorTotal = approvedTotal + sentTotal;
+    valueLabel = 'Valor Total (Aprobado + Publicado)';
+  } else if (approvedTotal > 0) {
     valorTotal = approvedTotal;
-    valueLabel = rejectedTotal > 0 ? 'Valor Aprobado' : 'Valor Total';
+    valueLabel = 'Valor Aprobado';
   } else if (sentTotal > 0) {
     valorTotal = sentTotal;
-    valueLabel = 'Valor Enviado';
+    valueLabel = 'Valor Publicado';
   } else {
     valorTotal = rejectedTotal;
     valueLabel = 'Valor Rechazado';
