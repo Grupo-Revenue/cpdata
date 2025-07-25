@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import ProductNumberInput from './ProductNumberInput';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -227,13 +228,14 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
                     <div>
                       <Label htmlFor="precio">Precio *</Label>
                       <div className="flex gap-2">
-                        <Input
-                          id="precio"
-                          type="number"
-                          min="0"
+                        <ProductNumberInput
                           value={formData.precio}
-                          onChange={(e) => setFormData({ ...formData, precio: parseFloat(e.target.value) || 0 })}
-                          required
+                          onChange={(value) => setFormData({ ...formData, precio: value })}
+                          min={0}
+                          step={0.01}
+                          allowEmpty={true}
+                          placeholder="0"
+                          className="flex-1"
                         />
                         <Button
                           type="button"
@@ -266,22 +268,24 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="acreditadores">Acreditadores</Label>
-                      <Input
-                        id="acreditadores"
-                        type="number"
-                        min="0"
+                      <ProductNumberInput
                         value={formData.acreditadores}
-                        onChange={(e) => setFormData({ ...formData, acreditadores: parseInt(e.target.value) || 0 })}
+                        onChange={(value) => setFormData({ ...formData, acreditadores: Math.floor(value) })}
+                        min={0}
+                        step={1}
+                        allowEmpty={true}
+                        placeholder="0"
                       />
                     </div>
                     <div>
                       <Label htmlFor="supervisor">Supervisor</Label>
-                      <Input
-                        id="supervisor"
-                        type="number"
-                        min="0"
+                      <ProductNumberInput
                         value={formData.supervisor}
-                        onChange={(e) => setFormData({ ...formData, supervisor: parseInt(e.target.value) || 0 })}
+                        onChange={(value) => setFormData({ ...formData, supervisor: Math.floor(value) })}
+                        min={0}
+                        step={1}
+                        allowEmpty={true}
+                        placeholder="0"
                       />
                     </div>
                   </div>
