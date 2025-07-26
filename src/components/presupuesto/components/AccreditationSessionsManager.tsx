@@ -53,10 +53,10 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
   const [formData, setFormData] = useState({
     fecha: '',
     servicio: '',
-    acreditadores: 0,
-    supervisor: 0,
+    acreditadores: '',
+    supervisor: '',
     observacion: '',
-    precio: 0
+    precio: ''
   });
 
   // Deep comparison function for sessions arrays
@@ -103,10 +103,10 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
     setFormData({
       fecha: '',
       servicio: '',
-      acreditadores: 0,
-      supervisor: 0,
+      acreditadores: '',
+      supervisor: '',
       observacion: '',
-      precio: 0
+      precio: ''
     });
     setEditingSession(null);
   };
@@ -124,14 +124,21 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
     }
 
     try {
+      const sessionData = {
+        ...formData,
+        precio: parseFloat(formData.precio) || 0,
+        acreditadores: parseInt(formData.acreditadores) || 0,
+        supervisor: parseInt(formData.supervisor) || 0
+      };
+
       if (editingSession) {
-        updateSession(editingSession.id, formData);
+        updateSession(editingSession.id, sessionData);
         toast({
           title: "Éxito",
           description: "Jornada actualizada correctamente"
         });
       } else {
-        addSession(formData);
+        addSession(sessionData);
         toast({
           title: "Éxito", 
           description: "Jornada agregada correctamente"
@@ -154,10 +161,10 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
     setFormData({
       fecha: session.fecha,
       servicio: session.servicio,
-      acreditadores: session.acreditadores,
-      supervisor: session.supervisor,
+      acreditadores: session.acreditadores.toString(),
+      supervisor: session.supervisor.toString(),
       observacion: session.observacion || '',
-      precio: session.precio
+      precio: session.precio.toString()
     });
     setIsDialogOpen(true);
   };
@@ -169,9 +176,9 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
   }) => {
     setFormData({
       ...formData,
-      precio: result.precio,
-      acreditadores: result.acreditadores,
-      supervisor: result.supervisor
+      precio: result.precio.toString(),
+      acreditadores: result.acreditadores.toString(),
+      supervisor: result.supervisor.toString()
     });
   };
 
@@ -225,28 +232,27 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
                         required
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="precio">Precio *</Label>
-                      <div className="flex gap-2">
-                        <ProductNumberInput
-                          value={formData.precio}
-                          onChange={(value) => setFormData({ ...formData, precio: value })}
-                          min={0}
-                          step={0.01}
-                          allowEmpty={true}
-                          placeholder="0"
-                          className="flex-1"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setIsCalculatorOpen(true)}
-                        >
-                          <Calculator className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
+                     <div>
+                       <Label htmlFor="precio">Precio *</Label>
+                       <div className="flex gap-2">
+                         <Input
+                           id="precio"
+                           type="text"
+                           value={formData.precio}
+                           onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
+                           placeholder="0"
+                           className="flex-1"
+                         />
+                         <Button
+                           type="button"
+                           variant="outline"
+                           size="sm"
+                           onClick={() => setIsCalculatorOpen(true)}
+                         >
+                           <Calculator className="h-4 w-4" />
+                         </Button>
+                       </div>
+                     </div>
                   </div>
 
                   <div>
@@ -265,30 +271,28 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
                     </Select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="acreditadores">Acreditadores</Label>
-                      <ProductNumberInput
-                        value={formData.acreditadores}
-                        onChange={(value) => setFormData({ ...formData, acreditadores: Math.floor(value) })}
-                        min={0}
-                        step={1}
-                        allowEmpty={true}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="supervisor">Supervisor</Label>
-                      <ProductNumberInput
-                        value={formData.supervisor}
-                        onChange={(value) => setFormData({ ...formData, supervisor: Math.floor(value) })}
-                        min={0}
-                        step={1}
-                        allowEmpty={true}
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
+                   <div className="grid grid-cols-2 gap-4">
+                     <div>
+                       <Label htmlFor="acreditadores">Acreditadores</Label>
+                       <Input
+                         id="acreditadores"
+                         type="text"
+                         value={formData.acreditadores}
+                         onChange={(e) => setFormData({ ...formData, acreditadores: e.target.value })}
+                         placeholder="0"
+                       />
+                     </div>
+                     <div>
+                       <Label htmlFor="supervisor">Supervisor</Label>
+                       <Input
+                         id="supervisor"
+                         type="text"
+                         value={formData.supervisor}
+                         onChange={(e) => setFormData({ ...formData, supervisor: e.target.value })}
+                         placeholder="0"
+                       />
+                     </div>
+                   </div>
 
                   <div>
                     <Label htmlFor="observacion">Observación</Label>
