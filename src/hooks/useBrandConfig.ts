@@ -54,11 +54,10 @@ export const useBrandConfig = () => {
           nombre_empresa: data.nombre_empresa 
         });
         
-        // Add aggressive cache-busting with random string
-        const cacheId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        // Simple cache-busting only on force refresh
         const configWithCacheBuster = {
           ...data,
-          logo_url: data.logo_url ? `${data.logo_url}?v=${cacheId}&bust=${forceFetch ? 'force' : 'auto'}` : data.logo_url
+          logo_url: data.logo_url && forceFetch ? `${data.logo_url}?v=${Date.now()}` : data.logo_url
         };
         
         setConfig(configWithCacheBuster);
@@ -74,7 +73,7 @@ export const useBrandConfig = () => {
           direccion: 'Santiago, Chile',
           color_primario: '#3B82F6',
           color_secundario: '#1E40AF',
-          logo_url: `/lovable-uploads/4940a46b-bb0c-49a6-9dde-28cf758f350a.png?v=${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          logo_url: '/lovable-uploads/4940a46b-bb0c-49a6-9dde-28cf758f350a.png'
         };
         setConfig(defaultConfig);
         setLastFetch(Date.now());

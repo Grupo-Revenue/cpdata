@@ -20,19 +20,10 @@ import { LogOut, Settings, Shield, Building2 } from 'lucide-react';
 
 const Navigation = () => {
   const { user, signOut } = useAuth();
-  const { config: brandConfig, loading: configLoading, forceRefresh } = useBrandConfig();
+  const { config: brandConfig, loading: configLoading } = useBrandConfig();
   const { isConnected: hubspotConnected, isChecking: checkingConnection } = useHubSpotConnectionStatus();
   const { hasPermission } = usePermissions();
-
-  // Debug logging
-  useEffect(() => {
-    if (brandConfig) {
-      console.log('Navigation: Brand config updated', {
-        logo_url: brandConfig.logo_url,
-        nombre_empresa: brandConfig.nombre_empresa
-      });
-    }
-  }, [brandConfig]);
+  const [imageError, setImageError] = useState(false);
 
   if (!user) return null;
 
@@ -67,27 +58,16 @@ const Navigation = () => {
         <div className="flex h-16 items-center justify-between">
           {/* Logo y título - Estructura unificada */}
           <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.location.href = '/'}>
-            {brandConfig?.logo_url && !configLoading ? (
+            {brandConfig?.logo_url && !configLoading && !imageError ? (
               <img 
                 src={brandConfig.logo_url} 
                 alt={brandConfig.nombre_empresa || 'Logo'} 
                 className="h-10 w-auto max-w-[200px] object-contain"
                 onLoad={() => {
-                  console.log('Logo loaded successfully:', brandConfig.logo_url);
+                  setImageError(false);
                 }}
-                onError={(e) => {
-                  console.error('Logo failed to load:', {
-                    url: brandConfig.logo_url,
-                    originalSrc: e.currentTarget.src,
-                    error: e,
-                    timestamp: new Date().toISOString()
-                  });
-                  
-                  // Force refresh after a delay as last resort
-                  setTimeout(() => {
-                    console.log('Force refreshing brand config after logo load failure');
-                    forceRefresh();
-                  }, 2000);
+                onError={() => {
+                  setImageError(true);
                 }}
               />
             ) : (
