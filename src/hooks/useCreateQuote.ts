@@ -79,29 +79,9 @@ export const useCreateQuote = ({ negocioId, presupuestoId, onCerrar }: UseCreate
   }, [productos.length, baseProccedToEdit]);
 
   const guardarPresupuesto = useCallback(() => {
-    // Create a refresh callback to reload products from the updated presupuesto
-    const handleRefresh = useCallback(() => {
-      console.log('🔄 [useCreateQuote] Refresh triggered after save, reloading products...');
-      
-      // Force re-evaluation of presupuestoExistente to pick up fresh data
-      const freshNegocio = negocio;
-      const freshPresupuesto = presupuestoId ? 
-        freshNegocio?.presupuestos.find(p => p.id === presupuestoId) : null;
-      
-      if (freshPresupuesto && freshPresupuesto.productos) {
-        console.log('🔄 [useCreateQuote] Loading fresh products after save:', freshPresupuesto.productos.length);
-        
-        const productosConDescuento = freshPresupuesto.productos.map(producto => ({
-          ...producto,
-          descuentoPorcentaje: producto.descuentoPorcentaje || 0
-        }));
-        
-        setProductosFromExternal(productosConDescuento);
-      }
-    }, [negocio, presupuestoId, setProductosFromExternal]);
-    
-    baseSaveQuote(productos, handleRefresh);
-  }, [baseSaveQuote, productos, negocio, presupuestoId, setProductosFromExternal]);
+    console.log('💾 [useCreateQuote] Starting guardarPresupuesto...');
+    baseSaveQuote(productos);
+  }, [baseSaveQuote, productos]);
 
   const volverASeleccion = useCallback(() => {
     setStep('selection');

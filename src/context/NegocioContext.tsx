@@ -187,9 +187,12 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
       console.log('✅ [NegocioContext] Presupuesto updated successfully, refreshing from database...');
       
       // Force a complete refresh from the database to get fresh data including products with sessions
-      await obtenerNegocios();
-      
-      console.log('🔄 [NegocioContext] Database refresh completed for immediate UI update');
+      try {
+        await obtenerNegocios();
+        console.log('🔄 [NegocioContext] Database refresh completed for immediate UI update');
+      } catch (error) {
+        console.error('❌ [NegocioContext] Error refreshing negocios after presupuesto update:', error);
+      }
     }
     
     return presupuestoActualizado;
