@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  isAdmin: boolean;
+  isAdmin: boolean | null;
   signUp: (email: string, password: string, userData?: any) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -33,7 +33,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const { toast } = useToast();
   
   // Refs to prevent race conditions and duplicate calls
@@ -46,8 +46,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const currentUser = user;
     
     if (!currentUser) {
-      console.log('[Auth] No user found, setting isAdmin to false');
-      setIsAdmin(false);
+      console.log('[Auth] No user found, setting isAdmin to null');
+      setIsAdmin(null);
       retryAttempts.current = 0;
       return;
     }
@@ -135,7 +135,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Reset admin state and retry attempts when user changes
         if (!session?.user) {
-          setIsAdmin(false);
+          setIsAdmin(null);
           retryAttempts.current = 0;
           // Clear any pending admin check
           if (adminCheckTimeout.current) {
@@ -251,7 +251,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('[Auth] Signing out...');
     
     // Reset admin state immediately
-    setIsAdmin(false);
+    setIsAdmin(null);
     retryAttempts.current = 0;
     
     // Clear any pending admin checks

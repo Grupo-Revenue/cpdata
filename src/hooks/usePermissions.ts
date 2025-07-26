@@ -6,8 +6,11 @@ import { ROLE_PERMISSIONS, Permission, Role } from '@/constants/permissions';
 export const usePermissions = () => {
   const { user, isAdmin, loading } = useAuth();
   
-  // Consider permissions still loading if auth is loading or if we have a user but haven't determined admin status yet
-  const permissionsLoading = loading || (!!user && isAdmin === false && loading);
+  // Debug logging
+  console.log('[usePermissions] Debug:', { user: !!user, isAdmin, loading });
+  
+  // Consider permissions still loading if auth is loading OR if we have a user but admin status is null/undefined
+  const permissionsLoading = loading || (!!user && isAdmin === null);
 
   const userRoles = useMemo((): Role[] => {
     if (!user || loading) return [];

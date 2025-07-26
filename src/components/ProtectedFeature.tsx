@@ -70,7 +70,10 @@ export const ProtectedFeature: React.FC<ProtectedFeatureProps> = ({
   infoMessage,
   children,
 }) => {
-  const { hasPermission, hasAnyPermission, hasAllPermissions, loading, isAuthenticated } = usePermissions();
+  const { hasPermission, hasAnyPermission, hasAllPermissions, loading, isAuthenticated, isAdmin } = usePermissions();
+
+  // Debug logging
+  console.log('[ProtectedFeature] Debug:', { loading, isAuthenticated, isAdmin, permission, permissions });
 
   // Mientras carga permisos, mostrar indicador de carga
   if (loading) {
