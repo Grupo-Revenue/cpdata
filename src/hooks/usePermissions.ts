@@ -5,6 +5,9 @@ import { ROLE_PERMISSIONS, Permission, Role } from '@/constants/permissions';
 
 export const usePermissions = () => {
   const { user, isAdmin, loading } = useAuth();
+  
+  // Consider permissions still loading if auth is loading or if we have a user but haven't determined admin status yet
+  const permissionsLoading = loading || (!!user && isAdmin === false && loading);
 
   const userRoles = useMemo((): Role[] => {
     if (!user || loading) return [];
@@ -27,7 +30,7 @@ export const usePermissions = () => {
   }, [userRoles, user, loading]);
 
   const hasPermission = (permission: Permission): boolean => {
-    if (loading) return false;
+    if (permissionsLoading) return false;
     if (!user) return false;
     
     // Los admins siempre tienen todos los permisos
@@ -37,7 +40,7 @@ export const usePermissions = () => {
   };
 
   const hasAnyPermission = (requiredPermissions: Permission[]): boolean => {
-    if (loading) return false;
+    if (permissionsLoading) return false;
     if (!user) return false;
     
     // Los admins siempre tienen todos los permisos
@@ -47,7 +50,7 @@ export const usePermissions = () => {
   };
 
   const hasAllPermissions = (requiredPermissions: Permission[]): boolean => {
-    if (loading) return false;
+    if (permissionsLoading) return false;
     if (!user) return false;
     
     // Los admins siempre tienen todos los permisos
@@ -57,7 +60,7 @@ export const usePermissions = () => {
   };
 
   const isUserRole = (role: Role): boolean => {
-    if (loading) return false;
+    if (permissionsLoading) return false;
     if (!user) return false;
     
     return userRoles.includes(role);
@@ -81,7 +84,7 @@ export const usePermissions = () => {
     canManageUsers,
     canAccessAdmin,
     isAdmin,
-    loading,
-    isAuthenticated: !!user && !loading,
+    loading: permissionsLoading,
+    isAuthenticated: !!user && !permissionsLoading,
   };
 };

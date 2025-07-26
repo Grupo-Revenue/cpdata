@@ -21,28 +21,7 @@ const Admin = () => {
   const { toast } = useToast()
   const navigate = useNavigate()
 
-  useEffect(() => {
-    const checkAdmin = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        const { data: userRole, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .single();
-
-        if (error || !userRole) {
-          navigate('/');
-        }
-      } else {
-        navigate('/');
-      }
-    };
-
-    checkAdmin();
-  }, [navigate]);
+  // Removed duplicate admin check - ProtectedFeature already handles this
 
   const handleCreateUser = async () => {
     if (!email || !password) {

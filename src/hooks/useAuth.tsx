@@ -177,10 +177,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         clearTimeout(adminCheckTimeout.current);
       }
       
-      // Debounce the admin check to prevent rapid successive calls
+      // Reduce debounce for faster admin checks
       adminCheckTimeout.current = setTimeout(() => {
         checkAdminStatus();
-      }, 200);
+      }, 50);
     }
     
     return () => {

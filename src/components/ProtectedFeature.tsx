@@ -72,9 +72,16 @@ export const ProtectedFeature: React.FC<ProtectedFeatureProps> = ({
 }) => {
   const { hasPermission, hasAnyPermission, hasAllPermissions, loading, isAuthenticated } = usePermissions();
 
-  // Mientras carga, no mostrar nada o mostrar loading
+  // Mientras carga permisos, mostrar indicador de carga
   if (loading) {
-    return null;
+    return (
+      <div className="flex items-center justify-center min-h-[200px] p-6">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-sm text-muted-foreground">Verificando permisos...</p>
+        </div>
+      </div>
+    );
   }
 
   // Si no está autenticado, no mostrar nada
