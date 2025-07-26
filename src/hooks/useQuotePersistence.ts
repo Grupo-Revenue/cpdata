@@ -141,10 +141,12 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
           negocioId,
           presupuestoId,
           updateData,
-          productCount: productos.length
+          productCount: productos.length,
+          productsWithSessions: productos.filter(p => p.sessions && p.sessions.length > 0).length
         });
         
-        const result = await actualizarPresupuesto(negocioId, presupuestoId, updateData);
+        // Include products in update for sessions persistence
+        const result = await actualizarPresupuesto(negocioId, presupuestoId, updateData, productos);
         
         if (!result) {
           throw new Error('No se recibió confirmación de la actualización del presupuesto');

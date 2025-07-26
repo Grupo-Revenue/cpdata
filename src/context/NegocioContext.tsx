@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
-import { Negocio, Presupuesto, EstadoNegocio, EstadoPresupuesto } from '@/types';
+import { Negocio, Presupuesto, EstadoNegocio, EstadoPresupuesto, ProductoPresupuesto } from '@/types';
 import { obtenerNegociosDesdeSupabase } from '@/services/negocioService';
 import { 
   crearNegocioEnSupabase, 
@@ -27,7 +27,7 @@ interface NegocioContextProps {
   actualizarNegocio: (id: string, updates: Partial<Negocio>) => Promise<Negocio | null>;
   eliminarNegocio: (id: string) => Promise<boolean>;
   crearPresupuesto: (negocioId: string, presupuestoData: Omit<Presupuesto, 'id' | 'created_at' | 'updated_at'>) => Promise<Presupuesto | null>;
-  actualizarPresupuesto: (negocioId: string, presupuestoId: string, updates: Partial<Presupuesto>) => Promise<Presupuesto | null>;
+  actualizarPresupuesto: (negocioId: string, presupuestoId: string, updates: Partial<Presupuesto>, productos?: ProductoPresupuesto[]) => Promise<Presupuesto | null>;
   eliminarPresupuesto: (negocioId: string, presupuestoId: string) => Promise<boolean>;
   cambiarEstadoPresupuesto: (negocioId: string, presupuestoId: string, nuevoEstado: EstadoPresupuesto, fechaVencimiento?: string) => Promise<void>;
   cambiarEstadoNegocio: (negocioId: string, nuevoEstado: EstadoNegocio) => Promise<void>;
@@ -171,8 +171,17 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     return nuevoPresupuesto;
   };
 
-  const actualizarPresupuesto = async (negocioId: string, presupuestoId: string, updates: Partial<Presupuesto>): Promise<Presupuesto | null> => {
-    const presupuestoActualizado = await actualizarPresupuestoEnSupabase(presupuestoId, updates);
+  const actualizarPresupuesto = async (negocioId: string, presupuestoId: string, updates: Partial<Presupuesto>, productos?: ProductoPresupuesto[]): Promise<Presupuesto | null> => {
+    console.log('🔄 [NegocioContext] actualizarPresupuesto called with:', {
+      negocioId,
+      presupuestoId,
+      updates,
+      hasProductos: !!productos,
+      productCount: productos?.length || 0,
+      productsWithSessions: productos?.filter(p => p.sessions && p.sessions.length > 0).length || 0
+    });
+    
+    const presupuestoActualizado = await actualizarPresupuestoEnSupabase(presupuestoId, updates, productos);
     if (presupuestoActualizado) {
       // Optimistically update the negocios state
       setNegocios(prevNegocios =>
