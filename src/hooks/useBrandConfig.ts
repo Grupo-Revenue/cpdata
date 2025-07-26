@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 interface BrandConfig {
   id?: string;
@@ -28,11 +29,14 @@ export const useBrandConfig = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastFetch, setLastFetch] = useState<number>(0);
 
-  const loadConfig = async () => {
+  const loadConfig = async (forceFetch = false) => {
     try {
       setLoading(true);
       setError(null);
+      
+      logger.info('Loading brand config...', { forceFetch, lastFetch });
       
       const { data, error } = await supabase
         .from('configuracion_marca')
@@ -40,14 +44,28 @@ export const useBrandConfig = () => {
         .single();
 
       if (error && error.code !== 'PGRST116') {
+        logger.error('Error fetching brand config from database', error);
         throw error;
       }
 
       if (data) {
-        setConfig(data);
+        logger.info('Brand config loaded from database', { 
+          logo_url: data.logo_url,
+          nombre_empresa: data.nombre_empresa 
+        });
+        
+        // Add cache-busting timestamp to logo URL if it exists
+        const configWithCacheBuster = {
+          ...data,
+          logo_url: data.logo_url ? `${data.logo_url}?v=${Date.now()}` : data.logo_url
+        };
+        
+        setConfig(configWithCacheBuster);
+        setLastFetch(Date.now());
       } else {
+        logger.info('No brand config found in database, using default');
         // Configuración por defecto si no existe
-        setConfig({
+        const defaultConfig = {
           nombre_empresa: 'CP Data',
           telefono: '+56 9 1234 5678',
           email: 'contacto@cpdata.cl',
@@ -55,11 +73,13 @@ export const useBrandConfig = () => {
           direccion: 'Santiago, Chile',
           color_primario: '#3B82F6',
           color_secundario: '#1E40AF',
-          logo_url: '/lovable-uploads/4940a46b-bb0c-49a6-9dde-28cf758f350a.png'
-        });
+          logo_url: `/lovable-uploads/4940a46b-bb0c-49a6-9dde-28cf758f350a.png?v=${Date.now()}`
+        };
+        setConfig(defaultConfig);
+        setLastFetch(Date.now());
       }
     } catch (err) {
-      console.error('Error loading brand config:', err);
+      logger.error('Error loading brand config', err);
       setError('Error cargando configuración de marca');
     } finally {
       setLoading(false);
@@ -70,10 +90,17 @@ export const useBrandConfig = () => {
     loadConfig();
   }, []);
 
+  const forceRefresh = () => {
+    logger.info('Force refreshing brand config');
+    loadConfig(true);
+  };
+
   return {
     config,
     loading,
     error,
-    refetch: loadConfig
+    refetch: loadConfig,
+    forceRefresh,
+    lastFetch
   };
 };

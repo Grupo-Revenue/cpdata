@@ -20,9 +20,19 @@ import { LogOut, Settings, Shield, Building2 } from 'lucide-react';
 
 const Navigation = () => {
   const { user, signOut } = useAuth();
-  const { config: brandConfig, loading: configLoading } = useBrandConfig();
+  const { config: brandConfig, loading: configLoading, forceRefresh } = useBrandConfig();
   const { isConnected: hubspotConnected, isChecking: checkingConnection } = useHubSpotConnectionStatus();
   const { hasPermission } = usePermissions();
+
+  // Debug logging
+  useEffect(() => {
+    if (brandConfig) {
+      console.log('Navigation: Brand config updated', {
+        logo_url: brandConfig.logo_url,
+        nombre_empresa: brandConfig.nombre_empresa
+      });
+    }
+  }, [brandConfig]);
 
   if (!user) return null;
 
@@ -64,8 +74,21 @@ const Navigation = () => {
                   alt={brandConfig.nombre_empresa || 'Logo'} 
                   className="h-10 w-auto max-w-[200px] object-contain cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={() => window.location.href = '/'}
+                  onLoad={() => {
+                    console.log('Logo loaded successfully:', brandConfig.logo_url);
+                  }}
                   onError={(e) => {
-                    console.error('Error loading logo:', e);
+                    console.error('Error loading logo:', {
+                      url: brandConfig.logo_url,
+                      error: e,
+                      timestamp: new Date().toISOString()
+                    });
+                    // Try to force refresh config and retry
+                    setTimeout(() => {
+                      console.log('Attempting to refresh brand config due to logo load error');
+                      forceRefresh();
+                    }, 1000);
+                    
                     e.currentTarget.style.display = 'none';
                     const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
                     if (nextElement) {
