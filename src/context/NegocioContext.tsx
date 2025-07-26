@@ -182,21 +182,16 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     });
     
     const presupuestoActualizado = await actualizarPresupuestoEnSupabase(presupuestoId, updates, productos);
+    
     if (presupuestoActualizado) {
-      // Optimistically update the negocios state
-      setNegocios(prevNegocios =>
-        prevNegocios.map(negocio =>
-          negocio.id === negocioId
-            ? {
-                ...negocio,
-                presupuestos: negocio.presupuestos.map(presupuesto =>
-                  presupuesto.id === presupuestoId ? { ...presupuesto, ...presupuestoActualizado } : presupuesto
-                )
-              }
-            : negocio
-        )
-      );
+      console.log('✅ [NegocioContext] Presupuesto updated successfully, refreshing from database...');
+      
+      // Force a complete refresh from the database to get fresh data including products with sessions
+      await obtenerNegocios();
+      
+      console.log('🔄 [NegocioContext] Database refresh completed for immediate UI update');
     }
+    
     return presupuestoActualizado;
   };
 

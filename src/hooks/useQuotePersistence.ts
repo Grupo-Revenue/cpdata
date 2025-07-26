@@ -18,7 +18,7 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
   const presupuestoExistente = presupuestoId ? 
     negocio?.presupuestos.find(p => p.id === presupuestoId) : null;
 
-  const guardarPresupuesto = useCallback(async (productos: ProductoPresupuesto[]) => {
+  const guardarPresupuesto = useCallback(async (productos: ProductoPresupuesto[], onRefreshNeeded?: () => void) => {
     if (isSaving) {
       console.log('💡 [useQuotePersistence] Save operation already in progress, ignoring...');
       return;
@@ -154,6 +154,12 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
         
         console.log('✅ [useQuotePersistence] Presupuesto updated successfully:', result.id);
         
+        // Trigger refresh to update UI immediately
+        if (onRefreshNeeded) {
+          console.log('🔄 [useQuotePersistence] Triggering refresh for immediate UI update');
+          onRefreshNeeded();
+        }
+        
         toast({
           title: "Presupuesto actualizado",
           description: "El presupuesto ha sido actualizado exitosamente",
@@ -177,6 +183,12 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
         }
         
         console.log('✅ [useQuotePersistence] Presupuesto created successfully:', result.id);
+        
+        // Trigger refresh to update UI immediately  
+        if (onRefreshNeeded) {
+          console.log('🔄 [useQuotePersistence] Triggering refresh for immediate UI update');
+          onRefreshNeeded();
+        }
         
         toast({
           title: "Presupuesto creado",
