@@ -78,22 +78,25 @@ const Navigation = () => {
                     console.log('Logo loaded successfully:', brandConfig.logo_url);
                   }}
                   onError={(e) => {
-                    console.error('Error loading logo:', {
+                    console.error('Logo failed to load:', {
                       url: brandConfig.logo_url,
+                      originalSrc: e.currentTarget.src,
                       error: e,
                       timestamp: new Date().toISOString()
                     });
-                    // Try to force refresh config and retry
-                    setTimeout(() => {
-                      console.log('Attempting to refresh brand config due to logo load error');
-                      forceRefresh();
-                    }, 1000);
                     
+                    // Hide failed image and show fallback immediately
                     e.currentTarget.style.display = 'none';
                     const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
                     if (nextElement) {
                       nextElement.style.display = 'flex';
                     }
+                    
+                    // Force refresh after a delay as last resort
+                    setTimeout(() => {
+                      console.log('Force refreshing brand config after logo load failure');
+                      forceRefresh();
+                    }, 2000);
                   }}
                 />
                 {/* Fallback icon if logo fails to load */}
