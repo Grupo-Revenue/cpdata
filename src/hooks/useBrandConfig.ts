@@ -15,7 +15,17 @@ interface BrandConfig {
 }
 
 export const useBrandConfig = () => {
-  const [config, setConfig] = useState<BrandConfig | null>(null);
+  // Initialize with default config to prevent logo flashing
+  const [config, setConfig] = useState<BrandConfig | null>({
+    nombre_empresa: 'CP Data',
+    telefono: '+56 9 1234 5678',
+    email: 'contacto@cpdata.cl',
+    sitio_web: 'www.cpdata.cl',
+    direccion: 'Santiago, Chile',
+    color_primario: '#3B82F6',
+    color_secundario: '#1E40AF',
+    logo_url: '/lovable-uploads/dd39c78b-429b-4271-9bf4-27dd7d0ef555.png'
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,7 +55,7 @@ export const useBrandConfig = () => {
           direccion: 'Santiago, Chile',
           color_primario: '#3B82F6',
           color_secundario: '#1E40AF',
-          logo_url: 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=200&h=80&fit=crop'
+          logo_url: '/lovable-uploads/dd39c78b-429b-4271-9bf4-27dd7d0ef555.png'
         });
       }
     } catch (err) {
