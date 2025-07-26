@@ -213,6 +213,15 @@ export const UserTable: React.FC<UserTableProps> = ({
 
   useEffect(() => {
     fetchUsers();
+    
+    // Listen for user creation events to refresh the table
+    const handleUserCreated = () => {
+      console.log('👂 [UserTable] User created event received, refreshing...');
+      fetchUsers();
+    };
+    
+    window.addEventListener('userCreated', handleUserCreated);
+    return () => window.removeEventListener('userCreated', handleUserCreated);
   }, []);
 
   if (loading) {

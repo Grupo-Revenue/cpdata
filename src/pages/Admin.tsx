@@ -55,35 +55,52 @@ const Admin = () => {
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: password,
-        options: {
-          data: {
-            is_admin: false,
-          }
+      console.log('🚀 [Admin] Creating user via Edge Function...');
+      
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          email: email,
+          password: password
         }
-      })
+      });
 
       if (error) {
+        console.error('❌ [Admin] Error from Edge Function:', error);
         toast({
           title: "Error",
-          description: error.message,
+          description: error.message || "Error al crear usuario",
           variant: "destructive",
         })
         return;
       }
 
+      if (data?.error) {
+        console.error('❌ [Admin] Error in response:', data.error);
+        toast({
+          title: "Error",
+          description: data.error,
+          variant: "destructive",
+        })
+        return;
+      }
+
+      console.log('✅ [Admin] User created successfully:', data);
+      
       toast({
-        title: "Success",
+        title: "Éxito",
         description: "Usuario creado exitosamente.",
       })
       setEmail("")
       setPassword("")
+      
+      // Trigger refresh of the user table
+      window.dispatchEvent(new CustomEvent('userCreated'))
+      
     } catch (error: any) {
+      console.error('❌ [Admin] Unexpected error:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Error inesperado al crear usuario",
         variant: "destructive",
       })
     }
