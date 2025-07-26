@@ -65,66 +65,42 @@ const Navigation = () => {
     <nav className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
-          {/* Logo y título */}
-          <div className="flex items-center space-x-3">
+          {/* Logo y título - Estructura unificada */}
+          <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.location.href = '/'}>
             {brandConfig?.logo_url && !configLoading ? (
-              <div className="flex items-center">
-                <img 
-                  src={brandConfig.logo_url} 
-                  alt={brandConfig.nombre_empresa || 'Logo'} 
-                  className="h-10 w-auto max-w-[200px] object-contain cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => window.location.href = '/'}
-                  onLoad={() => {
-                    console.log('Logo loaded successfully:', brandConfig.logo_url);
-                  }}
-                  onError={(e) => {
-                    console.error('Logo failed to load:', {
-                      url: brandConfig.logo_url,
-                      originalSrc: e.currentTarget.src,
-                      error: e,
-                      timestamp: new Date().toISOString()
-                    });
-                    
-                    // Hide failed image and show fallback immediately
-                    e.currentTarget.style.display = 'none';
-                    const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
-                    if (nextElement) {
-                      nextElement.style.display = 'flex';
-                    }
-                    
-                    // Force refresh after a delay as last resort
-                    setTimeout(() => {
-                      console.log('Force refreshing brand config after logo load failure');
-                      forceRefresh();
-                    }, 2000);
-                  }}
-                />
-                {/* Fallback icon if logo fails to load */}
-                <div className="hidden items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.location.href = '/'}>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
-                    <Building2 className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="hidden sm:block">
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                      {brandConfig?.nombre_empresa || 'BusinessFlow'}
-                    </h1>
-                    <p className="text-xs text-muted-foreground">Sistema de Gestión</p>
-                  </div>
-                </div>
-              </div>
+              <img 
+                src={brandConfig.logo_url} 
+                alt={brandConfig.nombre_empresa || 'Logo'} 
+                className="h-10 w-auto max-w-[200px] object-contain"
+                onLoad={() => {
+                  console.log('Logo loaded successfully:', brandConfig.logo_url);
+                }}
+                onError={(e) => {
+                  console.error('Logo failed to load:', {
+                    url: brandConfig.logo_url,
+                    originalSrc: e.currentTarget.src,
+                    error: e,
+                    timestamp: new Date().toISOString()
+                  });
+                  
+                  // Force refresh after a delay as last resort
+                  setTimeout(() => {
+                    console.log('Force refreshing brand config after logo load failure');
+                    forceRefresh();
+                  }, 2000);
+                }}
+              />
             ) : (
-              <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.location.href = '/'}>
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
-                  <Building2 className="h-6 w-6 text-white" />
-                </div>
-                <div className="hidden sm:block">
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    {brandConfig?.nombre_empresa || 'BusinessFlow'}
-                  </h1>
-                  <p className="text-xs text-muted-foreground">Sistema de Gestión</p>
-                </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
+                <Building2 className="h-6 w-6 text-white" />
               </div>
             )}
+            <div className="hidden sm:block">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                {brandConfig?.nombre_empresa || 'BusinessFlow'}
+              </h1>
+              <p className="text-xs text-muted-foreground">Sistema de Gestión</p>
+            </div>
           </div>
           
           {/* Botones de acción y perfil */}
