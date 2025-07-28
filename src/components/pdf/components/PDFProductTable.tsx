@@ -50,7 +50,7 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
             <React.Fragment key={`producto-${producto.id || index}`}>
               <tr className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                 <td className="border border-gray-400 p-3">
-                  <div className="font-semibold text-gray-800">{producto.nombre}</div>
+                  <div className="font-semibold text-gray-800 text-lg">{producto.nombre}</div>
                   {producto.descripcion && (
                     <div className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{ __html: producto.descripcion }} />
                   )}
