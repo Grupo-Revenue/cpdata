@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useBrandConfig } from '@/hooks/useBrandConfig';
@@ -8,32 +7,32 @@ import { PERMISSIONS } from '@/constants/permissions';
 import { UserRoleIndicator } from '@/components/UserRoleIndicator';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { LogOut, Settings, Shield, Building2 } from 'lucide-react';
-
 const Navigation = () => {
-  const { user, signOut } = useAuth();
-  const { config: brandConfig, loading: configLoading } = useBrandConfig();
-  const { isConnected: hubspotConnected, isChecking: checkingConnection } = useHubSpotConnectionStatus();
-  const { hasPermission } = usePermissions();
+  const {
+    user,
+    signOut
+  } = useAuth();
+  const {
+    config: brandConfig,
+    loading: configLoading
+  } = useBrandConfig();
+  const {
+    isConnected: hubspotConnected,
+    isChecking: checkingConnection
+  } = useHubSpotConnectionStatus();
+  const {
+    hasPermission
+  } = usePermissions();
   const [imageError, setImageError] = useState(false);
-
   if (!user) return null;
-
   const getUserInitials = () => {
     if (user.user_metadata?.nombre && user.user_metadata?.apellido) {
       return `${user.user_metadata.nombre[0]}${user.user_metadata.apellido[0]}`.toUpperCase();
     }
     return user.email?.[0]?.toUpperCase() || 'U';
   };
-
   const getUserDisplayName = () => {
     if (user.user_metadata?.nombre && user.user_metadata?.apellido) {
       return `${user.user_metadata.nombre} ${user.user_metadata.apellido}`;
@@ -43,44 +42,25 @@ const Navigation = () => {
     }
     return user.email;
   };
-
   const navigateToAdmin = () => {
     window.location.href = '/admin';
   };
-
   const navigateToSettings = () => {
     window.location.href = '/settings';
   };
-
-  return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+  return <nav className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo y título - Estructura unificada */}
           <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.location.href = '/'}>
-            {brandConfig?.logo_url && !configLoading && !imageError ? (
-              <img 
-                src={brandConfig.logo_url} 
-                alt={brandConfig.nombre_empresa || 'Logo'} 
-                className="h-10 w-auto max-w-[200px] object-contain"
-                onLoad={() => {
-                  setImageError(false);
-                }}
-                onError={() => {
-                  setImageError(true);
-                }}
-              />
-            ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
+            {brandConfig?.logo_url && !configLoading && !imageError ? <img src={brandConfig.logo_url} alt={brandConfig.nombre_empresa || 'Logo'} className="h-10 w-auto max-w-[200px] object-contain" onLoad={() => {
+            setImageError(false);
+          }} onError={() => {
+            setImageError(true);
+          }} /> : <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
                 <Building2 className="h-6 w-6 text-white" />
-              </div>
-            )}
-            <div className="hidden sm:block">
-              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                {brandConfig?.nombre_empresa || 'BusinessFlow'}
-              </h1>
-              <p className="text-xs text-muted-foreground">Sistema de Gestión</p>
-            </div>
+              </div>}
+            
           </div>
           
           {/* Botones de acción y perfil */}
@@ -88,16 +68,7 @@ const Navigation = () => {
             {/* Indicador de conexión HubSpot */}
             <div className="flex items-center space-x-2">
               <div className="flex items-center space-x-1">
-                {checkingConnection ? (
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
-                ) : (
-                  <div 
-                    className={`w-2 h-2 rounded-full ${
-                      hubspotConnected ? 'bg-green-500' : 'bg-red-500'
-                    }`}
-                    title={hubspotConnected ? 'HubSpot conectado' : 'HubSpot desconectado'}
-                  ></div>
-                )}
+                {checkingConnection ? <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div> : <div className={`w-2 h-2 rounded-full ${hubspotConnected ? 'bg-green-500' : 'bg-red-500'}`} title={hubspotConnected ? 'HubSpot conectado' : 'HubSpot desconectado'}></div>}
                 <span className="text-xs text-muted-foreground hidden sm:inline">
                   HubSpot
                 </span>
@@ -146,15 +117,13 @@ const Navigation = () => {
                   </div>
                 </DropdownMenuItem>
                 
-                {hasPermission(PERMISSIONS.ACCESS_ADMIN) && (
-                  <DropdownMenuItem className="cursor-pointer p-3 rounded-lg hover:bg-accent/10 transition-colors" onClick={navigateToAdmin}>
+                {hasPermission(PERMISSIONS.ACCESS_ADMIN) && <DropdownMenuItem className="cursor-pointer p-3 rounded-lg hover:bg-accent/10 transition-colors" onClick={navigateToAdmin}>
                     <Shield className="mr-3 h-4 w-4 text-accent" />
                     <div className="flex flex-col">
                       <span className="text-sm">Administración</span>
                       <span className="text-xs text-muted-foreground">Panel de control</span>
                     </div>
-                  </DropdownMenuItem>
-                )}
+                  </DropdownMenuItem>}
                 
                 <DropdownMenuSeparator />
                 
@@ -170,8 +139,6 @@ const Navigation = () => {
           </div>
         </div>
       </div>
-    </nav>
-  );
+    </nav>;
 };
-
 export default Navigation;
