@@ -11,15 +11,34 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
   const cleanHtmlContent = (html: string) => {
     if (!html || html.trim() === '' || html.trim() === '0') return '';
     
-    // Remove standalone zeros and clean up content
-    const cleaned = html
-      .replace(/^0$/g, '') // Remove if content is just "0"
-      .replace(/>\s*0\s*</g, '><') // Remove zeros between tags
-      .replace(/>\s*0\s*$/g, '>') // Remove trailing zeros
-      .replace(/^0\s*</g, '<') // Remove leading zeros
+    // Create temporary element to parse HTML
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    
+    // Remove all text nodes that are just "0"
+    const walker = document.createTreeWalker(
+      temp,
+      NodeFilter.SHOW_TEXT,
+      null
+    );
+    
+    const textNodes = [];
+    let node;
+    while (node = walker.nextNode()) {
+      if (node.textContent?.trim() === '0') {
+        textNodes.push(node);
+      }
+    }
+    
+    textNodes.forEach(node => node.remove());
+    
+    // Clean up empty elements
+    const cleanedHtml = temp.innerHTML
+      .replace(/<[^>]*>\s*<\/[^>]*>/g, '') // Remove empty tags
+      .replace(/^\s*0\s*$/g, '') // Remove standalone zeros
       .trim();
     
-    return cleaned === '0' ? '' : cleaned;
+    return cleanedHtml === '0' || cleanedHtml === '' ? '' : cleanedHtml;
   };
 
   const renderSessionDetails = (sessions: any[]) => {
