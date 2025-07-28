@@ -16,7 +16,7 @@ interface BrandConfig {
 }
 
 export const useBrandConfig = () => {
-  // Initialize with default config to prevent logo flashing
+  // Initialize with default config without logo to prevent conflicts
   const [config, setConfig] = useState<BrandConfig | null>({
     nombre_empresa: 'CP Data',
     telefono: '+56 9 1234 5678',
@@ -24,8 +24,7 @@ export const useBrandConfig = () => {
     sitio_web: 'www.cpdata.cl',
     direccion: 'Santiago, Chile',
     color_primario: '#3B82F6',
-    color_secundario: '#1E40AF',
-    logo_url: '/lovable-uploads/9117dc90-5700-487a-8e16-024d18b1047b.webp'
+    color_secundario: '#1E40AF'
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,17 +53,17 @@ export const useBrandConfig = () => {
           nombre_empresa: data.nombre_empresa 
         });
         
-        // Simple cache-busting only on force refresh
+        // Add cache-busting for logo to force refresh
         const configWithCacheBuster = {
           ...data,
-          logo_url: data.logo_url && forceFetch ? `${data.logo_url}?v=${Date.now()}` : data.logo_url
+          logo_url: data.logo_url ? `${data.logo_url}?v=${Date.now()}` : undefined
         };
         
         setConfig(configWithCacheBuster);
         setLastFetch(Date.now());
       } else {
-        logger.info('No brand config found in database, using default');
-        // Configuración por defecto si no existe
+        logger.info('No brand config found in database, using default without logo');
+        // Configuración por defecto sin logo para forzar el uso de la base de datos
         const defaultConfig = {
           nombre_empresa: 'CP Data',
           telefono: '+56 9 1234 5678',
@@ -72,8 +71,7 @@ export const useBrandConfig = () => {
           sitio_web: 'www.cpdata.cl',
           direccion: 'Santiago, Chile',
           color_primario: '#3B82F6',
-          color_secundario: '#1E40AF',
-          logo_url: '/lovable-uploads/9117dc90-5700-487a-8e16-024d18b1047b.webp'
+          color_secundario: '#1E40AF'
         };
         setConfig(defaultConfig);
         setLastFetch(Date.now());

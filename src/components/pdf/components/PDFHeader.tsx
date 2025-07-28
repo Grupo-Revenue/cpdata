@@ -35,15 +35,26 @@ const PDFHeader: React.FC<PDFHeaderProps> = ({
         <div className="flex items-center gap-4">
           {brandConfig?.logo_url && (
             <img 
-              src={brandConfig.logo_url.startsWith('data:') ? brandConfig.logo_url : (brandConfig.logo_url.startsWith('/') ? `${window.location.origin}${brandConfig.logo_url}` : brandConfig.logo_url)} 
+              src={brandConfig.logo_url.startsWith('data:') 
+                ? brandConfig.logo_url 
+                : brandConfig.logo_url.startsWith('http') 
+                  ? brandConfig.logo_url
+                  : `${window.location.origin}${brandConfig.logo_url}`
+              } 
               alt={`${brandConfig.nombre_empresa} Logo`} 
               className="h-20 w-auto object-contain max-w-[200px]"
               onError={(e) => {
-                console.error('Error loading logo:', brandConfig.logo_url);
-                console.log('Full logo URL being used:', e.currentTarget.src);
+                console.error('❌ Error loading logo:', {
+                  originalUrl: brandConfig.logo_url,
+                  finalUrl: e.currentTarget.src,
+                  timestamp: new Date().toISOString()
+                });
               }}
               onLoad={() => {
-                console.log('Logo loaded successfully:', brandConfig.logo_url);
+                console.log('✅ Logo loaded successfully:', {
+                  originalUrl: brandConfig.logo_url,
+                  timestamp: new Date().toISOString()
+                });
               }}
             />
           )}
