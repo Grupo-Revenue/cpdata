@@ -25,7 +25,7 @@ export const useBrandConfig = () => {
     direccion: 'Santiago, Chile',
     color_primario: '#3B82F6',
     color_secundario: '#1E40AF',
-    logo_url: '/lovable-uploads/9117dc90-5700-487a-8e16-024d18b1047b.png'
+    logo_url: '/lovable-uploads/9117dc90-5700-487a-8e16-024d18b1047b.webp'
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +73,7 @@ export const useBrandConfig = () => {
           direccion: 'Santiago, Chile',
           color_primario: '#3B82F6',
           color_secundario: '#1E40AF',
-          logo_url: '/lovable-uploads/9117dc90-5700-487a-8e16-024d18b1047b.png'
+          logo_url: '/lovable-uploads/9117dc90-5700-487a-8e16-024d18b1047b.webp'
         };
         setConfig(defaultConfig);
         setLastFetch(Date.now());
