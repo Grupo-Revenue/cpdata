@@ -5,45 +5,36 @@ import { formatearPrecio } from '@/utils/formatters';
 import { useBrandConfig } from '@/hooks/useBrandConfig';
 import { Presupuesto, Negocio } from '@/types';
 import { QuoteTotals } from '@/utils/quoteCalculations';
-
 interface PDFHeaderProps {
   presupuesto: Presupuesto;
   negocio: Negocio;
   totales: QuoteTotals;
 }
-
-const PDFHeader: React.FC<PDFHeaderProps> = ({ presupuesto, negocio, totales }) => {
-  const { config: brandConfig } = useBrandConfig();
-  
-  const fechaActual = format(new Date(), 'dd/MM/yyyy', { locale: es });
-  
+const PDFHeader: React.FC<PDFHeaderProps> = ({
+  presupuesto,
+  negocio,
+  totales
+}) => {
+  const {
+    config: brandConfig
+  } = useBrandConfig();
+  const fechaActual = format(new Date(), 'dd/MM/yyyy', {
+    locale: es
+  });
   const formatearFechaVencimiento = () => {
     const fechaEmision = new Date();
     const fechaVencimiento = new Date(fechaEmision);
     fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
-    return format(fechaVencimiento, 'dd/MM/yyyy', { locale: es });
+    return format(fechaVencimiento, 'dd/MM/yyyy', {
+      locale: es
+    });
   };
-
-  return (
-    <div className="mb-6">
+  return <div className="mb-6">
       {/* Top Brand Section */}
       <div className="flex items-center justify-between border-b-2 border-gray-800 pb-4 mb-6">
         <div className="flex items-center gap-4">
-          {brandConfig?.logo_url && (
-            <img 
-              src={brandConfig.logo_url} 
-              alt={`${brandConfig.nombre_empresa} Logo`} 
-              className="h-16 w-auto object-contain" 
-            />
-          )}
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800 uppercase tracking-wide">
-              {brandConfig?.nombre_empresa || 'CP Data SpA'}
-            </h1>
-            <p className="text-sm text-gray-600 font-medium">
-              Soluciones Profesionales en Acreditación Digital
-            </p>
-          </div>
+          {brandConfig?.logo_url && <img src={brandConfig.logo_url} alt={`${brandConfig.nombre_empresa} Logo`} className="h-16 w-auto object-contain" />}
+          
         </div>
         
         {/* Quote Header */}
@@ -66,9 +57,7 @@ const PDFHeader: React.FC<PDFHeaderProps> = ({ presupuesto, negocio, totales }) 
               <div><span className="font-semibold">Contacto:</span> {negocio.contacto.nombre} {negocio.contacto.apellido}</div>
               <div><span className="font-semibold">Email:</span> {negocio.contacto.email}</div>
               <div><span className="font-semibold">Teléfono:</span> {negocio.contacto.telefono}</div>
-              {negocio.productora && (
-                <div><span className="font-semibold">Empresa:</span> {negocio.productora.nombre}</div>
-              )}
+              {negocio.productora && <div><span className="font-semibold">Empresa:</span> {negocio.productora.nombre}</div>}
             </div>
           </div>
           
@@ -77,15 +66,15 @@ const PDFHeader: React.FC<PDFHeaderProps> = ({ presupuesto, negocio, totales }) 
             <div className="text-sm space-y-1">
               <div><span className="font-semibold">Evento:</span> {negocio.evento.nombreEvento}</div>
               <div><span className="font-semibold">Tipo:</span> {negocio.evento.tipoEvento}</div>
-              <div><span className="font-semibold">Fecha:</span> {negocio.evento.fechaEvento ? format(new Date(negocio.evento.fechaEvento), 'dd/MM/yyyy', { locale: es }) : 'Por definir'}</div>
+              <div><span className="font-semibold">Fecha:</span> {negocio.evento.fechaEvento ? format(new Date(negocio.evento.fechaEvento), 'dd/MM/yyyy', {
+                locale: es
+              }) : 'Por definir'}</div>
               <div><span className="font-semibold">Lugar:</span> {negocio.evento.locacion}</div>
               <div><span className="font-semibold">Asistentes:</span> {negocio.evento.cantidadAsistentes}</div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default PDFHeader;
