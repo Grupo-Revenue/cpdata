@@ -46,24 +46,45 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
       return null;
     }
     
+    // Filter sessions that have valid personnel data
+    const validSessions = sessions.filter(session => {
+      const acreditadores = session.acreditadores || 0;
+      const supervisor = session.supervisor || 0;
+      const totalPersonal = acreditadores + supervisor;
+      
+      // Only show sessions with personnel > 0 and valid pricing
+      return totalPersonal > 0 && session.precio > 0;
+    });
+
+    if (validSessions.length === 0) {
+      return null;
+    }
+    
     return (
       <div className="ml-4 mt-2">
-        {sessions.map((session, index) => (
-          <div key={session.id || index} className="flex justify-between items-center py-1 text-sm border-b border-gray-200 last:border-b-0">
-            <div className="flex-1">
-              <span className="text-gray-700">{session.fecha} - {session.servicio}</span>
+        {validSessions.map((session, index) => {
+          const acreditadores = session.acreditadores || 0;
+          const supervisor = session.supervisor || 0;
+          const totalPersonal = acreditadores + supervisor;
+          const subtotal = session.precio * totalPersonal;
+          
+          return (
+            <div key={session.id || index} className="flex justify-between items-center py-1 text-sm border-b border-gray-200 last:border-b-0">
+              <div className="flex-1">
+                <span className="text-gray-700">{session.fecha} - {session.servicio}</span>
+              </div>
+              <div className="flex-1 text-center">
+                <span className="text-gray-600">{acreditadores} acred. + {supervisor} super.</span>
+              </div>
+              <div className="flex-1 text-right">
+                <span className="text-gray-700 font-medium">{formatearPrecio(session.precio)}</span>
+              </div>
+              <div className="w-24 text-right">
+                <span className="text-gray-700 font-medium">{formatearPrecio(subtotal)}</span>
+              </div>
             </div>
-            <div className="flex-1 text-center">
-              <span className="text-gray-600">{session.acreditadores} acred. + {session.supervisor} super.</span>
-            </div>
-            <div className="flex-1 text-right">
-              <span className="text-gray-700 font-medium">{formatearPrecio(session.precio)}</span>
-            </div>
-            <div className="w-24 text-right">
-              <span className="text-gray-700 font-medium">{formatearPrecio(session.precio * ((session.acreditadores || 0) + (session.supervisor || 0)))}</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
