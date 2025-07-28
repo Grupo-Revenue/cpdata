@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatearPrecio } from '@/utils/formatters';
+import { formatearPrecio, stripHtml } from '@/utils/formatters';
 import { Presupuesto } from '@/types';
 
 interface PDFProductTableProps {
@@ -7,6 +7,21 @@ interface PDFProductTableProps {
 }
 
 const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
+  // Function to clean HTML and prevent unwanted "0" values
+  const cleanHtmlContent = (html: string) => {
+    if (!html || html.trim() === '' || html.trim() === '0') return '';
+    
+    // Remove standalone zeros and clean up content
+    const cleaned = html
+      .replace(/^0$/g, '') // Remove if content is just "0"
+      .replace(/>\s*0\s*</g, '><') // Remove zeros between tags
+      .replace(/>\s*0\s*$/g, '>') // Remove trailing zeros
+      .replace(/^0\s*</g, '<') // Remove leading zeros
+      .trim();
+    
+    return cleaned === '0' ? '' : cleaned;
+  };
+
   const renderSessionDetails = (sessions: any[]) => {
     if (!sessions || sessions.length === 0) {
       return null;
@@ -51,11 +66,11 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
               <tr className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                 <td className="border border-gray-400 p-3">
                   <div className="font-semibold text-gray-800 text-lg">{producto.nombre}</div>
-                  {producto.descripcion && (
-                    <div className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{ __html: producto.descripcion }} />
+                  {producto.descripcion && cleanHtmlContent(producto.descripcion) && (
+                    <div className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{ __html: cleanHtmlContent(producto.descripcion) }} />
                   )}
-                  {producto.comentarios && (
-                    <div className="text-sm text-gray-600 mt-2 italic" dangerouslySetInnerHTML={{ __html: producto.comentarios }} />
+                  {producto.comentarios && cleanHtmlContent(producto.comentarios) && (
+                    <div className="text-sm text-gray-600 mt-2 italic" dangerouslySetInnerHTML={{ __html: cleanHtmlContent(producto.comentarios) }} />
                   )}
                   {producto.descuentoPorcentaje && producto.descuentoPorcentaje > 0 && (
                     <div className="text-sm text-red-600 font-medium mt-1">
