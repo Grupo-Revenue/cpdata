@@ -33,7 +33,13 @@ const PDFHeader: React.FC<PDFHeaderProps> = ({
       {/* Top Brand Section */}
       <div className="flex items-center justify-between border-b-2 border-gray-800 pb-4 mb-6">
         <div className="flex items-center gap-4">
-          {brandConfig?.logo_url && <img src={brandConfig.logo_url} alt={`${brandConfig.nombre_empresa} Logo`} className="h-20 w-auto object-contain max-w-[200px]" />}
+          {brandConfig?.logo_url && (
+            <img 
+              src={brandConfig.logo_url.startsWith('/') ? `${window.location.origin}${brandConfig.logo_url}` : brandConfig.logo_url} 
+              alt={`${brandConfig.nombre_empresa} Logo`} 
+              className="h-20 w-auto object-contain max-w-[200px]" 
+            />
+          )}
           
         </div>
         
