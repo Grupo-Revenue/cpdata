@@ -112,7 +112,11 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
                   {producto.comentarios && cleanHtmlContent(producto.comentarios) && (
                     <div className="text-sm text-gray-600 mt-2 italic" dangerouslySetInnerHTML={{ __html: cleanHtmlContent(producto.comentarios) }} />
                   )}
-                  
+                  {producto.descuentoPorcentaje && producto.descuentoPorcentaje > 0 && (
+                    <div className="text-sm text-red-600 font-medium mt-1">
+                      Descuento aplicado: {producto.descuentoPorcentaje}%
+                    </div>
+                  )}
                 </td>
                 <td className="border border-gray-400 p-3 text-center font-medium">{producto.cantidad}</td>
                 <td className="border border-gray-400 p-3 text-right font-medium">
