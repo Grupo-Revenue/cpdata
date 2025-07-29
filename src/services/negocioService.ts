@@ -37,7 +37,9 @@ export const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
             total,
             created_at,
             presupuesto_id,
-            sessions
+            sessions,
+            descuento_porcentaje,
+            comentarios
           )
         )
       `)
@@ -117,8 +119,8 @@ export const obtenerNegociosDesdeSupabase = async (): Promise<Negocio[]> => {
             
             return {
               ...producto,
-              comentarios: '',
-              descuentoPorcentaje: 0,
+              comentarios: producto.comentarios || '',
+              descuentoPorcentaje: producto.descuento_porcentaje || 0,
               precioUnitario: producto.precio_unitario,
               sessions: parsedSessions
             };

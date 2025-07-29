@@ -20,6 +20,7 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
       precio_unitario: productoBiblioteca.precio_base,
       precioUnitario: productoBiblioteca.precio_base,
       descuentoPorcentaje: 0,
+      descuento_porcentaje: 0,
       total: productoBiblioteca.precio_base,
       created_at: new Date().toISOString(),
       presupuesto_id: '',
@@ -52,6 +53,7 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
       precioUnitario: productoData.precioUnitario,
       comentarios: '',
       descuentoPorcentaje: 0,
+      descuento_porcentaje: 0,
       total: calcularTotalProducto(productoData.cantidad, productoData.precioUnitario, 0),
       created_at: new Date().toISOString(),
       presupuesto_id: '',
@@ -125,6 +127,7 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
           productoActualizado.cantidad = valor;
         } else if (campo === 'descuentoPorcentaje') {
           productoActualizado.descuentoPorcentaje = valor;
+          productoActualizado.descuento_porcentaje = valor;
         } else if (campo === 'total') {
           productoActualizado.total = valor;
         } else if (campo === 'nombre') {
@@ -154,6 +157,7 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
           } else if (campo === 'descuentoPorcentaje') {
             descuento = typeof valor === 'number' ? Math.max(0, Math.min(100, valor)) : Math.max(0, Math.min(100, parseFloat(valor) || 0));
             productoActualizado.descuentoPorcentaje = descuento;
+            productoActualizado.descuento_porcentaje = descuento;
           }
           
           const newTotal = calcularTotalProducto(cantidad, precio, descuento);
@@ -190,6 +194,7 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
         ...producto,
         comentarios: producto.comentarios || '',
         descuentoPorcentaje: producto.descuentoPorcentaje || 0,
+        descuento_porcentaje: producto.descuentoPorcentaje || producto.descuento_porcentaje || 0,
         precioUnitario: producto.precioUnitario || producto.precio_unitario,
         sessions: producto.sessions || (isAccreditationProduct ? [] : undefined),
         originalLibraryDescription: producto.originalLibraryDescription || producto.descripcion || ''

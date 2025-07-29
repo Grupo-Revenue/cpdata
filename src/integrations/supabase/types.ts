@@ -526,8 +526,10 @@ export type Database = {
       productos_presupuesto: {
         Row: {
           cantidad: number
+          comentarios: string | null
           created_at: string
           descripcion: string | null
+          descuento_porcentaje: number | null
           id: string
           nombre: string
           precio_unitario: number
@@ -537,8 +539,10 @@ export type Database = {
         }
         Insert: {
           cantidad?: number
+          comentarios?: string | null
           created_at?: string
           descripcion?: string | null
+          descuento_porcentaje?: number | null
           id?: string
           nombre: string
           precio_unitario: number
@@ -548,8 +552,10 @@ export type Database = {
         }
         Update: {
           cantidad?: number
+          comentarios?: string | null
           created_at?: string
           descripcion?: string | null
+          descuento_porcentaje?: number | null
           id?: string
           nombre?: string
           precio_unitario?: number

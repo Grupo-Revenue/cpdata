@@ -241,15 +241,26 @@ export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoD
 
     // Insert products
     if (presupuestoData.productos && presupuestoData.productos.length > 0) {
-      const productosToInsert = presupuestoData.productos.map((producto: any) => ({
-        presupuesto_id: presupuesto.id,
-        nombre: producto.nombre,
-        descripcion: producto.descripcion || '',
-        cantidad: producto.cantidad || 1,
-        precio_unitario: producto.precio_unitario || producto.precioUnitario || 0,
-        total: (producto.cantidad || 1) * (producto.precio_unitario || producto.precioUnitario || 0),
-        sessions: producto.sessions || null
-      }));
+      const productosToInsert = presupuestoData.productos.map((producto: any) => {
+        const discount = producto.descuentoPorcentaje || 0;
+        const precioUnitario = producto.precio_unitario || producto.precioUnitario || 0;
+        const cantidad = producto.cantidad || 1;
+        const baseTotal = cantidad * precioUnitario;
+        const discountAmount = baseTotal * (discount / 100);
+        const finalTotal = baseTotal - discountAmount;
+        
+        return {
+          presupuesto_id: presupuesto.id,
+          nombre: producto.nombre,
+          descripcion: producto.descripcion || '',
+          cantidad: cantidad,
+          precio_unitario: precioUnitario,
+          total: finalTotal,
+          descuento_porcentaje: discount,
+          comentarios: producto.comentarios || '',
+          sessions: producto.sessions || null
+        };
+      });
 
       console.log('📦 [Presupuesto Service] Inserting products:', productosToInsert.length);
 

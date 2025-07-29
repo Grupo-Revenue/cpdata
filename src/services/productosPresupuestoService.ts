@@ -27,13 +27,20 @@ export const actualizarProductosPresupuesto = async (
         sessionCount: producto.sessions?.length || 0
       });
       
+      const discount = producto.descuentoPorcentaje || 0;
+      const baseTotal = producto.cantidad * producto.precio_unitario;
+      const discountAmount = baseTotal * (discount / 100);
+      const finalTotal = baseTotal - discountAmount;
+      
       return {
         presupuesto_id: presupuestoId,
         nombre: producto.nombre,
         descripcion: producto.descripcion || '',
         cantidad: producto.cantidad,
         precio_unitario: producto.precio_unitario,
-        total: producto.cantidad * producto.precio_unitario,
+        total: finalTotal,
+        descuento_porcentaje: discount,
+        comentarios: producto.comentarios || '',
         sessions: producto.sessions && producto.sessions.length > 0 ? JSON.stringify(producto.sessions) : null
       };
     });
@@ -55,8 +62,8 @@ export const actualizarProductosPresupuesto = async (
     // Return products with proper typing and session parsing
     return productosCreados.map(producto => ({
       ...producto,
-      comentarios: '',
-      descuentoPorcentaje: 0,
+      comentarios: producto.comentarios || '',
+      descuentoPorcentaje: producto.descuento_porcentaje || 0,
       precioUnitario: producto.precio_unitario,
       sessions: producto.sessions ? 
         (typeof producto.sessions === 'string' ? JSON.parse(producto.sessions) : producto.sessions) : 

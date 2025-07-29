@@ -92,18 +92,24 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
         fechaRechazo: null,
         // Convert products to the format expected by the service
         productos: productos.map(producto => {
+          const discount = Number(producto.descuentoPorcentaje) || 0;
+          const baseTotal = Number(producto.cantidad || 1) * Number(producto.precio_unitario || 0);
+          const discountAmount = baseTotal * (discount / 100);
+          const finalTotal = baseTotal - discountAmount;
+          
           const cleanProduct = {
             id: producto.id || `temp-${Date.now()}-${Math.random()}`,
             nombre: producto.nombre || 'Producto sin nombre',
             descripcion: producto.descripcion || '',
             cantidad: Number(producto.cantidad) || 1,
             precio_unitario: Number(producto.precio_unitario) || 0,
-            total: Number(producto.cantidad || 1) * Number(producto.precio_unitario || 0),
+            total: finalTotal,
             created_at: new Date().toISOString(),
             presupuesto_id: presupuestoId || '',
             // Add extended properties for compatibility
             comentarios: producto.comentarios || '',
-            descuentoPorcentaje: Number(producto.descuentoPorcentaje) || 0,
+            descuentoPorcentaje: discount,
+            descuento_porcentaje: discount,
             precioUnitario: Number(producto.precio_unitario) || 0,
             sessions: producto.sessions || null
           };
