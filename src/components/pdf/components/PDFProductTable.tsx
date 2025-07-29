@@ -7,6 +7,16 @@ interface PDFProductTableProps {
 }
 
 const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
+  // DEBUG: Check what data we're receiving
+  console.log('[PDFProductTable] DEBUG - Full presupuesto data:', presupuesto);
+  console.log('[PDFProductTable] DEBUG - Products:', presupuesto.productos?.map(p => ({
+    nombre: p.nombre,
+    descuentoPorcentaje: p.descuentoPorcentaje,
+    descuento_porcentaje: (p as any).descuento_porcentaje,
+    comentarios: p.comentarios,
+    precio: p.precioUnitario || (p as any).precio_unitario,
+    total: p.total
+  })));
   // Function to clean HTML and prevent unwanted "0" values
   const cleanHtmlContent = (html: string) => {
     if (!html || html.trim() === '' || html.trim() === '0') return '';
