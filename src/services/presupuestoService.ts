@@ -350,15 +350,26 @@ export const actualizarPresupuestoEnSupabase = async (presupuestoId: string, upd
       
       // Insert new products
       if (productos.length > 0) {
-        const productosToInsert = productos.map(p => ({
-          presupuesto_id: presupuestoId,
-          nombre: p.nombre,
-          descripcion: p.descripcion || '',
-          cantidad: p.cantidad || 1,
-          precio_unitario: p.precio_unitario || p.precioUnitario || 0,
-          total: (p.cantidad || 1) * (p.precio_unitario || p.precioUnitario || 0),
-          sessions: p.sessions || null
-        }));
+        const productosToInsert = productos.map(p => {
+          const discount = p.descuentoPorcentaje || 0;
+          const precioUnitario = p.precio_unitario || p.precioUnitario || 0;
+          const cantidad = p.cantidad || 1;
+          const baseTotal = cantidad * precioUnitario;
+          const discountAmount = baseTotal * (discount / 100);
+          const finalTotal = baseTotal - discountAmount;
+          
+          return {
+            presupuesto_id: presupuestoId,
+            nombre: p.nombre,
+            descripcion: p.descripcion || '',
+            cantidad: cantidad,
+            precio_unitario: precioUnitario,
+            total: finalTotal,
+            descuento_porcentaje: discount,
+            comentarios: p.comentarios || '',
+            sessions: p.sessions || null
+          };
+        });
 
         const { error: insertError } = await supabase
           .from('productos_presupuesto')
