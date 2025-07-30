@@ -42,7 +42,7 @@ const PDFHeader: React.FC<PDFHeaderProps> = ({
                   : `${window.location.origin}${brandConfig.logo_url}`
               } 
               alt={`${brandConfig.nombre_empresa} Logo`} 
-              className="h-20 w-auto object-contain max-w-[150px]"
+              className="h-20 w-auto object-contain max-w-[200px]"
               onError={(e) => {
                 console.error('❌ Error loading logo:', {
                   originalUrl: brandConfig.logo_url,
