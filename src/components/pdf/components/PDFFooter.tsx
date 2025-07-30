@@ -8,10 +8,10 @@ const PDFFooter: React.FC = () => {
   const {
     config: termsConfig
   } = useBudgetTermsConfig();
-  return <div className="border-t-2 border-gray-800 pt-6 mt-8">
+  return <div className="pt-6 mt-8">
       
       {/* Terms and Conditions */}
-      <div className="border-t border-gray-300 pt-4">
+      <div className="pt-4">
         
         <div className="text-xs text-gray-600 leading-relaxed space-y-2">
           
