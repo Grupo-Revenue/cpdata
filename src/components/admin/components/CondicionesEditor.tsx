@@ -26,8 +26,8 @@ const CondicionesEditor: React.FC<CondicionesEditorProps> = ({
         cond.push(value);
       }
     }
-    // Always show at least one empty field for adding new conditions
-    const result = cond.length === 0 ? [''] : [...cond, ''];
+    // Only show empty field if we have less than 6 conditions
+    const result = cond.length < 6 ? [...cond, ''] : cond;
     console.log('[CondicionesEditor] Conditions array:', result);
     return result;
   }, [formData]);
@@ -53,16 +53,11 @@ const CondicionesEditor: React.FC<CondicionesEditorProps> = ({
   };
 
   const addCondicion = () => {
-    console.log('[CondicionesEditor] Add condition clicked, current length:', condiciones.length);
-    // Count non-empty conditions
+    console.log('[CondicionesEditor] Add condition clicked');
     const nonEmptyCount = condiciones.filter(cond => cond && cond.trim() !== '').length;
     if (nonEmptyCount < 6) {
-      const newCondiciones = [...condiciones];
-      // Remove the last empty field and add a new empty one
-      if (newCondiciones[newCondiciones.length - 1] === '') {
-        newCondiciones.pop();
-      }
-      newCondiciones.push('', ''); // Add content field and new empty field
+      // Simply add one empty condition
+      const newCondiciones = [...condiciones.filter(cond => cond.trim() !== ''), ''];
       updateCondiciones(newCondiciones);
     }
   };
@@ -70,10 +65,6 @@ const CondicionesEditor: React.FC<CondicionesEditorProps> = ({
   const removeCondicion = (index: number) => {
     console.log('[CondicionesEditor] Remove condition:', index);
     const newCondiciones = condiciones.filter((_, i) => i !== index);
-    // Ensure we always have at least one empty field
-    if (newCondiciones.length === 0 || newCondiciones[newCondiciones.length - 1] !== '') {
-      newCondiciones.push('');
-    }
     updateCondiciones(newCondiciones);
   };
 
@@ -150,17 +141,18 @@ const CondicionesEditor: React.FC<CondicionesEditorProps> = ({
             </div>
           ))}
           
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={addCondicion}
-            disabled={condiciones.filter(cond => cond && cond.trim() !== '').length >= 6}
-            className="w-full"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Agregar condición ({condiciones.filter(cond => cond && cond.trim() !== '').length}/6)
-          </Button>
+          {nonEmptyCondiciones.length < 6 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addCondicion}
+              className="w-full"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Agregar condición ({nonEmptyCondiciones.length}/6)
+            </Button>
+          )}
           
           <div className="text-xs text-muted-foreground">
             💡 Las condiciones aparecerán con viñetas automáticamente en el PDF

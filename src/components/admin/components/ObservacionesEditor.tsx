@@ -26,8 +26,8 @@ const ObservacionesEditor: React.FC<ObservacionesEditorProps> = ({
         obs.push(value);
       }
     }
-    // Always show at least one empty field for adding new observations
-    const result = obs.length === 0 ? [''] : [...obs, ''];
+    // Only show empty field if we have less than 6 observations
+    const result = obs.length < 6 ? [...obs, ''] : obs;
     console.log('[ObservacionesEditor] Observations array:', result);
     return result;
   }, [formData]);
@@ -53,16 +53,11 @@ const ObservacionesEditor: React.FC<ObservacionesEditorProps> = ({
   };
 
   const addObservation = () => {
-    console.log('[ObservacionesEditor] Add observation clicked, current length:', observations.length);
-    // Count non-empty observations
+    console.log('[ObservacionesEditor] Add observation clicked');
     const nonEmptyCount = observations.filter(obs => obs && obs.trim() !== '').length;
     if (nonEmptyCount < 6) {
-      const newObservations = [...observations];
-      // Remove the last empty field and add a new empty one
-      if (newObservations[newObservations.length - 1] === '') {
-        newObservations.pop();
-      }
-      newObservations.push('', ''); // Add content field and new empty field
+      // Simply add one empty observation
+      const newObservations = [...observations.filter(obs => obs.trim() !== ''), ''];
       updateObservations(newObservations);
     }
   };
@@ -70,10 +65,6 @@ const ObservacionesEditor: React.FC<ObservacionesEditorProps> = ({
   const removeObservation = (index: number) => {
     console.log('[ObservacionesEditor] Remove observation:', index);
     const newObservations = observations.filter((_, i) => i !== index);
-    // Ensure we always have at least one empty field
-    if (newObservations.length === 0 || newObservations[newObservations.length - 1] !== '') {
-      newObservations.push('');
-    }
     updateObservations(newObservations);
   };
 
@@ -150,17 +141,18 @@ const ObservacionesEditor: React.FC<ObservacionesEditorProps> = ({
             </div>
           ))}
           
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={addObservation}
-            disabled={observations.filter(obs => obs && obs.trim() !== '').length >= 6}
-            className="w-full"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Agregar observación ({observations.filter(obs => obs && obs.trim() !== '').length}/6)
-          </Button>
+          {nonEmptyObservations.length < 6 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addObservation}
+              className="w-full"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Agregar observación ({nonEmptyObservations.length}/6)
+            </Button>
+          )}
           
           <div className="text-xs text-muted-foreground">
             💡 Las observaciones aparecerán numeradas automáticamente en el PDF
