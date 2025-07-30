@@ -14,8 +14,6 @@ export interface BudgetTermsConfig {
   observacion_4: string;
   observacion_5: string;
   observacion_6: string;
-  terminos_pago_entrega: string;
-  terminos_garantias: string;
   certificacion_texto: string;
   documento_texto: string;
   created_at: string;

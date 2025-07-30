@@ -148,22 +148,6 @@ const AdminTermsConfig: React.FC = () => {
           <CardTitle>Términos y Condiciones del Pie de Página</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <ListEditor
-            label="Condiciones de Pago y Entrega"
-            value={formData.terminos_pago_entrega || ''}
-            onChange={(value) => handleChange('terminos_pago_entrega', value)}
-            placeholder="Ej: Los precios incluyen IVA y están expresados en pesos chilenos"
-            description="Agregue cada condición como un punto separado. Se mostrarán con viñetas en el PDF."
-          />
-          
-          <ListEditor
-            label="Garantías y Servicios"
-            value={formData.terminos_garantias || ''}
-            onChange={(value) => handleChange('terminos_garantias', value)}
-            placeholder="Ej: Garantía de 12 meses en equipos y 6 meses en servicios"
-            description="Agregue cada garantía o servicio como un punto separado. Se mostrarán con viñetas en el PDF."
-          />
-          <Separator />
           <div>
             <Label htmlFor="certificacion_texto">Texto de Certificación</Label>
             <Input
