@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Trash2, Eye, EyeOff } from 'lucide-react';
 
 interface CondicionesEditorProps {
   formData: any;
@@ -52,15 +52,6 @@ const CondicionesEditor: React.FC<CondicionesEditorProps> = ({
     updateCondiciones(newCondiciones);
   };
 
-  const addCondicion = () => {
-    console.log('[CondicionesEditor] Add condition clicked');
-    const nonEmptyCount = condiciones.filter(cond => cond && cond.trim() !== '').length;
-    if (nonEmptyCount < 6) {
-      // Simply add one empty condition
-      const newCondiciones = [...condiciones.filter(cond => cond.trim() !== ''), ''];
-      updateCondiciones(newCondiciones);
-    }
-  };
 
   const removeCondicion = (index: number) => {
     console.log('[CondicionesEditor] Remove condition:', index);
@@ -140,19 +131,6 @@ const CondicionesEditor: React.FC<CondicionesEditorProps> = ({
               </Button>
             </div>
           ))}
-          
-          {nonEmptyCondiciones.length < 6 && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addCondicion}
-              className="w-full"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Agregar condición ({nonEmptyCondiciones.length}/6)
-            </Button>
-          )}
           
           <div className="text-xs text-muted-foreground">
             💡 Las condiciones aparecerán con viñetas automáticamente en el PDF

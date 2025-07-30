@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Trash2, Eye, EyeOff } from 'lucide-react';
 
 interface ObservacionesEditorProps {
   formData: any;
@@ -52,15 +52,6 @@ const ObservacionesEditor: React.FC<ObservacionesEditorProps> = ({
     updateObservations(newObservations);
   };
 
-  const addObservation = () => {
-    console.log('[ObservacionesEditor] Add observation clicked');
-    const nonEmptyCount = observations.filter(obs => obs && obs.trim() !== '').length;
-    if (nonEmptyCount < 6) {
-      // Simply add one empty observation
-      const newObservations = [...observations.filter(obs => obs.trim() !== ''), ''];
-      updateObservations(newObservations);
-    }
-  };
 
   const removeObservation = (index: number) => {
     console.log('[ObservacionesEditor] Remove observation:', index);
@@ -140,19 +131,6 @@ const ObservacionesEditor: React.FC<ObservacionesEditorProps> = ({
               </Button>
             </div>
           ))}
-          
-          {nonEmptyObservations.length < 6 && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addObservation}
-              className="w-full"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Agregar observación ({nonEmptyObservations.length}/6)
-            </Button>
-          )}
           
           <div className="text-xs text-muted-foreground">
             💡 Las observaciones aparecerán numeradas automáticamente en el PDF
