@@ -3,11 +3,11 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { useBudgetTermsConfig, BudgetTermsConfig } from '@/hooks/useBudgetTermsConfig';
 import { Loader2, Save } from 'lucide-react';
+import ListEditor from './components/ListEditor';
 
 const AdminTermsConfig: React.FC = () => {
   const { config, loading, error, updateConfig } = useBudgetTermsConfig();
@@ -153,33 +153,22 @@ const AdminTermsConfig: React.FC = () => {
         <CardHeader>
           <CardTitle>Términos y Condiciones del Pie de Página</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="terminos_pago_entrega">Condiciones de Pago y Entrega</Label>
-            <p className="text-sm text-muted-foreground mb-2">
-              Escriba cada punto en una línea nueva. Los puntos (•) se agregarán automáticamente.
-            </p>
-            <Textarea
-              id="terminos_pago_entrega"
-              value={formData.terminos_pago_entrega || ''}
-              onChange={(e) => handleChange('terminos_pago_entrega', e.target.value)}
-              placeholder="Los precios incluyen IVA y están expresados en pesos chilenos&#10;Este presupuesto tiene validez de 30 días desde la fecha de emisión&#10;Forma de pago: 50% anticipo, 50% contra entrega&#10;Tiempo de entrega: 7-10 días hábiles desde confirmación del pedido"
-              rows={4}
-            />
-          </div>
-          <div>
-            <Label htmlFor="terminos_garantias">Garantías y Servicios</Label>
-            <p className="text-sm text-muted-foreground mb-2">
-              Escriba cada punto en una línea nueva. Los puntos (•) se agregarán automáticamente.
-            </p>
-            <Textarea
-              id="terminos_garantias"
-              value={formData.terminos_garantias || ''}
-              onChange={(e) => handleChange('terminos_garantias', e.target.value)}
-              placeholder="Garantía de 12 meses en equipos y 6 meses en servicios&#10;Soporte técnico 24/7 durante el evento&#10;Capacitación incluida para el uso de los sistemas&#10;Los servicios se ejecutarán según especificaciones técnicas acordadas"
-              rows={4}
-            />
-          </div>
+        <CardContent className="space-y-6">
+          <ListEditor
+            label="Condiciones de Pago y Entrega"
+            value={formData.terminos_pago_entrega || ''}
+            onChange={(value) => handleChange('terminos_pago_entrega', value)}
+            placeholder="Ej: Los precios incluyen IVA y están expresados en pesos chilenos"
+            description="Agregue cada condición como un punto separado. Se mostrarán con viñetas en el PDF."
+          />
+          
+          <ListEditor
+            label="Garantías y Servicios"
+            value={formData.terminos_garantias || ''}
+            onChange={(value) => handleChange('terminos_garantias', value)}
+            placeholder="Ej: Garantía de 12 meses en equipos y 6 meses en servicios"
+            description="Agregue cada garantía o servicio como un punto separado. Se mostrarán con viñetas en el PDF."
+          />
           <Separator />
           <div>
             <Label htmlFor="certificacion_texto">Texto de Certificación</Label>
