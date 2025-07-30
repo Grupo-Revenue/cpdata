@@ -117,16 +117,126 @@ serve(async (req) => {
       }
     }
 
-    console.log('👤 [admin-delete-user] Deleting user:', userId);
+    console.log('👤 [admin-delete-user] Deleting user and related data:', userId);
 
-    // Delete user using admin client (this will cascade to profiles and user_roles)
-    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    try {
+      // Step 1: Delete related data in the correct order to avoid foreign key constraints
+      console.log('🔄 [admin-delete-user] Deleting user related data...');
+      
+      // Delete user's businesses and related data
+      const { error: negociosError } = await supabaseAdmin
+        .from('negocios')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (negociosError) {
+        console.error('❌ [admin-delete-user] Error deleting negocios:', negociosError);
+      }
 
-    if (deleteError) {
-      console.error('❌ [admin-delete-user] Error deleting user:', deleteError);
+      // Delete user's contacts
+      const { error: contactosError } = await supabaseAdmin
+        .from('contactos')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (contactosError) {
+        console.error('❌ [admin-delete-user] Error deleting contactos:', contactosError);
+      }
+
+      // Delete user's companies
+      const { error: empresasError } = await supabaseAdmin
+        .from('empresas')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (empresasError) {
+        console.error('❌ [admin-delete-user] Error deleting empresas:', empresasError);
+      }
+
+      // Delete user's HubSpot API keys
+      const { error: hubspotKeysError } = await supabaseAdmin
+        .from('hubspot_api_keys')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (hubspotKeysError) {
+        console.error('❌ [admin-delete-user] Error deleting hubspot keys:', hubspotKeysError);
+      }
+
+      // Delete user's stage mappings
+      const { error: stageMappingError } = await supabaseAdmin
+        .from('hubspot_stage_mapping')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (stageMappingError) {
+        console.error('❌ [admin-delete-user] Error deleting stage mappings:', stageMappingError);
+      }
+
+      // Delete user's counters
+      const { error: contadoresError } = await supabaseAdmin
+        .from('contadores_usuario')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (contadoresError) {
+        console.error('❌ [admin-delete-user] Error deleting contadores:', contadoresError);
+      }
+
+      // Delete user's audit logs
+      const { error: auditError } = await supabaseAdmin
+        .from('business_number_audit')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (auditError) {
+        console.error('❌ [admin-delete-user] Error deleting audit logs:', auditError);
+      }
+
+      // Delete user roles
+      const { error: rolesError } = await supabaseAdmin
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (rolesError) {
+        console.error('❌ [admin-delete-user] Error deleting user roles:', rolesError);
+      }
+
+      // Delete user profile
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+      
+      if (profileError) {
+        console.error('❌ [admin-delete-user] Error deleting profile:', profileError);
+      }
+
+      console.log('✅ [admin-delete-user] Related data deleted successfully');
+
+      // Step 2: Now delete the user from auth.users
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+      if (deleteError) {
+        console.error('❌ [admin-delete-user] Error deleting auth user:', deleteError);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Failed to delete user from authentication system',
+            details: deleteError.message 
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+    } catch (error) {
+      console.error('❌ [admin-delete-user] Unexpected error during deletion:', error);
       return new Response(
-        JSON.stringify({ error: deleteError.message }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: 'Failed to delete user and related data',
+          details: error instanceof Error ? error.message : 'Unknown error'
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
