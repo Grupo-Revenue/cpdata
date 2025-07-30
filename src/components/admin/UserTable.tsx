@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { RefreshCw, UserPlus, Shield, User, Loader2 } from "lucide-react"
+import { RefreshCw, UserPlus, Shield, User, Loader2, Trash2 } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -63,6 +63,7 @@ export const UserTable: React.FC<UserTableProps> = ({
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [changingRole, setChangingRole] = useState<string | null>(null);
+  const [deletingUser, setDeletingUser] = useState<string | null>(null);
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
 
@@ -177,6 +178,50 @@ export const UserTable: React.FC<UserTableProps> = ({
       });
     } finally {
       setChangingRole(null);
+    }
+  };
+
+  const deleteUser = async (userId: string, userName: string) => {
+    if (currentUser?.id === userId) {
+      toast({
+        title: "Acción no permitida",
+        description: "No puedes eliminar tu propia cuenta",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setDeletingUser(userId);
+      
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { userId }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      toast({
+        title: "Usuario eliminado",
+        description: `El usuario ${userName} ha sido eliminado exitosamente`
+      });
+
+      // Recargar usuarios
+      await fetchUsers();
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo eliminar el usuario",
+        variant: "destructive"
+      });
+    } finally {
+      setDeletingUser(null);
     }
   };
 
@@ -314,6 +359,7 @@ export const UserTable: React.FC<UserTableProps> = ({
               const currentRole = getUserRole(user);
               const isCurrentUser = currentUser?.id === user.id;
               const isChangingThisUser = changingRole === user.id;
+              const isDeletingThisUser = deletingUser === user.id;
 
               return (
                 <TableRow key={user.id}>
@@ -361,6 +407,55 @@ export const UserTable: React.FC<UserTableProps> = ({
                       </Select>
                       {isChangingThisUser && (
                         <Loader2 className="h-4 w-4 animate-spin" />
+                      )}
+                      {!isCurrentUser && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              disabled={isDeletingThisUser}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              {isDeletingThisUser ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción eliminará permanentemente la cuenta de{' '}
+                                <strong>
+                                  {user.nombre && user.apellido 
+                                    ? `${user.nombre} ${user.apellido}` 
+                                    : user.email
+                                  }
+                                </strong>{' '}
+                                ({user.email}). Esta acción no se puede deshacer.
+                                <br /><br />
+                                Todos los datos asociados al usuario serán eliminados.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => deleteUser(
+                                  user.id, 
+                                  user.nombre && user.apellido 
+                                    ? `${user.nombre} ${user.apellido}` 
+                                    : user.email
+                                )}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Eliminar Usuario
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </div>
                     {isCurrentUser && currentRole === 'admin' && (
