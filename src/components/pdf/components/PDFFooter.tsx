@@ -1,8 +1,10 @@
 import React from 'react';
 import { useBrandConfig } from '@/hooks/useBrandConfig';
+import { useBudgetTermsConfig } from '@/hooks/useBudgetTermsConfig';
 
 const PDFFooter: React.FC = () => {
   const { config: brandConfig } = useBrandConfig();
+  const { config: termsConfig } = useBudgetTermsConfig();
 
   return (
     <div className="border-t-2 border-gray-800 pt-6 mt-8">
@@ -32,30 +34,40 @@ const PDFFooter: React.FC = () => {
           <div className="grid grid-cols-2 gap-6">
             <div>
               <p className="font-semibold text-gray-700 mb-1">CONDICIONES DE PAGO Y ENTREGA:</p>
-              <ul className="space-y-1">
-                <li>• Los precios incluyen IVA y están expresados en pesos chilenos</li>
-                <li>• Este presupuesto tiene validez de 30 días desde la fecha de emisión</li>
-                <li>• Forma de pago: 50% anticipo, 50% contra entrega</li>
-                <li>• Tiempo de entrega: 7-10 días hábiles desde confirmación del pedido</li>
-              </ul>
+              <div className="space-y-1">
+                {(termsConfig?.terminos_pago_entrega || 
+                  'Los precios incluyen IVA y están expresados en pesos chilenos\n• Este presupuesto tiene validez de 30 días desde la fecha de emisión\n• Forma de pago: 50% anticipo, 50% contra entrega\n• Tiempo de entrega: 7-10 días hábiles desde confirmación del pedido')
+                  .split('\n')
+                  .filter(line => line.trim())
+                  .map((line, index) => (
+                    <div key={index}>
+                      {line.startsWith('•') ? line : `• ${line}`}
+                    </div>
+                  ))}
+              </div>
             </div>
             <div>
               <p className="font-semibold text-gray-700 mb-1">GARANTÍAS Y SERVICIOS:</p>
-              <ul className="space-y-1">
-                <li>• Garantía de 12 meses en equipos y 6 meses en servicios</li>
-                <li>• Soporte técnico 24/7 durante el evento</li>
-                <li>• Capacitación incluida para el uso de los sistemas</li>
-                <li>• Los servicios se ejecutarán según especificaciones técnicas acordadas</li>
-              </ul>
+              <div className="space-y-1">
+                {(termsConfig?.terminos_garantias || 
+                  'Garantía de 12 meses en equipos y 6 meses en servicios\n• Soporte técnico 24/7 durante el evento\n• Capacitación incluida para el uso de los sistemas\n• Los servicios se ejecutarán según especificaciones técnicas acordadas')
+                  .split('\n')
+                  .filter(line => line.trim())
+                  .map((line, index) => (
+                    <div key={index}>
+                      {line.startsWith('•') ? line : `• ${line}`}
+                    </div>
+                  ))}
+              </div>
             </div>
           </div>
           
           <div className="mt-4 pt-3 border-t border-gray-200 text-center">
             <p className="font-semibold text-gray-700">
-              Empresa certificada en normas ISO 9001:2015 | Registrada en ChileCompra
+              {termsConfig?.certificacion_texto || 'Empresa certificada en normas ISO 9001:2015 | Registrada en ChileCompra'}
             </p>
             <p className="text-gray-600 mt-1">
-              Este documento constituye una propuesta comercial sujeta a aceptación formal
+              {termsConfig?.documento_texto || 'Este documento constituye una propuesta comercial sujeta a aceptación formal'}
             </p>
           </div>
         </div>

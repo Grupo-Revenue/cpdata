@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      budget_terms_config: {
+        Row: {
+          certificacion_texto: string
+          created_at: string
+          documento_texto: string
+          forma_pago: string
+          id: string
+          moneda: string
+          observacion_1: string
+          observacion_2: string
+          observacion_3: string
+          observacion_4: string
+          observacion_5: string
+          observacion_6: string
+          precios_incluyen: string
+          terminos_garantias: string
+          terminos_pago_entrega: string
+          tiempo_entrega: string
+          updated_at: string
+          validez_oferta: string
+        }
+        Insert: {
+          certificacion_texto?: string
+          created_at?: string
+          documento_texto?: string
+          forma_pago?: string
+          id?: string
+          moneda?: string
+          observacion_1?: string
+          observacion_2?: string
+          observacion_3?: string
+          observacion_4?: string
+          observacion_5?: string
+          observacion_6?: string
+          precios_incluyen?: string
+          terminos_garantias?: string
+          terminos_pago_entrega?: string
+          tiempo_entrega?: string
+          updated_at?: string
+          validez_oferta?: string
+        }
+        Update: {
+          certificacion_texto?: string
+          created_at?: string
+          documento_texto?: string
+          forma_pago?: string
+          id?: string
+          moneda?: string
+          observacion_1?: string
+          observacion_2?: string
+          observacion_3?: string
+          observacion_4?: string
+          observacion_5?: string
+          observacion_6?: string
+          precios_incluyen?: string
+          terminos_garantias?: string
+          terminos_pago_entrega?: string
+          tiempo_entrega?: string
+          updated_at?: string
+          validez_oferta?: string
+        }
+        Relationships: []
+      }
       business_number_audit: {
         Row: {
           assigned_at: string | null

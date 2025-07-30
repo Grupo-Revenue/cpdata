@@ -1,6 +1,33 @@
 import React from 'react';
+import { useBudgetTermsConfig } from '@/hooks/useBudgetTermsConfig';
 
 const PDFConditionsSection: React.FC = () => {
+  const { config } = useBudgetTermsConfig();
+
+  // Fallback values if config is not loaded
+  const terms = config || {
+    validez_oferta: '30 días calendario',
+    forma_pago: '50% anticipo, 50% contra entrega',
+    tiempo_entrega: '7-10 días hábiles',
+    moneda: 'Pesos Chilenos (CLP)',
+    precios_incluyen: 'Incluyen IVA',
+    observacion_1: 'Los precios incluyen configuración e instalación del sistema',
+    observacion_2: 'Incluye capacitación al personal operativo',
+    observacion_3: 'Soporte técnico durante el evento las 24 horas',
+    observacion_4: 'Garantía de funcionamiento durante todo el evento',
+    observacion_5: 'Los equipos quedan en comodato durante el evento',
+    observacion_6: 'Se requiere conexión a internet estable en el lugar'
+  };
+
+  const observaciones = [
+    terms.observacion_1,
+    terms.observacion_2,
+    terms.observacion_3,
+    terms.observacion_4,
+    terms.observacion_5,
+    terms.observacion_6
+  ].filter(obs => obs && obs.trim() !== '');
+
   return (
     <div className="mb-8">
       <div className="grid grid-cols-2 gap-8">
@@ -11,23 +38,23 @@ const PDFConditionsSection: React.FC = () => {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="font-semibold">Validez de la Oferta:</span>
-              <span>30 días calendario</span>
+              <span>{terms.validez_oferta}</span>
             </div>
             <div className="flex justify-between">
               <span className="font-semibold">Forma de Pago:</span>
-              <span>50% anticipo, 50% contra entrega</span>
+              <span>{terms.forma_pago}</span>
             </div>
             <div className="flex justify-between">
               <span className="font-semibold">Tiempo de Entrega:</span>
-              <span>7-10 días hábiles</span>
+              <span>{terms.tiempo_entrega}</span>
             </div>
             <div className="flex justify-between">
               <span className="font-semibold">Moneda:</span>
-              <span>Pesos Chilenos (CLP)</span>
+              <span>{terms.moneda}</span>
             </div>
             <div className="flex justify-between">
               <span className="font-semibold">Precios:</span>
-              <span>Incluyen IVA</span>
+              <span>{terms.precios_incluyen}</span>
             </div>
           </div>
         </div>
@@ -37,12 +64,9 @@ const PDFConditionsSection: React.FC = () => {
             OBSERVACIONES
           </h3>
           <div className="space-y-2 text-sm">
-            <div>• Los precios incluyen configuración e instalación del sistema</div>
-            <div>• Incluye capacitación al personal operativo</div>
-            <div>• Soporte técnico durante el evento las 24 horas</div>
-            <div>• Garantía de funcionamiento durante todo el evento</div>
-            <div>• Los equipos quedan en comodato durante el evento</div>
-            <div>• Se requiere conexión a internet estable en el lugar</div>
+            {observaciones.map((observacion, index) => (
+              <div key={index}>• {observacion}</div>
+            ))}
           </div>
         </div>
       </div>

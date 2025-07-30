@@ -10,6 +10,7 @@ import { Home } from 'lucide-react';
 
 import { UserTable } from '@/components/admin/UserTable';
 import AdminProductos from '@/components/admin/AdminProductos';
+import AdminTermsConfig from '@/components/admin/AdminTermsConfig';
 import { ProtectedFeature } from '@/components/ProtectedFeature';
 import { PERMISSIONS } from '@/constants/permissions';
 import { ACCESS_DENIED_MESSAGES } from '@/components/AccessDeniedInfo';
@@ -107,6 +108,7 @@ const Admin = () => {
           <TabsList>
             <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
             <TabsTrigger value="productos">Productos</TabsTrigger>
+            <TabsTrigger value="terminos">Términos y Condiciones</TabsTrigger>
           </TabsList>
           <TabsContent value="usuarios">
             <ProtectedFeature 
@@ -130,6 +132,18 @@ const Admin = () => {
               infoMessage={ACCESS_DENIED_MESSAGES.CREATE_PRODUCTS}
             >
               <AdminProductos />
+            </ProtectedFeature>
+          </TabsContent>
+          <TabsContent value="terminos">
+            <ProtectedFeature 
+              permission={PERMISSIONS.ACCESS_ADMIN}
+              showInlineInfo={true}
+              infoMessage={{
+                feature: "Configuración de Términos y Condiciones",
+                description: "Solo los administradores pueden modificar los términos y condiciones."
+              }}
+            >
+              <AdminTermsConfig />
             </ProtectedFeature>
           </TabsContent>
         </Tabs>
