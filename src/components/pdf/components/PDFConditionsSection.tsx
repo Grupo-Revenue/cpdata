@@ -36,26 +36,11 @@ const PDFConditionsSection: React.FC = () => {
             CONDICIONES COMERCIALES
           </h3>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="font-semibold">Validez de la Oferta:</span>
-              <span>{terms.validez_oferta}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-semibold">Forma de Pago:</span>
-              <span>{terms.forma_pago}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-semibold">Tiempo de Entrega:</span>
-              <span>{terms.tiempo_entrega}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-semibold">Moneda:</span>
-              <span>{terms.moneda}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-semibold">Precios:</span>
-              <span>{terms.precios_incluyen}</span>
-            </div>
+            <div>• <span className="font-semibold">Validez de la Oferta:</span> {terms.validez_oferta}</div>
+            <div>• <span className="font-semibold">Forma de Pago:</span> {terms.forma_pago}</div>
+            <div>• <span className="font-semibold">Tiempo de Entrega:</span> {terms.tiempo_entrega}</div>
+            <div>• <span className="font-semibold">Moneda:</span> {terms.moneda}</div>
+            <div>• <span className="font-semibold">Precios:</span> {terms.precios_incluyen}</div>
           </div>
         </div>
 
