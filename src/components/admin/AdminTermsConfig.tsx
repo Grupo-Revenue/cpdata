@@ -156,21 +156,27 @@ const AdminTermsConfig: React.FC = () => {
         <CardContent className="space-y-4">
           <div>
             <Label htmlFor="terminos_pago_entrega">Condiciones de Pago y Entrega</Label>
+            <p className="text-sm text-muted-foreground mb-2">
+              Escriba cada punto en una línea nueva. Los puntos (•) se agregarán automáticamente.
+            </p>
             <Textarea
               id="terminos_pago_entrega"
               value={formData.terminos_pago_entrega || ''}
               onChange={(e) => handleChange('terminos_pago_entrega', e.target.value)}
-              placeholder="Condiciones de pago y entrega..."
+              placeholder="Los precios incluyen IVA y están expresados en pesos chilenos&#10;Este presupuesto tiene validez de 30 días desde la fecha de emisión&#10;Forma de pago: 50% anticipo, 50% contra entrega&#10;Tiempo de entrega: 7-10 días hábiles desde confirmación del pedido"
               rows={4}
             />
           </div>
           <div>
             <Label htmlFor="terminos_garantias">Garantías y Servicios</Label>
+            <p className="text-sm text-muted-foreground mb-2">
+              Escriba cada punto en una línea nueva. Los puntos (•) se agregarán automáticamente.
+            </p>
             <Textarea
               id="terminos_garantias"
               value={formData.terminos_garantias || ''}
               onChange={(e) => handleChange('terminos_garantias', e.target.value)}
-              placeholder="Términos de garantías y servicios..."
+              placeholder="Garantía de 12 meses en equipos y 6 meses en servicios&#10;Soporte técnico 24/7 durante el evento&#10;Capacitación incluida para el uso de los sistemas&#10;Los servicios se ejecutarán según especificaciones técnicas acordadas"
               rows={4}
             />
           </div>
