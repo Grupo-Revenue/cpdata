@@ -8,6 +8,12 @@ export interface BudgetTermsConfig {
   tiempo_entrega: string;
   moneda: string;
   precios_incluyen: string;
+  condicion_comercial_1?: string;
+  condicion_comercial_2?: string;
+  condicion_comercial_3?: string;
+  condicion_comercial_4?: string;
+  condicion_comercial_5?: string;
+  condicion_comercial_6?: string;
   observacion_1: string;
   observacion_2: string;
   observacion_3: string;

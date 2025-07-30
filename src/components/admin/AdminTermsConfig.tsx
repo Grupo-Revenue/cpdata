@@ -9,6 +9,7 @@ import { useBudgetTermsConfig, BudgetTermsConfig } from '@/hooks/useBudgetTermsC
 import { Loader2, Save } from 'lucide-react';
 import ListEditor from './components/ListEditor';
 import ObservacionesEditor from './components/ObservacionesEditor';
+import CondicionesEditor from './components/CondicionesEditor';
 
 const AdminTermsConfig: React.FC = () => {
   const { config, loading, error, updateConfig } = useBudgetTermsConfig();
@@ -80,54 +81,11 @@ const AdminTermsConfig: React.FC = () => {
         <CardHeader>
           <CardTitle>Condiciones Comerciales</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="validez_oferta">Validez de la Oferta</Label>
-              <Input
-                id="validez_oferta"
-                value={formData.validez_oferta || ''}
-                onChange={(e) => handleChange('validez_oferta', e.target.value)}
-                placeholder="30 días calendario"
-              />
-            </div>
-            <div>
-              <Label htmlFor="forma_pago">Forma de Pago</Label>
-              <Input
-                id="forma_pago"
-                value={formData.forma_pago || ''}
-                onChange={(e) => handleChange('forma_pago', e.target.value)}
-                placeholder="50% anticipo, 50% contra entrega"
-              />
-            </div>
-            <div>
-              <Label htmlFor="tiempo_entrega">Tiempo de Entrega</Label>
-              <Input
-                id="tiempo_entrega"
-                value={formData.tiempo_entrega || ''}
-                onChange={(e) => handleChange('tiempo_entrega', e.target.value)}
-                placeholder="7-10 días hábiles"
-              />
-            </div>
-            <div>
-              <Label htmlFor="moneda">Moneda</Label>
-              <Input
-                id="moneda"
-                value={formData.moneda || ''}
-                onChange={(e) => handleChange('moneda', e.target.value)}
-                placeholder="Pesos Chilenos (CLP)"
-              />
-            </div>
-            <div>
-              <Label htmlFor="precios_incluyen">Precios Incluyen</Label>
-              <Input
-                id="precios_incluyen"
-                value={formData.precios_incluyen || ''}
-                onChange={(e) => handleChange('precios_incluyen', e.target.value)}
-                placeholder="Incluyen IVA"
-              />
-            </div>
-          </div>
+        <CardContent>
+          <CondicionesEditor
+            formData={formData}
+            onChange={handleChange}
+          />
         </CardContent>
       </Card>
 
