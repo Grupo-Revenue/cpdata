@@ -17,6 +17,12 @@ export type Database = {
       budget_terms_config: {
         Row: {
           certificacion_texto: string
+          condicion_comercial_1: string | null
+          condicion_comercial_2: string | null
+          condicion_comercial_3: string | null
+          condicion_comercial_4: string | null
+          condicion_comercial_5: string | null
+          condicion_comercial_6: string | null
           created_at: string
           documento_texto: string
           forma_pago: string
@@ -37,6 +43,12 @@ export type Database = {
         }
         Insert: {
           certificacion_texto?: string
+          condicion_comercial_1?: string | null
+          condicion_comercial_2?: string | null
+          condicion_comercial_3?: string | null
+          condicion_comercial_4?: string | null
+          condicion_comercial_5?: string | null
+          condicion_comercial_6?: string | null
           created_at?: string
           documento_texto?: string
           forma_pago?: string
@@ -57,6 +69,12 @@ export type Database = {
         }
         Update: {
           certificacion_texto?: string
+          condicion_comercial_1?: string | null
+          condicion_comercial_2?: string | null
+          condicion_comercial_3?: string | null
+          condicion_comercial_4?: string | null
+          condicion_comercial_5?: string | null
+          condicion_comercial_6?: string | null
           created_at?: string
           documento_texto?: string
           forma_pago?: string
