@@ -18,6 +18,7 @@ const CondicionesEditor: React.FC<CondicionesEditorProps> = ({
   
   // Convert individual condicion fields to array for editing
   const condiciones = React.useMemo(() => {
+    console.log('[CondicionesEditor] FormData:', formData);
     const cond = [];
     for (let i = 1; i <= 6; i++) {
       const value = formData[`condicion_comercial_${i}`];
@@ -25,24 +26,24 @@ const CondicionesEditor: React.FC<CondicionesEditorProps> = ({
         cond.push(value);
       }
     }
-    // Always show at least one empty field if no conditions exist
-    return cond.length === 0 ? [''] : cond;
+    // Always show at least one empty field for adding new conditions
+    const result = cond.length === 0 ? [''] : [...cond, ''];
+    console.log('[CondicionesEditor] Conditions array:', result);
+    return result;
   }, [formData]);
 
   // Update individual database fields based on array
   const updateCondiciones = (newCondiciones: string[]) => {
-    // Clear all existing conditions first
-    for (let i = 1; i <= 6; i++) {
-      onChange(`condicion_comercial_${i}`, '');
-    }
+    console.log('[CondicionesEditor] Updating conditions:', newCondiciones);
     
-    // Set the new conditions (filtered to remove empty ones)
-    const filteredCond = newCondiciones.filter(cond => cond.trim() !== '');
-    filteredCond.forEach((cond, index) => {
-      if (index < 6) { // Limit to 6 conditions
-        onChange(`condicion_comercial_${index + 1}`, cond);
-      }
-    });
+    // Filter out empty conditions for database update
+    const filteredCond = newCondiciones.filter(cond => cond && cond.trim() !== '');
+    
+    // Update each condition field (clear first, then set)
+    for (let i = 1; i <= 6; i++) {
+      const newValue = filteredCond[i - 1] || '';
+      onChange(`condicion_comercial_${i}`, newValue);
+    }
   };
 
   const handleCondicionChange = (index: number, newValue: string) => {
@@ -52,16 +53,28 @@ const CondicionesEditor: React.FC<CondicionesEditorProps> = ({
   };
 
   const addCondicion = () => {
-    if (condiciones.length < 6) {
-      updateCondiciones([...condiciones, '']);
+    console.log('[CondicionesEditor] Add condition clicked, current length:', condiciones.length);
+    // Count non-empty conditions
+    const nonEmptyCount = condiciones.filter(cond => cond && cond.trim() !== '').length;
+    if (nonEmptyCount < 6) {
+      const newCondiciones = [...condiciones];
+      // Remove the last empty field and add a new empty one
+      if (newCondiciones[newCondiciones.length - 1] === '') {
+        newCondiciones.pop();
+      }
+      newCondiciones.push('', ''); // Add content field and new empty field
+      updateCondiciones(newCondiciones);
     }
   };
 
   const removeCondicion = (index: number) => {
-    if (condiciones.length > 1) {
-      const newCondiciones = condiciones.filter((_, i) => i !== index);
-      updateCondiciones(newCondiciones);
+    console.log('[CondicionesEditor] Remove condition:', index);
+    const newCondiciones = condiciones.filter((_, i) => i !== index);
+    // Ensure we always have at least one empty field
+    if (newCondiciones.length === 0 || newCondiciones[newCondiciones.length - 1] !== '') {
+      newCondiciones.push('');
     }
+    updateCondiciones(newCondiciones);
   };
 
   const nonEmptyCondiciones = condiciones.filter(cond => cond.trim() !== '');
@@ -142,11 +155,11 @@ const CondicionesEditor: React.FC<CondicionesEditorProps> = ({
             variant="outline"
             size="sm"
             onClick={addCondicion}
-            disabled={condiciones.length >= 6}
+            disabled={condiciones.filter(cond => cond && cond.trim() !== '').length >= 6}
             className="w-full"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Agregar condición ({condiciones.length}/6)
+            Agregar condición ({condiciones.filter(cond => cond && cond.trim() !== '').length}/6)
           </Button>
           
           <div className="text-xs text-muted-foreground">

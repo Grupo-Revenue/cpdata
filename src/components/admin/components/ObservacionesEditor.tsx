@@ -18,6 +18,7 @@ const ObservacionesEditor: React.FC<ObservacionesEditorProps> = ({
   
   // Convert individual observacion fields to array for editing
   const observations = React.useMemo(() => {
+    console.log('[ObservacionesEditor] FormData:', formData);
     const obs = [];
     for (let i = 1; i <= 6; i++) {
       const value = formData[`observacion_${i}`];
@@ -25,24 +26,24 @@ const ObservacionesEditor: React.FC<ObservacionesEditorProps> = ({
         obs.push(value);
       }
     }
-    // Always show at least one empty field if no observations exist
-    return obs.length === 0 ? [''] : obs;
+    // Always show at least one empty field for adding new observations
+    const result = obs.length === 0 ? [''] : [...obs, ''];
+    console.log('[ObservacionesEditor] Observations array:', result);
+    return result;
   }, [formData]);
 
   // Update individual database fields based on array
   const updateObservations = (newObservations: string[]) => {
-    // Clear all existing observations first
-    for (let i = 1; i <= 6; i++) {
-      onChange(`observacion_${i}`, '');
-    }
+    console.log('[ObservacionesEditor] Updating observations:', newObservations);
     
-    // Set the new observations (filtered to remove empty ones)
-    const filteredObs = newObservations.filter(obs => obs.trim() !== '');
-    filteredObs.forEach((obs, index) => {
-      if (index < 6) { // Limit to 6 observations
-        onChange(`observacion_${index + 1}`, obs);
-      }
-    });
+    // Filter out empty observations for database update
+    const filteredObs = newObservations.filter(obs => obs && obs.trim() !== '');
+    
+    // Update each observation field (clear first, then set)
+    for (let i = 1; i <= 6; i++) {
+      const newValue = filteredObs[i - 1] || '';
+      onChange(`observacion_${i}`, newValue);
+    }
   };
 
   const handleObservationChange = (index: number, newValue: string) => {
@@ -52,16 +53,28 @@ const ObservacionesEditor: React.FC<ObservacionesEditorProps> = ({
   };
 
   const addObservation = () => {
-    if (observations.length < 6) {
-      updateObservations([...observations, '']);
+    console.log('[ObservacionesEditor] Add observation clicked, current length:', observations.length);
+    // Count non-empty observations
+    const nonEmptyCount = observations.filter(obs => obs && obs.trim() !== '').length;
+    if (nonEmptyCount < 6) {
+      const newObservations = [...observations];
+      // Remove the last empty field and add a new empty one
+      if (newObservations[newObservations.length - 1] === '') {
+        newObservations.pop();
+      }
+      newObservations.push('', ''); // Add content field and new empty field
+      updateObservations(newObservations);
     }
   };
 
   const removeObservation = (index: number) => {
-    if (observations.length > 1) {
-      const newObservations = observations.filter((_, i) => i !== index);
-      updateObservations(newObservations);
+    console.log('[ObservacionesEditor] Remove observation:', index);
+    const newObservations = observations.filter((_, i) => i !== index);
+    // Ensure we always have at least one empty field
+    if (newObservations.length === 0 || newObservations[newObservations.length - 1] !== '') {
+      newObservations.push('');
     }
+    updateObservations(newObservations);
   };
 
   const nonEmptyObservations = observations.filter(obs => obs.trim() !== '');
@@ -142,11 +155,11 @@ const ObservacionesEditor: React.FC<ObservacionesEditorProps> = ({
             variant="outline"
             size="sm"
             onClick={addObservation}
-            disabled={observations.length >= 6}
+            disabled={observations.filter(obs => obs && obs.trim() !== '').length >= 6}
             className="w-full"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Agregar observación ({observations.length}/6)
+            Agregar observación ({observations.filter(obs => obs && obs.trim() !== '').length}/6)
           </Button>
           
           <div className="text-xs text-muted-foreground">
