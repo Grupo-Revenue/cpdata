@@ -37,7 +37,7 @@ const PDFFooter: React.FC = () => {
               <div className="space-y-2">
                 {(termsConfig?.terminos_pago_entrega || 
                   'Los precios incluyen IVA y están expresados en pesos chilenos\n• Este presupuesto tiene validez de 30 días desde la fecha de emisión\n• Forma de pago: 50% anticipo, 50% contra entrega\n• Tiempo de entrega: 7-10 días hábiles desde confirmación del pedido')
-                  .split(/\r?\n/)
+                  .split(/\\n|\r?\n/)
                   .filter(line => line.trim() !== '')
                   .map((line, index) => (
                     <p key={index} className="text-xs text-gray-600 leading-5 mb-1">
@@ -51,7 +51,7 @@ const PDFFooter: React.FC = () => {
               <div className="space-y-2">
                 {(termsConfig?.terminos_garantias || 
                   'Garantía de 12 meses en equipos y 6 meses en servicios\n• Soporte técnico 24/7 durante el evento\n• Capacitación incluida para el uso de los sistemas\n• Los servicios se ejecutarán según especificaciones técnicas acordadas')
-                  .split(/\r?\n/)
+                  .split(/\\n|\r?\n/)
                   .filter(line => line.trim() !== '')
                   .map((line, index) => (
                     <p key={index} className="text-xs text-gray-600 leading-5 mb-1">
