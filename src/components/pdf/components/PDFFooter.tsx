@@ -40,9 +40,9 @@ const PDFFooter: React.FC = () => {
                   .split('\n')
                   .filter(line => line.trim())
                   .map((line, index) => (
-                    <div key={index}>
-                      {line.startsWith('•') ? line : `• ${line}`}
-                    </div>
+                    <p key={index} className="text-xs text-gray-600 leading-relaxed">
+                      {line.trim().startsWith('•') ? line.trim() : `• ${line.trim()}`}
+                    </p>
                   ))}
               </div>
             </div>
@@ -54,9 +54,9 @@ const PDFFooter: React.FC = () => {
                   .split('\n')
                   .filter(line => line.trim())
                   .map((line, index) => (
-                    <div key={index}>
-                      {line.startsWith('•') ? line : `• ${line}`}
-                    </div>
+                    <p key={index} className="text-xs text-gray-600 leading-relaxed">
+                      {line.trim().startsWith('•') ? line.trim() : `• ${line.trim()}`}
+                    </p>
                   ))}
               </div>
             </div>
