@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useBudgetTermsConfig, BudgetTermsConfig } from '@/hooks/useBudgetTermsConfig';
 import { Loader2, Save } from 'lucide-react';
 import ListEditor from './components/ListEditor';
+import ObservacionesEditor from './components/ObservacionesEditor';
 
 const AdminTermsConfig: React.FC = () => {
   const { config, loading, error, updateConfig } = useBudgetTermsConfig();
@@ -134,18 +135,11 @@ const AdminTermsConfig: React.FC = () => {
         <CardHeader>
           <CardTitle>Observaciones</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {[1, 2, 3, 4, 5, 6].map((num) => (
-            <div key={num}>
-              <Label htmlFor={`observacion_${num}`}>Observación {num}</Label>
-              <Input
-                id={`observacion_${num}`}
-                value={formData[`observacion_${num}` as keyof typeof formData] || ''}
-                onChange={(e) => handleChange(`observacion_${num}`, e.target.value)}
-                placeholder={`Observación ${num}`}
-              />
-            </div>
-          ))}
+        <CardContent>
+          <ObservacionesEditor
+            formData={formData}
+            onChange={handleChange}
+          />
         </CardContent>
       </Card>
 
