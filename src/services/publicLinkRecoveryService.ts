@@ -20,7 +20,7 @@ export const publicLinkRecoveryService = {
       const { data: presupuestos, error: presupuestosError } = await supabase
         .from('presupuestos')
         .select('id, nombre, estado, facturado, negocio_id, total')
-        .or('estado.eq.aprobado,estado.eq.publicado,facturado.eq.true');
+        .or('estado.eq.aprobado,estado.eq.publicado,estado.eq.rechazado,facturado.eq.true');
 
       if (presupuestosError) {
         console.error('❌ [Link Recovery] Error fetching presupuestos:', presupuestosError);
@@ -164,6 +164,7 @@ export const publicLinkRecoveryService = {
       // Verificar si es elegible para link público
       const isEligible = presupuesto.estado === 'publicado' || 
                         presupuesto.estado === 'aprobado' || 
+                        presupuesto.estado === 'rechazado' ||
                         presupuesto.facturado;
 
       // Buscar link existente

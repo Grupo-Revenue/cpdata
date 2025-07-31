@@ -34,6 +34,7 @@ const PublicLinkDisplay: React.FC<PublicLinkDisplayProps> = ({
   // Determine if the presupuesto is eligible for public links
   const isEligibleForLink = estadoPresupuesto === 'publicado' || 
                            estadoPresupuesto === 'aprobado' || 
+                           estadoPresupuesto === 'rechazado' ||
                            facturado;
 
   useEffect(() => {
@@ -158,7 +159,7 @@ const PublicLinkDisplay: React.FC<PublicLinkDisplayProps> = ({
         <Eye className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
         <h3 className="text-lg font-semibold mb-2">Link no disponible</h3>
         <p className="text-muted-foreground">
-          Los enlaces públicos están disponibles solo para presupuestos publicados, aprobados o facturados.
+          Los enlaces públicos están disponibles solo para presupuestos publicados, aprobados, rechazados o facturados.
         </p>
         <p className="text-sm text-muted-foreground mt-2">
           Estado actual: <span className="font-medium">{estadoPresupuesto}</span>
