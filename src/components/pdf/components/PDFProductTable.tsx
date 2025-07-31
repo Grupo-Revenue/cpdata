@@ -124,7 +124,7 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
                   )}
                   {producto.descuentoPorcentaje !== undefined && (
                     producto.descuentoPorcentaje > 0 ? (
-                      <div className="text-sm text-red-600 font-medium mt-1">
+                      <div className="text-sm text-green-600 font-medium mt-1">
                         Descuento aplicado: {producto.descuentoPorcentaje}%
                       </div>
                     ) : (
