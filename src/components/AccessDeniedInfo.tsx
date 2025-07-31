@@ -54,6 +54,10 @@ export const ACCESS_DENIED_MESSAGES = {
     feature: 'Creación de Usuarios',
     description: 'La gestión de usuarios y roles es una función administrativa crítica.',
   },
+  CREATE_PRODUCT_LINES: {
+    feature: 'Gestión de Líneas de Producto',
+    description: 'La gestión de líneas de producto requiere permisos administrativos para mantener la organización del catálogo.',
+  },
   ADMIN_ACCESS: {
     feature: 'Panel de Administración',
     description: 'El acceso al panel de administración está restringido a usuarios con privilegios administrativos.',
