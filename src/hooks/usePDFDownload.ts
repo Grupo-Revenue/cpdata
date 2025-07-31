@@ -20,13 +20,9 @@ export const usePDFDownload = () => {
     setIsGenerating(true);
 
     try {
-      // Escalar al tamaño A4 completo (2480 px de ancho)
-      const targetWidth = 2480;
-      const elementWidth = componentRef.current.offsetWidth;
-      const scale = targetWidth / elementWidth;
-
+      // Aumentar escala para mejor calidad (sin hacer que se vea pequeño)
       const canvas = await html2canvas(componentRef.current, {
-        scale,
+        scale: 3, // aumenta la calidad sin reducir visibilidad
         useCORS: true,
         backgroundColor: '#ffffff',
       });
@@ -37,19 +33,22 @@ export const usePDFDownload = () => {
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
 
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      // Ajustar el tamaño de la imagen para que ocupe mejor la hoja
+      const imgProps = {
+        width: pageWidth,
+        height: (canvas.height * pageWidth) / canvas.width,
+      };
 
       let position = 0;
-      let heightLeft = imgHeight;
+      let heightLeft = imgProps.height;
 
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      pdf.addImage(imgData, 'PNG', 0, position, imgProps.width, imgProps.height);
       heightLeft -= pageHeight;
 
       while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
+        position = heightLeft - imgProps.height;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'PNG', 0, position, imgProps.width, imgProps.height);
         heightLeft -= pageHeight;
       }
 
