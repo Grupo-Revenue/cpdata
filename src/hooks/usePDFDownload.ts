@@ -20,25 +20,26 @@ export const usePDFDownload = () => {
     setIsGenerating(true);
 
     try {
-      // Capture the component as canvas
+      // Capture the component as canvas with maximum quality
       const canvas = await html2canvas(componentRef.current, {
-        scale: 3, // Higher quality for larger text
+        scale: 4, // Maximum quality for crisp text
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
       });
 
-      // Calculate PDF dimensions (A4 size) - optimized for larger content
-      const imgWidth = 200; // Use more of the A4 width for larger content
+      // Calculate PDF dimensions (A4 size) - force larger content scaling
+      const imgWidth = 180; // Smaller width forces content to scale larger
       const pageHeight = 297; // A4 height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
 
-      // Create PDF with optimized margins
+      // Create PDF with optimized margins for centering
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const marginLeft = 5; // Small left margin to center content
-      let position = 10; // Small top margin
+      const a4Width = 210; // A4 width in mm
+      const marginLeft = (a4Width - imgWidth) / 2; // Center horizontally
+      let position = 15; // Optimized top margin
 
       // Add first page
       pdf.addImage(canvas.toDataURL('image/png'), 'PNG', marginLeft, position, imgWidth, imgHeight);
