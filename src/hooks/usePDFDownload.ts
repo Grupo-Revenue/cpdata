@@ -20,40 +20,42 @@ export const usePDFDownload = () => {
     setIsGenerating(true);
 
     try {
-      // Capture the component as canvas with maximum quality
+      // Capturar el componente en canvas con alta resolución
       const canvas = await html2canvas(componentRef.current, {
-        scale: 4, // Maximum quality for crisp text
+        scale: 4,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
       });
 
-      // Calculate PDF dimensions (A4 size) - force larger content scaling
-      const imgWidth = 180; // Smaller width forces content to scale larger
-      const pageHeight = 297; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
+      const imgData = canvas.toDataURL('image/png');
 
-      // Create PDF with optimized margins for centering
+      // Crear PDF con tamaño A4
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const a4Width = 210; // A4 width in mm
-      const marginLeft = (a4Width - imgWidth) / 2; // Center horizontally
-      let position = 15; // Optimized top margin
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
 
-      // Add first page
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', marginLeft, position, imgWidth, imgHeight);
+      // Calcular dimensiones de la imagen dentro del PDF
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Agregar primera página
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      // Add additional pages if content is too long
-      while (heightLeft >= 0) {
+      // Agregar páginas adicionales si el contenido es más largo
+      while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', marginLeft, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
 
-      // Download the PDF
+      // Descargar PDF
       pdf.save(`${fileName}.pdf`);
 
       toast({
