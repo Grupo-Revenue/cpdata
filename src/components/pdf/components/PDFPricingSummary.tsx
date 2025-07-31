@@ -21,8 +21,8 @@ const PDFPricingSummary: React.FC<PDFPricingSummaryProps> = ({ totales }) => {
               )}
               {totales.totalDescuentos > 0 && (
                 <tr>
-                  <td className="border border-gray-400 p-3 text-right font-semibold bg-gray-100 text-red-600">Descuentos:</td>
-                  <td className="border border-gray-400 p-3 text-right bg-gray-100 text-red-600">-{formatearPrecio(totales.totalDescuentos)}</td>
+                  <td className="border border-gray-400 p-3 text-right font-semibold bg-gray-100 text-green-600">Descuentos:</td>
+                  <td className="border border-gray-400 p-3 text-right bg-gray-100 text-green-600">-{formatearPrecio(totales.totalDescuentos)}</td>
                 </tr>
               )}
               <tr>

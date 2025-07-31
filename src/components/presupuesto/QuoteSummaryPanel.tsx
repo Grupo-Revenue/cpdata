@@ -48,7 +48,7 @@ const QuoteSummaryPanel: React.FC<QuoteSummaryPanelProps> = ({
           {totales.totalDescuentos > 0 && (
             <div className="flex justify-between">
               <span className="text-gray-600">Descuentos:</span>
-              <span className="font-medium text-red-600">-{formatearPrecio(totales.totalDescuentos)}</span>
+              <span className="font-medium text-green-600">-{formatearPrecio(totales.totalDescuentos)}</span>
             </div>
           )}
           
