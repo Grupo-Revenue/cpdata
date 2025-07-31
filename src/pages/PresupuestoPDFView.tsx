@@ -14,8 +14,8 @@ const PresupuestoPDFView: React.FC = () => {
   const { negocioId, presupuestoId } = useParams<{ negocioId: string; presupuestoId: string }>();
   const navigate = useNavigate();
   const { obtenerNegocio, loading } = useNegocio();
-  const { componentRef, generatePDF } = usePDFGeneration();
-  const { downloadPDF, isGenerating } = usePDFDownload();
+  const { componentRef: printRef, generatePDF } = usePDFGeneration();
+  const { componentRef: downloadRef, downloadPDF, isGenerating } = usePDFDownload();
 
   console.log('[PresupuestoPDFView] Params:', { negocioId, presupuestoId });
 
@@ -75,6 +75,12 @@ const PresupuestoPDFView: React.FC = () => {
     downloadPDF(fileName);
   };
 
+  // Callback ref to set both refs to the same element
+  const setRefs = (element: HTMLDivElement | null) => {
+    if (printRef) printRef.current = element;
+    if (downloadRef) downloadRef.current = element;
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header with actions */}
@@ -128,7 +134,7 @@ const PresupuestoPDFView: React.FC = () => {
 
       {/* PDF Content */}
       <div className="py-8">
-        <div ref={componentRef}>
+        <div ref={setRefs}>
           <PresupuestoPDFTemplate
             presupuesto={presupuesto}
             negocio={negocio}
