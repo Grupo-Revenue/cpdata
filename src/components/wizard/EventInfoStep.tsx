@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { TIPOS_EVENTO } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 import { EventoData } from './types';
 
 interface EventInfoStepProps {
@@ -27,6 +27,38 @@ export const EventInfoStep: React.FC<EventInfoStepProps> = ({
   onPrevious,
   onFinish
 }) => {
+  const [tiposEvento, setTiposEvento] = useState<string[]>([]);
+  const [loadingTipos, setLoadingTipos] = useState(true);
+
+  useEffect(() => {
+    const cargarTiposEvento = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('tipos_evento')
+          .select('nombre')
+          .eq('activo', true)
+          .order('orden', { ascending: true });
+
+        if (error) throw error;
+        
+        setTiposEvento(data?.map(tipo => tipo.nombre) || []);
+      } catch (error) {
+        console.error('Error cargando tipos de evento:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los tipos de evento",
+          variant: "destructive"
+        });
+        // Fallback to hardcoded types
+        setTiposEvento(['Congreso', 'Seminario', 'Workshop', 'Conferencia', 'Otro']);
+      } finally {
+        setLoadingTipos(false);
+      }
+    };
+
+    cargarTiposEvento();
+  }, []);
+
   const validarPaso = () => {
     return evento.tipo_evento && evento.nombre_evento && evento.fecha_evento && evento.locacion;
   };
@@ -49,12 +81,16 @@ export const EventInfoStep: React.FC<EventInfoStepProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="tipoEvento">Tipo de Evento *</Label>
-          <Select value={evento.tipo_evento} onValueChange={(value) => setEvento({...evento, tipo_evento: value})}>
+          <Select 
+            value={evento.tipo_evento} 
+            onValueChange={(value) => setEvento({...evento, tipo_evento: value})}
+            disabled={loadingTipos}
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Seleccione el tipo de evento" />
+              <SelectValue placeholder={loadingTipos ? "Cargando..." : "Seleccione el tipo de evento"} />
             </SelectTrigger>
             <SelectContent>
-              {TIPOS_EVENTO.map((tipo) => (
+              {tiposEvento.map((tipo) => (
                 <SelectItem key={tipo} value={tipo}>
                   {tipo}
                 </SelectItem>

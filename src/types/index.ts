@@ -8,6 +8,7 @@ export type Presupuesto = ExtendedPresupuesto
 export type ProductoPresupuesto = ExtendedProductoPresupuesto
 export type ProductoBiblioteca = Database['public']['Tables']['productos_biblioteca']['Row']
 export type LineaProducto = Database['public']['Tables']['lineas_producto']['Row']
+export type TipoEventoDb = Database['public']['Tables']['tipos_evento']['Row']
 export type ConfiguracionMarca = Database['public']['Tables']['configuracion_marca']['Row']
 
 // Constants

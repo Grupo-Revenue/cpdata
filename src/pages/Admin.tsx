@@ -11,6 +11,7 @@ import { Home } from 'lucide-react';
 import { UserTable } from '@/components/admin/UserTable';
 import AdminProductos from '@/components/admin/AdminProductos';
 import AdminLineasProducto from '@/components/admin/AdminLineasProducto';
+import { AdminTiposEvento } from '@/components/admin/AdminTiposEvento';
 import AdminTermsConfig from '@/components/admin/AdminTermsConfig';
 import { ProtectedFeature } from '@/components/ProtectedFeature';
 import { PERMISSIONS } from '@/constants/permissions';
@@ -110,6 +111,7 @@ const Admin = () => {
             <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
             <TabsTrigger value="productos">Productos</TabsTrigger>
             <TabsTrigger value="lineas-producto">Líneas de Producto</TabsTrigger>
+            <TabsTrigger value="tipos-evento">Tipos de Evento</TabsTrigger>
             <TabsTrigger value="terminos">Términos y Condiciones</TabsTrigger>
           </TabsList>
           <TabsContent value="usuarios">
@@ -143,6 +145,18 @@ const Admin = () => {
               infoMessage={ACCESS_DENIED_MESSAGES.CREATE_PRODUCT_LINES}
             >
               <AdminLineasProducto />
+            </ProtectedFeature>
+          </TabsContent>
+          <TabsContent value="tipos-evento">
+            <ProtectedFeature 
+              permission={PERMISSIONS.ACCESS_ADMIN}
+              showInlineInfo={true}
+              infoMessage={{
+                feature: "Gestión de Tipos de Evento",
+                description: "Solo los administradores pueden gestionar los tipos de evento."
+              }}
+            >
+              <AdminTiposEvento />
             </ProtectedFeature>
           </TabsContent>
           <TabsContent value="terminos">
