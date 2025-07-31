@@ -30,24 +30,25 @@ export const usePDFDownload = () => {
       });
 
       // Calculate PDF dimensions (A4 size) - optimized for larger content
-      const imgWidth = 190; // Slightly smaller width for better scaling
+      const imgWidth = 200; // Use more of the A4 width for larger content
       const pageHeight = 297; // A4 height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
 
-      // Create PDF
+      // Create PDF with optimized margins
       const pdf = new jsPDF('p', 'mm', 'a4');
-      let position = 0;
+      const marginLeft = 5; // Small left margin to center content
+      let position = 10; // Small top margin
 
       // Add first page
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', marginLeft, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
       // Add additional pages if content is too long
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', marginLeft, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
 
