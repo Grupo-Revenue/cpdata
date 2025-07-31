@@ -15,9 +15,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Package, Plus, Edit, ArrowUp, ArrowDown, Loader2 } from 'lucide-react';
+import { Package, Plus, Edit, ArrowUp, ArrowDown, Loader2, Trash2 } from 'lucide-react';
 
 interface LineaProducto {
   id: string;
@@ -33,6 +34,8 @@ const AdminLineasProducto: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingLinea, setEditingLinea] = useState<LineaProducto | null>(null);
+  const [deletingLinea, setDeletingLinea] = useState<LineaProducto | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -213,6 +216,68 @@ const AdminLineasProducto: React.FC = () => {
     setDialogOpen(true);
   };
 
+  const confirmarEliminarLinea = async (linea: LineaProducto) => {
+    try {
+      // Verificar si la línea tiene productos asociados
+      const { data: productosAsociados, error: errorProductos } = await supabase
+        .from('productos_biblioteca')
+        .select('id')
+        .eq('linea_producto_id', linea.id)
+        .limit(1);
+
+      if (errorProductos) throw errorProductos;
+
+      if (productosAsociados && productosAsociados.length > 0) {
+        toast({
+          title: "No se puede eliminar",
+          description: `La línea "${linea.nombre}" tiene productos asociados. Desactívala en lugar de eliminarla.`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Si no hay productos asociados, mostrar diálogo de confirmación
+      setDeletingLinea(linea);
+      setDeleteDialogOpen(true);
+    } catch (error) {
+      console.error('Error verificando productos asociados:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo verificar si la línea tiene productos asociados",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const eliminarLinea = async () => {
+    if (!deletingLinea) return;
+
+    try {
+      const { error } = await supabase
+        .from('lineas_producto')
+        .delete()
+        .eq('id', deletingLinea.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Línea eliminada",
+        description: `La línea "${deletingLinea.nombre}" se eliminó correctamente`
+      });
+
+      setDeleteDialogOpen(false);
+      setDeletingLinea(null);
+      cargarLineas();
+    } catch (error) {
+      console.error('Error eliminando línea:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la línea de producto",
+        variant: "destructive"
+      });
+    }
+  };
+
   useEffect(() => {
     cargarLineas();
   }, []);
@@ -280,6 +345,25 @@ const AdminLineasProducto: React.FC = () => {
                 </form>
               </DialogContent>
             </Dialog>
+            
+            {/* AlertDialog para confirmar eliminación */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Eliminar línea de producto?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    ¿Estás seguro de que quieres eliminar la línea "{deletingLinea?.nombre}"? 
+                    Esta acción no se puede deshacer.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={eliminarLinea} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Eliminar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </CardHeader>
         <CardContent>
@@ -356,6 +440,13 @@ const AdminLineasProducto: React.FC = () => {
                           onClick={() => toggleActivoLinea(linea.id, linea.activo)}
                         >
                           {linea.activo ? 'Desactivar' : 'Activar'}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => confirmarEliminarLinea(linea)}
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </TableCell>
