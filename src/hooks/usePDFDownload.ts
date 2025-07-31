@@ -20,34 +20,39 @@ export const usePDFDownload = () => {
     setIsGenerating(true);
 
     try {
-      // Capturar el componente en canvas con alta resolución
+      // Aumentamos el tamaño del canvas para forzar calidad A4 (2480x3508 px)
+      const targetWidth = 2480; // px
+      const elementWidth = componentRef.current.offsetWidth;
+      const scaleFactor = targetWidth / elementWidth;
+
       const canvas = await html2canvas(componentRef.current, {
-        scale: 4,
+        scale: scaleFactor,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        logging: false,
       });
 
       const imgData = canvas.toDataURL('image/png');
 
-      // Crear PDF con tamaño A4
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
 
-      // Calcular dimensiones de la imagen dentro del PDF
+      // Ajustamos las proporciones para llenar el ancho del PDF
+      const imgProps = {
+        width: canvas.width,
+        height: canvas.height,
+      };
+
       const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
 
       let heightLeft = imgHeight;
       let position = 0;
 
-      // Agregar primera página
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      // Agregar páginas adicionales si el contenido es más largo
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
@@ -55,7 +60,6 @@ export const usePDFDownload = () => {
         heightLeft -= pageHeight;
       }
 
-      // Descargar PDF
       pdf.save(`${fileName}.pdf`);
 
       toast({
