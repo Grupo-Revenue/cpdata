@@ -10,9 +10,9 @@ export const usePDFDownload = () => {
   const downloadPDF = async (fileName: string = 'presupuesto') => {
     if (!componentRef.current) {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se pudo generar el PDF. Intenta nuevamente.",
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo generar el PDF. Intenta nuevamente.',
       });
       return;
     }
@@ -20,15 +20,14 @@ export const usePDFDownload = () => {
     setIsGenerating(true);
 
     try {
-      // Aumentamos el tamaño del canvas para forzar calidad A4 (2480x3508 px)
-      const targetWidth = 2480; // px
+      // Escalar al tamaño A4 completo (2480 px de ancho)
+      const targetWidth = 2480;
       const elementWidth = componentRef.current.offsetWidth;
-      const scaleFactor = targetWidth / elementWidth;
+      const scale = targetWidth / elementWidth;
 
       const canvas = await html2canvas(componentRef.current, {
-        scale: scaleFactor,
+        scale,
         useCORS: true,
-        allowTaint: true,
         backgroundColor: '#ffffff',
       });
 
@@ -38,17 +37,11 @@ export const usePDFDownload = () => {
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
 
-      // Ajustamos las proporciones para llenar el ancho del PDF
-      const imgProps = {
-        width: canvas.width,
-        height: canvas.height,
-      };
-
       const imgWidth = pageWidth;
-      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      let heightLeft = imgHeight;
       let position = 0;
+      let heightLeft = imgHeight;
 
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
@@ -63,15 +56,15 @@ export const usePDFDownload = () => {
       pdf.save(`${fileName}.pdf`);
 
       toast({
-        title: "PDF descargado",
-        description: "El archivo PDF se ha descargado correctamente.",
+        title: 'PDF descargado',
+        description: 'El archivo PDF se ha descargado correctamente.',
       });
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({
-        variant: "destructive",
-        title: "Error al generar PDF",
-        description: "No se pudo generar el PDF. Intenta nuevamente.",
+        variant: 'destructive',
+        title: 'Error al generar PDF',
+        description: 'No se pudo generar el PDF. Intenta nuevamente.',
       });
     } finally {
       setIsGenerating(false);
