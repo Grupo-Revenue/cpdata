@@ -6,6 +6,7 @@ import { ArrowLeft, Download, Printer, ExternalLink } from 'lucide-react';
 import { useNegocio } from '@/context/NegocioContext';
 import PresupuestoPDFTemplate from '@/components/pdf/PresupuestoPDFTemplate';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
+import { usePDFDownload } from '@/hooks/usePDFDownload';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import PublicLinkDisplay from '@/components/presupuesto/PublicLinkDisplay';
 
@@ -14,6 +15,7 @@ const PresupuestoPDFView: React.FC = () => {
   const navigate = useNavigate();
   const { obtenerNegocio, loading } = useNegocio();
   const { componentRef, generatePDF } = usePDFGeneration();
+  const { downloadPDF, isGenerating } = usePDFDownload();
 
   console.log('[PresupuestoPDFView] Params:', { negocioId, presupuestoId });
 
@@ -68,6 +70,11 @@ const PresupuestoPDFView: React.FC = () => {
     navigate(`/negocio/${negocioId}`);
   };
 
+  const handleDownloadPDF = () => {
+    const fileName = `Presupuesto-${negocio.numero}-${presupuesto.nombre}`;
+    downloadPDF(fileName);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header with actions */}
@@ -102,9 +109,13 @@ const PresupuestoPDFView: React.FC = () => {
                   />
                 </DialogContent>
               </Dialog>
-              <Button onClick={generatePDF} className="bg-blue-600 hover:bg-blue-700">
+              <Button 
+                onClick={handleDownloadPDF} 
+                disabled={isGenerating}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
                 <Download className="w-4 h-4 mr-2" />
-                Descargar PDF
+                {isGenerating ? 'Generando PDF...' : 'Descargar PDF'}
               </Button>
               <Button variant="outline" onClick={generatePDF}>
                 <Printer className="w-4 h-4 mr-2" />
@@ -117,11 +128,12 @@ const PresupuestoPDFView: React.FC = () => {
 
       {/* PDF Content */}
       <div className="py-8">
-        <PresupuestoPDFTemplate
-          ref={componentRef}
-          presupuesto={presupuesto}
-          negocio={negocio}
-        />
+        <div ref={componentRef}>
+          <PresupuestoPDFTemplate
+            presupuesto={presupuesto}
+            negocio={negocio}
+          />
+        </div>
       </div>
     </div>
   );
