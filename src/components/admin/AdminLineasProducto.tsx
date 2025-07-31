@@ -435,7 +435,7 @@ const AdminLineasProducto: React.FC = () => {
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button
-                          variant={linea.activo ? "destructive" : "default"}
+                          variant={linea.activo ? "secondary" : "default"}
                           size="sm"
                           onClick={() => toggleActivoLinea(linea.id, linea.activo)}
                         >
