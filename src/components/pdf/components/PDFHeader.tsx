@@ -42,7 +42,7 @@ const PDFHeader: React.FC<PDFHeaderProps> = ({
                   : `${window.location.origin}${brandConfig.logo_url}`
               } 
               alt={`${brandConfig.nombre_empresa} Logo`} 
-              className="h-20 w-auto object-contain max-w-[200px]"
+              className="h-28 w-auto object-contain max-w-[250px]"
               onError={(e) => {
                 console.error('❌ Error loading logo:', {
                   originalUrl: brandConfig.logo_url,
@@ -63,8 +63,8 @@ const PDFHeader: React.FC<PDFHeaderProps> = ({
         
         {/* Quote Header */}
         <div className="text-right">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">COTIZACIÓN</h2>
-          <div className="text-sm text-gray-600 space-y-1">
+          <h2 className="text-4xl font-bold text-gray-800 mb-3">COTIZACIÓN</h2>
+          <div className="text-base text-gray-600 space-y-2">
             <div><span className="font-semibold">N°:</span> {presupuesto.nombre}</div>
             <div><span className="font-semibold">Fecha:</span> {fechaActual}</div>
             <div><span className="font-semibold">Validez:</span> {formatearFechaVencimiento()}</div>
@@ -73,11 +73,11 @@ const PDFHeader: React.FC<PDFHeaderProps> = ({
       </div>
 
       {/* Quote Summary Box */}
-      <div className="bg-gray-50 border border-gray-300 p-4 mb-6">
-        <div className="grid grid-cols-2 gap-8">
+      <div className="bg-gray-50 border border-gray-300 p-6 mb-8">
+        <div className="grid grid-cols-2 gap-10">
           <div>
-            <h3 className="font-bold text-gray-800 mb-2">DATOS DEL CLIENTE</h3>
-            <div className="text-sm space-y-1">
+            <h3 className="text-xl font-bold text-gray-800 mb-3">DATOS DEL CLIENTE</h3>
+            <div className="text-base space-y-2">
               <div><span className="font-semibold">Contacto:</span> {negocio.contacto.nombre} {negocio.contacto.apellido}</div>
               <div><span className="font-semibold">Email:</span> {negocio.contacto.email}</div>
               <div><span className="font-semibold">Teléfono:</span> {negocio.contacto.telefono}</div>
@@ -86,8 +86,8 @@ const PDFHeader: React.FC<PDFHeaderProps> = ({
           </div>
           
           <div>
-            <h3 className="font-bold text-gray-800 mb-2">DATOS DEL EVENTO</h3>
-            <div className="text-sm space-y-1">
+            <h3 className="text-xl font-bold text-gray-800 mb-3">DATOS DEL EVENTO</h3>
+            <div className="text-base space-y-2">
               <div><span className="font-semibold">Evento:</span> {negocio.evento.nombreEvento}</div>
               <div><span className="font-semibold">Tipo:</span> {negocio.evento.tipoEvento}</div>
               <div><span className="font-semibold">Fecha:</span> {negocio.evento.fechaEvento ? format(new Date(negocio.evento.fechaEvento), 'dd/MM/yyyy', {
