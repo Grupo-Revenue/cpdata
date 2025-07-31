@@ -22,15 +22,15 @@ export const usePDFDownload = () => {
     try {
       // Capture the component as canvas
       const canvas = await html2canvas(componentRef.current, {
-        scale: 4, // Maximum quality for larger text
+        scale: 3, // Higher quality for larger text
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
       });
 
-      // Calculate PDF dimensions (A4 size) - optimized for much larger content
-      const imgWidth = 160; // Smaller width for bigger content scaling
+      // Calculate PDF dimensions (A4 size) - optimized for larger content
+      const imgWidth = 190; // Slightly smaller width for better scaling
       const pageHeight = 297; // A4 height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
