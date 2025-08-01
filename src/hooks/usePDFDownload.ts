@@ -37,9 +37,9 @@ export const usePDFDownload = () => {
       const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
       const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
 
-      const horizontalPadding = 5;
+      const horizontalPadding = 2;
       const verticalPadding = 5; // margen inferior reducido
-      const imgWidth = pageWidth - horizontalPadding * 2;
+      const imgWidth = pageWidth * 0.95; // Use 95% of page width for better centering
       const usableHeight = pageHeight - verticalPadding * 2;
 
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
