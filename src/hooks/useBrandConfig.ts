@@ -53,10 +53,14 @@ export const useBrandConfig = () => {
           nombre_empresa: data.nombre_empresa 
         });
         
-        // Convert storage path to full URL for Supabase Storage
+        // Check if logo_url is already a complete URL, if not construct it
         const configWithFullUrl = {
           ...data,
-          logo_url: data.logo_url ? `https://ejvtuuvigcqpibpfcxch.supabase.co/storage/v1/object/public/brand-assets/${data.logo_url}?v=${Date.now()}` : undefined
+          logo_url: data.logo_url ? (
+            data.logo_url.startsWith('https://') 
+              ? `${data.logo_url}?v=${Date.now()}` 
+              : `https://ejvtuuvigcqpibpfcxch.supabase.co/storage/v1/object/public/brand-assets/${data.logo_url}?v=${Date.now()}`
+          ) : undefined
         };
         
         setConfig(configWithFullUrl);
