@@ -37,22 +37,23 @@ export const usePDFDownload = () => {
       const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
       const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
 
-      const horizontalPadding = 2;
-      const verticalPadding = 5; // margen inferior reducido
-      const imgWidth = pageWidth * 0.95; // Use 95% of page width for better centering
-      const usableHeight = pageHeight - verticalPadding * 2;
+      // Use same margins as print view (0.5in = 12.7mm)
+      const horizontalMargin = 12.7;
+      const verticalMargin = 12.7;
+      const imgWidth = pageWidth - (horizontalMargin * 2);
+      const usableHeight = pageHeight - (verticalMargin * 2);
 
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const marginLeft = (pageWidth - imgWidth) / 2;
+      const marginLeft = horizontalMargin;
 
       let position = 0;
       let heightLeft = imgHeight;
 
-      pdf.addImage(imgData, 'PNG', marginLeft, verticalPadding, imgWidth, imgHeight);
+      pdf.addImage(imgData, 'PNG', marginLeft, verticalMargin, imgWidth, imgHeight);
       heightLeft -= usableHeight;
 
       while (heightLeft > 0) {
-        position = heightLeft - imgHeight + verticalPadding * 2;
+        position = heightLeft - imgHeight + verticalMargin * 2;
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', marginLeft, position, imgWidth, imgHeight);
         heightLeft -= usableHeight;
