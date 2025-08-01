@@ -4,15 +4,8 @@ import { toast } from 'sonner';
 import { Presupuesto, Negocio } from '@/types';
 import { createPresupuestoPDFDefinition } from '@/utils/pdfMakeDefinition';
 
-// Use default fonts - no external dependencies needed
-pdfMake.fonts = {
-  Helvetica: {
-    normal: 'Helvetica',
-    bold: 'Helvetica-Bold',
-    italics: 'Helvetica-Oblique',
-    bolditalics: 'Helvetica-BoldOblique'
-  }
-};
+// Use PDFMake default fonts (Roboto) - no configuration needed
+// PDFMake comes with Roboto fonts by default
 
 export const usePDFMakeGeneration = () => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -40,50 +33,79 @@ export const usePDFMakeGeneration = () => {
 
       // Generate PDF with enhanced error handling
       try {
+        console.log('Creating PDF with pdfMake...');
         const pdfDocGenerator = pdfMake.createPdf(docDefinition);
         
         // Use promise-based approach for better error handling
         return new Promise((resolve, reject) => {
           try {
+            console.log('Getting PDF blob...');
             pdfDocGenerator.getBlob((blob: Blob) => {
+              console.log('Blob received:', blob ? `${blob.size} bytes` : 'null');
+              
               if (!blob || blob.size === 0) {
-                reject(new Error('PDF blob is empty or invalid'));
+                console.error('PDF blob is empty or null');
+                reject(new Error('No se pudo generar el PDF. El archivo está vacío.'));
                 return;
               }
               
               console.log('PDF blob generated successfully, size:', blob.size);
               
               try {
-                // Create download link
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `${fileName}.pdf`;
-                link.style.display = 'none';
-                
-                // Trigger download
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                // Clean up
-                setTimeout(() => URL.revokeObjectURL(url), 100);
-                
-                toast.success('PDF descargado exitosamente');
-                resolve(true);
+                // Try multiple download methods for better compatibility
+                const downloadMethods = [
+                  () => {
+                    // Method 1: Standard blob download
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `${fileName}.pdf`;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                  },
+                  () => {
+                    // Method 2: Window.open fallback
+                    const url = URL.createObjectURL(blob);
+                    const newWindow = window.open(url, '_blank');
+                    if (!newWindow) {
+                      throw new Error('Popup blocked - please allow popups for download');
+                    }
+                    setTimeout(() => URL.revokeObjectURL(url), 5000);
+                  }
+                ];
+
+                // Try first method, if it fails, try second
+                try {
+                  downloadMethods[0]();
+                  toast.success('PDF descargado exitosamente');
+                  resolve(true);
+                } catch (downloadError) {
+                  console.warn('Primary download method failed, trying fallback:', downloadError);
+                  try {
+                    downloadMethods[1]();
+                    toast.success('PDF abierto en nueva ventana');
+                    resolve(true);
+                  } catch (fallbackError) {
+                    console.error('All download methods failed:', fallbackError);
+                    reject(new Error('No se pudo descargar el PDF. Por favor intenta con otro navegador.'));
+                  }
+                }
               } catch (downloadError) {
-                console.error('Error during download:', downloadError);
-                reject(new Error(`Error al descargar: ${downloadError.message}`));
+                console.error('Error during download setup:', downloadError);
+                reject(new Error(`Error al preparar descarga: ${downloadError.message}`));
               }
             });
           } catch (blobError) {
-            console.error('Error generating blob:', blobError);
-            reject(new Error(`Error generando blob: ${blobError.message}`));
+            console.error('Error in getBlob call:', blobError);
+            reject(new Error(`Error al solicitar PDF: ${blobError.message}`));
           }
         });
       } catch (pdfError) {
         console.error('Error creating PDF:', pdfError);
-        throw new Error(`Error creando PDF: ${pdfError.message}`);
+        throw new Error(`Error inicializando PDF: ${pdfError.message}`);
       }
       
     } catch (error) {
