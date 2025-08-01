@@ -53,13 +53,13 @@ export const useBrandConfig = () => {
           nombre_empresa: data.nombre_empresa 
         });
         
-        // Add cache-busting for logo to force refresh
-        const configWithCacheBuster = {
+        // Convert storage path to full URL for Supabase Storage
+        const configWithFullUrl = {
           ...data,
-          logo_url: data.logo_url ? `${data.logo_url}?v=${Date.now()}` : undefined
+          logo_url: data.logo_url ? `https://ejvtuuvigcqpibpfcxch.supabase.co/storage/v1/object/public/brand-assets/${data.logo_url}?v=${Date.now()}` : undefined
         };
         
-        setConfig(configWithCacheBuster);
+        setConfig(configWithFullUrl);
         setLastFetch(Date.now());
       } else {
         logger.info('No brand config found in database, using default without logo');

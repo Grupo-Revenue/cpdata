@@ -2,7 +2,6 @@ import { useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { toast } from '@/hooks/use-toast';
-import { preloadImagesAsBase64 } from '@/utils/imageUtils';
 
 export const usePDFDownload = () => {
   const componentRef = useRef<HTMLDivElement>(null);
@@ -21,26 +20,6 @@ export const usePDFDownload = () => {
     setIsGenerating(true);
 
     try {
-      // Pre-cargar todas las imágenes como base64
-      const images = componentRef.current.querySelectorAll('img');
-      const imageUrls = Array.from(images)
-        .map(img => img.src)
-        .filter(src => src && src.startsWith('http'));
-      
-      if (imageUrls.length > 0) {
-        const base64Images = await preloadImagesAsBase64(imageUrls);
-        
-        // Reemplazar las URLs de las imágenes con sus versiones base64
-        images.forEach(img => {
-          if (base64Images[img.src]) {
-            img.src = base64Images[img.src];
-          }
-        });
-        
-        // Esperar un momento para que las imágenes se actualicen en el DOM
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-
       const canvas = await html2canvas(componentRef.current, {
         scale: 4,
         useCORS: true,
