@@ -21,7 +21,7 @@ export const usePDFDownload = () => {
 
     try {
       const canvas = await html2canvas(componentRef.current, {
-        scale: 3,
+        scale: 2,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
