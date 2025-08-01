@@ -21,11 +21,12 @@ export const usePDFDownload = () => {
 
     try {
       const canvas = await html2canvas(componentRef.current, {
-        scale: 4,
+        scale: 3,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
+        imageTimeout: 15000,
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -34,11 +35,11 @@ export const usePDFDownload = () => {
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
 
-      // Configuración para mayor zoom visual
-      const imgWidth = 140; // mm - reducido para mayor zoom
+      // Configuración para usar todo el ancho disponible en A4
+      const imgWidth = 180; // mm - usar más espacio de la página A4
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      // Centrar horizontalmente
+      // Centrar horizontalmente con márgenes de 15mm
       const marginLeft = (pageWidth - imgWidth) / 2;
       
       let position = 0;
