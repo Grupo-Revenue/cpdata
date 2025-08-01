@@ -53,12 +53,15 @@ const Navigation = () => {
         <div className="flex h-16 items-center justify-between">
           {/* Logo y título - Estructura unificada */}
           <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.location.href = '/'}>
-            {brandConfig?.logo_url && !configLoading && !imageError ? <img src={brandConfig.logo_url} alt={brandConfig.nombre_empresa || 'Logo'} className="h-10 w-auto max-w-[200px] object-contain" onLoad={() => {
-            setImageError(false);
-          }} onError={() => {
-            setImageError(true);
-          }} /> : <div className="h-10 w-10 rounded-lg gradient-primary">
-              </div>}
+            {brandConfig?.logo_url && !configLoading && !imageError && (
+              <img 
+                src={brandConfig.logo_url} 
+                alt={brandConfig.nombre_empresa || 'Logo'} 
+                className="h-10 w-auto max-w-[200px] object-contain" 
+                onLoad={() => setImageError(false)} 
+                onError={() => setImageError(true)} 
+              />
+            )}
             
           </div>
           
