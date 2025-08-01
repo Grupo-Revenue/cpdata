@@ -4,13 +4,13 @@ import { toast } from 'sonner';
 import { Presupuesto, Negocio } from '@/types';
 import { createPresupuestoPDFDefinition } from '@/utils/pdfMakeDefinition';
 
-// Configure pdfMake fonts with standard fonts
+// Configure pdfMake with built-in fonts (no external dependencies)
 pdfMake.fonts = {
   Roboto: {
-    normal: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.20/fonts/Roboto/Roboto-Regular.ttf',
-    bold: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.20/fonts/Roboto/Roboto-Medium.ttf',
-    italics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.20/fonts/Roboto/Roboto-Italic.ttf',
-    bolditalics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.20/fonts/Roboto/Roboto-MediumItalic.ttf'
+    normal: 'Roboto-Regular.ttf',
+    bold: 'Roboto-Medium.ttf',
+    italics: 'Roboto-Italic.ttf',
+    bolditalics: 'Roboto-MediumItalic.ttf'
   }
 };
 

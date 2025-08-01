@@ -25,15 +25,26 @@ export const parsearPrecio = (precioString: string): number => {
 export const stripHtml = (html: string, maxLength?: number): string => {
   if (!html) return '';
   
-  // Crear un elemento temporal para extraer solo el texto
-  const temp = document.createElement('div');
-  temp.innerHTML = html;
-  const text = temp.textContent || temp.innerText || '';
-  
-  // Aplicar truncamiento si se especifica
-  if (maxLength && text.length > maxLength) {
-    return text.substring(0, maxLength) + '...';
+  try {
+    // Crear un elemento temporal para extraer solo el texto
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    let text = temp.textContent || temp.innerText || '';
+    
+    // Limpiar caracteres especiales y espacios extra
+    text = text.replace(/\s+/g, ' ').trim();
+    
+    // Remover caracteres que pueden causar problemas en PDF
+    text = text.replace(/[^\w\s\-.,;:()áéíóúüñÁÉÍÓÚÜÑ]/g, '');
+    
+    // Aplicar truncamiento si se especifica
+    if (maxLength && text.length > maxLength) {
+      return text.substring(0, maxLength) + '...';
+    }
+    
+    return text;
+  } catch (error) {
+    console.error('Error processing HTML:', error);
+    return html.replace(/<[^>]*>/g, '').substring(0, maxLength || 100);
   }
-  
-  return text;
 };

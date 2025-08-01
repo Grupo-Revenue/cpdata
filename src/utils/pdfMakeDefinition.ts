@@ -11,77 +11,111 @@ export const createPresupuestoPDFDefinition = (
   presupuesto: Presupuesto,
   negocio: Negocio
 ): TDocumentDefinitions => {
-  const totales = calcularTotalesPresupuesto(presupuesto.productos || []);
-  const currentDate = new Date();
-  const validityDate = new Date();
-  validityDate.setDate(currentDate.getDate() + 30);
+  console.log('Creating PDF definition with:', { presupuesto, negocio });
+  
+  try {
+    // Validate input data
+    if (!presupuesto) throw new Error('Presupuesto data is missing');
+    if (!negocio) throw new Error('Negocio data is missing');
+    
+    // Calculate totals
+    const productos = presupuesto.productos || [];
+    console.log('Products for PDF:', productos);
+    const totales = calcularTotalesPresupuesto(productos);
+    console.log('Calculated totals:', totales);
+    
+    // Get current date and validity date
+    const currentDate = new Date();
+    const validityDate = new Date();
+    validityDate.setDate(validityDate.getDate() + 30); // 30 days validity
 
-  return {
-    content: [
-      // Header Section
-      createHeaderSection(presupuesto, negocio, currentDate, validityDate),
-      
-      // Spacer
-      { text: '', margin: [0, 10] },
-      
-      // Products Table
-      createProductsTable(presupuesto),
-      
-      // Spacer
-      { text: '', margin: [0, 10] },
-      
-      // Pricing Summary
-      createPricingSummary(totales),
-      
-      // Spacer
-      { text: '', margin: [0, 15] },
-      
-      // Conditions Section
-      createConditionsSection(),
-      
-      // Footer
-      createFooterSection(),
-    ],
-    pageSize: 'A4',
-    pageMargins: [40, 60, 40, 60],
-    defaultStyle: {
-      font: 'Roboto',
-      fontSize: 10,
-    },
-    styles: {
-      header: {
-        fontSize: 18,
-        bold: true,
-      },
-      subheader: {
-        fontSize: 14,
-        bold: true,
-      },
-      tableHeader: {
-        bold: true,
-        fontSize: 9,
-        fillColor: '#f0f0f0',
-      },
-      tableCell: {
-        fontSize: 9,
-      },
-      totalsHeader: {
-        bold: true,
+    const docDefinition: TDocumentDefinitions = {
+      content: [
+        // Header Section
+        createHeaderSection(presupuesto, negocio, currentDate, validityDate),
+        
+        // Spacer
+        { text: '', margin: [0, 10] } as Content,
+        
+        // Products Table
+        createProductsTable(presupuesto),
+        
+        // Spacer
+        { text: '', margin: [0, 10] } as Content,
+        
+        // Pricing Summary
+        createPricingSummary(totales),
+        
+        // Spacer
+        { text: '', margin: [0, 15] } as Content,
+        
+        // Conditions Section
+        createConditionsSection(),
+        
+        // Footer
+        createFooterSection(),
+      ],
+      pageSize: 'A4',
+      pageMargins: [40, 60, 40, 60],
+      defaultStyle: {
+        font: 'Roboto',
         fontSize: 10,
       },
-      totalsValue: {
+      styles: {
+        header: {
+          fontSize: 18,
+          bold: true,
+        },
+        subheader: {
+          fontSize: 14,
+          bold: true,
+        },
+        tableHeader: {
+          bold: true,
+          fontSize: 9,
+          fillColor: '#f0f0f0',
+        },
+        tableCell: {
+          fontSize: 9,
+        },
+        totalsHeader: {
+          bold: true,
+          fontSize: 10,
+        },
+        totalsValue: {
+          fontSize: 10,
+        },
+        grandTotal: {
+          bold: true,
+          fontSize: 12,
+        },
+        footer: {
+          fontSize: 8,
+          alignment: 'center',
+        },
+      },
+    };
+    
+    console.log('PDF definition created successfully');
+    return docDefinition;
+    
+  } catch (error) {
+    console.error('Error creating PDF definition:', error);
+    // Return a minimal working PDF definition
+    return {
+      pageSize: 'A4',
+      pageMargins: [40, 60, 40, 60],
+      defaultStyle: {
+        font: 'Roboto',
         fontSize: 10,
       },
-      grandTotal: {
-        bold: true,
-        fontSize: 12,
-      },
-      footer: {
-        fontSize: 8,
-        alignment: 'center',
-      },
-    },
-  };
+      content: [
+        { text: 'Error generando PDF', style: 'header' } as Content,
+        { text: `Error: ${error instanceof Error ? error.message : 'Error desconocido'}`, margin: [0, 10] } as Content,
+        { text: 'Por favor contacte al administrador.', margin: [0, 10] } as Content
+      ]
+    } as TDocumentDefinitions;
+  }
 };
 
 const createHeaderSection = (
