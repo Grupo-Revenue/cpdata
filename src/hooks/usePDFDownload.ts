@@ -21,14 +21,12 @@ export const usePDFDownload = () => {
 
     try {
       const canvas = await html2canvas(componentRef.current, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
         imageTimeout: 15000,
-        width: 1000,
-        height: componentRef.current.scrollHeight,
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -37,23 +35,22 @@ export const usePDFDownload = () => {
       const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
       const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
 
-      // Use same margins as print view (0.5in = 12.7mm)
-      const horizontalMargin = 12.7;
-      const verticalMargin = 12.7;
-      const imgWidth = pageWidth - (horizontalMargin * 2);
-      const usableHeight = pageHeight - (verticalMargin * 2);
+      const horizontalPadding = 10;
+      const verticalPadding = 5; // margen inferior reducido
+      const imgWidth = pageWidth - horizontalPadding * 2;
+      const usableHeight = pageHeight - verticalPadding * 2;
 
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const marginLeft = horizontalMargin;
+      const marginLeft = (pageWidth - imgWidth) / 2;
 
       let position = 0;
       let heightLeft = imgHeight;
 
-      pdf.addImage(imgData, 'PNG', marginLeft, verticalMargin, imgWidth, imgHeight);
+      pdf.addImage(imgData, 'PNG', marginLeft, verticalPadding, imgWidth, imgHeight);
       heightLeft -= usableHeight;
 
       while (heightLeft > 0) {
-        position = heightLeft - imgHeight + verticalMargin * 2;
+        position = heightLeft - imgHeight + verticalPadding * 2;
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', marginLeft, position, imgWidth, imgHeight);
         heightLeft -= usableHeight;
