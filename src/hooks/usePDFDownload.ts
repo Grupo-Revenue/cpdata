@@ -35,23 +35,25 @@ export const usePDFDownload = () => {
       const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
       const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
 
-      const horizontalPadding = 10; // 10mm por lado
-      const imgWidth = pageWidth - horizontalPadding * 2; // 190mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const horizontalPadding = 10;
+      const verticalPadding = 5; // margen inferior reducido
+      const imgWidth = pageWidth - horizontalPadding * 2;
+      const usableHeight = pageHeight - verticalPadding * 2;
 
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       const marginLeft = (pageWidth - imgWidth) / 2;
 
       let position = 0;
       let heightLeft = imgHeight;
 
-      pdf.addImage(imgData, 'PNG', marginLeft, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      pdf.addImage(imgData, 'PNG', marginLeft, verticalPadding, imgWidth, imgHeight);
+      heightLeft -= usableHeight;
 
       while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
+        position = heightLeft - imgHeight + verticalPadding * 2;
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', marginLeft, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        heightLeft -= usableHeight;
       }
 
       pdf.save(`${fileName}.pdf`);
