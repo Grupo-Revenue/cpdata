@@ -58,7 +58,7 @@ export const createPresupuestoPDFDefinition = (
       pageSize: 'A4',
       pageMargins: [40, 60, 40, 60],
       defaultStyle: {
-        font: 'Roboto',
+        font: 'Helvetica',
         fontSize: 10,
       },
       styles: {
@@ -106,7 +106,7 @@ export const createPresupuestoPDFDefinition = (
       pageSize: 'A4',
       pageMargins: [40, 60, 40, 60],
       defaultStyle: {
-        font: 'Roboto',
+        font: 'Helvetica',
         fontSize: 10,
       },
       content: [

@@ -4,13 +4,13 @@ import { toast } from 'sonner';
 import { Presupuesto, Negocio } from '@/types';
 import { createPresupuestoPDFDefinition } from '@/utils/pdfMakeDefinition';
 
-// Configure pdfMake with built-in fonts (no external dependencies)
+// Use default fonts - no external dependencies needed
 pdfMake.fonts = {
-  Roboto: {
-    normal: 'Roboto-Regular.ttf',
-    bold: 'Roboto-Medium.ttf',
-    italics: 'Roboto-Italic.ttf',
-    bolditalics: 'Roboto-MediumItalic.ttf'
+  Helvetica: {
+    normal: 'Helvetica',
+    bold: 'Helvetica-Bold',
+    italics: 'Helvetica-Oblique',
+    bolditalics: 'Helvetica-BoldOblique'
   }
 };
 
@@ -29,33 +29,62 @@ export const usePDFMakeGeneration = () => {
       console.log('Creating PDF with data:', { presupuesto, negocio });
 
       // Create the PDF definition
-      const docDefinition = createPresupuestoPDFDefinition(presupuesto, negocio);
-      console.log('PDF Definition created:', docDefinition);
+      let docDefinition;
+      try {
+        docDefinition = createPresupuestoPDFDefinition(presupuesto, negocio);
+        console.log('PDF Definition created successfully');
+      } catch (defError) {
+        console.error('Error creating PDF definition:', defError);
+        throw new Error(`Error en la definición del PDF: ${defError.message}`);
+      }
 
-      // Generate and download the PDF using blob method
-      const pdfDocGenerator = pdfMake.createPdf(docDefinition);
-      
-      // Use getBlob method for more reliable download
-      pdfDocGenerator.getBlob((blob: Blob) => {
-        console.log('PDF blob generated:', blob);
+      // Generate PDF with enhanced error handling
+      try {
+        const pdfDocGenerator = pdfMake.createPdf(docDefinition);
         
-        // Create download link
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${fileName}.pdf`;
-        link.style.display = 'none';
-        
-        // Trigger download
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Clean up
-        URL.revokeObjectURL(url);
-        
-        toast.success('PDF descargado exitosamente');
-      });
+        // Use promise-based approach for better error handling
+        return new Promise((resolve, reject) => {
+          try {
+            pdfDocGenerator.getBlob((blob: Blob) => {
+              if (!blob || blob.size === 0) {
+                reject(new Error('PDF blob is empty or invalid'));
+                return;
+              }
+              
+              console.log('PDF blob generated successfully, size:', blob.size);
+              
+              try {
+                // Create download link
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${fileName}.pdf`;
+                link.style.display = 'none';
+                
+                // Trigger download
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Clean up
+                setTimeout(() => URL.revokeObjectURL(url), 100);
+                
+                toast.success('PDF descargado exitosamente');
+                resolve(true);
+              } catch (downloadError) {
+                console.error('Error during download:', downloadError);
+                reject(new Error(`Error al descargar: ${downloadError.message}`));
+              }
+            });
+          } catch (blobError) {
+            console.error('Error generating blob:', blobError);
+            reject(new Error(`Error generando blob: ${blobError.message}`));
+          }
+        });
+      } catch (pdfError) {
+        console.error('Error creating PDF:', pdfError);
+        throw new Error(`Error creando PDF: ${pdfError.message}`);
+      }
       
     } catch (error) {
       console.error('Error generating PDF:', error);

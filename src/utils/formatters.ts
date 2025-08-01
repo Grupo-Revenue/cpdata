@@ -26,25 +26,46 @@ export const stripHtml = (html: string, maxLength?: number): string => {
   if (!html) return '';
   
   try {
-    // Crear un elemento temporal para extraer solo el texto
+    // Remove style attributes and other problematic HTML
+    let cleanHtml = html
+      .replace(/style="[^"]*"/gi, '') // Remove style attributes
+      .replace(/class="[^"]*"/gi, '') // Remove class attributes
+      .replace(/<style[^>]*>.*?<\/style>/gis, '') // Remove style tags
+      .replace(/<script[^>]*>.*?<\/script>/gis, '') // Remove script tags
+      .replace(/&nbsp;/gi, ' ') // Replace &nbsp; with regular space
+      .replace(/&amp;/gi, '&') // Replace &amp; with &
+      .replace(/&lt;/gi, '<') // Replace &lt; with <
+      .replace(/&gt;/gi, '>') // Replace &gt; with >
+      .replace(/&quot;/gi, '"'); // Replace &quot; with "
+    
+    // Create temporary element to extract text
     const temp = document.createElement('div');
-    temp.innerHTML = html;
+    temp.innerHTML = cleanHtml;
     let text = temp.textContent || temp.innerText || '';
     
-    // Limpiar caracteres especiales y espacios extra
-    text = text.replace(/\s+/g, ' ').trim();
+    // Clean special characters and extra spaces
+    text = text
+      .replace(/\s+/g, ' ') // Multiple spaces to single space
+      .replace(/[\r\n\t]/g, ' ') // Line breaks and tabs to space
+      .trim();
     
-    // Remover caracteres que pueden causar problemas en PDF
-    text = text.replace(/[^\w\s\-.,;:()áéíóúüñÁÉÍÓÚÜÑ]/g, '');
+    // Remove characters that can cause PDF problems, but keep more useful ones
+    text = text.replace(/[^\w\s\-.,;:()áéíóúüñÁÉÍÓÚÜÑ¿¡°%$&+=/]/g, '');
     
-    // Aplicar truncamiento si se especifica
+    // Apply truncation if specified
     if (maxLength && text.length > maxLength) {
       return text.substring(0, maxLength) + '...';
     }
     
-    return text;
+    return text || 'Sin descripción';
   } catch (error) {
     console.error('Error processing HTML:', error);
-    return html.replace(/<[^>]*>/g, '').substring(0, maxLength || 100);
+    // Emergency fallback
+    const fallback = html
+      .replace(/<[^>]*>/g, '') // Strip all HTML tags
+      .replace(/&[^;]+;/g, '') // Remove HTML entities
+      .replace(/\s+/g, ' ') // Clean whitespace
+      .trim();
+    return fallback.substring(0, maxLength || 100) || 'Sin descripción';
   }
 };
