@@ -32,16 +32,15 @@ export const usePDFDownload = () => {
       const imgData = canvas.toDataURL('image/png');
 
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
+      const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
+      const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
 
-      // Configuración para usar todo el ancho disponible en A4
-      const imgWidth = 180; // mm - usar más espacio de la página A4
+      const horizontalPadding = 10; // 10mm por lado
+      const imgWidth = pageWidth - horizontalPadding * 2; // 190mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      // Centrar horizontalmente con márgenes de 15mm
+
       const marginLeft = (pageWidth - imgWidth) / 2;
-      
+
       let position = 0;
       let heightLeft = imgHeight;
 
