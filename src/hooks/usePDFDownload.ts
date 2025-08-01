@@ -21,12 +21,14 @@ export const usePDFDownload = () => {
 
     try {
       const canvas = await html2canvas(componentRef.current, {
-        scale: 3,
+        scale: 4,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
         imageTimeout: 15000,
+        width: 1200,
+        height: componentRef.current.scrollHeight,
       });
 
       const imgData = canvas.toDataURL('image/png');
