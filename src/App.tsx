@@ -16,6 +16,7 @@ import PresupuestoPDFView from "./pages/PresupuestoPDFView";
 
 import PublicPresupuestoPrintView from "./pages/PublicPresupuestoPrintView";
 import NotFound from "./pages/NotFound";
+import { InitializeLogo } from "./pages/InitializeLogo";
 import { queryClient } from "@/utils/queryClient";
 import { Suspense } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -87,6 +88,11 @@ const App = () => {
                         </ProtectedRoute>
                       </HubSpotSyncProvider>
                     </NegocioProvider>
+                  } />
+                  <Route path="/initialize-logo" element={
+                    <ProtectedRoute>
+                      <InitializeLogo />
+                    </ProtectedRoute>
                   } />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
