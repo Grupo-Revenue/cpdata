@@ -45,47 +45,39 @@ export const createPresupuestoPDFDefinition = (
     pageSize: 'A4',
     pageMargins: [40, 60, 40, 60],
     defaultStyle: {
-      font: 'Helvetica',
+      font: 'Roboto',
       fontSize: 10,
     },
     styles: {
       header: {
         fontSize: 18,
         bold: true,
-        color: '#1f2937',
       },
       subheader: {
         fontSize: 14,
         bold: true,
-        color: '#374151',
       },
       tableHeader: {
         bold: true,
         fontSize: 9,
-        color: '#374151',
-        fillColor: '#f3f4f6',
+        fillColor: '#f0f0f0',
       },
       tableCell: {
         fontSize: 9,
-        color: '#111827',
       },
       totalsHeader: {
         bold: true,
         fontSize: 10,
-        color: '#374151',
       },
       totalsValue: {
         fontSize: 10,
-        color: '#111827',
       },
       grandTotal: {
         bold: true,
         fontSize: 12,
-        color: '#dc2626',
       },
       footer: {
         fontSize: 8,
-        color: '#6b7280',
         alignment: 'center',
       },
     },

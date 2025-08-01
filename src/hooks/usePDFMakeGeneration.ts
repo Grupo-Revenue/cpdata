@@ -4,13 +4,13 @@ import { toast } from 'sonner';
 import { Presupuesto, Negocio } from '@/types';
 import { createPresupuestoPDFDefinition } from '@/utils/pdfMakeDefinition';
 
-// Configure pdfMake fonts with default Helvetica
+// Configure pdfMake fonts with standard fonts
 pdfMake.fonts = {
-  Helvetica: {
-    normal: 'Helvetica',
-    bold: 'Helvetica-Bold',
-    italics: 'Helvetica-Oblique',
-    bolditalics: 'Helvetica-BoldOblique'
+  Roboto: {
+    normal: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.20/fonts/Roboto/Roboto-Regular.ttf',
+    bold: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.20/fonts/Roboto/Roboto-Medium.ttf',
+    italics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.20/fonts/Roboto/Roboto-Italic.ttf',
+    bolditalics: 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.20/fonts/Roboto/Roboto-MediumItalic.ttf'
   }
 };
 
@@ -26,18 +26,40 @@ export const usePDFMakeGeneration = () => {
       setIsGenerating(true);
       toast.info('Generando PDF con texto seleccionable...');
 
+      console.log('Creating PDF with data:', { presupuesto, negocio });
+
       // Create the PDF definition
       const docDefinition = createPresupuestoPDFDefinition(presupuesto, negocio);
+      console.log('PDF Definition created:', docDefinition);
 
-      // Generate and download the PDF
+      // Generate and download the PDF using blob method
       const pdfDocGenerator = pdfMake.createPdf(docDefinition);
       
-      pdfDocGenerator.download(`${fileName}.pdf`);
+      // Use getBlob method for more reliable download
+      pdfDocGenerator.getBlob((blob: Blob) => {
+        console.log('PDF blob generated:', blob);
+        
+        // Create download link
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${fileName}.pdf`;
+        link.style.display = 'none';
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up
+        URL.revokeObjectURL(url);
+        
+        toast.success('PDF descargado exitosamente');
+      });
       
-      toast.success('PDF generado exitosamente');
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast.error('Error al generar el PDF');
+      toast.error(`Error al generar el PDF: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setIsGenerating(false);
     }
