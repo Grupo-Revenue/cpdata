@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { toast } from '@/hooks/use-toast';
+import { preloadImagesAsBase64 } from '@/utils/imageUtils';
 
 export const usePDFDownload = () => {
   const componentRef = useRef<HTMLDivElement>(null);
@@ -20,11 +21,32 @@ export const usePDFDownload = () => {
     setIsGenerating(true);
 
     try {
-      // Aumentar escala para mejor calidad (sin hacer que se vea pequeño)
+      // Pre-cargar todas las imágenes como base64
+      const images = componentRef.current.querySelectorAll('img');
+      const imageUrls = Array.from(images)
+        .map(img => img.src)
+        .filter(src => src && src.startsWith('http'));
+      
+      if (imageUrls.length > 0) {
+        const base64Images = await preloadImagesAsBase64(imageUrls);
+        
+        // Reemplazar las URLs de las imágenes con sus versiones base64
+        images.forEach(img => {
+          if (base64Images[img.src]) {
+            img.src = base64Images[img.src];
+          }
+        });
+        
+        // Esperar un momento para que las imágenes se actualicen en el DOM
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
       const canvas = await html2canvas(componentRef.current, {
-        scale: 3, // aumenta la calidad sin reducir visibilidad
+        scale: 4,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: '#ffffff',
+        logging: false,
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -33,22 +55,23 @@ export const usePDFDownload = () => {
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
 
-      // Ajustar el tamaño de la imagen para que ocupe mejor la hoja
-      const imgProps = {
-        width: pageWidth,
-        height: (canvas.height * pageWidth) / canvas.width,
-      };
-
+      // Configuración para mayor zoom visual
+      const imgWidth = 140; // mm - reducido para mayor zoom
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Centrar horizontalmente
+      const marginLeft = (pageWidth - imgWidth) / 2;
+      
       let position = 0;
-      let heightLeft = imgProps.height;
+      let heightLeft = imgHeight;
 
-      pdf.addImage(imgData, 'PNG', 0, position, imgProps.width, imgProps.height);
+      pdf.addImage(imgData, 'PNG', marginLeft, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
       while (heightLeft > 0) {
-        position = heightLeft - imgProps.height;
+        position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgProps.width, imgProps.height);
+        pdf.addImage(imgData, 'PNG', marginLeft, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
 
