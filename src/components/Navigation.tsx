@@ -57,8 +57,7 @@ const Navigation = () => {
             setImageError(false);
           }} onError={() => {
             setImageError(true);
-          }} /> : <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
-                <Building2 className="h-6 w-6 text-white" />
+          }} /> : <div className="h-10 w-10 rounded-lg gradient-primary">
               </div>}
             
           </div>
