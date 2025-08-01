@@ -17,102 +17,60 @@ export const usePDFMakeGeneration = () => {
   ) => {
     try {
       setIsGenerating(true);
-      toast.info('Generando PDF con texto seleccionable...');
+      toast.info('Generando PDF...');
 
-      console.log('Creating PDF with data:', { presupuesto, negocio });
+      console.log('=== PDF GENERATION START ===');
+      console.log('Data received:', { presupuesto: !!presupuesto, negocio: !!negocio });
 
-      // Create the PDF definition
-      let docDefinition;
+      // Simplify content - remove complex HTML
+      const simplifiedPresupuesto = {
+        ...presupuesto,
+        productos: presupuesto.productos?.map(producto => ({
+          ...producto,
+          descripcion: producto.descripcion ? producto.descripcion.replace(/<[^>]*>/g, '').substring(0, 100) : ''
+        })) || []
+      };
+
+      console.log('Simplified data created');
+
+      // Create minimal PDF definition first
+      const docDefinition = createPresupuestoPDFDefinition(simplifiedPresupuesto, negocio);
+      console.log('PDF definition created successfully');
+
+      // Try direct download method first
       try {
-        docDefinition = createPresupuestoPDFDefinition(presupuesto, negocio);
-        console.log('PDF Definition created successfully');
-      } catch (defError) {
-        console.error('Error creating PDF definition:', defError);
-        throw new Error(`Error en la definición del PDF: ${defError.message}`);
-      }
-
-      // Generate PDF with enhanced error handling
-      try {
-        console.log('Creating PDF with pdfMake...');
         const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+        console.log('PDF generator created');
         
-        // Use promise-based approach for better error handling
-        return new Promise((resolve, reject) => {
-          try {
-            console.log('Getting PDF blob...');
-            pdfDocGenerator.getBlob((blob: Blob) => {
-              console.log('Blob received:', blob ? `${blob.size} bytes` : 'null');
-              
-              if (!blob || blob.size === 0) {
-                console.error('PDF blob is empty or null');
-                reject(new Error('No se pudo generar el PDF. El archivo está vacío.'));
-                return;
-              }
-              
-              console.log('PDF blob generated successfully, size:', blob.size);
-              
-              try {
-                // Try multiple download methods for better compatibility
-                const downloadMethods = [
-                  () => {
-                    // Method 1: Standard blob download
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `${fileName}.pdf`;
-                    link.style.display = 'none';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    setTimeout(() => URL.revokeObjectURL(url), 1000);
-                  },
-                  () => {
-                    // Method 2: Window.open fallback
-                    const url = URL.createObjectURL(blob);
-                    const newWindow = window.open(url, '_blank');
-                    if (!newWindow) {
-                      throw new Error('Popup blocked - please allow popups for download');
-                    }
-                    setTimeout(() => URL.revokeObjectURL(url), 5000);
-                  }
-                ];
-
-                // Try first method, if it fails, try second
-                try {
-                  downloadMethods[0]();
-                  toast.success('PDF descargado exitosamente');
-                  resolve(true);
-                } catch (downloadError) {
-                  console.warn('Primary download method failed, trying fallback:', downloadError);
-                  try {
-                    downloadMethods[1]();
-                    toast.success('PDF abierto en nueva ventana');
-                    resolve(true);
-                  } catch (fallbackError) {
-                    console.error('All download methods failed:', fallbackError);
-                    reject(new Error('No se pudo descargar el PDF. Por favor intenta con otro navegador.'));
-                  }
-                }
-              } catch (downloadError) {
-                console.error('Error during download setup:', downloadError);
-                reject(new Error(`Error al preparar descarga: ${downloadError.message}`));
-              }
-            });
-          } catch (blobError) {
-            console.error('Error in getBlob call:', blobError);
-            reject(new Error(`Error al solicitar PDF: ${blobError.message}`));
-          }
-        });
-      } catch (pdfError) {
-        console.error('Error creating PDF:', pdfError);
-        throw new Error(`Error inicializando PDF: ${pdfError.message}`);
+        // Method 1: Direct download
+        pdfDocGenerator.download(`${fileName}.pdf`);
+        console.log('Direct download initiated');
+        toast.success('PDF descargado exitosamente');
+        return true;
+        
+      } catch (directError) {
+        console.warn('Direct download failed, trying open method:', directError);
+        
+        // Method 2: Open in new window
+        try {
+          const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+          pdfDocGenerator.open();
+          console.log('PDF opened in new window');
+          toast.success('PDF abierto en nueva ventana');
+          return true;
+        } catch (openError) {
+          console.error('Open method also failed:', openError);
+          throw new Error('No se pudo generar el PDF con los métodos disponibles');
+        }
       }
       
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('=== PDF GENERATION ERROR ===', error);
       toast.error(`Error al generar el PDF: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      throw error;
     } finally {
       setIsGenerating(false);
+      console.log('=== PDF GENERATION END ===');
     }
   };
 

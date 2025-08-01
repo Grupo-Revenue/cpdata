@@ -11,106 +11,55 @@ export const createPresupuestoPDFDefinition = (
   presupuesto: Presupuesto,
   negocio: Negocio
 ): TDocumentDefinitions => {
-  console.log('Creating PDF definition with:', { presupuesto, negocio });
+  console.log('=== PDF DEFINITION START ===');
   
   try {
     // Validate input data
     if (!presupuesto) throw new Error('Presupuesto data is missing');
     if (!negocio) throw new Error('Negocio data is missing');
     
-    // Calculate totals
-    const productos = presupuesto.productos || [];
-    console.log('Products for PDF:', productos);
-    const totales = calcularTotalesPresupuesto(productos);
-    console.log('Calculated totals:', totales);
+    const totales = calcularTotalesPresupuesto(presupuesto.productos || []);
+    console.log('Totals calculated:', totales);
     
-    // Get current date and validity date
     const currentDate = new Date();
     const validityDate = new Date();
-    validityDate.setDate(validityDate.getDate() + 30); // 30 days validity
+    validityDate.setDate(validityDate.getDate() + 30);
 
+    // Ultra-simple PDF definition to test basic functionality
     const docDefinition: TDocumentDefinitions = {
-      content: [
-        // Header Section
-        createHeaderSection(presupuesto, negocio, currentDate, validityDate),
-        
-        // Spacer
-        { text: '', margin: [0, 10] } as Content,
-        
-        // Products Table
-        createProductsTable(presupuesto),
-        
-        // Spacer
-        { text: '', margin: [0, 10] } as Content,
-        
-        // Pricing Summary
-        createPricingSummary(totales),
-        
-        // Spacer
-        { text: '', margin: [0, 15] } as Content,
-        
-        // Conditions Section
-        createConditionsSection(),
-        
-        // Footer
-        createFooterSection(),
-      ],
       pageSize: 'A4',
       pageMargins: [40, 60, 40, 60],
       defaultStyle: {
-        fontSize: 10,
+        fontSize: 12,
       },
-      styles: {
-        header: {
-          fontSize: 18,
-          bold: true,
-        },
-        subheader: {
-          fontSize: 14,
-          bold: true,
-        },
-        tableHeader: {
-          bold: true,
-          fontSize: 9,
-          fillColor: '#f0f0f0',
-        },
-        tableCell: {
-          fontSize: 9,
-        },
-        totalsHeader: {
-          bold: true,
-          fontSize: 10,
-        },
-        totalsValue: {
-          fontSize: 10,
-        },
-        grandTotal: {
-          bold: true,
-          fontSize: 12,
-        },
-        footer: {
-          fontSize: 8,
-          alignment: 'center',
-        },
-      },
+      content: [
+        { text: 'PRESUPUESTO', fontSize: 18, bold: true, alignment: 'center', margin: [0, 0, 0, 20] } as Content,
+        { text: `Cliente: ${negocio.contacto?.nombre || 'N/A'}`, margin: [0, 0, 0, 10] } as Content,
+        { text: `Presupuesto: ${presupuesto.nombre || 'Sin nombre'}`, margin: [0, 0, 0, 10] } as Content,
+        { text: `Fecha: ${currentDate.toLocaleDateString('es-CL')}`, margin: [0, 0, 0, 20] } as Content,
+        
+        { text: 'PRODUCTOS/SERVICIOS:', fontSize: 14, bold: true, margin: [0, 0, 0, 10] } as Content,
+        ...(presupuesto.productos || []).map(producto => ({
+          text: `• ${stripHtml(producto.descripcion || producto.nombre)} - Cantidad: ${producto.cantidad} - Total: ${formatearPrecio((producto.cantidad || 0) * (producto.precioUnitario || 0))}`,
+          margin: [0, 0, 0, 5]
+        } as Content)),
+        
+        { text: '', margin: [0, 20] } as Content,
+        { text: `TOTAL: ${formatearPrecio(totales.total)}`, fontSize: 16, bold: true, alignment: 'right' } as Content
+      ]
     };
     
-    console.log('PDF definition created successfully');
+    console.log('=== PDF DEFINITION SUCCESS ===');
     return docDefinition;
     
   } catch (error) {
-    console.error('Error creating PDF definition:', error);
-    // Return a minimal working PDF definition
+    console.error('=== PDF DEFINITION ERROR ===', error);
+    // Return minimal working PDF
     return {
       pageSize: 'A4',
-      pageMargins: [40, 60, 40, 60],
-      defaultStyle: {
-        fontSize: 10,
-      },
       content: [
-        { text: 'Error generando PDF', style: 'header' } as Content,
-        { text: `Error: ${error instanceof Error ? error.message : 'Error desconocido'}`, margin: [0, 10] } as Content,
-        { text: 'Por favor contacte al administrador.', margin: [0, 10] } as Content
+        { text: 'Error generando PDF', fontSize: 16, bold: true },
+        { text: `${error instanceof Error ? error.message : 'Error desconocido'}`, margin: [0, 10] }
       ]
     } as TDocumentDefinitions;
   }
