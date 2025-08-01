@@ -21,13 +21,13 @@ export const usePDFDownload = () => {
 
     try {
       const canvas = await html2canvas(componentRef.current, {
-        scale: 4,
+        scale: 3,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
         imageTimeout: 15000,
-        width: 1200,
+        width: 1000,
         height: componentRef.current.scrollHeight,
       });
 
@@ -37,7 +37,7 @@ export const usePDFDownload = () => {
       const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
       const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
 
-      const horizontalPadding = 10;
+      const horizontalPadding = 5;
       const verticalPadding = 5; // margen inferior reducido
       const imgWidth = pageWidth - horizontalPadding * 2;
       const usableHeight = pageHeight - verticalPadding * 2;

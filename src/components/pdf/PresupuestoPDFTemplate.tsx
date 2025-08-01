@@ -20,10 +20,10 @@ const PresupuestoPDFTemplate = React.forwardRef<HTMLDivElement, PresupuestoPDFTe
   const totales = calcularTotalesPresupuesto(presupuesto.productos || []);
 
   return (
-    <div ref={ref} className="bg-white p-12 w-full min-w-[1200px] mx-auto text-black" style={{
+    <div ref={ref} className="bg-white p-8 w-[1000px] mx-auto text-black" style={{
       fontFamily: 'Arial, sans-serif',
-      fontSize: '24px',
-      lineHeight: '1.8'
+      fontSize: '18px',
+      lineHeight: '1.6'
     }}>
       <PDFHeader presupuesto={presupuesto} negocio={negocio} totales={totales} />
       
