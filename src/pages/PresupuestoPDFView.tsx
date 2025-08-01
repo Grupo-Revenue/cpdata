@@ -7,6 +7,7 @@ import { useNegocio } from '@/context/NegocioContext';
 import PresupuestoPDFTemplate from '@/components/pdf/PresupuestoPDFTemplate';
 import { usePDFGeneration } from '@/hooks/usePDFGeneration';
 import { usePDFDownload } from '@/hooks/usePDFDownload';
+import { usePDFMakeGeneration } from '@/hooks/usePDFMakeGeneration';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import PublicLinkDisplay from '@/components/presupuesto/PublicLinkDisplay';
 
@@ -16,6 +17,7 @@ const PresupuestoPDFView: React.FC = () => {
   const { obtenerNegocio, loading } = useNegocio();
   const { componentRef: printRef, generatePDF } = usePDFGeneration();
   const { componentRef: downloadRef, downloadPDF, isGenerating } = usePDFDownload();
+  const { generateSelectablePDF, printSelectablePDF, isGenerating: isPDFMakeGenerating } = usePDFMakeGeneration();
 
   console.log('[PresupuestoPDFView] Params:', { negocioId, presupuestoId });
 
@@ -72,7 +74,11 @@ const PresupuestoPDFView: React.FC = () => {
 
   const handleDownloadPDF = () => {
     const fileName = `Presupuesto-${negocio.numero}-${presupuesto.nombre}`;
-    downloadPDF(fileName);
+    generateSelectablePDF(presupuesto, negocio, fileName);
+  };
+
+  const handlePrint = () => {
+    printSelectablePDF(presupuesto, negocio);
   };
 
   // Callback ref to set both refs to the same element
@@ -117,15 +123,15 @@ const PresupuestoPDFView: React.FC = () => {
               </Dialog>
               <Button 
                 onClick={handleDownloadPDF} 
-                disabled={isGenerating}
+                disabled={isPDFMakeGenerating}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 <Download className="w-4 h-4 mr-2" />
-                {isGenerating ? 'Generando PDF...' : 'Descargar PDF'}
+                {isPDFMakeGenerating ? 'Generando PDF...' : 'Descargar PDF'}
               </Button>
-              <Button variant="outline" onClick={generatePDF}>
+              <Button variant="outline" onClick={handlePrint} disabled={isPDFMakeGenerating}>
                 <Printer className="w-4 h-4 mr-2" />
-                Imprimir
+                {isPDFMakeGenerating ? 'Preparando...' : 'Imprimir'}
               </Button>
             </div>
           </div>
