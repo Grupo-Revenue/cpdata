@@ -36,7 +36,7 @@ export const usePDFDownload = () => {
       const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
 
       const horizontalPadding = 0;
-      const verticalPadding = 1; // margen inferior reducido
+      const verticalPadding = 0; // margen inferior reducido
       const imgWidth = pageWidth - horizontalPadding * 2;
       const usableHeight = pageHeight - verticalPadding * 2;
 
