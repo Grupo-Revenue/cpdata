@@ -13,6 +13,7 @@ import AdminProductos from '@/components/admin/AdminProductos';
 import AdminLineasProducto from '@/components/admin/AdminLineasProducto';
 import { AdminTiposEvento } from '@/components/admin/AdminTiposEvento';
 import AdminTermsConfig from '@/components/admin/AdminTermsConfig';
+import AdminMarca from '@/components/admin/AdminMarca';
 import { ProtectedFeature } from '@/components/ProtectedFeature';
 import { PERMISSIONS } from '@/constants/permissions';
 import { ACCESS_DENIED_MESSAGES } from '@/components/AccessDeniedInfo';
@@ -113,6 +114,7 @@ const Admin = () => {
             <TabsTrigger value="lineas-producto">Líneas de Producto</TabsTrigger>
             <TabsTrigger value="tipos-evento">Tipos de Evento</TabsTrigger>
             <TabsTrigger value="terminos">Términos y Condiciones</TabsTrigger>
+            <TabsTrigger value="marca">Marca</TabsTrigger>
           </TabsList>
           <TabsContent value="usuarios">
             <ProtectedFeature 
@@ -169,6 +171,18 @@ const Admin = () => {
               }}
             >
               <AdminTermsConfig />
+            </ProtectedFeature>
+          </TabsContent>
+          <TabsContent value="marca">
+            <ProtectedFeature 
+              permission={PERMISSIONS.ACCESS_ADMIN}
+              showInlineInfo={true}
+              infoMessage={{
+                feature: "Configuración de Marca",
+                description: "Solo los administradores pueden modificar la configuración de marca."
+              }}
+            >
+              <AdminMarca />
             </ProtectedFeature>
           </TabsContent>
         </Tabs>
