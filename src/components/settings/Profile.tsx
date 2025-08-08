@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/hooks/use-toast";
@@ -45,21 +45,22 @@ const Profile = () => {
     },
   });
 
+  const newPassword = useWatch({ control: form.control, name: 'newPassword' }) || "";
+
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [newPwFocused, setNewPwFocused] = useState(false);
 
   const passwordChecks = React.useMemo(() => {
-    const np = form.watch("newPassword") || "";
     return {
-      length: np.length >= 8,
-      upper: /[A-Z]/.test(np),
-      lower: /[a-z]/.test(np),
-      number: /[0-9]/.test(np),
-      symbol: /[^A-Za-z0-9]/.test(np),
+      length: newPassword.length >= 8,
+      upper: /[A-Z]/.test(newPassword),
+      lower: /[a-z]/.test(newPassword),
+      number: /[0-9]/.test(newPassword),
+      symbol: /[^A-Za-z0-9]/.test(newPassword),
     };
-  }, [form]);
+  }, [newPassword]);
 
   const strength = React.useMemo(() => {
     const values = Object.values(passwordChecks);
@@ -234,7 +235,7 @@ const Profile = () => {
                         </Button>
                       </div>
                     </FormControl>
-                    {(newPwFocused || (form.watch("newPassword") || "").length > 0) && (
+                    {(newPwFocused || newPassword.length > 0) && (
                       <div className="space-y-2" id="password-help">
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-muted-foreground">Fortaleza de la contraseña</span>
