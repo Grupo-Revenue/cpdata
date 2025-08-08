@@ -8,26 +8,40 @@ import HubSpotConfig from "@/components/settings/HubSpotConfig";
 import { HubSpotSyncMonitor } from '@/components/settings/HubSpotSyncMonitor';
 
 import { HubSpotSyncManager } from '@/components/settings/HubSpotSyncManager';
-
+import { useSearchParams } from 'react-router-dom';
+import { User, Palette, Plug, Shield } from 'lucide-react';
 const Settings = () => {
-  const [activeTab, setActiveTab] = useState("profile");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = (searchParams.get('tab') || 'profile');
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  React.useEffect(() => {
+    const sp = new URLSearchParams(searchParams);
+    sp.set('tab', activeTab);
+    setSearchParams(sp, { replace: true });
+  }, [activeTab, searchParams, setSearchParams]);
+
+  React.useEffect(() => {
+    document.title = "Configuración de cuenta | Perfil y seguridad";
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute('content', 'Configura tu perfil, marca y sincronización con HubSpot.');
+  }, []);
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 p-6">
-        <div>
+      <main className="space-y-6 p-6">
+        <header>
           <h1 className="text-3xl font-bold tracking-tight">Configuración</h1>
           <p className="text-muted-foreground">
             Administra la configuración de tu cuenta y preferencias.
           </p>
-        </div>
-
+        </header>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="profile">Perfil</TabsTrigger>
-            <TabsTrigger value="brand">Marca</TabsTrigger>
-            <TabsTrigger value="hubspot">HubSpot</TabsTrigger>
-            <TabsTrigger value="admin">Admin</TabsTrigger>
+            <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" />Perfil</TabsTrigger>
+            <TabsTrigger value="brand"><Palette className="mr-2 h-4 w-4" />Marca</TabsTrigger>
+            <TabsTrigger value="hubspot"><Plug className="mr-2 h-4 w-4" />HubSpot</TabsTrigger>
+            <TabsTrigger value="admin"><Shield className="mr-2 h-4 w-4" />Admin</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-4">
@@ -51,7 +65,7 @@ const Settings = () => {
             <div>Admin</div>
           </TabsContent>
         </Tabs>
-      </div>
+      </main>
     </DashboardLayout>
   );
 };
