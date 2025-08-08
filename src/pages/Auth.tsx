@@ -52,8 +52,25 @@ const Auth = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Si el diálogo de recuperación está abierto, no intentes iniciar sesión
+    if (forgotOpen) return;
+
+    const email = (loginForm.email || '').trim();
+    const password = loginForm.password || '';
+
+    // Evita llamadas a /token con credenciales vacías
+    if (!email || !password) {
+      toast({
+        variant: 'destructive',
+        title: 'Completa tus credenciales',
+        description: 'Ingresa tu email y contraseña para iniciar sesión.',
+      });
+      return;
+    }
+
     setLoading(true);
-    const { error } = await signIn(loginForm.email, loginForm.password);
+    const { error } = await signIn(email, password);
     if (!error) {
       // Force a full page refresh after successful login
       window.location.href = '/';
@@ -73,6 +90,7 @@ const Auth = () => {
 
   const handleSendRecoveryEmail = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     if (recoveryLoading) return;
 
     const email = (forgotEmail?.trim() || loginForm.email?.trim() || '');
@@ -243,7 +261,7 @@ const Auth = () => {
                             Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.
                           </DialogDescription>
                         </DialogHeader>
-                        <form onSubmit={handleSendRecoveryEmail} className="space-y-4">
+                        <form onSubmit={handleSendRecoveryEmail} onKeyDown={(ev) => { if (ev.key === 'Enter') { ev.stopPropagation(); } }} className="space-y-4">
                           <div className="space-y-2">
                             <Label htmlFor="recovery-email">Email</Label>
                             <Input
