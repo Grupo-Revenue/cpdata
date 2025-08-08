@@ -75,10 +75,7 @@ const Auth = () => {
     e.preventDefault();
     if (recoveryLoading) return;
 
-    const form = e.currentTarget as HTMLFormElement;
-    const formData = new FormData(form);
-    const emailInput = (formData.get('recovery-email') as string) || loginForm.email;
-    const email = (emailInput || '').trim();
+    const email = (forgotEmail?.trim() || loginForm.email?.trim() || '');
 
     if (!email) {
       toast({
@@ -95,10 +92,13 @@ const Auth = () => {
         redirectTo: `${window.location.origin}/auth?recovery=1`,
       });
       if (error) {
+        const msg = (error.message || '').toLowerCase().includes('missing email')
+          ? 'Ingresa un email válido para enviar el enlace de recuperación.'
+          : error.message;
         toast({
           variant: 'destructive',
           title: 'Error al enviar enlace',
-          description: error.message,
+          description: msg,
         });
         return;
       }
@@ -230,7 +230,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="flex justify-end -mt-2">
-                    <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+                    <Dialog open={forgotOpen} onOpenChange={(open) => { setForgotOpen(open); if (open) { setForgotEmail(loginForm.email || ''); } }}>
                       <DialogTrigger asChild>
                         <Button type="button" variant="link" size="sm">
                           ¿Olvidaste tu contraseña?
@@ -250,10 +250,11 @@ const Auth = () => {
                               id="recovery-email"
                               name="recovery-email"
                               type="email"
-                              value={forgotEmail || loginForm.email}
+                              value={forgotEmail}
                               onChange={(e) => setForgotEmail(e.target.value)}
                               placeholder="tucorreo@ejemplo.com"
                               required
+                              autoFocus
                             />
                           </div>
                           <DialogFooter>
