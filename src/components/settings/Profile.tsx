@@ -11,8 +11,9 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
+
 import { Eye, EyeOff, CheckCircle2, XCircle, LogOut } from "lucide-react";
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
 const passwordSchema = z
   .object({
     currentPassword: z.string().min(8, "Debe tener al menos 8 caracteres"),
@@ -36,6 +37,7 @@ const Profile = () => {
 
   const form = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
+    mode: "onChange",
     defaultValues: {
       currentPassword: "",
       newPassword: "",
@@ -46,6 +48,7 @@ const Profile = () => {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [newPwFocused, setNewPwFocused] = useState(false);
 
   const passwordChecks = React.useMemo(() => {
     const np = form.watch("newPassword") || "";
@@ -145,37 +148,34 @@ const Profile = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Perfil de Usuario</CardTitle>
-        <CardDescription>
-          Gestiona la información de tu perfil y tu seguridad.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-8">
-        <section aria-labelledby="account-info">
-          <h3 id="account-info" className="text-lg font-medium tracking-tight">Información de la cuenta</h3>
-          <p className="text-sm text-muted-foreground mt-1">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Información de la cuenta</CardTitle>
+          <CardDescription>
             Estos datos identifican tu cuenta.
-          </p>
-          <div className="mt-4 grid gap-4 max-w-md">
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 max-w-md">
             <div className="space-y-2">
               <Label>Correo</Label>
               <Input value={user?.email ?? ""} readOnly aria-readonly autoComplete="email" />
             </div>
           </div>
-        </section>
+        </CardContent>
+      </Card>
 
-        <Separator />
-
-        <section aria-labelledby="security">
-          <h3 id="security" className="text-lg font-medium tracking-tight">Seguridad</h3>
-          <p className="text-sm text-muted-foreground mt-1">
+      <Card>
+        <CardHeader>
+          <CardTitle>Seguridad</CardTitle>
+          <CardDescription>
             Cambia tu contraseña. Por seguridad, cerraremos tu sesión tras actualizarla.
-          </p>
-
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 mt-4 max-w-md">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               <FormField
                 control={form.control}
                 name="currentPassword"
@@ -218,6 +218,8 @@ const Profile = () => {
                           type={showNew ? "text" : "password"}
                           autoComplete="new-password"
                           aria-describedby="password-help"
+                          onFocus={() => setNewPwFocused(true)}
+                          onBlur={() => setNewPwFocused(false)}
                           {...field}
                         />
                         <Button
@@ -232,45 +234,47 @@ const Profile = () => {
                         </Button>
                       </div>
                     </FormControl>
-                    <div className="space-y-2" id="password-help">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Fortaleza de la contraseña</span>
-                        <span className="font-medium">{strengthLabel}</span>
+                    {(newPwFocused || (form.watch("newPassword") || "").length > 0) && (
+                      <div className="space-y-2" id="password-help">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Fortaleza de la contraseña</span>
+                          <span className="font-medium">{strengthLabel}</span>
+                        </div>
+                        <Progress value={strength} className="h-2" />
+                        <ul className="grid grid-cols-2 gap-2 text-xs">
+                          <li className={passwordChecks.length ? "text-primary" : "text-muted-foreground"}>
+                            <span className="inline-flex items-center gap-1">
+                              {passwordChecks.length ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                              8+ caracteres
+                            </span>
+                          </li>
+                          <li className={passwordChecks.upper ? "text-primary" : "text-muted-foreground"}>
+                            <span className="inline-flex items-center gap-1">
+                              {passwordChecks.upper ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                              Mayúscula (A-Z)
+                            </span>
+                          </li>
+                          <li className={passwordChecks.lower ? "text-primary" : "text-muted-foreground"}>
+                            <span className="inline-flex items-center gap-1">
+                              {passwordChecks.lower ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                              Minúscula (a-z)
+                            </span>
+                          </li>
+                          <li className={passwordChecks.number ? "text-primary" : "text-muted-foreground"}>
+                            <span className="inline-flex items-center gap-1">
+                              {passwordChecks.number ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                              Número (0-9)
+                            </span>
+                          </li>
+                          <li className={passwordChecks.symbol ? "text-primary" : "text-muted-foreground"}>
+                            <span className="inline-flex items-center gap-1">
+                              {passwordChecks.symbol ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                              Símbolo (!@#$%)
+                            </span>
+                          </li>
+                        </ul>
                       </div>
-                      <Progress value={strength} className="h-2" />
-                      <ul className="grid grid-cols-2 gap-2 text-xs">
-                        <li className={passwordChecks.length ? "text-primary" : "text-muted-foreground"}>
-                          <span className="inline-flex items-center gap-1">
-                            {passwordChecks.length ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-                            8+ caracteres
-                          </span>
-                        </li>
-                        <li className={passwordChecks.upper ? "text-primary" : "text-muted-foreground"}>
-                          <span className="inline-flex items-center gap-1">
-                            {passwordChecks.upper ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-                            Mayúscula (A-Z)
-                          </span>
-                        </li>
-                        <li className={passwordChecks.lower ? "text-primary" : "text-muted-foreground"}>
-                          <span className="inline-flex items-center gap-1">
-                            {passwordChecks.lower ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-                            Minúscula (a-z)
-                          </span>
-                        </li>
-                        <li className={passwordChecks.number ? "text-primary" : "text-muted-foreground"}>
-                          <span className="inline-flex items-center gap-1">
-                            {passwordChecks.number ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-                            Número (0-9)
-                          </span>
-                        </li>
-                        <li className={passwordChecks.symbol ? "text-primary" : "text-muted-foreground"}>
-                          <span className="inline-flex items-center gap-1">
-                            {passwordChecks.symbol ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-                            Símbolo (!@#$%)
-                          </span>
-                        </li>
-                      </ul>
-                    </div>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -306,20 +310,37 @@ const Profile = () => {
                 )}
               />
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex w-full flex-wrap items-center justify-between gap-3">
                 <Button type="submit" disabled={loading}>
                   {loading ? "Guardando..." : "Actualizar contraseña"}
                 </Button>
-                <Button type="button" variant="outline" onClick={handleGlobalSignOut}>
-                  <LogOut className="h-4 w-4" />
-                  Cerrar sesión en todos los dispositivos
-                </Button>
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button type="button" variant="outline">
+                      <LogOut className="h-4 w-4" />
+                      Cerrar sesión en todos los dispositivos
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Cerrar sesión en todos los dispositivos?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esto revocará todas tus sesiones activas. Podrás iniciar sesión nuevamente cuando quieras.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleGlobalSignOut}>Cerrar sesión</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </form>
           </Form>
-        </section>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

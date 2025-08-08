@@ -25,11 +25,19 @@ const Settings = () => {
     document.title = "Configuración de cuenta | Perfil y seguridad";
     const meta = document.querySelector('meta[name="description"]');
     if (meta) meta.setAttribute('content', 'Configura tu perfil, marca y sincronización con HubSpot.');
+    // Canonical tag for SEO
+    let link = document.querySelector('link[rel="canonical"]');
+    if (!link) {
+      link = document.createElement('link');
+      link.setAttribute('rel', 'canonical');
+      document.head.appendChild(link);
+    }
+    link.setAttribute('href', window.location.origin + '/settings');
   }, []);
 
   return (
     <DashboardLayout>
-      <main className="space-y-6 p-6">
+      <main className="space-y-6 p-6 mx-auto max-w-5xl">
         <header>
           <h1 className="text-3xl font-bold tracking-tight">Configuración</h1>
           <p className="text-muted-foreground">
@@ -37,7 +45,7 @@ const Settings = () => {
           </p>
         </header>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="w-full flex flex-wrap gap-2">
             <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" />Perfil</TabsTrigger>
             <TabsTrigger value="brand"><Palette className="mr-2 h-4 w-4" />Marca</TabsTrigger>
             <TabsTrigger value="hubspot"><Plug className="mr-2 h-4 w-4" />HubSpot</TabsTrigger>
