@@ -20,6 +20,7 @@ import { InitializeLogo } from "./pages/InitializeLogo";
 import { queryClient } from "@/utils/queryClient";
 import { Suspense } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import LoadingOverlay from "@/components/ui/LoadingOverlay";
 
 const App = () => {
   return (
@@ -30,11 +31,9 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <AuthProvider>
-              <Suspense fallback={
-                <div className="flex items-center justify-center min-h-screen">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              }>
+                <Suspense fallback={
+                  <LoadingOverlay message="Cargando aplicación..." />
+                }>
                 <Routes>
                   {/* Public routes - no authentication required - MUST BE FIRST */}
                   <Route path="/public/presupuesto/:presupuestoName/:negocioId/:presupuestoId/view" element={<PublicPresupuestoPrintView />} />

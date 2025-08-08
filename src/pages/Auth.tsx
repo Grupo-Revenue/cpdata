@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
 
 import { useToast } from '@/hooks/use-toast';
+import LoadingOverlay from '@/components/ui/LoadingOverlay';
 
 
 const Auth = () => {
@@ -79,7 +80,8 @@ const Auth = () => {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      {loading && <LoadingOverlay message="Cargando..." />}
       <div className="w-full max-w-md">
         <Tabs defaultValue="login" className="w-full">
           <TabsList className="grid w-full grid-cols-2">

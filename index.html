@@ -15,9 +15,20 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+    <style>
+      #global-splash { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; background: #ffffff; z-index: 9999; }
+      #global-splash p { font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif; color: #64748b; margin: 0; font-size: 14px; }
+      @keyframes global-spin { to { transform: rotate(360deg); } }
+      .global-spinner { width: 40px; height: 40px; border-radius: 9999px; border: 3px solid #e5e7eb; border-top-color: #0ea5e9; animation: global-spin 1s linear infinite; }
+    </style>
   </head>
 
   <body>
+    <div id="global-splash" role="status" aria-live="polite">
+      <div class="global-spinner"></div>
+      <p>Cargando...</p>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
