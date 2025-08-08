@@ -45,6 +45,7 @@ const Auth = () => {
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const { toast } = useToast();
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
   
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -70,9 +71,15 @@ const Auth = () => {
     setLoading(false);
   };
 
-  const handleSendRecoveryEmail = async (e: React.FormEvent) => {
+  const handleSendRecoveryEmail = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const email = forgotEmail || loginForm.email;
+    if (recoveryLoading) return;
+
+    const form = e.currentTarget as HTMLFormElement;
+    const formData = new FormData(form);
+    const emailInput = (formData.get('recovery-email') as string) || loginForm.email;
+    const email = (emailInput || '').trim();
+
     if (!email) {
       toast({
         variant: 'destructive',
@@ -81,24 +88,29 @@ const Auth = () => {
       });
       return;
     }
-    setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth?recovery=1`,
-    });
-    if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error al enviar enlace',
-        description: error.message,
+
+    try {
+      setRecoveryLoading(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?recovery=1`,
       });
-    } else {
+      if (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error al enviar enlace',
+          description: error.message,
+        });
+        return;
+      }
       toast({
         title: 'Enlace enviado',
         description: 'Revisa tu correo para restablecer tu contraseña.',
       });
       setForgotOpen(false);
+      setForgotEmail('');
+    } finally {
+      setRecoveryLoading(false);
     }
-    setLoading(false);
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -236,6 +248,7 @@ const Auth = () => {
                             <Label htmlFor="recovery-email">Email</Label>
                             <Input
                               id="recovery-email"
+                              name="recovery-email"
                               type="email"
                               value={forgotEmail || loginForm.email}
                               onChange={(e) => setForgotEmail(e.target.value)}
@@ -244,8 +257,8 @@ const Auth = () => {
                             />
                           </div>
                           <DialogFooter>
-                            <Button type="submit" disabled={loading}>
-                              {loading ? 'Enviando...' : 'Enviar enlace'}
+                            <Button type="submit" disabled={recoveryLoading}>
+                              {recoveryLoading ? 'Enviando...' : 'Enviar enlace'}
                             </Button>
                           </DialogFooter>
                         </form>
