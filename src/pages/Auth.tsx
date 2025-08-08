@@ -15,6 +15,10 @@ const Auth = () => {
   const { user, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('recovery') === '1';
+  });
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -23,14 +27,6 @@ const Auth = () => {
     }
   }, [user, navigate, isRecoveryMode]);
 
-  // Detect password recovery mode from URL
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const recovery = params.get('recovery');
-    if (recovery === '1') {
-      setIsRecoveryMode(true);
-    }
-  }, []);
 
   const [loginForm, setLoginForm] = useState({
     email: '',
@@ -49,7 +45,7 @@ const Auth = () => {
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const { toast } = useToast();
-  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
