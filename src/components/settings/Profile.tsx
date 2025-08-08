@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -159,7 +160,7 @@ const Profile = () => {
           </p>
           <div className="mt-4 grid gap-4 max-w-md">
             <div className="space-y-2">
-              <FormLabel>Correo</FormLabel>
+              <Label>Correo</Label>
               <Input value={user?.email ?? ""} readOnly aria-readonly autoComplete="email" />
             </div>
           </div>
