@@ -45,49 +45,49 @@ const App = () => {
                   
                   {/* Protected routes - require authentication */}
                   <Route path="/" element={
-                    <NegocioProvider>
-                      <HubSpotSyncProvider>
-                        <ProtectedRoute>
+                    <ProtectedRoute>
+                      <NegocioProvider>
+                        <HubSpotSyncProvider>
                           <Index />
-                        </ProtectedRoute>
-                      </HubSpotSyncProvider>
-                    </NegocioProvider>
+                        </HubSpotSyncProvider>
+                      </NegocioProvider>
+                    </ProtectedRoute>
                   } />
                   <Route path="/settings" element={
-                    <NegocioProvider>
-                      <HubSpotSyncProvider>
-                        <ProtectedRoute>
+                    <ProtectedRoute>
+                      <NegocioProvider>
+                        <HubSpotSyncProvider>
                           <Settings />
-                        </ProtectedRoute>
-                      </HubSpotSyncProvider>
-                    </NegocioProvider>
+                        </HubSpotSyncProvider>
+                      </NegocioProvider>
+                    </ProtectedRoute>
                   } />
                   <Route path="/admin" element={
-                    <NegocioProvider>
-                      <HubSpotSyncProvider>
-                        <ProtectedRoute>
+                    <ProtectedRoute>
+                      <NegocioProvider>
+                        <HubSpotSyncProvider>
                           <Admin />
-                        </ProtectedRoute>
-                      </HubSpotSyncProvider>
-                    </NegocioProvider>
+                        </HubSpotSyncProvider>
+                      </NegocioProvider>
+                    </ProtectedRoute>
                   } />
                   <Route path="/negocio/:negocioId" element={
-                    <NegocioProvider>
-                      <HubSpotSyncProvider>
-                        <ProtectedRoute>
+                    <ProtectedRoute>
+                      <NegocioProvider>
+                        <HubSpotSyncProvider>
                           <Index />
-                        </ProtectedRoute>
-                      </HubSpotSyncProvider>
-                    </NegocioProvider>
+                        </HubSpotSyncProvider>
+                      </NegocioProvider>
+                    </ProtectedRoute>
                   } />
                   <Route path="/presupuesto/:negocioId/:presupuestoId/pdf" element={
-                    <NegocioProvider>
-                      <HubSpotSyncProvider>
-                        <ProtectedRoute>
+                    <ProtectedRoute>
+                      <NegocioProvider>
+                        <HubSpotSyncProvider>
                           <PresupuestoPDFView />
-                        </ProtectedRoute>
-                      </HubSpotSyncProvider>
-                    </NegocioProvider>
+                        </HubSpotSyncProvider>
+                      </NegocioProvider>
+                    </ProtectedRoute>
                   } />
                   <Route path="/initialize-logo" element={
                     <ProtectedRoute>

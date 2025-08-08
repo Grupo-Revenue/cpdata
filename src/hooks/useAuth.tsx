@@ -123,11 +123,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     console.log('[Auth] Setting up auth state listener...');
     
+    let mounted = true;
+    // Safety boot timeout to avoid being stuck in loading
+    const bootTimeout = setTimeout(() => {
+      if (mounted) {
+        console.warn('[Auth] Boot timeout reached, forcing loading=false');
+        setLoading(false);
+      }
+    }, 4000);
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log(`[Auth] Auth state changed: ${event}`, session?.user?.email || 'no user');
         
+        if (!mounted) return;
         // Update session and user state synchronously
         setSession(session);
         setUser(session?.user ?? null);
@@ -148,16 +158,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('[Auth] Initial session check:', session?.user?.email || 'no user');
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('[Auth] Initial session check:', session?.user?.email || 'no user');
+        if (!mounted) return;
+        setSession(session);
+        setUser(session?.user ?? null);
+      } catch (err) {
+        console.error('[Auth] Error during initial session check:', err);
+      } finally {
+        if (mounted) setLoading(false);
+        clearTimeout(bootTimeout);
+      }
+    })();
 
     return () => {
       console.log('[Auth] Cleaning up auth subscription');
+      mounted = false;
       subscription.unsubscribe();
+      clearTimeout(bootTimeout);
       
       // Clean up any pending timeouts
       if (adminCheckTimeout.current) {
