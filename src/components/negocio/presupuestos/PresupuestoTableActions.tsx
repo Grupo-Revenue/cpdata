@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Edit, Trash2, FileText, Send, CheckCircle, XCircle, DollarSign } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, FileText, Send, CheckCircle, XCircle, DollarSign, Copy } from 'lucide-react';
 import { Presupuesto } from '@/types';
 import { usePresupuestoActions } from '@/hooks/usePresupuestoActions';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -33,16 +33,17 @@ const PresupuestoTableActions: React.FC<PresupuestoTableActionsProps> = ({
   negocioId,
   onRefresh
 }) => {
-  const { marcarComoFacturado, loading: facturandoPresupuesto } = usePresupuestoActions(negocioId, onRefresh);
+  const { marcarComoFacturado, clonarPresupuesto, loading: facturandoPresupuesto } = usePresupuestoActions(negocioId, onRefresh);
   const { hasPermission, isAuthenticated } = usePermissions();
   const isProcessing = eliminandoPresupuesto === presupuesto.id || procesandoEstado === presupuesto.id || facturandoPresupuesto;
 
-  const canEdit = presupuesto.estado === 'borrador' && isAuthenticated;
+  const canEdit = isAuthenticated;
   const canSend = presupuesto.estado === 'borrador' && onEnviarPresupuesto && isAuthenticated;
   const canApprove = presupuesto.estado === 'publicado' && onCambiarEstado && isAuthenticated;
   const canReject = ['publicado', 'aprobado'].includes(presupuesto.estado) && onCambiarEstado && isAuthenticated;
   const canMarkAsInvoiced = presupuesto.estado === 'aprobado' && !presupuesto.facturado && isAuthenticated;
   const canDelete = isAuthenticated;
+  const canClone = isAuthenticated;
 
   return (
     <div className="flex items-center justify-center">
@@ -62,7 +63,14 @@ const PresupuestoTableActions: React.FC<PresupuestoTableActionsProps> = ({
             <FileText className="h-4 w-4 mr-2" />
             Ver PDF
           </DropdownMenuItem>
-          
+
+          {canClone && (
+            <DropdownMenuItem onClick={() => clonarPresupuesto(presupuesto.id)}>
+              <Copy className="h-4 w-4 mr-2" />
+              Clonar como borrador
+            </DropdownMenuItem>
+          )}
+
           {canEdit && (
             <DropdownMenuItem onClick={() => onEditarPresupuesto(presupuesto.id)}>
               <Edit className="h-4 w-4 mr-2" />

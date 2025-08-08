@@ -50,8 +50,71 @@ export const usePresupuestoActions = (negocioId: string, onRefresh: () => void) 
     }
   };
 
+  const clonarPresupuesto = async (presupuestoId: string) => {
+    setLoading(true);
+    try {
+      // Obtener presupuesto original
+      const { data: presupuesto, error: pError } = await supabase
+        .from('presupuestos')
+        .select('*')
+        .eq('id', presupuestoId)
+        .single();
+      if (pError || !presupuesto) throw pError || new Error('Presupuesto no encontrado');
+
+      // Obtener productos del presupuesto
+      const { data: productos, error: prodError } = await supabase
+        .from('productos_presupuesto')
+        .select('*')
+        .eq('presupuesto_id', presupuestoId);
+      if (prodError) throw prodError;
+
+      // Crear nuevo presupuesto en estado borrador
+      const { data: nuevoPresupuesto, error: insertError } = await supabase
+        .from('presupuestos')
+        .insert({
+          nombre: `${presupuesto.nombre} (copia)`,
+          estado: 'borrador',
+          negocio_id: presupuesto.negocio_id,
+          total: presupuesto.total || 0,
+          facturado: false
+        })
+        .select()
+        .single();
+      if (insertError || !nuevoPresupuesto) throw insertError || new Error('No se pudo crear el presupuesto clonado');
+
+      // Clonar productos si existen
+      if (productos && productos.length > 0) {
+        const productosClonados = productos.map((p: any) => ({
+          nombre: p.nombre,
+          descripcion: p.descripcion,
+          cantidad: p.cantidad,
+          precio_unitario: p.precio_unitario,
+          descuento_porcentaje: p.descuento_porcentaje,
+          total: p.total,
+          comentarios: p.comentarios,
+          sessions: p.sessions,
+          presupuesto_id: nuevoPresupuesto.id
+        }));
+
+        const { error: prodInsertError } = await supabase
+          .from('productos_presupuesto')
+          .insert(productosClonados);
+        if (prodInsertError) throw prodInsertError;
+      }
+
+      toast.success('Presupuesto clonado como borrador');
+      onRefresh();
+    } catch (error) {
+      console.error('Error al clonar presupuesto:', error);
+      toast.error('Error al clonar presupuesto');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     marcarComoFacturado,
+    clonarPresupuesto,
     loading
   };
 };

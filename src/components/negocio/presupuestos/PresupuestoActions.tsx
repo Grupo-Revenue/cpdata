@@ -155,7 +155,7 @@ const PresupuestoActions: React.FC<PresupuestoActionsProps> = ({
           <FileText className="w-4 h-4" />
         </Button>
         {/* Simplificar validaciones - solo verificar autenticación y estado no facturado */}
-        {isAuthenticated && !isInvoiced && (
+{isAuthenticated && (
           <Button
             variant="outline"
             size="sm"
