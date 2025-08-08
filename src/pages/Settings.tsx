@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -9,10 +10,16 @@ import { HubSpotSyncMonitor } from '@/components/settings/HubSpotSyncMonitor';
 
 import { HubSpotSyncManager } from '@/components/settings/HubSpotSyncManager';
 import { useSearchParams } from 'react-router-dom';
-import { User, Palette, Plug, Shield } from 'lucide-react';
+import { User, Palette, Plug } from 'lucide-react';
+
 const Settings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = (searchParams.get('tab') || 'profile');
+
+  // Validamos el tab inicial: si no es uno permitido, caemos en 'profile'
+  const allowedTabs = new Set(['profile', 'brand', 'hubspot']);
+  const tabParam = searchParams.get('tab') || 'profile';
+  const initialTab = allowedTabs.has(tabParam) ? tabParam : 'profile';
+
   const [activeTab, setActiveTab] = useState(initialTab);
 
   React.useEffect(() => {
@@ -49,7 +56,7 @@ const Settings = () => {
             <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" />Perfil</TabsTrigger>
             <TabsTrigger value="brand"><Palette className="mr-2 h-4 w-4" />Marca</TabsTrigger>
             <TabsTrigger value="hubspot"><Plug className="mr-2 h-4 w-4" />HubSpot</TabsTrigger>
-            <TabsTrigger value="admin"><Shield className="mr-2 h-4 w-4" />Admin</TabsTrigger>
+            {/* Admin tab removed */}
           </TabsList>
 
           <TabsContent value="profile" className="space-y-4">
@@ -69,9 +76,7 @@ const Settings = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="admin" className="space-y-4">
-            <div>Admin</div>
-          </TabsContent>
+          {/* Removed Admin content */}
         </Tabs>
       </main>
     </DashboardLayout>
