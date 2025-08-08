@@ -116,11 +116,11 @@ const Profile = () => {
 
       toast({
         title: "Contraseña actualizada",
-        description: "Por seguridad, cerraremos tu sesión para que vuelvas a ingresar.",
+        description: "Tu contraseña se ha actualizado correctamente.",
       });
 
-      // Cerrar sesión por seguridad
-      await signOut();
+      // Refrescar la sesión sin cerrar sesión
+      await supabase.auth.refreshSession();
     } catch (e: any) {
       toast({
         variant: "destructive",
@@ -171,7 +171,7 @@ const Profile = () => {
         <CardHeader>
           <CardTitle>Seguridad</CardTitle>
           <CardDescription>
-            Cambia tu contraseña. Por seguridad, cerraremos tu sesión tras actualizarla.
+            Cambia tu contraseña. Te notificaremos cuando se actualice.
           </CardDescription>
         </CardHeader>
         <CardContent>
