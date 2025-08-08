@@ -7,6 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 
 const Auth = () => {
   const { user, signIn, signUp } = useAuth();
@@ -15,10 +18,19 @@ const Auth = () => {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (user) {
+    if (user && !isRecoveryMode) {
       navigate('/');
     }
-  }, [user, navigate]);
+  }, [user, navigate, isRecoveryMode]);
+
+  // Detect password recovery mode from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const recovery = params.get('recovery');
+    if (recovery === '1') {
+      setIsRecoveryMode(true);
+    }
+  }, []);
 
   const [loginForm, setLoginForm] = useState({
     email: '',
@@ -33,6 +45,13 @@ const Auth = () => {
     telefono: '',
     empresa: ''
   });
+
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const { toast } = useToast();
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +73,114 @@ const Auth = () => {
     });
     setLoading(false);
   };
+
+  const handleSendRecoveryEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = forgotEmail || loginForm.email;
+    if (!email) {
+      toast({
+        variant: 'destructive',
+        title: 'Email requerido',
+        description: 'Ingresa tu email para enviar el enlace de recuperación.',
+      });
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth?recovery=1`,
+    });
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error al enviar enlace',
+        description: error.message,
+      });
+    } else {
+      toast({
+        title: 'Enlace enviado',
+        description: 'Revisa tu correo para restablecer tu contraseña.',
+      });
+      setForgotOpen(false);
+    }
+    setLoading(false);
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast({
+        variant: 'destructive',
+        title: 'Las contraseñas no coinciden',
+        description: 'Asegúrate de que ambas contraseñas sean iguales.',
+      });
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error al actualizar contraseña',
+        description: error.message,
+      });
+      setLoading(false);
+      return;
+    }
+    toast({
+      title: 'Contraseña actualizada',
+      description: 'Tu contraseña se ha restablecido correctamente.',
+    });
+    setIsRecoveryMode(false);
+    setNewPassword('');
+    setConfirmPassword('');
+    setLoading(false);
+    navigate('/');
+  };
+
+  // Recovery mode standalone view
+  if (isRecoveryMode) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <Card>
+            <CardHeader>
+              <CardTitle>Restablecer contraseña</CardTitle>
+              <CardDescription>
+                Ingresa y confirma tu nueva contraseña para continuar.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">Nueva contraseña</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirmar contraseña</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Actualizando...' : 'Actualizar contraseña'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -93,6 +220,41 @@ const Auth = () => {
                       onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                       required
                     />
+                  </div>
+                  <div className="flex justify-end -mt-2">
+                    <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+                      <DialogTrigger asChild>
+                        <Button type="button" variant="link" size="sm">
+                          ¿Olvidaste tu contraseña?
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Recuperar contraseña</DialogTitle>
+                          <DialogDescription>
+                            Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleSendRecoveryEmail} className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="recovery-email">Email</Label>
+                            <Input
+                              id="recovery-email"
+                              type="email"
+                              value={forgotEmail || loginForm.email}
+                              onChange={(e) => setForgotEmail(e.target.value)}
+                              placeholder="tucorreo@ejemplo.com"
+                              required
+                            />
+                          </div>
+                          <DialogFooter>
+                            <Button type="submit" disabled={loading}>
+                              {loading ? 'Enviando...' : 'Enviar enlace'}
+                            </Button>
+                          </DialogFooter>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
