@@ -16,7 +16,7 @@ export const generateQuoteName = (negocio: Negocio, existingQuotes: any[] = []):
     .filter(name => name && name.startsWith(businessNumber.toString()))
     .map(name => name.replace(businessNumber.toString(), '')) // Extract just the letter part
     .filter(suffix => /^[A-Z]$/.test(suffix)) // Only single letters
-    .sort(); // Sort alphabetically
+    .sort((a, b) => a.localeCompare(b)); // Ensure proper alphabetical sorting
   
   // Find the next available letter
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';

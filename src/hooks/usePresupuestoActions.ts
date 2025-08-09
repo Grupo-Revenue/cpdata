@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { generateQuoteName } from '@/utils/quoteNameGenerator';
 
 // Function to trigger HubSpot amount sync
 const triggerHubSpotAmountSync = async (negocioId: string) => {
@@ -68,11 +69,27 @@ export const usePresupuestoActions = (negocioId: string, onRefresh: () => void) 
         .eq('presupuesto_id', presupuestoId);
       if (prodError) throw prodError;
 
-      // Crear nuevo presupuesto en estado borrador
+      // Crear nuevo presupuesto en estado borrador con nombre correlativo
+      // Obtener negocio y presupuestos existentes para generar nombre
+      const { data: negocioData, error: nError } = await supabase
+        .from('negocios')
+        .select('numero')
+        .eq('id', presupuesto.negocio_id)
+        .maybeSingle();
+      if (nError || !negocioData) throw nError || new Error('Negocio no encontrado');
+
+      const { data: existingQuotes, error: qError } = await supabase
+        .from('presupuestos')
+        .select('nombre')
+        .eq('negocio_id', presupuesto.negocio_id);
+      if (qError) throw qError;
+
+      const newName = generateQuoteName({ numero: negocioData.numero } as any, existingQuotes || []);
+
       const { data: nuevoPresupuesto, error: insertError } = await supabase
         .from('presupuestos')
         .insert({
-          nombre: `${presupuesto.nombre} (copia)`,
+          nombre: newName,
           estado: 'borrador',
           negocio_id: presupuesto.negocio_id,
           total: presupuesto.total || 0,
@@ -81,7 +98,6 @@ export const usePresupuestoActions = (negocioId: string, onRefresh: () => void) 
         .select()
         .single();
       if (insertError || !nuevoPresupuesto) throw insertError || new Error('No se pudo crear el presupuesto clonado');
-
       // Clonar productos si existen
       if (productos && productos.length > 0) {
         const productosClonados = productos.map((p: any) => ({
