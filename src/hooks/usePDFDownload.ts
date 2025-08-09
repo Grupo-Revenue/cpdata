@@ -7,7 +7,10 @@ export const usePDFDownload = () => {
   const componentRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const downloadPDF = async (fileName: string = 'presupuesto') => {
+  const downloadPDF = async (
+    fileName: string = 'presupuesto',
+    options?: { scale?: number; jpegQuality?: number }
+  ) => {
     if (!componentRef.current) {
       toast({
         variant: 'destructive',
@@ -20,18 +23,27 @@ export const usePDFDownload = () => {
     setIsGenerating(true);
 
     try {
+      const scale = options?.scale ?? 2; // lower scale to reduce size
+      const jpegQuality = options?.jpegQuality ?? 0.72; // JPEG quality for good balance
+
       const canvas = await html2canvas(componentRef.current, {
-        scale: 3,
+        scale,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
         imageTimeout: 15000,
+        removeContainer: true,
+        onclone: (doc) => {
+          // Ocultar elementos no imprimibles si existen
+          doc.querySelectorAll('.no-print').forEach((el) => {
+            (el as HTMLElement).style.display = 'none';
+          });
+        },
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4', true);
 
-      const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
       const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
 
@@ -40,27 +52,63 @@ export const usePDFDownload = () => {
       const imgWidth = pageWidth - horizontalPadding * 2;
       const usableHeight = pageHeight - verticalPadding * 2;
 
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const marginLeft = (pageWidth - imgWidth) / 2;
+      // Conversión de px a mm para ajustar slices a páginas
+      const pxToMm = imgWidth / canvas.width; // mm por px
+      const pageHeightPx = Math.floor(usableHeight / pxToMm); // alto por página en px
 
-      let position = 0;
-      let heightLeft = imgHeight;
+      let currentY = 0;
+      let pageIndex = 0;
 
-      pdf.addImage(imgData, 'PNG', marginLeft, verticalPadding, imgWidth, imgHeight);
-      heightLeft -= usableHeight;
+      while (currentY < canvas.height) {
+        const sliceHeightPx = Math.min(pageHeightPx, canvas.height - currentY);
 
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight + verticalPadding * 2;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', marginLeft, position, imgWidth, imgHeight);
-        heightLeft -= usableHeight;
+        // Crear canvas para el slice de la página
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = sliceHeightPx;
+        const sliceCtx = sliceCanvas.getContext('2d');
+        if (!sliceCtx) throw new Error('No se pudo crear el contexto del canvas');
+
+        sliceCtx.drawImage(
+          canvas,
+          0,
+          currentY,
+          canvas.width,
+          sliceHeightPx,
+          0,
+          0,
+          canvas.width,
+          sliceHeightPx
+        );
+
+        // Convertir a JPEG con calidad controlada
+        const sliceDataUrl = sliceCanvas.toDataURL('image/jpeg', jpegQuality);
+
+        if (pageIndex > 0) pdf.addPage();
+
+        const sliceHeightMm = sliceHeightPx * pxToMm;
+        const marginLeft = (pageWidth - imgWidth) / 2;
+
+        pdf.addImage(
+          sliceDataUrl,
+          'JPEG',
+          marginLeft,
+          verticalPadding,
+          imgWidth,
+          sliceHeightMm,
+          undefined,
+          'FAST'
+        );
+
+        currentY += sliceHeightPx;
+        pageIndex += 1;
       }
 
       pdf.save(`${fileName}.pdf`);
 
       toast({
         title: 'PDF descargado',
-        description: 'El archivo PDF se ha descargado correctamente.',
+        description: 'El archivo PDF se ha descargado correctamente y optimizado.',
       });
     } catch (error) {
       console.error('Error generating PDF:', error);
