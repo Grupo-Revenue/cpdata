@@ -14,6 +14,7 @@ import AdminLineasProducto from '@/components/admin/AdminLineasProducto';
 import { AdminTiposEvento } from '@/components/admin/AdminTiposEvento';
 import AdminTermsConfig from '@/components/admin/AdminTermsConfig';
 import AdminMarca from '@/components/admin/AdminMarca';
+import AdminEstadisticas from '@/components/admin/AdminEstadisticas';
 import { ProtectedFeature } from '@/components/ProtectedFeature';
 import { PERMISSIONS } from '@/constants/permissions';
 import { ACCESS_DENIED_MESSAGES } from '@/components/AccessDeniedInfo';
@@ -108,13 +109,14 @@ const Admin = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList>
+        <TabsList>
             <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
             <TabsTrigger value="productos">Productos</TabsTrigger>
             <TabsTrigger value="lineas-producto">Líneas de Producto</TabsTrigger>
             <TabsTrigger value="tipos-evento">Tipos de Evento</TabsTrigger>
             <TabsTrigger value="terminos">Términos y Condiciones</TabsTrigger>
             <TabsTrigger value="marca">Marca</TabsTrigger>
+            <TabsTrigger value="estadisticas">Estadísticas</TabsTrigger>
           </TabsList>
           <TabsContent value="usuarios">
             <ProtectedFeature 
@@ -183,6 +185,18 @@ const Admin = () => {
               }}
             >
               <AdminMarca />
+            </ProtectedFeature>
+          </TabsContent>
+          <TabsContent value="estadisticas">
+            <ProtectedFeature 
+              permission={PERMISSIONS.ACCESS_ADMIN}
+              showInlineInfo={true}
+              infoMessage={{
+                feature: "Estadísticas",
+                description: "Solo los administradores pueden ver estadísticas y gráficos."
+              }}
+            >
+              <AdminEstadisticas />
             </ProtectedFeature>
           </TabsContent>
         </Tabs>
