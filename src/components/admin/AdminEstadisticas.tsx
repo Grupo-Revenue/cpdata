@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatearPrecio } from '@/utils/formatters';
 import { obtenerEstadisticasDashboard, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 
 const businessColors: Record<string, string> = {
   oportunidad_creada: 'hsl(var(--business-oportunidad))',
@@ -83,6 +83,27 @@ const AdminEstadisticas: React.FC = () => {
     return months.map((m) => ({ label: m.label, value: counts[m.key] }));
   }, [negocios]);
 
+  // Chart configs para ChartContainer
+  const businessChartConfig = useMemo(() => {
+    const cfg: Record<string, { label: string; color: string }> = {};
+    for (const item of businessStateData) {
+      cfg[item.key] = { label: item.name, color: businessColors[item.key] || 'hsl(var(--primary))' };
+    }
+    return cfg;
+  }, [businessStateData]);
+
+  const budgetsChartConfig = useMemo(() => {
+    const cfg: Record<string, { label: string; color: string }> = {};
+    for (const item of budgetsStateData) {
+      cfg[item.key] = { label: item.name, color: budgetColors[item.key] || 'hsl(var(--muted))' };
+    }
+    return cfg;
+  }, [budgetsStateData]);
+
+  const monthlyChartConfig = useMemo(() => ({
+    value: { label: 'Negocios', color: 'hsl(var(--primary))' },
+  }), []);
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -138,23 +159,25 @@ const AdminEstadisticas: React.FC = () => {
             <CardTitle>Estados de Negocios</CardTitle>
           </CardHeader>
           <CardContent className="h-96">
-            <PieChart width={400} height={360}>
-              <Pie
-                data={businessStateData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={120}
-                label
-              >
-                {businessStateData.map((entry) => (
-                  <Cell key={entry.key} fill={businessColors[entry.key] || 'hsl(var(--primary))'} />
-                ))}
-              </Pie>
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <ChartLegend content={<ChartLegendContent />} />
-            </PieChart>
+            <ChartContainer config={businessChartConfig} className="h-full w-full">
+              <PieChart>
+                <Pie
+                  data={businessStateData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={120}
+                  label
+                >
+                  {businessStateData.map((entry) => (
+                    <Cell key={entry.key} fill={`var(--color-${entry.key})`} />
+                  ))}
+                </Pie>
+                <ChartTooltip content={<ChartTooltipContent nameKey="key" labelKey="name" />} />
+                <ChartLegend content={<ChartLegendContent nameKey="key" />} />
+              </PieChart>
+            </ChartContainer>
           </CardContent>
         </Card>
 
@@ -163,13 +186,15 @@ const AdminEstadisticas: React.FC = () => {
             <CardTitle>Negocios creados (últimos 6 meses)</CardTitle>
           </CardHeader>
           <CardContent className="h-96">
-            <BarChart width={500} height={360} data={monthlyBusinesses}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="label" />
-              <YAxis allowDecimals={false} />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Bar dataKey="value" name="Negocios" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
-            </BarChart>
+            <ChartContainer config={monthlyChartConfig} className="h-full w-full">
+              <BarChart data={monthlyBusinesses}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="label" />
+                <YAxis allowDecimals={false} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="value" name="Negocios" fill="var(--color-value)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ChartContainer>
           </CardContent>
         </Card>
       </div>
@@ -180,23 +205,25 @@ const AdminEstadisticas: React.FC = () => {
           <CardTitle>Estados de Presupuestos</CardTitle>
         </CardHeader>
         <CardContent className="h-96">
-          <PieChart width={500} height={360}>
-            <Pie
-              data={budgetsStateData}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={120}
-              label
-            >
-              {budgetsStateData.map((entry) => (
-                <Cell key={entry.key} fill={budgetColors[entry.key] || 'hsl(var(--muted))'} />
-              ))}
-            </Pie>
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <ChartLegend content={<ChartLegendContent />} />
-          </PieChart>
+          <ChartContainer config={budgetsChartConfig} className="h-full w-full">
+            <PieChart>
+              <Pie
+                data={budgetsStateData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={120}
+                label
+              >
+                {budgetsStateData.map((entry) => (
+                  <Cell key={entry.key} fill={`var(--color-${entry.key})`} />
+                ))}
+              </Pie>
+              <ChartTooltip content={<ChartTooltipContent nameKey="key" labelKey="name" />} />
+              <ChartLegend content={<ChartLegendContent nameKey="key" />} />
+            </PieChart>
+          </ChartContainer>
         </CardContent>
       </Card>
     </div>
