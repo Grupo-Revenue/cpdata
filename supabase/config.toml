@@ -1,13 +1,1 @@
 project_id = "ejvtuuvigcqpibpfcxch"
-
-[functions.admin-create-user]
-verify_jwt = true
-
-[functions.hubspot-deal-update]
-verify_jwt = false
-
-[functions.hubspot-deal-amount-update]
-verify_jwt = false
-
-[functions.public-budget-pdf]
-verify_jwt = false
