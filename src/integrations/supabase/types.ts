@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -814,10 +814,10 @@ export type Database = {
       check_business_numbering_consistency: {
         Args: { p_user_id: string }
         Returns: {
-          issue_type: string
+          actual_number: number
           description: string
           expected_number: number
-          actual_number: number
+          issue_type: string
           negocio_id: string
         }[]
       }
@@ -838,32 +838,32 @@ export type Database = {
       fix_all_user_counters: {
         Args: Record<PropertyKey, never>
         Returns: {
-          user_id: string
-          old_counter: number
+          correction_applied: boolean
           max_used_number: number
           new_counter: number
-          correction_applied: boolean
+          old_counter: number
+          user_id: string
         }[]
       }
       get_global_hubspot_token: {
         Args: Record<PropertyKey, never>
         Returns: {
+          activo: boolean
+          created_at: string
           id: string
           user_id: string
-          created_at: string
-          activo: boolean
         }[]
       }
       get_hubspot_sync_stats: {
         Args: { p_user_id?: string }
         Returns: {
-          total_pending: number
-          total_success_today: number
-          total_failed_today: number
-          total_retrying: number
           avg_execution_time_ms: number
           last_sync_at: string
           success_rate_percentage: number
+          total_failed_today: number
+          total_pending: number
+          total_retrying: number
+          total_success_today: number
         }[]
       }
       get_next_business_number: {
@@ -873,14 +873,14 @@ export type Database = {
       get_public_budget_data: {
         Args: { p_negocio_id: string; p_presupuesto_id: string }
         Returns: {
-          presupuesto_data: Json
           negocio_data: Json
+          presupuesto_data: Json
         }[]
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
@@ -890,11 +890,11 @@ export type Database = {
       }
       log_business_number_assignment: {
         Args: {
-          p_user_id: string
           p_business_number: number
           p_negocio_id?: string
-          p_status?: string
           p_notes?: string
+          p_status?: string
+          p_user_id: string
         }
         Returns: string
       }
@@ -913,10 +913,10 @@ export type Database = {
       run_numbering_system_maintenance: {
         Args: Record<PropertyKey, never>
         Returns: {
-          maintenance_type: string
           affected_users: number
           corrections_made: number
           issues_found: number
+          maintenance_type: string
           status: string
         }[]
       }
