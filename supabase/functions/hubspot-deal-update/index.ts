@@ -22,7 +22,8 @@ serve(async (req) => {
 
     // Detect if call is from database trigger (uses Service Role Key) or frontend (uses Anon Key)
     const authHeader = req.headers.get('Authorization')
-    const isFromTrigger = authHeader?.includes('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqdnR1dXZpZ2NxcGlicGZjeGNoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDM3ODQzMSwiZXhwIjoyMDY1OTU0NDMxfQ.u5kUfOa1Lw2qzmbFhQ0YhD1Qe_VwAGDgDa_oBTa7ZQ0')
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const isFromTrigger = authHeader?.includes(serviceRoleKey || '')
     
     console.log('🔍 [HubSpot Deal Update] Call origin detected:', {
       isFromTrigger,
