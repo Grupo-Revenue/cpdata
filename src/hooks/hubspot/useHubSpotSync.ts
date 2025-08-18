@@ -20,20 +20,41 @@ export const useHubSpotSync = () => {
   // Manual sync function for pending records
   const processPendingSyncs = useCallback(async () => {
     try {
+      console.log('🔄 [Manual Sync] Starting manual sync process');
+      
       const { data, error } = await supabase.rpc('process_pending_hubspot_syncs');
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [Manual Sync] RPC error:', error);
+        throw error;
+      }
       
       const result = data?.[0];
+      console.log('📊 [Manual Sync] Result:', result);
+      
       if (result) {
+        const successMessage = result.processed > 0 
+          ? `✅ Procesados: ${result.processed}`
+          : '';
+        const failedMessage = result.failed > 0 
+          ? `❌ Fallidos: ${result.failed}` 
+          : '';
+        const description = [successMessage, failedMessage].filter(Boolean).join(', ') || 'Sin cambios';
+        
         toast({
           title: "Sincronización manual completada",
-          description: `Procesados: ${result.processed}, Fallidos: ${result.failed}`
+          description,
+          variant: result.failed > 0 ? "destructive" : "default"
         });
         return result;
+      } else {
+        toast({
+          title: "Sincronización completada",
+          description: "No hay registros pendientes por procesar"
+        });
       }
     } catch (error) {
-      console.error('Error processing pending syncs:', error);
+      console.error('❌ [Manual Sync] Error processing pending syncs:', error);
       toast({
         variant: "destructive",
         title: "Error en sincronización manual",

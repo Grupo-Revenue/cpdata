@@ -1,6 +1,5 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,226 +9,156 @@ const corsHeaders = {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('🔧 [HubSpot Deal Update] Request received:', {
-      method: req.method,
-      headers: Object.fromEntries(req.headers.entries()),
-      url: req.url
-    })
-
-    // Detect if call is from database trigger (uses Service Role Key) or frontend (uses Anon Key)
-    const authHeader = req.headers.get('Authorization')
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    const isFromTrigger = authHeader?.includes(serviceRoleKey || '')
+    console.log('🔄 [HubSpot Deal Update] Starting function execution');
     
-    console.log('🔍 [HubSpot Deal Update] Call origin detected:', {
-      isFromTrigger,
-      authHeaderLength: authHeader?.length
-    })
-
-    // Initialize Supabase client with service role for database operations
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    console.log('✅ [HubSpot Deal Update] Supabase client initialized with SERVICE_ROLE')
+    // Initialize Supabase client with service role
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Parse request body
-    const { negocio_id, estado_anterior, estado_nuevo } = await req.json()
+    const body = await req.json();
+    const { negocio_id, estado_anterior, estado_nuevo } = body;
+
+    console.log(`📋 [HubSpot Deal Update] Processing negocio ${negocio_id}: ${estado_anterior} → ${estado_nuevo}`);
 
     if (!negocio_id || !estado_nuevo) {
-      console.error('🚫 [HubSpot Deal Update] Missing required parameters:', {
-        negocio_id,
-        estado_nuevo,
-        received_body: { negocio_id, estado_nuevo }
-      })
+      console.error('❌ [HubSpot Deal Update] Missing required parameters');
       return new Response(
-        JSON.stringify({ error: 'Missing required parameters' }),
+        JSON.stringify({ error: 'Missing negocio_id or estado_nuevo' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      );
     }
 
-    console.log('🔄 [HubSpot Deal Update] Processing business state change:', {
-      negocio_id,
-      estado_anterior,
-      estado_nuevo
-    })
-
-    // Get business info with user_id and hubspot_id
-    const { data: negocio, error: negocioError } = await supabaseClient
+    // Get business details from database
+    const { data: negocio, error: negocioError } = await supabase
       .from('negocios')
-      .select('user_id, hubspot_id')
+      .select('*')
       .eq('id', negocio_id)
-      .single()
-
-    console.log('📊 [HubSpot Deal Update] Business data retrieved:', {
-      negocio,
-      error: negocioError
-    })
+      .single();
 
     if (negocioError || !negocio) {
-      console.error('❌ [HubSpot Deal Update] Error getting business:', negocioError)
+      console.error('❌ [HubSpot Deal Update] Error fetching negocio:', negocioError);
       return new Response(
-        JSON.stringify({ error: 'Business not found' }),
+        JSON.stringify({ error: 'Negocio not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      );
     }
 
-    // Skip if no HubSpot ID
+    // Check if business has HubSpot ID
     if (!negocio.hubspot_id) {
-      console.log('⚠️ [HubSpot Deal Update] Business has no HubSpot ID, skipping sync:', {
-        negocio_id,
-        user_id: negocio.user_id
-      })
+      console.log(`ℹ️ [HubSpot Deal Update] Negocio ${negocio_id} has no HubSpot ID, skipping sync`);
       return new Response(
-        JSON.stringify({ message: 'Business not synced with HubSpot' }),
+        JSON.stringify({ message: 'No HubSpot ID, sync skipped' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      );
     }
 
-    // Get the global active HubSpot API key (not user-specific)
-    const { data: apiKeyData, error: apiKeyError } = await supabaseClient
+    // Get active HubSpot API key
+    const { data: hubspotKey, error: keyError } = await supabase
       .from('hubspot_api_keys')
-      .select('api_key, user_id')
+      .select('api_key')
       .eq('activo', true)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .single();
 
-    console.log('🔑 [HubSpot Deal Update] Global API key retrieval:', {
-      hasApiKey: !!apiKeyData,
-      apiKeyUserId: apiKeyData?.user_id,
-      businessUserId: negocio.user_id,
-      error: apiKeyError
-    })
-
-    if (apiKeyError || !apiKeyData) {
-      console.error('❌ [HubSpot Deal Update] Error getting global HubSpot API key:', apiKeyError)
+    if (keyError || !hubspotKey) {
+      console.error('❌ [HubSpot Deal Update] No active HubSpot API key found:', keyError);
+      await updateSyncLog(supabase, negocio_id, 'failed', 'No active HubSpot API key found');
       return new Response(
-        JSON.stringify({ error: 'No active global HubSpot API key found' }),
+        JSON.stringify({ error: 'No active HubSpot API key configured' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      );
     }
 
-    // Get stage mapping for the new state (global mapping, not user-specific)
-    const { data: stageMapping, error: mappingError } = await supabaseClient
+    // Get HubSpot stage mapping
+    const { data: stageMapping, error: stageMappingError } = await supabase
       .from('hubspot_stage_mapping')
-      .select('stage_id, user_id')
+      .select('stage_id')
       .eq('estado_negocio', estado_nuevo)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .single();
 
-    console.log('🎯 [HubSpot Deal Update] Stage mapping retrieval:', {
-      estado_nuevo,
-      stageMapping,
-      error: mappingError
-    })
-
-    if (mappingError || !stageMapping) {
-      console.warn('⚠️ [HubSpot Deal Update] No stage mapping found for this state:', { 
-        estado_nuevo, 
-        error: mappingError 
-      })
+    if (stageMappingError || !stageMapping) {
+      console.error(`❌ [HubSpot Deal Update] No stage mapping found for estado: ${estado_nuevo}`, stageMappingError);
+      await updateSyncLog(supabase, negocio_id, 'failed', `No stage mapping for estado: ${estado_nuevo}`);
       return new Response(
-        JSON.stringify({ message: 'No stage mapping configured for this state' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+        JSON.stringify({ error: `No stage mapping for estado: ${estado_nuevo}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
-
-    console.log('🚀 [HubSpot Deal Update] Updating HubSpot deal stage:', {
-      dealId: negocio.hubspot_id,
-      stageId: stageMapping.stage_id,
-      estado_nuevo
-    })
 
     // Update deal stage in HubSpot
-    const updateResponse = await fetch(
-      `https://api.hubapi.com/crm/v3/objects/deals/${negocio.hubspot_id}`,
-      {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${apiKeyData.api_key}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          properties: {
-            dealstage: stageMapping.stage_id
-          }
-        })
+    const hubspotUrl = `https://api.hubapi.com/crm/v3/objects/deals/${negocio.hubspot_id}`;
+    const hubspotPayload = {
+      properties: {
+        dealstage: stageMapping.stage_id
       }
-    )
+    };
 
-    const responseText = await updateResponse.text()
-    console.log('📡 [HubSpot Deal Update] HubSpot API response:', {
-      status: updateResponse.status,
-      statusText: updateResponse.statusText,
-      responseText: responseText.substring(0, 500) // Log first 500 chars
-    })
+    console.log(`🔄 [HubSpot Deal Update] Updating HubSpot deal ${negocio.hubspot_id} to stage ${stageMapping.stage_id}`);
 
-    if (!updateResponse.ok) {
-      console.error('❌ [HubSpot Deal Update] HubSpot API error:', {
-        status: updateResponse.status,
-        statusText: updateResponse.statusText,
-        response: responseText
-      })
+    const hubspotResponse = await fetch(hubspotUrl, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${hubspotKey.api_key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(hubspotPayload)
+    });
+
+    if (!hubspotResponse.ok) {
+      const errorText = await hubspotResponse.text();
+      console.error('❌ [HubSpot Deal Update] HubSpot API error:', errorText);
+      await updateSyncLog(supabase, negocio_id, 'failed', `HubSpot API error: ${errorText}`);
       return new Response(
-        JSON.stringify({ 
-          error: 'Failed to update deal stage in HubSpot',
-          details: responseText
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+        JSON.stringify({ error: 'HubSpot API error', details: errorText }),
+        { status: hubspotResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const updatedDeal = JSON.parse(responseText)
-    console.log('✅ [HubSpot Deal Update] Successfully updated HubSpot deal stage:', {
-      dealId: updatedDeal.id,
-      stageId: stageMapping.stage_id
-    })
+    const hubspotResult = await hubspotResponse.json();
+    console.log('✅ [HubSpot Deal Update] Successfully updated HubSpot deal:', hubspotResult);
 
-    // Update the sync log status to success
-    const updateLogResult = await supabaseClient
-      .from('hubspot_sync_log')
-      .update({
-        status: 'success',
-        processed_at: new Date().toISOString(),
-        response_payload: updatedDeal,
-        execution_time_ms: Date.now() // Simple execution time tracking
-      })
-      .eq('negocio_id', negocio_id)
-      .eq('operation_type', 'estado_change')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false })
-      .limit(1)
-
-    console.log('📝 [HubSpot Deal Update] Sync log updated:', updateLogResult)
+    // Update sync log as successful
+    await updateSyncLog(supabase, negocio_id, 'success', 'Deal stage updated successfully');
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Deal stage updated in HubSpot',
-        hubspot_deal_id: updatedDeal.id,
-        stage_id: stageMapping.stage_id
+        message: 'Deal stage updated successfully',
+        hubspot_deal_id: negocio.hubspot_id,
+        new_stage: stageMapping.stage_id
       }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    )
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
 
   } catch (error) {
-    console.error('❌ [HubSpot Deal Update] Unexpected error:', error)
+    console.error('❌ [HubSpot Deal Update] Unexpected error:', error);
     return new Response(
-      JSON.stringify({ 
-        error: 'Internal server error',
-        details: error.message
-      }),
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    );
   }
-})
+});
+
+async function updateSyncLog(supabase: any, negocioId: string, status: string, message: string) {
+  try {
+    await supabase
+      .from('hubspot_sync_log')
+      .update({
+        status,
+        error_message: status === 'failed' ? message : null,
+        processed_at: new Date().toISOString()
+      })
+      .eq('negocio_id', negocioId)
+      .eq('status', 'pending');
+    
+    console.log(`📝 [HubSpot Deal Update] Updated sync log for negocio ${negocioId}: ${status}`);
+  } catch (error) {
+    console.error('❌ [HubSpot Deal Update] Error updating sync log:', error);
+  }
+}
