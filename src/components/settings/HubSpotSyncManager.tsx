@@ -51,69 +51,25 @@ export const HubSpotSyncManager = () => {
   const processPendingSync = async () => {
     setIsProcessing(true);
     try {
-      // Get pending sync records
-      const { data: pendingLogs, error: fetchError } = await supabase
-        .from('hubspot_sync_log')
-        .select(`
-          id,
-          negocio_id,
-          operation_type,
-          request_payload,
-          created_at
-        `)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: true })
-        .limit(5); // Process in batches
+      // Use the new database function for processing pending syncs
+      const { data, error } = await supabase.rpc('process_pending_hubspot_syncs');
+      
+      if (error) {
+        throw error;
+      }
 
-      if (fetchError) throw fetchError;
-
-      if (!pendingLogs || pendingLogs.length === 0) {
+      const result = data?.[0];
+      if (result) {
+        toast({
+          title: "Procesamiento completado",
+          description: `Procesados: ${result.processed}, Fallidos: ${result.failed}`
+        });
+      } else {
         toast({
           title: "Sin pendientes",
           description: "No hay sincronizaciones pendientes para procesar"
         });
-        setIsProcessing(false);
-        return;
       }
-
-      let processedCount = 0;
-      let errorCount = 0;
-
-      for (const log of pendingLogs) {
-        try {
-          const payload = log.request_payload as any;
-          
-          const { data, error } = await supabase.functions.invoke('hubspot-deal-update', {
-            body: {
-              negocio_id: payload.negocio_id,
-              estado_anterior: payload.estado_anterior,
-              estado_nuevo: payload.estado_nuevo
-            }
-          });
-
-          if (error) {
-            console.error(`Error processing sync log ${log.id}:`, error);
-            errorCount++;
-          } else if (data?.success) {
-            processedCount++;
-          } else {
-            console.error(`Sync failed for log ${log.id}:`, data);
-            errorCount++;
-          }
-
-          // Small delay between requests to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 500));
-
-        } catch (error) {
-          console.error(`Exception processing sync log ${log.id}:`, error);
-          errorCount++;
-        }
-      }
-
-      toast({
-        title: "Procesamiento completado",
-        description: `Se procesaron ${processedCount} sincronizaciones exitosamente. ${errorCount} fallaron.`
-      });
 
       // Reload stats
       await loadStats();

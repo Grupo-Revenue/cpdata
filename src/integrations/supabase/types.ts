@@ -744,6 +744,33 @@ export type Database = {
           },
         ]
       }
+      system_config: {
+        Row: {
+          config_key: string
+          config_value: string
+          created_at: string | null
+          encrypted: boolean | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          config_key: string
+          config_value: string
+          created_at?: string | null
+          encrypted?: boolean | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          config_key?: string
+          config_value?: string
+          created_at?: string | null
+          encrypted?: boolean | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       tipos_evento: {
         Row: {
           activo: boolean
@@ -877,6 +904,10 @@ export type Database = {
           presupuesto_data: Json
         }[]
       }
+      get_system_config: {
+        Args: { p_key: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -901,6 +932,13 @@ export type Database = {
       marcar_presupuesto_facturado: {
         Args: { presupuesto_id_param: string }
         Returns: undefined
+      }
+      process_pending_hubspot_syncs: {
+        Args: { p_user_id?: string }
+        Returns: {
+          failed: number
+          processed: number
+        }[]
       }
       recalcular_todos_estados_negocios: {
         Args: Record<PropertyKey, never>
