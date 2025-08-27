@@ -95,7 +95,13 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
           const discount = Number(producto.descuentoPorcentaje) || 0;
           const baseTotal = Number(producto.cantidad || 1) * Number(producto.precio_unitario || 0);
           const discountAmount = baseTotal * (discount / 100);
-          const finalTotal = baseTotal - discountAmount;
+          const baseAfterDiscount = baseTotal - discountAmount;
+          
+          // Add session values if they exist
+          const sessionsTotal = producto.sessions?.reduce((sum: number, session: any) => 
+            sum + (Number(session.valorTotal) || 0), 0) || 0;
+          
+          const finalTotal = baseAfterDiscount + sessionsTotal;
           
           const cleanProduct = {
             id: producto.id || `temp-${Date.now()}-${Math.random()}`,

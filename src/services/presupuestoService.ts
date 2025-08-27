@@ -247,7 +247,13 @@ export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoD
         const cantidad = producto.cantidad || 1;
         const baseTotal = cantidad * precioUnitario;
         const discountAmount = baseTotal * (discount / 100);
-        const finalTotal = baseTotal - discountAmount;
+        const baseAfterDiscount = baseTotal - discountAmount;
+        
+        // Add session values if they exist
+        const sessionsTotal = producto.sessions?.reduce((sum: number, session: any) => 
+          sum + (Number(session.valorTotal) || 0), 0) || 0;
+        
+        const finalTotal = baseAfterDiscount + sessionsTotal;
         
         return {
           presupuesto_id: presupuesto.id,
@@ -356,7 +362,13 @@ export const actualizarPresupuestoEnSupabase = async (presupuestoId: string, upd
           const cantidad = p.cantidad || 1;
           const baseTotal = cantidad * precioUnitario;
           const discountAmount = baseTotal * (discount / 100);
-          const finalTotal = baseTotal - discountAmount;
+          const baseAfterDiscount = baseTotal - discountAmount;
+          
+          // Add session values if they exist
+          const sessionsTotal = p.sessions?.reduce((sum: number, session: any) => 
+            sum + (Number(session.valorTotal) || 0), 0) || 0;
+          
+          const finalTotal = baseAfterDiscount + sessionsTotal;
           
           return {
             presupuesto_id: presupuestoId,
