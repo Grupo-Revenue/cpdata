@@ -89,28 +89,40 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
             }));
             
             // Calculate totals based on sessions
-            const sessionsTotalAmount = productoActualizado.sessions.reduce((sum: number, session: SessionAcreditacion) => sum + (session.monto || 0), 0);
-            const sessionsTotalAccreditors = productoActualizado.sessions.reduce((sum: number, session: SessionAcreditacion) => sum + (session.acreditadores || 0), 0);
+            const sessionsTotalAmount = productoActualizado.sessions.reduce((sum: number, session: SessionAcreditacion) => sum + (Number(session.monto) || 0), 0);
             
-            // Update product totals based on sessions
-            productoActualizado.total = sessionsTotalAmount as any;
-            productoActualizado.cantidad = sessionsTotalAccreditors as any;
+            // Calculate base product total (original price * quantity - discount)
+            const basePrice = Number(productoActualizado.precio_unitario) || Number(productoActualizado.precioUnitario) || 0;
+            const baseQuantity = Number(productoActualizado.cantidad) || 1;
+            const discount = Number(productoActualizado.descuentoPorcentaje) || 0;
+            const baseTotal = calcularTotalProducto(baseQuantity, basePrice, discount);
             
-            // Calculate average price per accreditor
-            if (Number(sessionsTotalAccreditors) > 0) {
-              const avgPrice = Number(sessionsTotalAmount) / Number(sessionsTotalAccreditors);
-              productoActualizado.precio_unitario = avgPrice as any;
-              productoActualizado.precioUnitario = avgPrice;
-            }
+            // Store breakdown for clarity
+            (productoActualizado as any).baseTotal = baseTotal;
+            (productoActualizado as any).sessionsTotal = sessionsTotalAmount;
+            
+            // Total = base product value + sessions value
+            const totalSum = Number(baseTotal) + Number(sessionsTotalAmount);
+            productoActualizado.total = totalSum as any;
             
             console.log('Sessions updated successfully:', {
               sessionsCount: productoActualizado.sessions.length,
-              totalAmount: sessionsTotalAmount,
-              totalAccreditors: sessionsTotalAccreditors
+              baseTotal: baseTotal,
+              sessionsTotal: sessionsTotalAmount,
+              totalAmount: productoActualizado.total
             });
           } else {
             // Clear sessions if empty or invalid
             productoActualizado.sessions = undefined;
+            (productoActualizado as any).baseTotal = undefined;
+            (productoActualizado as any).sessionsTotal = undefined;
+            
+            // Recalculate total without sessions
+            const basePrice = Number(productoActualizado.precio_unitario) || Number(productoActualizado.precioUnitario) || 0;
+            const baseQuantity = Number(productoActualizado.cantidad) || 1;
+            const discount = Number(productoActualizado.descuentoPorcentaje) || 0;
+            productoActualizado.total = calcularTotalProducto(baseQuantity, basePrice, discount) as any;
+            
             console.log('Sessions cleared for product', id);
           }
         }
@@ -138,9 +150,9 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
         
         // Recalculate total for price/quantity/discount changes (but not for sessions as they're handled above)
         if (campo !== 'sessions' && ['precioUnitario', 'precio_unitario', 'cantidad', 'descuentoPorcentaje'].includes(campo)) {
-          const currentPrecio = typeof productoActualizado.precio_unitario === 'number' ? productoActualizado.precio_unitario : (productoActualizado.precioUnitario || 0);
-          const currentCantidad = typeof productoActualizado.cantidad === 'number' ? productoActualizado.cantidad : 1;
-          const currentDescuento = productoActualizado.descuentoPorcentaje || 0;
+          const currentPrecio = Number(productoActualizado.precio_unitario) || Number(productoActualizado.precioUnitario) || 0;
+          const currentCantidad = Number(productoActualizado.cantidad) || 1;
+          const currentDescuento = Number(productoActualizado.descuentoPorcentaje) || 0;
           
           let precio = currentPrecio;
           let cantidad = currentCantidad;
@@ -160,8 +172,21 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
             productoActualizado.descuento_porcentaje = descuento;
           }
           
-          const newTotal = calcularTotalProducto(cantidad, precio, descuento);
-          productoActualizado.total = newTotal as any;
+          // Calculate new base total
+          const newBaseTotal = calcularTotalProducto(cantidad, precio, descuento);
+          
+          // If product has sessions, add them to the base total
+          if (productoActualizado.sessions && productoActualizado.sessions.length > 0) {
+            const sessionsTotal = productoActualizado.sessions.reduce((sum: number, session: SessionAcreditacion) => sum + (Number(session.monto) || 0), 0);
+            (productoActualizado as any).baseTotal = newBaseTotal;
+            (productoActualizado as any).sessionsTotal = sessionsTotal;
+            const totalSum = Number(newBaseTotal) + Number(sessionsTotal);
+            productoActualizado.total = totalSum as any;
+          } else {
+            productoActualizado.total = newBaseTotal as any;
+            (productoActualizado as any).baseTotal = undefined;
+            (productoActualizado as any).sessionsTotal = undefined;
+          }
         }
         
         console.log('Product updated', { 

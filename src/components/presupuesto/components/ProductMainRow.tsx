@@ -106,9 +106,27 @@ const ProductMainRow: React.FC<ProductMainRowProps> = ({
       </TableCell>
       
       <TableCell className="text-center align-middle py-3">
-        <span className="font-semibold text-green-600 text-sm">
-          {formatearPrecio(producto.total)}
-        </span>
+        <div className="text-right">
+          {producto.sessions && producto.sessions.length > 0 && (producto as any).baseTotal && (producto as any).sessionsTotal ? (
+            <div className="space-y-1">
+              <div className="text-xs text-gray-500">
+                Base: {formatearPrecio((producto as any).baseTotal)}
+              </div>
+              <div className="text-xs text-blue-600">
+                + Sesiones: {formatearPrecio((producto as any).sessionsTotal)}
+              </div>
+              <div className="border-t pt-1">
+                <span className="font-semibold text-green-600 text-sm">
+                  {formatearPrecio(producto.total)}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <span className="font-semibold text-green-600 text-sm">
+              {formatearPrecio(producto.total)}
+            </span>
+          )}
+        </div>
       </TableCell>
       
       <TableCell className="text-center align-middle py-3">

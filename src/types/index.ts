@@ -35,6 +35,8 @@ export type ExtendedProductoPresupuesto = Database['public']['Tables']['producto
   linea_producto_id?: string; // Add this field for product line identification
   sessions?: SessionAcreditacion[]; // Add sessions for accreditation products
   originalLibraryDescription?: string; // Store original description from library for reference
+  baseTotal?: number; // Base product total (price * quantity - discount)
+  sessionsTotal?: number; // Total from accreditation sessions
 }
 
 export type ExtendedNegocio = Database['public']['Tables']['negocios']['Row'] & {
