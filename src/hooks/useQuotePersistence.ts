@@ -99,7 +99,7 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
           
           // Add session values if they exist
           const sessionsTotal = producto.sessions?.reduce((sum: number, session: any) => 
-            sum + (Number(session.valorTotal) || 0), 0) || 0;
+            sum + (Number(session.monto) || 0), 0) || 0;
           
           const finalTotal = baseAfterDiscount + sessionsTotal;
           

@@ -251,7 +251,7 @@ export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoD
         
         // Add session values if they exist
         const sessionsTotal = producto.sessions?.reduce((sum: number, session: any) => 
-          sum + (Number(session.valorTotal) || 0), 0) || 0;
+          sum + (Number(session.monto) || 0), 0) || 0;
         
         const finalTotal = baseAfterDiscount + sessionsTotal;
         
@@ -366,7 +366,7 @@ export const actualizarPresupuestoEnSupabase = async (presupuestoId: string, upd
           
           // Add session values if they exist
           const sessionsTotal = p.sessions?.reduce((sum: number, session: any) => 
-            sum + (Number(session.valorTotal) || 0), 0) || 0;
+            sum + (Number(session.monto) || 0), 0) || 0;
           
           const finalTotal = baseAfterDiscount + sessionsTotal;
           
