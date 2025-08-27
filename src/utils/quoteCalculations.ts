@@ -18,14 +18,26 @@ export const calcularTotalesPresupuesto = (productos: ProductoPresupuesto[]): Qu
   const subtotal = productos.reduce((sum, producto) => {
     const cantidad = producto.cantidad || 0;
     const precioUnitario = producto.precioUnitario || producto.precio_unitario || 0;
-    return sum + (cantidad * precioUnitario);
+    const baseTotal = cantidad * precioUnitario;
+    
+    // Add session values if they exist (for accreditation products)
+    const sessionsTotal = (producto as any).sessions?.reduce((sessionSum: number, session: any) => 
+      sessionSum + (Number(session.monto) || 0), 0) || 0;
+    
+    return sum + baseTotal + sessionsTotal;
   }, 0);
 
   const totalDescuentos = productos.reduce((sum, producto) => {
     const cantidad = producto.cantidad || 0;
     const precioUnitario = producto.precioUnitario || producto.precio_unitario || 0;
     const descuentoPorcentaje = producto.descuentoPorcentaje || 0;
-    const subtotalProducto = cantidad * precioUnitario;
+    const baseTotal = cantidad * precioUnitario;
+    
+    // Add session values for discount calculation
+    const sessionsTotal = (producto as any).sessions?.reduce((sessionSum: number, session: any) => 
+      sessionSum + (Number(session.monto) || 0), 0) || 0;
+    
+    const subtotalProducto = baseTotal + sessionsTotal;
     const descuento = subtotalProducto * (descuentoPorcentaje / 100);
     return sum + descuento;
   }, 0);
