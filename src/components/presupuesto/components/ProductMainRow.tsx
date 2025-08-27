@@ -113,7 +113,7 @@ const ProductMainRow: React.FC<ProductMainRowProps> = ({
                 Base: {formatearPrecio((producto as any).baseTotal)}
               </div>
               <div className="text-xs text-blue-600">
-                + Sesiones: {formatearPrecio((producto as any).sessionsTotal)}
+                + Jornadas: {formatearPrecio((producto as any).sessionsTotal)}
               </div>
               <div className="border-t pt-1">
                 <span className="font-semibold text-green-600 text-sm">
