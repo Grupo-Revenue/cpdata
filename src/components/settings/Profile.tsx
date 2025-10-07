@@ -16,7 +16,7 @@ import { Eye, EyeOff, CheckCircle2, XCircle, LogOut } from "lucide-react";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
 const passwordSchema = z
   .object({
-    currentPassword: z.string().min(8, "Debe tener al menos 8 caracteres"),
+    currentPassword: z.string().min(1, "La contraseña actual es requerida"),
     newPassword: z.string().min(8, "Debe tener al menos 8 caracteres"),
     confirmPassword: z.string().min(8, "Debe tener al menos 8 caracteres"),
   })
