@@ -327,7 +327,7 @@ export const UserTable: React.FC<UserTableProps> = ({
                     onChange={(e) => setPassword(e.target.value)} 
                     className="col-span-3" 
                     type="password" 
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder="Mínimo 8 caracteres"
                   />
                 </div>
               </div>

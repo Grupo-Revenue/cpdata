@@ -79,6 +79,14 @@ serve(async (req) => {
       );
     }
 
+    if (password.length < 8) {
+      console.error('❌ [admin-create-user] Password too short');
+      return new Response(
+        JSON.stringify({ error: 'La contraseña debe tener al menos 8 caracteres' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log('👤 [admin-create-user] Creating user:', email);
 
     // Create user using admin client
