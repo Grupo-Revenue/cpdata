@@ -38,8 +38,8 @@ serve(async (req) => {
     if (!authHeader) {
       console.error('❌ [admin-create-user] No authorization header');
       return new Response(
-        JSON.stringify({ error: 'No authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'No authorization header' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -51,8 +51,8 @@ serve(async (req) => {
     if (authError || !user) {
       console.error('❌ [admin-create-user] Auth error:', authError);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -63,8 +63,8 @@ serve(async (req) => {
     if (adminCheckError || !isAdmin) {
       console.error('❌ [admin-create-user] Not admin or error checking admin status:', adminCheckError);
       return new Response(
-        JSON.stringify({ error: 'Forbidden - Admin access required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'Forbidden - Admin access required' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -74,16 +74,16 @@ serve(async (req) => {
     if (!email || !password) {
       console.error('❌ [admin-create-user] Missing email or password');
       return new Response(
-        JSON.stringify({ error: 'Email and password are required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'Email and password are required' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (password.length < 8) {
       console.error('❌ [admin-create-user] Password too short');
       return new Response(
-        JSON.stringify({ error: 'La contraseña debe tener al menos 8 caracteres' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'La contraseña debe tener al menos 8 caracteres' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -116,8 +116,8 @@ serve(async (req) => {
       }
       
       return new Response(
-        JSON.stringify({ error: errorMessage }),
-        { status: statusCode, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: errorMessage }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -173,8 +173,8 @@ serve(async (req) => {
   } catch (error) {
     console.error('❌ [admin-create-user] Unexpected error:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ success: false, error: 'Internal server error' }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 })
