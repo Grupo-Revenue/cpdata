@@ -101,8 +101,12 @@ serve(async (req) => {
       
       // Traducir errores comunes al español
       let errorMessage = createError.message;
+      const errorCode = createError.code || '';
+      const statusCode = createError.status || 400;
       
-      if (errorMessage.toLowerCase().includes('already been registered') || 
+      // Verificar por código de error primero (más confiable)
+      if (errorCode === 'email_exists' || 
+          errorMessage.toLowerCase().includes('already been registered') || 
           errorMessage.toLowerCase().includes('email address has already')) {
         errorMessage = 'Ya existe un usuario con este correo electrónico';
       } else if (errorMessage.toLowerCase().includes('password')) {
@@ -113,7 +117,7 @@ serve(async (req) => {
       
       return new Response(
         JSON.stringify({ error: errorMessage }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: statusCode, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
