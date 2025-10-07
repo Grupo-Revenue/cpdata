@@ -87,9 +87,104 @@ serve(async (req) => {
       );
     }
 
-    console.log('👤 [admin-create-user] Creating user:', email);
+    console.log('🔍 [admin-create-user] Checking for orphan users...');
 
-    // Create user using admin client
+    // STEP 1: Check if user already exists in auth.users (orphan detection)
+    const { data: existingAuthUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const orphanUser = existingAuthUsers?.users.find(u => u.email === email);
+
+    if (orphanUser) {
+      console.log('👤 [admin-create-user] Found user in auth.users:', orphanUser.id);
+      
+      // Check if user has profile
+      const { data: existingProfile, error: profileCheckError } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('id', orphanUser.id)
+        .maybeSingle();
+      
+      if (profileCheckError) {
+        console.error('❌ [admin-create-user] Error checking profile:', profileCheckError);
+      }
+      
+      if (!existingProfile) {
+        // ORPHAN USER DETECTED - Create missing profile and roles
+        console.log('🔧 [admin-create-user] ORPHAN USER DETECTED - Creating missing profile and roles...');
+        
+        // Create missing profile
+        const { error: createProfileError } = await supabaseAdmin
+          .from('profiles')
+          .insert({
+            id: orphanUser.id,
+            email: orphanUser.email,
+            nombre: null,
+            apellido: null,
+            empresa: null
+          });
+        
+        if (createProfileError) {
+          console.error('⚠️ [admin-create-user] Failed to create profile for orphan:', createProfileError);
+          return new Response(
+            JSON.stringify({ success: false, error: 'Error al corregir usuario existente' }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        console.log('✅ [admin-create-user] Profile created for orphan user');
+        
+        // Ensure default role
+        const { error: createRoleError } = await supabaseAdmin
+          .from('user_roles')
+          .insert({
+            user_id: orphanUser.id,
+            role: 'user'
+          });
+        
+        if (createRoleError && createRoleError.code !== '23505') { // Ignore duplicates
+          console.error('⚠️ [admin-create-user] Failed to create role for orphan:', createRoleError);
+        } else {
+          console.log('✅ [admin-create-user] Role assigned to orphan user');
+        }
+        
+        // Update password
+        const { error: updatePasswordError } = await supabaseAdmin.auth.admin.updateUserById(
+          orphanUser.id,
+          { password: password }
+        );
+        
+        if (updatePasswordError) {
+          console.error('⚠️ [admin-create-user] Failed to update password:', updatePasswordError);
+        } else {
+          console.log('✅ [admin-create-user] Password updated for orphan user');
+        }
+        
+        // Return success with correction note
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            user: {
+              id: orphanUser.id,
+              email: orphanUser.email,
+              created_at: orphanUser.created_at
+            },
+            corrected: true,
+            message: 'Usuario corregido: se creó el perfil faltante'
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } else {
+        // Complete user already exists
+        console.log('❌ [admin-create-user] Complete user already exists');
+        return new Response(
+          JSON.stringify({ success: false, error: 'Ya existe un usuario con este correo electrónico' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // STEP 2: Create new user (no orphan detected)
+    console.log('👤 [admin-create-user] Creating new user:', email);
+
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email: email,
       password: password,
@@ -123,7 +218,7 @@ serve(async (req) => {
 
     console.log('✅ [admin-create-user] User created successfully:', newUser.user?.id);
 
-    // Create profile for the new user
+    // STEP 3: Create profile for the new user with ROLLBACK on failure
     if (newUser.user) {
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
@@ -136,13 +231,23 @@ serve(async (req) => {
         });
 
       if (profileError) {
-        console.error('⚠️ [admin-create-user] Error creating profile:', profileError);
-        // Don't fail the entire operation for profile creation error
-      } else {
-        console.log('✅ [admin-create-user] Profile created successfully');
+        console.error('❌ [admin-create-user] Error creating profile, ROLLING BACK user creation...');
+        
+        // ROLLBACK: Delete the user from auth.users
+        await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
+        
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Error al crear el perfil del usuario. La operación ha sido revertida.' 
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
+      
+      console.log('✅ [admin-create-user] Profile created successfully');
 
-      // Assign default 'user' role (this should be handled by the trigger, but let's ensure it)
+      // STEP 4: Assign default 'user' role with ROLLBACK on failure
       const { error: roleError } = await supabaseAdmin
         .from('user_roles')
         .insert({
@@ -150,12 +255,23 @@ serve(async (req) => {
           role: 'user'
         });
 
-      if (roleError) {
-        console.error('⚠️ [admin-create-user] Error assigning role:', roleError);
-        // Don't fail the entire operation for role assignment error
-      } else {
-        console.log('✅ [admin-create-user] Default role assigned successfully');
+      if (roleError && roleError.code !== '23505') { // Ignore duplicate error
+        console.error('❌ [admin-create-user] Error assigning role, ROLLING BACK...');
+        
+        // ROLLBACK: Delete profile and user
+        await supabaseAdmin.from('profiles').delete().eq('id', newUser.user.id);
+        await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
+        
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Error al asignar rol al usuario. La operación ha sido revertida.' 
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
+      
+      console.log('✅ [admin-create-user] Default role assigned successfully');
     }
 
     return new Response(
