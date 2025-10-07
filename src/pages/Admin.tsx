@@ -48,21 +48,23 @@ const Admin = () => {
         }
       });
 
-      if (error) {
-        console.error('❌ [Admin] Error from Edge Function:', error);
-        toast({
-          title: "Error",
-          description: error.message || "Error al crear usuario",
-          variant: "destructive",
-        })
-        return;
-      }
-
+      // Primero verificar si hay un error específico en data
       if (data?.error) {
         console.error('❌ [Admin] Error in response:', data.error);
         toast({
           title: "Error",
           description: data.error,
+          variant: "destructive",
+        })
+        return;
+      }
+
+      // Luego verificar el error genérico HTTP
+      if (error) {
+        console.error('❌ [Admin] Error from Edge Function:', error);
+        toast({
+          title: "Error",
+          description: error.message || "Error al crear usuario",
           variant: "destructive",
         })
         return;
