@@ -98,8 +98,21 @@ serve(async (req) => {
 
     if (createError) {
       console.error('❌ [admin-create-user] Error creating user:', createError);
+      
+      // Traducir errores comunes al español
+      let errorMessage = createError.message;
+      
+      if (errorMessage.toLowerCase().includes('already been registered') || 
+          errorMessage.toLowerCase().includes('email address has already')) {
+        errorMessage = 'Ya existe un usuario con este correo electrónico';
+      } else if (errorMessage.toLowerCase().includes('password')) {
+        errorMessage = 'La contraseña no cumple con los requisitos mínimos de seguridad';
+      } else if (errorMessage.toLowerCase().includes('invalid email')) {
+        errorMessage = 'El correo electrónico no es válido';
+      }
+      
       return new Response(
-        JSON.stringify({ error: createError.message }),
+        JSON.stringify({ error: errorMessage }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
