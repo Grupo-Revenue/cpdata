@@ -218,34 +218,9 @@ serve(async (req) => {
 
     console.log('✅ [admin-create-user] User created successfully:', newUser.user?.id);
 
-    // STEP 3: Create profile for the new user with ROLLBACK on failure
+    // STEP 3: Profile is created automatically by trigger on_auth_user_created
     if (newUser.user) {
-      const { error: profileError } = await supabaseAdmin
-        .from('profiles')
-        .insert({
-          id: newUser.user.id,
-          email: newUser.user.email,
-          nombre: null,
-          apellido: null,
-          empresa: null
-        });
-
-      if (profileError) {
-        console.error('❌ [admin-create-user] Error creating profile, ROLLING BACK user creation...');
-        
-        // ROLLBACK: Delete the user from auth.users
-        await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
-        
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: 'Error al crear el perfil del usuario. La operación ha sido revertida.' 
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      console.log('✅ [admin-create-user] Profile created successfully');
+      console.log('✅ [admin-create-user] Profile created automatically by trigger');
 
       // STEP 4: Assign default 'user' role with ROLLBACK on failure
       const { error: roleError } = await supabaseAdmin
@@ -258,8 +233,7 @@ serve(async (req) => {
       if (roleError && roleError.code !== '23505') { // Ignore duplicate error
         console.error('❌ [admin-create-user] Error assigning role, ROLLING BACK...');
         
-        // ROLLBACK: Delete profile and user
-        await supabaseAdmin.from('profiles').delete().eq('id', newUser.user.id);
+        // ROLLBACK: Delete user only (profile was created correctly by trigger)
         await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
         
         return new Response(
