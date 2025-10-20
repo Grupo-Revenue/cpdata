@@ -321,6 +321,7 @@ export const useBusinessUpdate = () => {
     try {
       console.log('[useBusinessUpdate] Updating event for negocio:', negocioId);
 
+      // 1. Actualizar en Supabase
       const { data: updatedNegocio, error: negocioError } = await supabase
         .from('negocios')
         .update({
@@ -341,9 +342,42 @@ export const useBusinessUpdate = () => {
       if (negocioError) throw negocioError;
 
       console.log('[useBusinessUpdate] Event updated successfully:', updatedNegocio);
+
+      // 2. Sincronizar con HubSpot
+      try {
+        console.log('[useBusinessUpdate] Syncing event with HubSpot...');
+        
+        const { data, error: functionError } = await supabase.functions.invoke(
+          'hubspot-deal-properties-update',
+          {
+            body: {
+              negocio_id: negocioId,
+              eventData: {
+                tipo_evento: eventData.tipo_evento,
+                nombre_evento: eventData.nombre_evento,
+                fecha_evento: eventData.fecha_evento,
+                cantidad_asistentes: eventData.cantidad_asistentes,
+                cantidad_invitados: eventData.cantidad_invitados,
+                locacion: eventData.locacion,
+                fecha_cierre: eventData.fecha_cierre
+              }
+            }
+          }
+        );
+
+        if (functionError) {
+          console.error('[useBusinessUpdate] Error calling HubSpot function:', functionError);
+        } else if (data?.success) {
+          console.log('[useBusinessUpdate] Event synced with HubSpot successfully');
+        }
+      } catch (hubspotError) {
+        console.error('[useBusinessUpdate] Error syncing event with HubSpot:', hubspotError);
+        // No lanzar error, continuar con el flujo
+      }
+
       toast({
         title: "Evento actualizado",
-        description: "La información del evento se actualizó correctamente"
+        description: "Información sincronizada con HubSpot correctamente"
       });
 
       return updatedNegocio;

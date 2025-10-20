@@ -56,3 +56,6 @@ port = 54327
 
 [functions.hubspot-deal-update]
 verify_jwt = false
+
+[functions.hubspot-deal-properties-update]
+verify_jwt = false
