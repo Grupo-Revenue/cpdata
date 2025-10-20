@@ -112,7 +112,15 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Contact Info */}
         <Card className="border-slate-200">
-          <CardContent className="p-4">
+          <CardContent className="p-4 relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setEditContactOpen(true)}
+              className="absolute top-2 right-2 h-7 w-7 hover:bg-slate-100"
+            >
+              <Pencil className="w-3.5 h-3.5 text-slate-500" />
+            </Button>
             <div className="flex items-center space-x-2 mb-2">
               <User className="w-4 h-4 text-slate-500" />
               <span className="text-sm font-medium text-slate-700">Contacto</span>
@@ -136,7 +144,15 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
 
         {/* Company Info */}
         <Card className="border-slate-200">
-          <CardContent className="p-4">
+          <CardContent className="p-4 relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setEditCompanyOpen(true)}
+              className="absolute top-2 right-2 h-7 w-7 hover:bg-slate-100"
+            >
+              <Pencil className="w-3.5 h-3.5 text-slate-500" />
+            </Button>
             <div className="flex items-center space-x-2 mb-2">
               <Building className="w-4 h-4 text-slate-500" />
               <span className="text-sm font-medium text-slate-700">Empresa</span>
@@ -165,7 +181,15 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
 
         {/* Event Info */}
         <Card className="border-slate-200">
-          <CardContent className="p-4">
+          <CardContent className="p-4 relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setEditEventOpen(true)}
+              className="absolute top-2 right-2 h-7 w-7 hover:bg-slate-100"
+            >
+              <Pencil className="w-3.5 h-3.5 text-slate-500" />
+            </Button>
             <div className="flex items-center space-x-2 mb-2">
               <Calendar className="w-4 h-4 text-slate-500" />
               <span className="text-sm font-medium text-slate-700">Evento</span>
@@ -190,6 +214,29 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Dialogs */}
+      <EditContactDialog
+        open={editContactOpen}
+        onOpenChange={setEditContactOpen}
+        contacto={negocio.contacto}
+        onSave={handleSaveContact}
+      />
+
+      <EditCompanyDialog
+        open={editCompanyOpen}
+        onOpenChange={setEditCompanyOpen}
+        productora={negocio.productora || undefined}
+        clienteFinal={negocio.clienteFinal || undefined}
+        onSave={handleSaveCompanies}
+      />
+
+      <EditEventDialog
+        open={editEventOpen}
+        onOpenChange={setEditEventOpen}
+        negocio={negocio}
+        onSave={handleSaveEvent}
+      />
     </div>
   );
 };
