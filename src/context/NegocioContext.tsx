@@ -32,6 +32,7 @@ interface NegocioContextProps {
   cambiarEstadoPresupuesto: (negocioId: string, presupuestoId: string, nuevoEstado: EstadoPresupuesto, fechaVencimiento?: string) => Promise<void>;
   cambiarEstadoNegocio: (negocioId: string, nuevoEstado: EstadoNegocio) => Promise<void>;
   refreshNegocios: () => Promise<void>;
+  refreshNegocio: (negocioId: string) => Promise<void>;
 }
 
 const NegocioContext = createContext<NegocioContextProps | undefined>(undefined);
@@ -103,6 +104,20 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     } catch (error) {
       console.error('[NegocioContext] Error during manual refresh:', error);
       throw error; // Re-throw to allow caller to handle
+    }
+  };
+
+  const refreshNegocio = async (negocioId: string) => {
+    console.log('[NegocioContext] ==> REFRESH SINGLE NEGOCIO REQUESTED <==');
+    console.log('[NegocioContext] Refreshing negocio ID:', negocioId);
+    
+    try {
+      // For now, just refresh all negocios - can be optimized later
+      await refreshNegocios();
+      console.log('[NegocioContext] Single negocio refresh completed');
+    } catch (error) {
+      console.error('[NegocioContext] Error during single negocio refresh:', error);
+      throw error;
     }
   };
 
@@ -500,7 +515,8 @@ const NegocioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     eliminarPresupuesto,
     cambiarEstadoPresupuesto,
     cambiarEstadoNegocio,
-    refreshNegocios
+    refreshNegocios,
+    refreshNegocio
   };
 
   return (

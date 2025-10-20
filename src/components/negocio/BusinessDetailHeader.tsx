@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,12 +12,18 @@ import {
   MapPin, 
   Users, 
   Phone,
-  Mail
+  Mail,
+  Pencil
 } from 'lucide-react';
 import { Negocio } from '@/types';
 import { calculateBusinessValue } from '@/utils/businessValueCalculator';
 import { formatBusinessStateForDisplay, getBusinessStateColors } from '@/utils/businessCalculations';
 import BusinessValueSection from './sections/BusinessValueSection';
+import { EditContactDialog } from './dialogs/EditContactDialog';
+import { EditCompanyDialog } from './dialogs/EditCompanyDialog';
+import { EditEventDialog } from './dialogs/EditEventDialog';
+import { useBusinessUpdate } from '@/hooks/useBusinessUpdate';
+import { useNegocio } from '@/context/NegocioContext';
 
 interface BusinessDetailHeaderProps {
   negocio: Negocio;
@@ -31,7 +37,28 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
   onCrearPresupuesto
 }) => {
   const navigate = useNavigate();
+  const { refreshNegocios } = useNegocio();
+  const { updateContact, updateCompanies, updateEvent } = useBusinessUpdate();
+  
+  const [editContactOpen, setEditContactOpen] = useState(false);
+  const [editCompanyOpen, setEditCompanyOpen] = useState(false);
+  const [editEventOpen, setEditEventOpen] = useState(false);
   const valorTotal = calculateBusinessValue(negocio);
+
+  const handleSaveContact = async (contactData: any) => {
+    await updateContact(negocio.id, contactData);
+    await refreshNegocios();
+  };
+
+  const handleSaveCompanies = async (productoraData?: any, clienteFinalData?: any) => {
+    await updateCompanies(negocio.id, productoraData, clienteFinalData);
+    await refreshNegocios();
+  };
+
+  const handleSaveEvent = async (eventData: any) => {
+    await updateEvent(negocio.id, eventData);
+    await refreshNegocios();
+  };
   
   // Get company name for the title
   const empresaDisplay = negocio.productora?.nombre || negocio.clienteFinal?.nombre || 'Sin empresa';
