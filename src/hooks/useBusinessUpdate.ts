@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Contacto, Empresa, TipoEmpresa } from '@/types';
 import { useHubSpotContactValidation } from '@/hooks/useHubSpotContactValidation';
+import { useHubSpotCompanyValidation } from '@/hooks/useHubSpotCompanyValidation';
 
 export const useBusinessUpdate = () => {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -12,6 +13,12 @@ export const useBusinessUpdate = () => {
     createContactInHubSpot,
     updateContactInHubSpot
   } = useHubSpotContactValidation();
+
+  const {
+    searchCompanyInHubSpot,
+    createCompanyInHubSpot,
+    updateCompanyInHubSpot
+  } = useHubSpotCompanyValidation();
 
   const updateContact = async (negocioId: string, contactData: Partial<Contacto>) => {
     setIsUpdating(true);
@@ -163,6 +170,52 @@ export const useBusinessUpdate = () => {
 
         if (productoraError) throw productoraError;
         results.productora = updatedProductora;
+
+        // Sincronizar con HubSpot
+        try {
+          console.log('[useBusinessUpdate] Syncing productora with HubSpot...');
+          
+          const hubspotResult = await searchCompanyInHubSpot(updatedProductora.nombre);
+          
+          if (hubspotResult?.found && hubspotResult.company) {
+            console.log('[useBusinessUpdate] Updating existing HubSpot company:', hubspotResult.company.hubspotId);
+            await updateCompanyInHubSpot({
+              hubspotId: hubspotResult.company.hubspotId,
+              nombre: updatedProductora.nombre,
+              tipoCliente: 'productora',
+              rut: updatedProductora.rut || '',
+              direccion: updatedProductora.direccion || '',
+              sitio_web: updatedProductora.sitio_web || ''
+            });
+            
+            if (!updatedProductora.hubspot_id) {
+              await supabase
+                .from('empresas')
+                .update({ hubspot_id: hubspotResult.company.hubspotId })
+                .eq('id', updatedProductora.id);
+            }
+          } else {
+            console.log('[useBusinessUpdate] Creating new HubSpot company');
+            const createResult = await createCompanyInHubSpot({
+              nombre: updatedProductora.nombre,
+              tipoCliente: 'productora',
+              rut: updatedProductora.rut || '',
+              direccion: updatedProductora.direccion || '',
+              sitio_web: updatedProductora.sitio_web || ''
+            });
+            
+            if (createResult.success && createResult.hubspotId) {
+              await supabase
+                .from('empresas')
+                .update({ hubspot_id: createResult.hubspotId })
+                .eq('id', updatedProductora.id);
+            }
+          }
+          
+          console.log('[useBusinessUpdate] Productora synced with HubSpot successfully');
+        } catch (hubspotError) {
+          console.error('[useBusinessUpdate] Error syncing productora with HubSpot:', hubspotError);
+        }
       }
 
       // Update cliente final if data provided
@@ -183,12 +236,58 @@ export const useBusinessUpdate = () => {
 
         if (clienteFinalError) throw clienteFinalError;
         results.clienteFinal = updatedClienteFinal;
+
+        // Sincronizar con HubSpot
+        try {
+          console.log('[useBusinessUpdate] Syncing cliente final with HubSpot...');
+          
+          const hubspotResult = await searchCompanyInHubSpot(updatedClienteFinal.nombre);
+          
+          if (hubspotResult?.found && hubspotResult.company) {
+            console.log('[useBusinessUpdate] Updating existing HubSpot company:', hubspotResult.company.hubspotId);
+            await updateCompanyInHubSpot({
+              hubspotId: hubspotResult.company.hubspotId,
+              nombre: updatedClienteFinal.nombre,
+              tipoCliente: 'cliente_final',
+              rut: updatedClienteFinal.rut || '',
+              direccion: updatedClienteFinal.direccion || '',
+              sitio_web: updatedClienteFinal.sitio_web || ''
+            });
+            
+            if (!updatedClienteFinal.hubspot_id) {
+              await supabase
+                .from('empresas')
+                .update({ hubspot_id: hubspotResult.company.hubspotId })
+                .eq('id', updatedClienteFinal.id);
+            }
+          } else {
+            console.log('[useBusinessUpdate] Creating new HubSpot company');
+            const createResult = await createCompanyInHubSpot({
+              nombre: updatedClienteFinal.nombre,
+              tipoCliente: 'cliente_final',
+              rut: updatedClienteFinal.rut || '',
+              direccion: updatedClienteFinal.direccion || '',
+              sitio_web: updatedClienteFinal.sitio_web || ''
+            });
+            
+            if (createResult.success && createResult.hubspotId) {
+              await supabase
+                .from('empresas')
+                .update({ hubspot_id: createResult.hubspotId })
+                .eq('id', updatedClienteFinal.id);
+            }
+          }
+          
+          console.log('[useBusinessUpdate] Cliente final synced with HubSpot successfully');
+        } catch (hubspotError) {
+          console.error('[useBusinessUpdate] Error syncing cliente final with HubSpot:', hubspotError);
+        }
       }
 
       console.log('[useBusinessUpdate] Companies updated successfully:', results);
       toast({
         title: "Empresas actualizadas",
-        description: "La información de las empresas se actualizó correctamente"
+        description: "Información sincronizada con HubSpot correctamente"
       });
 
       return results;
