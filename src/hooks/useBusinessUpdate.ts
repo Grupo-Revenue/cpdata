@@ -2,9 +2,16 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Contacto, Empresa, TipoEmpresa } from '@/types';
+import { useHubSpotContactValidation } from '@/hooks/useHubSpotContactValidation';
 
 export const useBusinessUpdate = () => {
   const [isUpdating, setIsUpdating] = useState(false);
+  
+  const {
+    searchContactInHubSpot,
+    createContactInHubSpot,
+    updateContactInHubSpot
+  } = useHubSpotContactValidation();
 
   const updateContact = async (negocioId: string, contactData: Partial<Contacto>) => {
     setIsUpdating(true);
@@ -39,10 +46,69 @@ export const useBusinessUpdate = () => {
       if (contactError) throw contactError;
 
       console.log('[useBusinessUpdate] Contact updated successfully:', updatedContact);
-      toast({
-        title: "Contacto actualizado",
-        description: "La información del contacto se actualizó correctamente"
-      });
+
+      // Sincronizar con HubSpot
+      try {
+        console.log('[useBusinessUpdate] Syncing contact with HubSpot...');
+        
+        // Buscar el contacto en HubSpot por email
+        const hubspotResult = await searchContactInHubSpot(updatedContact.email);
+        
+        if (hubspotResult?.found && hubspotResult.contact) {
+          // Contacto existe en HubSpot, actualizarlo
+          console.log('[useBusinessUpdate] Updating existing HubSpot contact:', hubspotResult.contact.hubspotId);
+          await updateContactInHubSpot({
+            hubspotId: hubspotResult.contact.hubspotId,
+            email: updatedContact.email,
+            nombre: updatedContact.nombre,
+            apellido: updatedContact.apellido,
+            telefono: updatedContact.telefono,
+            cargo: updatedContact.cargo || ''
+          });
+          
+          // Si no tenía hubspot_id guardado, guardarlo
+          if (!updatedContact.hubspot_id) {
+            await supabase
+              .from('contactos')
+              .update({ hubspot_id: hubspotResult.contact.hubspotId })
+              .eq('id', updatedContact.id);
+          }
+          
+          console.log('[useBusinessUpdate] HubSpot contact updated successfully');
+        } else {
+          // Contacto no existe en HubSpot, crearlo
+          console.log('[useBusinessUpdate] Creating new HubSpot contact');
+          const createResult = await createContactInHubSpot({
+            email: updatedContact.email,
+            nombre: updatedContact.nombre,
+            apellido: updatedContact.apellido,
+            telefono: updatedContact.telefono,
+            cargo: updatedContact.cargo || ''
+          });
+          
+          if (createResult.success && createResult.hubspotId) {
+            // Guardar el hubspot_id en Supabase
+            await supabase
+              .from('contactos')
+              .update({ hubspot_id: createResult.hubspotId })
+              .eq('id', updatedContact.id);
+            
+            console.log('[useBusinessUpdate] HubSpot contact created successfully:', createResult.hubspotId);
+          }
+        }
+        
+        toast({
+          title: "Contacto actualizado",
+          description: "Información sincronizada con HubSpot correctamente"
+        });
+      } catch (hubspotError) {
+        console.error('[useBusinessUpdate] Error syncing with HubSpot:', hubspotError);
+        toast({
+          title: "Contacto actualizado localmente",
+          description: "No se pudo sincronizar con HubSpot",
+          variant: "destructive"
+        });
+      }
 
       return updatedContact;
     } catch (error) {
