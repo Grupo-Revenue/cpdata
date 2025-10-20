@@ -107,7 +107,7 @@ serve(async (req) => {
               ]
             }
           ],
-          properties: ["firstname", "lastname", "email", "phone"],
+          properties: ["firstname", "lastname", "email", "phone", "jobtitle"],
           limit: 1
         })
       })
@@ -137,7 +137,8 @@ serve(async (req) => {
             firstname: contact.properties.firstname || '',
             lastname: contact.properties.lastname || '',
             email: contact.properties.email || '',
-            phone: contact.properties.phone || ''
+            phone: contact.properties.phone || '',
+            jobtitle: contact.properties.jobtitle || ''
           }
         }), { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -166,7 +167,8 @@ serve(async (req) => {
             firstname: contactData.nombre || '',
             lastname: contactData.apellido || '',
             email: contactData.email.toLowerCase() || '',
-            phone: contactData.telefono || ''
+            phone: contactData.telefono || '',
+            jobtitle: contactData.cargo || ''
           }
         })
       })
@@ -194,7 +196,8 @@ serve(async (req) => {
           firstname: contactData.nombre || '',
           lastname: contactData.apellido || '',
           email: contactData.email.toLowerCase() || '',
-          phone: contactData.telefono || ''
+          phone: contactData.telefono || '',
+          jobtitle: contactData.cargo || ''
         },
         message: 'Contact created successfully in HubSpot'
       }), { 
@@ -225,7 +228,8 @@ serve(async (req) => {
             firstname: contactData.nombre || '',
             lastname: contactData.apellido || '',
             email: contactData.email.toLowerCase() || '',
-            phone: contactData.telefono || ''
+            phone: contactData.telefono || '',
+            jobtitle: contactData.cargo || ''
           }
         })
       })
@@ -253,7 +257,8 @@ serve(async (req) => {
           firstname: contactData.nombre || '',
           lastname: contactData.apellido || '',
           email: contactData.email.toLowerCase() || '',
-          phone: contactData.telefono || ''
+          phone: contactData.telefono || '',
+          jobtitle: contactData.cargo || ''
         },
         message: 'Contact updated successfully in HubSpot'
       }), { 
