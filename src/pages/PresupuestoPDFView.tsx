@@ -71,7 +71,7 @@ const PresupuestoPDFView: React.FC = () => {
   };
 
   const handleDownloadPDF = () => {
-    const fileName = `Presupuesto-${negocio.numero}-${presupuesto.nombre}`;
+    const fileName = `PPTO ${presupuesto.nombre}`;
     downloadPDF(fileName);
   };
 
