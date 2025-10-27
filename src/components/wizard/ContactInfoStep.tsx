@@ -54,13 +54,14 @@ export const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
         ...contacto,
         nombre: result.contact!.firstname || contacto.nombre,
         apellido: result.contact!.lastname || contacto.apellido,
-        telefono: result.contact!.phone ? (result.contact!.phone.startsWith('+56') ? result.contact!.phone : `+56${result.contact!.phone.replace(/[^\d]/g, '')}`) : contacto.telefono
+        telefono: result.contact!.phone ? `+56${result.contact!.phone.replace(/^\+?56/, '').replace(/\D/g, '')}` : contacto.telefono
       };
       setContacto(updatedContacto);
       
       if (result.contact!.phone) {
-        const formattedPhone = result.contact!.phone.startsWith('+56') ? result.contact!.phone : `+56${result.contact!.phone.replace(/[^\d]/g, '')}`;
-        phoneValidator.handleChange(formattedPhone);
+        const cleanedPhone = result.contact!.phone.replace(/^\+?56/, '').replace(/\D/g, '');
+        const normalizedPhone = `+56${cleanedPhone}`;
+        phoneValidator.handleChange(normalizedPhone);
       }
     }
   };
@@ -74,13 +75,14 @@ export const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
               ...contacto,
               nombre: result.contact!.firstname || contacto.nombre,
               apellido: result.contact!.lastname || contacto.apellido,
-              telefono: result.contact!.phone ? (result.contact!.phone.startsWith('+56') ? result.contact!.phone : `+56${result.contact!.phone.replace(/[^\d]/g, '')}`) : contacto.telefono
+              telefono: result.contact!.phone ? `+56${result.contact!.phone.replace(/^\+?56/, '').replace(/\D/g, '')}` : contacto.telefono
             };
             setContacto(updatedContacto);
             
             if (result.contact!.phone) {
-              const formattedPhone = result.contact!.phone.startsWith('+56') ? result.contact!.phone : `+56${result.contact!.phone.replace(/[^\d]/g, '')}`;
-              phoneValidator.handleChange(formattedPhone);
+              const cleanedPhone = result.contact!.phone.replace(/^\+?56/, '').replace(/\D/g, '');
+              const normalizedPhone = `+56${cleanedPhone}`;
+              phoneValidator.handleChange(normalizedPhone);
             }
           }
         });
