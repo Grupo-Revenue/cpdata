@@ -7,8 +7,8 @@ export const DEFAULT_CALCULATOR_VALUES: PriceCalculatorInputs = {
     expressQR: 50,
   },
   accreditationCapacity: {
-    manual: 100,
-    expressQR: 150,
+    manual: 75,
+    expressQR: 95,
   },
 };
 
