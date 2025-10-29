@@ -43,6 +43,17 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
   const presupuestosAprobados = presupuestos.filter(p => p.estado === 'aprobado').length;
   const presupuestosPublicados = presupuestos.filter(p => p.estado === 'publicado').length;
 
+  // Helper function to format product summary
+  const formatProductSummary = (presupuesto: Presupuesto): string => {
+    if (!presupuesto.productos || presupuesto.productos.length === 0) {
+      return 'Sin productos';
+    }
+    
+    return presupuesto.productos
+      .map(producto => `${producto.nombre} (${producto.cantidad})`)
+      .join(', ');
+  };
+
   const handleEliminarPresupuesto = async (presupuestoId: string) => {
     if (confirm('¿Está seguro de que desea eliminar este presupuesto?')) {
       setEliminandoPresupuesto(presupuestoId);
@@ -159,6 +170,7 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
                 <TableHeader>
                   <TableRow className="bg-slate-50 hover:bg-slate-50">
                     <TableHead className="font-semibold text-slate-700 w-[120px]">Nombre</TableHead>
+                    <TableHead className="font-semibold text-slate-700 min-w-[200px]">Productos</TableHead>
                     <TableHead className="font-semibold text-slate-700 w-[100px]">Estado</TableHead>
                     <TableHead className="font-semibold text-slate-700 w-[120px] text-right">Valor</TableHead>
                     <TableHead className="font-semibold text-slate-700 w-[100px]">Fecha</TableHead>
@@ -178,6 +190,19 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
                             Facturado
                           </Badge>
                         )}
+                      </TableCell>
+                      
+                      <TableCell>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="text-sm text-slate-600 truncate max-w-[250px] cursor-help">
+                              {formatProductSummary(presupuesto)}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-md">
+                            <p className="text-sm whitespace-pre-wrap">{formatProductSummary(presupuesto)}</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </TableCell>
                       
                       <TableCell>
