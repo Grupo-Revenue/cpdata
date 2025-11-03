@@ -21,6 +21,19 @@ export const usePDFGeneration = () => {
         .no-print {
           display: none !important;
         }
+        table {
+          page-break-inside: auto;
+        }
+        tr {
+          page-break-inside: avoid;
+          page-break-after: auto;
+        }
+        td {
+          page-break-inside: avoid;
+        }
+        .product-description {
+          page-break-inside: avoid;
+        }
       }
     `,
   });

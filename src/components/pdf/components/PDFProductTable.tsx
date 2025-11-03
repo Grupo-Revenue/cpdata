@@ -115,18 +115,20 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
             <React.Fragment key={`producto-${producto.id || index}`}>
               <tr className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                 <td className="border border-gray-400 p-3">
-                  <div className="font-semibold text-gray-800 text-lg">{producto.nombre}</div>
-                  {producto.descripcion && cleanHtmlContent(producto.descripcion) && (
-                    <div className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{ __html: cleanHtmlContent(producto.descripcion) }} />
-                  )}
-                  {producto.comentarios && cleanHtmlContent(producto.comentarios) && (
-                    <div className="text-sm text-gray-600 mt-2 italic" dangerouslySetInnerHTML={{ __html: cleanHtmlContent(producto.comentarios) }} />
-                  )}
-                  {producto.descuentoPorcentaje !== undefined && producto.descuentoPorcentaje > 0 && (
-                    <div className="text-sm text-green-600 font-medium mt-1">
-                      Descuento aplicado: {producto.descuentoPorcentaje}%
-                    </div>
-                  )}
+                  <div className="product-description">
+                    <div className="font-semibold text-gray-800 text-lg">{producto.nombre}</div>
+                    {producto.descripcion && cleanHtmlContent(producto.descripcion) && (
+                      <div className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{ __html: cleanHtmlContent(producto.descripcion) }} />
+                    )}
+                    {producto.comentarios && cleanHtmlContent(producto.comentarios) && (
+                      <div className="text-sm text-gray-600 mt-2 italic" dangerouslySetInnerHTML={{ __html: cleanHtmlContent(producto.comentarios) }} />
+                    )}
+                    {producto.descuentoPorcentaje !== undefined && producto.descuentoPorcentaje > 0 && (
+                      <div className="text-sm text-green-600 font-medium mt-1">
+                        Descuento aplicado: {producto.descuentoPorcentaje}%
+                      </div>
+                    )}
+                  </div>
                 </td>
                 <td className="border border-gray-400 p-3 text-center font-medium">{producto.cantidad}</td>
                 <td className="border border-gray-400 p-3 text-right font-medium">
