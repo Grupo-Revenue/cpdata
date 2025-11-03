@@ -195,7 +195,7 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
                       <TableCell>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="text-sm text-slate-600 truncate max-w-[250px] cursor-help">
+                            <div className="text-sm text-slate-600 cursor-help leading-snug py-1">
                               {formatProductSummary(presupuesto)}
                             </div>
                           </TooltipTrigger>
