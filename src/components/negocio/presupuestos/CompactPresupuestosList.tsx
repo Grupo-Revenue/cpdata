@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Users, Edit, Trash2, FileText, Send, Check, X, Loader2 } from 'lucide-react';
 import { Presupuesto } from '@/types';
-import { formatearPrecio } from '@/utils/formatters';
+import { formatearPrecio, formatearFechaSinZonaHoraria } from '@/utils/formatters';
 import { getQuoteStatusColors, getQuoteStatusText } from '@/utils/quoteCalculations';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -33,11 +33,7 @@ const CompactPresupuestosList: React.FC<CompactPresupuestosListProps> = ({
   const [eliminandoPresupuesto, setEliminandoPresupuesto] = useState<string | null>(null);
 
   const formatearFecha = (fecha: string) => {
-    try {
-      return format(new Date(fecha), 'dd/MM/yyyy', { locale: es });
-    } catch {
-      return fecha;
-    }
+    return formatearFechaSinZonaHoraria(fecha);
   };
 
   const handleEliminarPresupuesto = async (presupuestoId: string) => {

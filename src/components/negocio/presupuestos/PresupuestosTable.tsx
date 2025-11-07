@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Plus, Calendar, FileText } from 'lucide-react';
 import { Negocio, Presupuesto } from '@/types';
-import { formatearPrecio } from '@/utils/formatters';
+import { formatearPrecio, formatearFechaSinZonaHoraria } from '@/utils/formatters';
 import { calcularValorNegocio } from '@/utils/businessCalculations';
 import { getQuoteStatusColors, getQuoteStatusText } from '@/utils/quoteCalculations';
 import PresupuestoTableActions from './PresupuestoTableActions';
@@ -220,18 +220,11 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
                       <TableCell>
                         <div className="flex items-center text-sm text-slate-600">
                           <Calendar className="w-3 h-3 mr-1" />
-                          {new Date(presupuesto.fechaCreacion).toLocaleDateString('es-CL', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: '2-digit'
-                          })}
+                          {formatearFechaSinZonaHoraria(presupuesto.fechaCreacion).split('/').slice(0, 2).join('/') + '/' + formatearFechaSinZonaHoraria(presupuesto.fechaCreacion).split('/')[2].slice(-2)}
                         </div>
                         {presupuesto.fechaVencimiento && (
                           <div className="text-xs text-slate-500 mt-1">
-                            Vence: {new Date(presupuesto.fechaVencimiento).toLocaleDateString('es-CL', {
-                              day: '2-digit',
-                              month: '2-digit'
-                            })}
+                            Vence: {formatearFechaSinZonaHoraria(presupuesto.fechaVencimiento).split('/').slice(0, 2).join('/')}
                           </div>
                         )}
                       </TableCell>

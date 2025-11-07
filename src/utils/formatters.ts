@@ -37,3 +37,23 @@ export const stripHtml = (html: string, maxLength?: number): string => {
   
   return text;
 };
+
+/**
+ * Formatea una fecha almacenada como string (YYYY-MM-DD) a formato local
+ * sin aplicar conversión de zona horaria
+ */
+export const formatearFechaSinZonaHoraria = (fechaString: string): string => {
+  if (!fechaString) return '';
+  
+  // Dividir la fecha en partes para evitar problemas de zona horaria
+  const [year, month, day] = fechaString.split('T')[0].split('-');
+  
+  // Crear fecha en zona horaria local
+  const fecha = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  
+  return fecha.toLocaleDateString('es-CL', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+};

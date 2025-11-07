@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Send, Check, X } from 'lucide-react';
 import { Presupuesto } from '@/types';
-import { formatearPrecio } from '@/utils/formatters';
+import { formatearPrecio, formatearFechaSinZonaHoraria } from '@/utils/formatters';
 import { getQuoteStatusColors, getQuoteStatusText } from '@/utils/quoteCalculations';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -31,11 +31,7 @@ const PresupuestoItem: React.FC<PresupuestoItemProps> = ({
   procesandoEstado
 }) => {
   const formatearFecha = (fecha: string) => {
-    try {
-      return format(new Date(fecha), 'dd/MM/yyyy', { locale: es });
-    } catch {
-      return fecha;
-    }
+    return formatearFechaSinZonaHoraria(fecha);
   };
 
   return (
