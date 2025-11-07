@@ -187,7 +187,43 @@ serve(async (req) => {
         apiKeyStart: apiKeyData.api_key.substring(0, 10) + '...'
       })
       
-      // Try to parse error details for better debugging
+      // DETECT 404 AND DELETE NEGOCIO
+      if (updateResponse.status === 404) {
+        console.log('🗑️ [HubSpot Amount Update] Deal not found in HubSpot, deleting negocio from system:', {
+          negocio_id,
+          hubspot_id: negocio.hubspot_id
+        })
+        
+        // Delete negocio (cascade will delete presupuestos, productos, logs, etc.)
+        const { error: deleteError } = await supabaseClient
+          .from('negocios')
+          .delete()
+          .eq('id', negocio_id)
+        
+        if (deleteError) {
+          console.error('❌ [HubSpot Amount Update] Error deleting negocio:', deleteError)
+          return new Response(
+            JSON.stringify({ 
+              error: 'Deal not found in HubSpot and failed to delete from system',
+              details: deleteError.message
+            }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        
+        console.log('✅ [HubSpot Amount Update] Successfully deleted negocio from system')
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            message: 'Deal not found in HubSpot, negocio deleted from system',
+            negocio_id,
+            hubspot_id: negocio.hubspot_id
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      // Other errors (not 404)
       let errorDetails = errorText;
       try {
         const errorJson = JSON.parse(errorText);

@@ -113,6 +113,47 @@ serve(async (req) => {
     if (!hubspotResponse.ok) {
       const errorText = await hubspotResponse.text();
       console.error('❌ [HubSpot Deal Update] HubSpot API error:', errorText);
+      
+      // DETECT 404 AND DELETE NEGOCIO
+      if (hubspotResponse.status === 404) {
+        console.log('🗑️ [HubSpot Deal Update] Deal not found in HubSpot, deleting negocio from system:', {
+          negocio_id,
+          hubspot_id: negocio.hubspot_id
+        })
+        
+        // Delete negocio (cascade will delete presupuestos, productos, logs, etc.)
+        const { error: deleteError } = await supabase
+          .from('negocios')
+          .delete()
+          .eq('id', negocio_id)
+        
+        if (deleteError) {
+          console.error('❌ [HubSpot Deal Update] Error deleting negocio:', deleteError)
+          await updateSyncLog(supabase, negocio_id, 'failed', `Deal not found in HubSpot, failed to delete: ${deleteError.message}`)
+          return new Response(
+            JSON.stringify({ 
+              error: 'Deal not found in HubSpot and failed to delete from system',
+              details: deleteError.message
+            }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        
+        console.log('✅ [HubSpot Deal Update] Successfully deleted negocio from system')
+        await updateSyncLog(supabase, negocio_id, 'success', 'Deal not found in HubSpot, negocio deleted from system')
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            message: 'Deal not found in HubSpot, negocio deleted from system',
+            negocio_id,
+            hubspot_id: negocio.hubspot_id
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      // Other errors (not 404)
       await updateSyncLog(supabase, negocio_id, 'failed', `HubSpot API error: ${errorText}`);
       return new Response(
         JSON.stringify({ error: 'HubSpot API error', details: errorText }),
