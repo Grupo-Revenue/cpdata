@@ -57,3 +57,42 @@ export const formatearFechaSinZonaHoraria = (fechaString: string): string => {
     year: 'numeric'
   });
 };
+
+/**
+ * Formatea una fecha en formato corto (DD/MM/YY)
+ */
+export const formatearFechaCorta = (fechaString: string): string => {
+  if (!fechaString) return '';
+  
+  try {
+    const [year, month, day] = fechaString.split('T')[0].split('-');
+    const fecha = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    
+    return fecha.toLocaleDateString('es-CL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit'
+    });
+  } catch (error) {
+    return '';
+  }
+};
+
+/**
+ * Formatea una fecha en formato muy corto (DD/MM)
+ */
+export const formatearFechaMuyCorta = (fechaString: string): string => {
+  if (!fechaString) return '';
+  
+  try {
+    const [year, month, day] = fechaString.split('T')[0].split('-');
+    const fecha = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    
+    return fecha.toLocaleDateString('es-CL', {
+      day: '2-digit',
+      month: '2-digit'
+    });
+  } catch (error) {
+    return '';
+  }
+};

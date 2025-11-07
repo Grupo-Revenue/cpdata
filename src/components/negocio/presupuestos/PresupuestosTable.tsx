@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Plus, Calendar, FileText } from 'lucide-react';
 import { Negocio, Presupuesto } from '@/types';
-import { formatearPrecio, formatearFechaSinZonaHoraria } from '@/utils/formatters';
+import { formatearPrecio, formatearFechaCorta, formatearFechaMuyCorta } from '@/utils/formatters';
 import { calcularValorNegocio } from '@/utils/businessCalculations';
 import { getQuoteStatusColors, getQuoteStatusText } from '@/utils/quoteCalculations';
 import PresupuestoTableActions from './PresupuestoTableActions';
@@ -220,11 +220,11 @@ const PresupuestosTable: React.FC<PresupuestosTableProps> = ({
                       <TableCell>
                         <div className="flex items-center text-sm text-slate-600">
                           <Calendar className="w-3 h-3 mr-1" />
-                          {formatearFechaSinZonaHoraria(presupuesto.fechaCreacion).split('/').slice(0, 2).join('/') + '/' + formatearFechaSinZonaHoraria(presupuesto.fechaCreacion).split('/')[2].slice(-2)}
+                          {formatearFechaCorta(presupuesto.fechaCreacion)}
                         </div>
                         {presupuesto.fechaVencimiento && (
                           <div className="text-xs text-slate-500 mt-1">
-                            Vence: {formatearFechaSinZonaHoraria(presupuesto.fechaVencimiento).split('/').slice(0, 2).join('/')}
+                            Vence: {formatearFechaMuyCorta(presupuesto.fechaVencimiento)}
                           </div>
                         )}
                       </TableCell>
