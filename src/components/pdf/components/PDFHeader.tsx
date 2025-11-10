@@ -82,7 +82,8 @@ const PDFHeader: React.FC<PDFHeaderProps> = ({
               <div><span className="font-semibold">Contacto:</span> {negocio.contacto.nombre} {negocio.contacto.apellido}</div>
               <div><span className="font-semibold">Email:</span> {negocio.contacto.email}</div>
               <div><span className="font-semibold">Teléfono:</span> {negocio.contacto.telefono}</div>
-              {negocio.productora && <div><span className="font-semibold">Empresa:</span> {negocio.productora.nombre}</div>}
+              <div><span className="font-semibold">Productora:</span> {negocio.productora?.nombre || ''}</div>
+              <div><span className="font-semibold">Cliente Final:</span> {negocio.clienteFinal?.nombre || ''}</div>
             </div>
           </div>
           
