@@ -70,7 +70,8 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
               apellido: result.contact!.lastname || prev.apellido,
               telefono: result.contact!.phone 
                 ? `+56${result.contact!.phone.replace(/^\+?56/, '').replace(/\D/g, '')}`
-                : prev.telefono
+                : prev.telefono,
+              cargo: result.contact!.jobtitle || prev.cargo
             }));
           }
         });
@@ -99,7 +100,8 @@ export const EditContactDialog: React.FC<EditContactDialogProps> = ({
         apellido: result.contact!.lastname || prev.apellido,
         telefono: result.contact!.phone 
           ? `+56${result.contact!.phone.replace(/^\+?56/, '').replace(/\D/g, '')}`
-          : prev.telefono
+          : prev.telefono,
+        cargo: result.contact!.jobtitle || prev.cargo
       }));
       
       if (result.contact!.phone) {

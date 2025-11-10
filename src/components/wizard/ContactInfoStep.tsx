@@ -54,7 +54,8 @@ export const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
         ...contacto,
         nombre: result.contact!.firstname || contacto.nombre,
         apellido: result.contact!.lastname || contacto.apellido,
-        telefono: result.contact!.phone ? `+56${result.contact!.phone.replace(/^\+?56/, '').replace(/\D/g, '')}` : contacto.telefono
+        telefono: result.contact!.phone ? `+56${result.contact!.phone.replace(/^\+?56/, '').replace(/\D/g, '')}` : contacto.telefono,
+        cargo: result.contact!.jobtitle || contacto.cargo
       };
       setContacto(updatedContacto);
       
@@ -75,7 +76,8 @@ export const ContactInfoStep: React.FC<ContactInfoStepProps> = ({
               ...contacto,
               nombre: result.contact!.firstname || contacto.nombre,
               apellido: result.contact!.lastname || contacto.apellido,
-              telefono: result.contact!.phone ? `+56${result.contact!.phone.replace(/^\+?56/, '').replace(/\D/g, '')}` : contacto.telefono
+              telefono: result.contact!.phone ? `+56${result.contact!.phone.replace(/^\+?56/, '').replace(/\D/g, '')}` : contacto.telefono,
+              cargo: result.contact!.jobtitle || contacto.cargo
             };
             setContacto(updatedContacto);
             

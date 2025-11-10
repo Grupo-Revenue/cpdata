@@ -18,6 +18,7 @@ interface HubSpotContact {
   lastname: string;
   email: string;
   phone: string;
+  jobtitle?: string;
 }
 
 interface ValidationResult {
