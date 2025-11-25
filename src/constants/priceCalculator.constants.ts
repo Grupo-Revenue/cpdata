@@ -13,6 +13,6 @@ export const DEFAULT_CALCULATOR_VALUES: PriceCalculatorInputs = {
 };
 
 export const DEFAULT_PRICES = {
-  acreditador: 50000,
-  supervisor: 70000,
+  acreditador: 150000,
+  supervisor: 225000,
 };
