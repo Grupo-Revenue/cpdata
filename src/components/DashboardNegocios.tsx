@@ -8,6 +8,7 @@ import { Plus, Building2, Calendar, Users, MapPin, FileText, Loader2, TrendingUp
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { obtenerEstadisticasDashboard, obtenerEstadoNegocioInfo, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
+import { formatearPrecio, formatearFechaSinZonaHoraria } from '@/utils/formatters';
 
 interface DashboardProps {
   onCrearNegocio: () => void;
@@ -197,7 +198,7 @@ const DashboardNegocios: React.FC<DashboardProps> = ({ onCrearNegocio, onVerNego
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <MapPin className="w-4 h-4 mr-2" />
-                        {negocio.evento.fechaEvento ? formatearFecha(negocio.evento.fechaEvento) : 'Fecha por definir'}
+                        {negocio.evento.fechaEvento ? formatearFechaSinZonaHoraria(negocio.evento.fechaEvento) : 'Fecha por definir'}
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <FileText className="w-4 h-4 mr-2" />
@@ -206,7 +207,7 @@ const DashboardNegocios: React.FC<DashboardProps> = ({ onCrearNegocio, onVerNego
                     </div>
                     <div className="mt-4 pt-4 border-t">
                       <p className="text-xs text-gray-500">
-                        Creado: {formatearFecha(negocio.fechaCreacion)}
+                        Creado: {formatearFechaSinZonaHoraria(negocio.fechaCreacion)}
                       </p>
                     </div>
                   </CardContent>

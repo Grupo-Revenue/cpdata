@@ -1,7 +1,7 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { formatearPrecio } from '@/utils/formatters';
+import { formatearPrecio, formatearFechaSinZonaHoraria } from '@/utils/formatters';
 import { useBrandConfig } from '@/hooks/useBrandConfig';
 import { Presupuesto, Negocio } from '@/types';
 import { QuoteTotals } from '@/utils/quoteCalculations';
@@ -92,9 +92,7 @@ const PDFHeader: React.FC<PDFHeaderProps> = ({
             <div className="text-sm space-y-1">
               <div><span className="font-semibold">Evento:</span> {negocio.evento.nombreEvento}</div>
               <div><span className="font-semibold">Tipo:</span> {negocio.evento.tipoEvento}</div>
-              <div><span className="font-semibold">Fecha:</span> {negocio.evento.fechaEvento ? format(new Date(negocio.evento.fechaEvento), 'dd/MM/yyyy', {
-                locale: es
-              }) : 'Por definir'}</div>
+              <div><span className="font-semibold">Fecha:</span> {negocio.evento.fechaEvento ? formatearFechaSinZonaHoraria(negocio.evento.fechaEvento) : 'Por definir'}</div>
               <div><span className="font-semibold">Lugar:</span> {negocio.evento.locacion}</div>
               <div><span className="font-semibold">Asistentes:</span> {negocio.evento.cantidadAsistentes}</div>
             </div>
