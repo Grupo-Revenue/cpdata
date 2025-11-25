@@ -1,12 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Calculator } from 'lucide-react';
 import { usePriceCalculator } from '@/hooks/usePriceCalculator';
 import { EventConfigurationSection } from './session-calculator/EventConfigurationSection';
-import { PricingConfigurationSection } from './session-calculator/PricingConfigurationSection';
 import { CalculationResultsCard } from './session-calculator/CalculationResultsCard';
 import { DialogActions } from './session-calculator/DialogActions';
+import { DEFAULT_PRICES } from '@/constants/priceCalculator.constants';
 
 interface SessionPriceCalculatorDialogProps {
   isOpen: boolean;
@@ -30,10 +30,40 @@ const SessionPriceCalculatorDialog: React.FC<SessionPriceCalculatorDialogProps> 
     updateInput,
     updateDistributionPercentage,
     updateAccreditationCapacity,
-    updateCustomPrice,
     calculatePrice,
     loading
   } = usePriceCalculator();
+
+  // Estados editables para precios unitarios y cantidades
+  const [editableUnitPrices, setEditableUnitPrices] = useState({
+    acreditador: prices?.acreditador || DEFAULT_PRICES.acreditador,
+    supervisor: prices?.supervisor || DEFAULT_PRICES.supervisor
+  });
+
+  const [editableQuantities, setEditableQuantities] = useState({
+    acreditadores: 0,
+    supervisores: 0
+  });
+
+  // Sincronizar precios cuando se cargan desde la base de datos
+  useEffect(() => {
+    if (prices) {
+      setEditableUnitPrices({
+        acreditador: prices.acreditador,
+        supervisor: prices.supervisor
+      });
+    }
+  }, [prices]);
+
+  // Sincronizar cantidades cuando cambia el resultado del cálculo
+  useEffect(() => {
+    if (result) {
+      setEditableQuantities({
+        acreditadores: result.distributionSummary.totalAccreditors,
+        supervisores: result.distributionSummary.supervisors
+      });
+    }
+  }, [result]);
 
   // Auto-calculate when inputs change
   useEffect(() => {
@@ -65,13 +95,19 @@ const SessionPriceCalculatorDialog: React.FC<SessionPriceCalculatorDialogProps> 
     }
   };
 
+  // Calcular precio total basado en valores editables
+  const calculateEditableTotal = () => {
+    return (editableQuantities.acreditadores * editableUnitPrices.acreditador) + 
+           (editableQuantities.supervisores * editableUnitPrices.supervisor);
+  };
+
   const handleApplyCalculation = () => {
-    if (!result) return;
+    const finalPrice = calculateEditableTotal();
     
     onApplyCalculation({
-      precio: result.totalPrice,
-      acreditadores: result.distributionSummary.totalAccreditors,
-      supervisor: result.distributionSummary.supervisors
+      precio: finalPrice,
+      acreditadores: editableQuantities.acreditadores,
+      supervisor: editableQuantities.supervisores
     });
     onClose();
   };
@@ -88,6 +124,9 @@ const SessionPriceCalculatorDialog: React.FC<SessionPriceCalculatorDialogProps> 
       updateDistributionPercentage(otherType, otherValue);
     }
   };
+
+  // Verificar si hay resultado válido o valores editables para mostrar
+  const hasValidResult = result || (editableQuantities.acreditadores > 0 || editableQuantities.supervisores > 0);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -108,21 +147,22 @@ const SessionPriceCalculatorDialog: React.FC<SessionPriceCalculatorDialogProps> 
               onCapacityChange={updateAccreditationCapacity}
             />
 
-            <PricingConfigurationSection
-              inputs={inputs}
-              prices={prices}
-              onCustomPriceChange={updateCustomPrice}
-            />
-
             {result && (
-              <CalculationResultsCard result={result} />
+              <CalculationResultsCard 
+                result={result}
+                editableUnitPrices={editableUnitPrices}
+                editableQuantities={editableQuantities}
+                onUnitPriceChange={setEditableUnitPrices}
+                onQuantityChange={setEditableQuantities}
+                editableTotal={calculateEditableTotal()}
+              />
             )}
           </div>
         </ScrollArea>
 
         <DialogActions
           loading={loading}
-          result={result}
+          result={hasValidResult ? result : null}
           onClose={onClose}
           onCalculate={handleCalculateManual}
           onApplyCalculation={handleApplyCalculation}
