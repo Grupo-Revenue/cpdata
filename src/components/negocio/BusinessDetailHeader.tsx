@@ -16,6 +16,7 @@ import {
   Pencil
 } from 'lucide-react';
 import { Negocio } from '@/types';
+import { formatearFechaSinZonaHoraria } from '@/utils/formatters';
 import { calculateBusinessValue } from '@/utils/businessValueCalculator';
 import { formatBusinessStateForDisplay, getBusinessStateColors } from '@/utils/businessCalculations';
 import BusinessValueSection from './sections/BusinessValueSection';
@@ -199,7 +200,10 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
               <div className="flex items-center space-x-1">
                 <Calendar className="w-3 h-3 text-slate-400" />
                 <span className="text-xs text-slate-600">
-                  {negocio.evento.fechaEvento ? new Date(negocio.evento.fechaEvento).toLocaleDateString('es-CL') : 'Por definir'}
+                  {negocio.evento.fechaEvento 
+                    ? formatearFechaSinZonaHoraria(negocio.evento.fechaEvento)
+                    : 'Por definir'}
+                  {negocio.fechaCierre && ` - ${formatearFechaSinZonaHoraria(negocio.fechaCierre)}`}
                 </span>
               </div>
               <div className="flex items-center space-x-1">
