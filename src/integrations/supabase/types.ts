@@ -830,10 +830,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      actualizar_presupuestos_vencidos: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      actualizar_presupuestos_vencidos: { Args: never; Returns: undefined }
       calcular_estado_negocio: {
         Args: { negocio_id_param: string }
         Returns: Database["public"]["Enums"]["estado_negocio"]
@@ -848,10 +845,7 @@ export type Database = {
           negocio_id: string
         }[]
       }
-      check_is_admin: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
+      check_is_admin: { Args: { _user_id: string }; Returns: boolean }
       enqueue_hubspot_sync: {
         Args: {
           p_negocio_id: string
@@ -863,7 +857,7 @@ export type Database = {
         Returns: string
       }
       fix_all_user_counters: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           correction_applied: boolean
           max_used_number: number
@@ -873,7 +867,7 @@ export type Database = {
         }[]
       }
       get_global_hubspot_token: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           activo: boolean
           created_at: string
@@ -893,10 +887,9 @@ export type Database = {
           total_success_today: number
         }[]
       }
-      get_next_business_number: {
-        Args: Record<PropertyKey, never> | { p_user_id: string }
-        Returns: number
-      }
+      get_next_business_number:
+        | { Args: { p_user_id: string }; Returns: number }
+        | { Args: never; Returns: number }
       get_public_budget_data: {
         Args: { p_negocio_id: string; p_presupuesto_id: string }
         Returns: {
@@ -904,10 +897,7 @@ export type Database = {
           presupuesto_data: Json
         }[]
       }
-      get_system_config: {
-        Args: { p_key: string }
-        Returns: string
-      }
+      get_system_config: { Args: { p_key: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -915,10 +905,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_admin: { Args: never; Returns: boolean }
       log_business_number_assignment: {
         Args: {
           p_business_number: number
@@ -940,16 +927,13 @@ export type Database = {
           processed: number
         }[]
       }
-      recalcular_todos_estados_negocios: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      recalcular_todos_estados_negocios: { Args: never; Returns: number }
       retry_failed_hubspot_syncs: {
         Args: { p_user_id?: string }
         Returns: number
       }
       run_numbering_system_maintenance: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           affected_users: number
           corrections_made: number

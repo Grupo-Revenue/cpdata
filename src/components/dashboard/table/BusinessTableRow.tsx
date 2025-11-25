@@ -4,7 +4,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Eye, Calendar, Building2, User } from 'lucide-react';
 import { Negocio } from '@/types';
-import { formatearPrecio } from '@/utils/formatters';
+import { formatearPrecio, formatearFechaCorta } from '@/utils/formatters';
 import { calculateBusinessValue } from '@/utils/businessValueCalculator';
 import { getBusinessStateColors, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
 import { Badge } from '@/components/ui/badge';
@@ -71,11 +71,7 @@ const BusinessTableRow: React.FC<BusinessTableRowProps> = React.memo(({ negocio,
         <div className="flex items-center text-sm text-slate-600">
           <Calendar className="w-3 h-3 mr-1" />
           {negocio.fecha_evento || negocio.evento?.fechaEvento ? 
-            new Date(negocio.fecha_evento || negocio.evento.fechaEvento).toLocaleDateString('es-CL', {
-              day: '2-digit',
-              month: '2-digit',
-              year: '2-digit'
-            }) : 'Pendiente'
+            formatearFechaCorta(negocio.fecha_evento || negocio.evento.fechaEvento) : 'Pendiente'
           }
         </div>
       </TableCell>

@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { calculateBusinessValue } from '@/utils/businessValueCalculator';
 import { obtenerEstadoNegocioInfo, formatBusinessStateForDisplay } from '@/utils/businessCalculations';
-import { formatearPrecio } from '@/utils/formatters';
+import { formatearPrecio, formatearFechaSinZonaHoraria } from '@/utils/formatters';
 
 interface RecentBusinessesProps {
   onCrearNegocio: () => void;
@@ -97,7 +97,7 @@ const RecentBusinesses: React.FC<RecentBusinessesProps> = ({ onCrearNegocio, onV
                       {negocio.evento.fechaEvento && (
                         <div className="flex items-center space-x-1">
                           <MapPin className="h-3 w-3" />
-                          <span>{formatearFecha(negocio.evento.fechaEvento)}</span>
+                          <span>{formatearFechaSinZonaHoraria(negocio.evento.fechaEvento)}</span>
                         </div>
                       )}
                     </div>

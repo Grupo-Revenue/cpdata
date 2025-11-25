@@ -3,8 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, Mail, Phone, Building2, Globe, MapPin, Calendar, Clock, Users, Star } from 'lucide-react';
 import { Contacto, Empresa, Evento } from '@/types';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatearFechaSinZonaHoraria } from '@/utils/formatters';
 
 interface DetalleNegocioSecondaryInfoProps {
   contacto: Contacto;
@@ -19,13 +18,6 @@ const DetalleNegocioSecondaryInfo: React.FC<DetalleNegocioSecondaryInfoProps> = 
   clienteFinal,
   evento
 }) => {
-  const formatearFecha = (fecha: string) => {
-    try {
-      return format(new Date(fecha), 'dd/MM/yyyy', { locale: es });
-    } catch {
-      return fecha;
-    }
-  };
 
   return (
     <Card className="border-slate-200 bg-white">
@@ -82,7 +74,7 @@ const DetalleNegocioSecondaryInfo: React.FC<DetalleNegocioSecondaryInfoProps> = 
                 <div>
                   <p className="text-xs text-slate-600">Fecha</p>
                   <p className="font-medium text-slate-900">
-                    {evento.fechaEvento ? formatearFecha(evento.fechaEvento) : 'Por definir'}
+                    {evento.fechaEvento ? formatearFechaSinZonaHoraria(evento.fechaEvento) : 'Por definir'}
                   </p>
                 </div>
               </div>

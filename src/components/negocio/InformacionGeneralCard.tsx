@@ -3,8 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, Mail, Phone, Building2, Globe, MapPin, Calendar, Clock, Users, Star } from 'lucide-react';
 import { Contacto, Empresa, Evento } from '@/types';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatearFechaSinZonaHoraria } from '@/utils/formatters';
 
 interface InformacionGeneralCardProps {
   contacto: Contacto;
@@ -19,21 +18,6 @@ const InformacionGeneralCard: React.FC<InformacionGeneralCardProps> = ({
   clienteFinal,
   evento
 }) => {
-  const formatearFecha = (fecha: string) => {
-    try {
-      return format(new Date(fecha), 'dd/MM/yyyy', { locale: es });
-    } catch {
-      return fecha;
-    }
-  };
-
-  const formatearFechaCompleta = (fecha: string) => {
-    try {
-      return format(new Date(fecha), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: es });
-    } catch {
-      return fecha;
-    }
-  };
 
   return (
     <Card className="border-slate-200 bg-white">
@@ -94,8 +78,7 @@ const InformacionGeneralCard: React.FC<InformacionGeneralCardProps> = ({
                 </div>
                 {evento.fechaEvento ? (
                   <div>
-                    <p className="font-semibold text-slate-900">{formatearFecha(evento.fechaEvento)}</p>
-                    <p className="text-xs text-slate-600 mt-1">{formatearFechaCompleta(evento.fechaEvento)}</p>
+                    <p className="font-semibold text-slate-900">{formatearFechaSinZonaHoraria(evento.fechaEvento)}</p>
                   </div>
                 ) : (
                   <p className="text-slate-500 italic">Por definir</p>
