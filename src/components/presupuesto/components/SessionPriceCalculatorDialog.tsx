@@ -34,10 +34,13 @@ const SessionPriceCalculatorDialog: React.FC<SessionPriceCalculatorDialogProps> 
     loading
   } = usePriceCalculator();
 
+  // Flag para controlar la primera sincronización
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
+
   // Estados editables para precios unitarios y cantidades
   const [editableUnitPrices, setEditableUnitPrices] = useState({
-    acreditador: prices?.acreditador || DEFAULT_PRICES.acreditador,
-    supervisor: prices?.supervisor || DEFAULT_PRICES.supervisor
+    acreditador: DEFAULT_PRICES.acreditador,
+    supervisor: DEFAULT_PRICES.supervisor
   });
 
   const [editableQuantities, setEditableQuantities] = useState({
@@ -45,25 +48,33 @@ const SessionPriceCalculatorDialog: React.FC<SessionPriceCalculatorDialogProps> 
     supervisores: 0
   });
 
-  // Sincronizar precios cuando se cargan desde la base de datos
+  // Resetear el flag cuando se abre el diálogo
   useEffect(() => {
-    if (prices) {
+    if (isOpen) {
+      setIsFirstLoad(true);
+    }
+  }, [isOpen]);
+
+  // Sincronizar precios SOLO en la primera carga
+  useEffect(() => {
+    if (prices && isFirstLoad) {
       setEditableUnitPrices({
         acreditador: prices.acreditador,
         supervisor: prices.supervisor
       });
     }
-  }, [prices]);
+  }, [prices, isFirstLoad]);
 
-  // Sincronizar cantidades cuando cambia el resultado del cálculo
+  // Sincronizar cantidades SOLO en la primera carga cuando hay resultado
   useEffect(() => {
-    if (result) {
+    if (result && isFirstLoad) {
       setEditableQuantities({
         acreditadores: result.distributionSummary.totalAccreditors,
         supervisores: result.distributionSummary.supervisors
       });
+      setIsFirstLoad(false);
     }
-  }, [result]);
+  }, [result, isFirstLoad]);
 
   // Auto-calculate when inputs change
   useEffect(() => {
