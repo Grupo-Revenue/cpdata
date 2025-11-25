@@ -7,16 +7,21 @@ interface PDFProductTableProps {
 }
 
 const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
-  // Sanitize HTML for PDF rendering - same logic as Rich Text Editor
+  // Sanitize HTML for PDF rendering - adds inline styles to prevent text-decoration inheritance
   const sanitizeHtmlForPDF = (html: string): string => {
     if (!html || html.trim() === '' || html.trim() === '0') return '';
     
     const temp = document.createElement('div');
     temp.innerHTML = html;
     
-    const cleanNode = (node: Node): string => {
+    const cleanNode = (node: Node, insideUnderline: boolean = false): string => {
       if (node.nodeType === Node.TEXT_NODE) {
-        return node.textContent || '';
+        const text = node.textContent || '';
+        // If we're inside an underline tag, wrap text with underline span
+        if (insideUnderline && text.trim()) {
+          return `<span style="text-decoration:underline">${text}</span>`;
+        }
+        return text;
       }
       
       if (node.nodeType !== Node.ELEMENT_NODE) return '';
@@ -26,21 +31,37 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
       
       // Tags permitidos para formato
       const allowedTags = ['b', 'strong', 'i', 'em', 'u', 'ul', 'ol', 'li', 'br', 'p', 'div'];
-      const childContent = Array.from(node.childNodes).map(cleanNode).join('');
       
       if (tagName === 'br') return '<br>';
+      
+      // Track if we're inside an underline tag
+      const isUnderlineTag = tagName === 'u';
+      const childContent = Array.from(node.childNodes)
+        .map(child => cleanNode(child, insideUnderline || isUnderlineTag))
+        .join('');
       
       if (allowedTags.includes(tagName)) {
         // Normalizar strong->b, em->i
         const normalizedTag = tagName === 'strong' ? 'b' : tagName === 'em' ? 'i' : tagName;
         if (!childContent.trim() && normalizedTag !== 'br') return childContent;
+        
+        // For p and div, add inline style to prevent text-decoration inheritance
+        if (normalizedTag === 'p' || normalizedTag === 'div') {
+          return `<${normalizedTag} style="text-decoration:none;display:block">${childContent}</${normalizedTag}>`;
+        }
+        
+        // Skip the <u> tag itself since we've already applied underline to text nodes inside
+        if (normalizedTag === 'u') {
+          return childContent;
+        }
+        
         return `<${normalizedTag}>${childContent}</${normalizedTag}>`;
       }
       
       return childContent;
     };
     
-    let result = Array.from(temp.childNodes).map(cleanNode).join('');
+    let result = Array.from(temp.childNodes).map(child => cleanNode(child, false)).join('');
     
     // Limpiar "0" sueltos, tags vacíos y br excesivos
     result = result
