@@ -6,20 +6,34 @@ interface PDFProductTableProps {
   presupuesto: Presupuesto;
 }
 
+// Interface para rastrear el estado del formato
+interface FormatState {
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+}
+
 const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
-  // Sanitize HTML for PDF rendering - adds inline styles to prevent text-decoration inheritance
+  // Sanitize HTML for PDF rendering - adds inline styles to prevent format inheritance
   const sanitizeHtmlForPDF = (html: string): string => {
     if (!html || html.trim() === '' || html.trim() === '0') return '';
     
     const temp = document.createElement('div');
     temp.innerHTML = html;
     
-    const cleanNode = (node: Node, insideUnderline: boolean = false): string => {
+    const cleanNode = (node: Node, format: FormatState = { bold: false, italic: false, underline: false }): string => {
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent || '';
-        // If we're inside an underline tag, wrap text with underline span
-        if (insideUnderline && text.trim()) {
-          return `<span style="text-decoration:underline">${text}</span>`;
+        if (!text.trim()) return text;
+        
+        // Construir estilos inline basados en el formato activo
+        const styles: string[] = [];
+        if (format.bold) styles.push('font-weight:bold');
+        if (format.italic) styles.push('font-style:italic');
+        if (format.underline) styles.push('text-decoration:underline');
+        
+        if (styles.length > 0) {
+          return `<span style="${styles.join(';')}">${text}</span>`;
         }
         return text;
       }
@@ -34,10 +48,20 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
       
       if (tagName === 'br') return '<br>';
       
-      // Track if we're inside an underline tag
+      // Detectar tags de formato
+      const isBoldTag = tagName === 'b' || tagName === 'strong';
+      const isItalicTag = tagName === 'i' || tagName === 'em';
       const isUnderlineTag = tagName === 'u';
+      
+      // Actualizar el estado del formato para los hijos
+      const newFormat: FormatState = {
+        bold: format.bold || isBoldTag,
+        italic: format.italic || isItalicTag,
+        underline: format.underline || isUnderlineTag,
+      };
+      
       const childContent = Array.from(node.childNodes)
-        .map(child => cleanNode(child, insideUnderline || isUnderlineTag))
+        .map(child => cleanNode(child, newFormat))
         .join('');
       
       if (allowedTags.includes(tagName)) {
@@ -45,13 +69,13 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
         const normalizedTag = tagName === 'strong' ? 'b' : tagName === 'em' ? 'i' : tagName;
         if (!childContent.trim() && normalizedTag !== 'br') return childContent;
         
-        // For p and div, add inline style to prevent text-decoration inheritance
+        // Para p y div, agregar estilos inline para prevenir herencia de formato
         if (normalizedTag === 'p' || normalizedTag === 'div') {
-          return `<${normalizedTag} style="text-decoration:none;display:block">${childContent}</${normalizedTag}>`;
+          return `<${normalizedTag} style="text-decoration:none;font-weight:normal;font-style:normal;display:block">${childContent}</${normalizedTag}>`;
         }
         
-        // Skip the <u> tag itself since we've already applied underline to text nodes inside
-        if (normalizedTag === 'u') {
+        // Saltar los tags de formato ya que aplicamos estilos directamente al texto
+        if (normalizedTag === 'u' || normalizedTag === 'b' || normalizedTag === 'i') {
           return childContent;
         }
         
@@ -61,7 +85,7 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
       return childContent;
     };
     
-    let result = Array.from(temp.childNodes).map(child => cleanNode(child, false)).join('');
+    let result = Array.from(temp.childNodes).map(child => cleanNode(child, { bold: false, italic: false, underline: false })).join('');
     
     // Limpiar "0" sueltos, tags vacíos y br excesivos
     result = result
