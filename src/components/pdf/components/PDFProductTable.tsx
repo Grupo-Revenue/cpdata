@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatearPrecio, stripHtml } from '@/utils/formatters';
+import { formatearPrecio } from '@/utils/formatters';
 import { Presupuesto } from '@/types';
 
 interface PDFProductTableProps {
@@ -7,23 +7,61 @@ interface PDFProductTableProps {
 }
 
 const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
-  // DEBUG: Check what data we're receiving
-  console.log('[PDFProductTable] DEBUG - Full presupuesto data:', presupuesto);
-  console.log('[PDFProductTable] DEBUG - Products:', presupuesto.productos?.map(p => ({
-    nombre: p.nombre,
-    descuentoPorcentaje: p.descuentoPorcentaje,
-    descuento_porcentaje: (p as any).descuento_porcentaje,
-    comentarios: p.comentarios,
-    precio: p.precioUnitario || (p as any).precio_unitario,
-    total: p.total
-  })));
-  // Function to clean HTML and prevent unwanted "0" values
-  const cleanHtmlContent = (html: string) => {
+  // Sanitize HTML for PDF rendering - same logic as Rich Text Editor
+  const sanitizeHtmlForPDF = (html: string): string => {
     if (!html || html.trim() === '' || html.trim() === '0') return '';
     
-    // Create temporary element to parse HTML
     const temp = document.createElement('div');
     temp.innerHTML = html;
+    
+    const cleanNode = (node: Node): string => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return node.textContent || '';
+      }
+      
+      if (node.nodeType !== Node.ELEMENT_NODE) return '';
+      
+      const element = node as Element;
+      const tagName = element.tagName.toLowerCase();
+      
+      // Tags permitidos para formato
+      const allowedTags = ['b', 'strong', 'i', 'em', 'u', 'ul', 'ol', 'li', 'br', 'p', 'div'];
+      const childContent = Array.from(node.childNodes).map(cleanNode).join('');
+      
+      if (tagName === 'br') return '<br>';
+      
+      if (allowedTags.includes(tagName)) {
+        // Normalizar strong->b, em->i
+        const normalizedTag = tagName === 'strong' ? 'b' : tagName === 'em' ? 'i' : tagName;
+        if (!childContent.trim() && normalizedTag !== 'br') return childContent;
+        return `<${normalizedTag}>${childContent}</${normalizedTag}>`;
+      }
+      
+      return childContent;
+    };
+    
+    let result = Array.from(temp.childNodes).map(cleanNode).join('');
+    
+    // Limpiar "0" sueltos, tags vacíos y br excesivos
+    result = result
+      .replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>')
+      .replace(/^(<br\s*\/?>)+|(<br\s*\/?>)+$/gi, '')
+      .replace(/<[^>]*>\s*<\/[^>]*>/g, '')
+      .replace(/^\s*0\s*$/g, '')
+      .trim();
+    
+    return result === '0' || result === '' ? '' : result;
+  };
+
+  // Function to clean HTML and prevent unwanted "0" values
+  const cleanHtmlContent = (html: string) => {
+    // First sanitize the HTML
+    const sanitized = sanitizeHtmlForPDF(html);
+    if (!sanitized) return '';
+    
+    // Create temporary element to clean remaining "0" text nodes
+    const temp = document.createElement('div');
+    temp.innerHTML = sanitized;
     
     // Remove all text nodes that are just "0"
     const walker = document.createTreeWalker(
@@ -32,7 +70,7 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
       null
     );
     
-    const textNodes = [];
+    const textNodes: Node[] = [];
     let node;
     while (node = walker.nextNode()) {
       if (node.textContent?.trim() === '0') {
@@ -40,15 +78,10 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
       }
     }
     
-    textNodes.forEach(node => node.remove());
+    textNodes.forEach(n => n.parentNode?.removeChild(n));
     
-    // Clean up empty elements
-    const cleanedHtml = temp.innerHTML
-      .replace(/<[^>]*>\s*<\/[^>]*>/g, '') // Remove empty tags
-      .replace(/^\s*0\s*$/g, '') // Remove standalone zeros
-      .trim();
-    
-    return cleanedHtml === '0' || cleanedHtml === '' ? '' : cleanedHtml;
+
+    return temp.innerHTML.trim();
   };
 
   const renderSessionDetails = (sessions: any[]) => {
@@ -118,10 +151,18 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
                   <div className="product-description">
                     <div className="font-semibold text-gray-800 text-lg">{producto.nombre}</div>
                     {producto.descripcion && cleanHtmlContent(producto.descripcion) && (
-                      <div className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{ __html: cleanHtmlContent(producto.descripcion) }} />
+                      <div 
+                        className="text-sm text-gray-600 mt-1" 
+                        style={{ textDecoration: 'none', fontWeight: 'normal', fontStyle: 'normal' }}
+                        dangerouslySetInnerHTML={{ __html: cleanHtmlContent(producto.descripcion) }} 
+                      />
                     )}
                     {producto.comentarios && cleanHtmlContent(producto.comentarios) && (
-                      <div className="text-sm text-gray-600 mt-2 italic" dangerouslySetInnerHTML={{ __html: cleanHtmlContent(producto.comentarios) }} />
+                      <div 
+                        className="text-sm text-gray-600 mt-2 italic" 
+                        style={{ textDecoration: 'none', fontWeight: 'normal' }}
+                        dangerouslySetInnerHTML={{ __html: cleanHtmlContent(producto.comentarios) }} 
+                      />
                     )}
                     {producto.descuentoPorcentaje !== undefined && producto.descuentoPorcentaje > 0 && (
                       <div className="text-sm text-green-600 font-medium mt-1">
