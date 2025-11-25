@@ -13,7 +13,8 @@ import {
   Users, 
   Phone,
   Mail,
-  Pencil
+  Pencil,
+  Clock
 } from 'lucide-react';
 import { Negocio } from '@/types';
 import { formatearFechaSinZonaHoraria } from '@/utils/formatters';
@@ -205,6 +206,12 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
                     : 'Por definir'}
                 </span>
               </div>
+              {negocio.evento.horasAcreditacion && (
+                <div className="flex items-center space-x-1">
+                  <Clock className="w-3 h-3 text-slate-400" />
+                  <span className="text-xs text-slate-600">{negocio.evento.horasAcreditacion}</span>
+                </div>
+              )}
               <div className="flex items-center space-x-1">
                 <MapPin className="w-3 h-3 text-slate-400" />
                 <span className="text-xs text-slate-600 truncate">{negocio.evento.locacion}</span>
