@@ -13,6 +13,56 @@ interface RichTextEditorProps {
   compact?: boolean;
 }
 
+// Sanitize HTML to only allow basic formatting tags
+const sanitizeHtml = (html: string): string => {
+  if (!html || html === '<br>') return '';
+  
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  
+  const cleanNode = (node: Node): string => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent || '';
+    }
+    
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+    
+    const element = node as Element;
+    const tagName = element.tagName.toLowerCase();
+    
+    // Tags allowed for formatting
+    const allowedTags = ['b', 'strong', 'i', 'em', 'u', 'ul', 'ol', 'li', 'br', 'p', 'div'];
+    const childContent = Array.from(node.childNodes).map(cleanNode).join('');
+    
+    if (tagName === 'br') {
+      return '<br>';
+    }
+    
+    if (allowedTags.includes(tagName)) {
+      // Normalize strong->b, em->i for consistency
+      const normalizedTag = tagName === 'strong' ? 'b' : tagName === 'em' ? 'i' : tagName;
+      
+      // Skip empty tags except br
+      if (!childContent.trim() && normalizedTag !== 'br') {
+        return childContent;
+      }
+      
+      return `<${normalizedTag}>${childContent}</${normalizedTag}>`;
+    }
+    
+    // For other tags (span, font, etc.), just return the content without the tag
+    return childContent;
+  };
+  
+  const result = Array.from(temp.childNodes).map(cleanNode).join('');
+  
+  // Clean up multiple consecutive br tags and trim
+  return result
+    .replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>')
+    .replace(/^(<br\s*\/?>)+|(<br\s*\/?>)+$/gi, '')
+    .trim();
+};
+
 // Helper functions for cursor position management
 const saveCursorPosition = (element: HTMLElement) => {
   const selection = window.getSelection();
@@ -82,8 +132,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     if (!editorRef.current || isInitialized) return;
     
     if (value) {
-      editorRef.current.innerHTML = value;
-      setLastValue(value);
+      const cleanValue = sanitizeHtml(value);
+      editorRef.current.innerHTML = cleanValue;
+      setLastValue(cleanValue);
     }
     setIsInitialized(true);
   }, []);
@@ -94,9 +145,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     
     // Update content if value changed and we're not in the middle of an internal update
     if (value !== lastValue && !isUpdatingRef.current) {
+      const cleanValue = sanitizeHtml(value || '');
       const cursorPosition = saveCursorPosition(editorRef.current);
-      editorRef.current.innerHTML = value || '';
-      setLastValue(value || '');
+      editorRef.current.innerHTML = cleanValue;
+      setLastValue(cleanValue);
       
       // Restore cursor position after a brief delay to ensure DOM is updated
       setTimeout(() => {
@@ -107,18 +159,25 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   }, [value, lastValue, isInitialized]);
 
-  const executeCommand = useCallback((command: string, value?: string) => {
+  const executeCommand = useCallback((command: string, commandValue?: string) => {
     const editor = editorRef.current;
     if (!editor) return;
     
     const cursorPosition = saveCursorPosition(editor);
-    document.execCommand(command, false, value);
+    document.execCommand(command, false, commandValue);
     
-    // Get updated content and notify parent
-    const html = editor.innerHTML;
+    // Get updated content, sanitize it, and notify parent
+    const rawHtml = editor.innerHTML;
+    const cleanHtml = sanitizeHtml(rawHtml);
+    
+    // Update editor with clean HTML if it changed
+    if (cleanHtml !== rawHtml) {
+      editor.innerHTML = cleanHtml;
+    }
+    
     isUpdatingRef.current = true;
-    onChange(html);
-    setLastValue(html);
+    onChange(cleanHtml);
+    setLastValue(cleanHtml);
     
     // Restore cursor position
     setTimeout(() => {
@@ -131,19 +190,33 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
     const editor = e.currentTarget;
-    const html = editor.innerHTML;
+    const rawHtml = editor.innerHTML;
+    const cleanHtml = sanitizeHtml(rawHtml);
     
     // Only update if content actually changed
-    if (html !== lastValue) {
+    if (cleanHtml !== lastValue) {
       isUpdatingRef.current = true;
-      onChange(html);
-      setLastValue(html);
+      onChange(cleanHtml);
+      setLastValue(cleanHtml);
       
       setTimeout(() => {
         isUpdatingRef.current = false;
       }, 0);
     }
   }, [onChange, lastValue]);
+
+  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    
+    const html = e.clipboardData.getData('text/html');
+    const text = e.clipboardData.getData('text/plain');
+    
+    // If there's HTML, sanitize it; otherwise use plain text
+    const cleanContent = html ? sanitizeHtml(html) : text;
+    
+    // Insert the clean content
+    document.execCommand('insertHTML', false, cleanContent || text);
+  }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     // Handle Enter key specifically to prevent cursor jumping
@@ -268,6 +341,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         )}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
         data-placeholder={placeholder}
         style={{
           wordWrap: 'break-word',
