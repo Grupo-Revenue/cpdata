@@ -43,6 +43,7 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<SessionAcreditacion | null>(null);
+  const [calculatingForSession, setCalculatingForSession] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     fecha: '',
     servicio: '',
@@ -167,12 +168,28 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
     acreditadores: number;
     supervisor: number;
   }) => {
-    setFormData({
-      ...formData,
-      precio: result.precio.toString(),
-      acreditadores: result.acreditadores.toString(),
-      supervisor: result.supervisor.toString()
-    });
+    if (calculatingForSession) {
+      // Actualizar la jornada directamente
+      updateSession(calculatingForSession, {
+        precio: result.precio,
+        acreditadores: result.acreditadores,
+        supervisor: result.supervisor,
+        monto: result.precio
+      });
+      setCalculatingForSession(null);
+      toast({
+        title: "Éxito",
+        description: "Jornada actualizada con los valores calculados"
+      });
+    } else {
+      // Actualizar el formulario (cuando se está creando o editando una jornada)
+      setFormData({
+        ...formData,
+        precio: result.precio.toString(),
+        acreditadores: result.acreditadores.toString(),
+        supervisor: result.supervisor.toString()
+      });
+    }
   };
 
   const handleDelete = (sessionId: string) => {
@@ -345,7 +362,10 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => setIsCalculatorOpen(true)}
+                            onClick={() => {
+                              setCalculatingForSession(session.id);
+                              setIsCalculatorOpen(true);
+                            }}
                             title="Usar calculadora"
                           >
                             <Calculator className="h-3 w-3" />
@@ -392,7 +412,10 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
 
       <SessionPriceCalculatorDialog
         isOpen={isCalculatorOpen}
-        onClose={() => setIsCalculatorOpen(false)}
+        onClose={() => {
+          setIsCalculatorOpen(false);
+          setCalculatingForSession(null);
+        }}
         onApplyCalculation={handleCalculatorResult}
       />
     </Card>
