@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 import { Plus, Edit2, Trash2, Calendar, Calculator } from 'lucide-react';
 import { SessionAcreditacion } from '@/types';
 import { useAccreditationSessions } from '@/hooks/useAccreditationSessions';
@@ -20,13 +20,6 @@ interface AccreditationSessionsManagerProps {
   onSessionsChange: (sessions: SessionAcreditacion[]) => void;
 }
 
-const SERVICIOS_ACREDITACION = [
-  'Acreditación Manual',
-  'Acreditación Express QR',
-  'Acreditación Mixta',
-  'Supervisión General',
-  'Coordinación de Acceso'
-];
 
 const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> = ({
   sessions: externalSessions,
@@ -257,18 +250,14 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
 
                   <div>
                     <Label htmlFor="servicio">Servicio *</Label>
-                    <Select value={formData.servicio} onValueChange={(value) => setFormData({ ...formData, servicio: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar servicio" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SERVICIOS_ACREDITACION.map((servicio) => (
-                          <SelectItem key={servicio} value={servicio}>
-                            {servicio}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      id="servicio"
+                      type="text"
+                      value={formData.servicio}
+                      onChange={(e) => setFormData({ ...formData, servicio: e.target.value })}
+                      placeholder="Ej: Acreditación Manual, Supervisión..."
+                      required
+                    />
                   </div>
 
                    <div className="grid grid-cols-2 gap-4">
