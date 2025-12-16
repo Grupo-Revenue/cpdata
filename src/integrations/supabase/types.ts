@@ -888,8 +888,8 @@ export type Database = {
         }[]
       }
       get_next_business_number:
-        | { Args: { p_user_id: string }; Returns: number }
         | { Args: never; Returns: number }
+        | { Args: { p_user_id: string }; Returns: number }
       get_public_budget_data: {
         Args: { p_negocio_id: string; p_presupuesto_id: string }
         Returns: {
