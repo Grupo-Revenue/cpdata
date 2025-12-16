@@ -93,6 +93,9 @@ const PDFHeader: React.FC<PDFHeaderProps> = ({
               <div><span className="font-semibold">Evento:</span> {negocio.evento.nombreEvento}</div>
               <div><span className="font-semibold">Tipo:</span> {negocio.evento.tipoEvento}</div>
               <div><span className="font-semibold">Fecha:</span> {negocio.evento.fechaEvento ? formatearFechaSinZonaHoraria(negocio.evento.fechaEvento) : 'Por definir'}</div>
+              {negocio.evento.horasAcreditacion && (
+                <div><span className="font-semibold">Horario:</span> {negocio.evento.horasAcreditacion}</div>
+              )}
               <div><span className="font-semibold">Lugar:</span> {negocio.evento.locacion}</div>
               <div><span className="font-semibold">Asistentes:</span> {negocio.evento.cantidadAsistentes}</div>
             </div>
