@@ -96,3 +96,28 @@ export const formatearFechaMuyCorta = (fechaString: string): string => {
     return '';
   }
 };
+
+/**
+ * Formatea un rango de fechas en formato DD-MM-YYYY | DD-MM-YYYY
+ */
+export const formatearRangoFechas = (fechaInicio: string | null, fechaFin?: string | null): string => {
+  if (!fechaInicio) return 'Por definir';
+  
+  const formatearConGuiones = (fechaString: string): string => {
+    try {
+      const [year, month, day] = fechaString.split('T')[0].split('-');
+      return `${day}-${month}-${year}`;
+    } catch {
+      return '';
+    }
+  };
+  
+  const fechaInicioFormateada = formatearConGuiones(fechaInicio);
+  
+  if (!fechaFin) {
+    return fechaInicioFormateada;
+  }
+  
+  const fechaFinFormateada = formatearConGuiones(fechaFin);
+  return `${fechaInicioFormateada} | ${fechaFinFormateada}`;
+};
