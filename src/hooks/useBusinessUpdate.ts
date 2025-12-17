@@ -328,13 +328,13 @@ export const useBusinessUpdate = () => {
         .update({
           tipo_evento: eventData.tipo_evento,
           nombre_evento: eventData.nombre_evento,
-          fecha_evento: eventData.fecha_evento,
-          fecha_evento_fin: eventData.fecha_evento_fin,
+          fecha_evento: eventData.fecha_evento || null,
+          fecha_evento_fin: eventData.fecha_evento_fin || null,
           cantidad_asistentes: eventData.cantidad_asistentes,
           cantidad_invitados: eventData.cantidad_invitados,
           locacion: eventData.locacion,
-          horas_acreditacion: eventData.horas_acreditacion,
-          fecha_cierre: eventData.fecha_cierre,
+          horas_acreditacion: eventData.horas_acreditacion || null,
+          fecha_cierre: eventData.fecha_cierre || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', negocioId)
