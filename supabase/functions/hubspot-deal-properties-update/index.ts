@@ -13,12 +13,6 @@ const formatDateToText = (dateStr: string): string => {
   return `${day}-${month}-${year}`;
 };
 
-// Format time range as "HH:MM - HH:MM"
-const formatTimeRange = (horarioInicio?: string, horarioFin?: string): string => {
-  if (!horarioInicio || !horarioFin) return '';
-  return `${horarioInicio} - ${horarioFin}`;
-};
-
 // Format date to timestamp for closedate (HubSpot standard property)
 const formatDateToTimestamp = (dateStr: string): number | null => {
   if (!dateStr) return null;
@@ -104,9 +98,9 @@ serve(async (req) => {
       properties.fecha_fin_del_evento = formatDateToText(eventData.fecha_evento_fin);
     }
     
-    // Time range in text format (HH:MM - HH:MM)
-    if (eventData.horario_inicio && eventData.horario_fin) {
-      properties.hora_de_inicio_y_fin_del_evento = formatTimeRange(eventData.horario_inicio, eventData.horario_fin);
+    // Time range in text format (already formatted as "HH:MM - HH:MM")
+    if (eventData.horas_acreditacion) {
+      properties.hora_de_inicio_y_fin_del_evento = eventData.horas_acreditacion;
     }
     
     // Closedate still uses timestamp format (HubSpot standard property)

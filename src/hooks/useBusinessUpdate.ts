@@ -362,7 +362,8 @@ export const useBusinessUpdate = () => {
                 cantidad_asistentes: eventData.cantidad_asistentes,
                 cantidad_invitados: eventData.cantidad_invitados,
                 locacion: eventData.locacion,
-                fecha_cierre: eventData.fecha_cierre
+                fecha_cierre: eventData.fecha_cierre,
+                horas_acreditacion: eventData.horas_acreditacion
               }
             }
           }
