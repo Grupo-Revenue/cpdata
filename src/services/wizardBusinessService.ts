@@ -128,7 +128,8 @@ export const createBusinessFromWizard = async ({
     tipo_evento: evento.tipo_evento,
     nombre_evento: evento.nombre_evento,
     fecha_evento: evento.fecha_evento,
-    horas_acreditacion: evento.horario_inicio && evento.horario_fin 
+    fecha_evento_fin: evento.fecha_evento_fin || null,
+    horas_acreditacion: evento.horario_inicio && evento.horario_fin
       ? `${evento.horario_inicio} - ${evento.horario_fin}` 
       : '00:00 - 00:00',
     cantidad_asistentes: parseInt(evento.cantidad_asistentes) || 0,

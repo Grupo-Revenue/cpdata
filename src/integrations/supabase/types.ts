@@ -432,6 +432,7 @@ export type Database = {
           estado: Database["public"]["Enums"]["estado_negocio"]
           fecha_cierre: string | null
           fecha_evento: string | null
+          fecha_evento_fin: string | null
           horas_acreditacion: string
           hubspot_id: string | null
           id: string
@@ -452,6 +453,7 @@ export type Database = {
           estado?: Database["public"]["Enums"]["estado_negocio"]
           fecha_cierre?: string | null
           fecha_evento?: string | null
+          fecha_evento_fin?: string | null
           horas_acreditacion: string
           hubspot_id?: string | null
           id?: string
@@ -472,6 +474,7 @@ export type Database = {
           estado?: Database["public"]["Enums"]["estado_negocio"]
           fecha_cierre?: string | null
           fecha_evento?: string | null
+          fecha_evento_fin?: string | null
           horas_acreditacion?: string
           hubspot_id?: string | null
           id?: string
