@@ -164,6 +164,15 @@ export const EditEventDialog: React.FC<EditEventDialogProps> = ({
             />
           </div>
           
+          <div>
+            <Label htmlFor="fechaEventoFin">Fecha Fin del Evento</Label>
+            <Input
+              id="fechaEventoFin"
+              type="date"
+              value={formData.fecha_evento_fin}
+              onChange={(e) => setFormData(prev => ({ ...prev, fecha_evento_fin: e.target.value }))}
+            />
+          </div>
           
           <div>
             <Label htmlFor="horasAcreditacion">Horas de Acreditación</Label>
