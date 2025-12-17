@@ -202,7 +202,7 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
                 <Calendar className="w-3 h-3 text-slate-400" />
                 <span className="text-xs text-slate-600">
                   {negocio.evento.fechaEvento 
-                    ? formatearFechaSinZonaHoraria(negocio.evento.fechaEvento)
+                    ? `${formatearFechaSinZonaHoraria(negocio.evento.fechaEvento)}${negocio.fechaCierre ? ` | ${formatearFechaSinZonaHoraria(negocio.fechaCierre)}` : ''}`
                     : 'Por definir'}
                 </span>
               </div>
