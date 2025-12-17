@@ -13,6 +13,8 @@ interface DealData {
   valor_negocio: number;
   fecha_evento: string;
   fecha_evento_fin?: string;
+  horario_inicio?: string;
+  horario_fin?: string;
   fecha_cierre?: string;
   locacion: string;
   cantidad_invitados: number;
@@ -21,6 +23,26 @@ interface DealData {
   productoraId?: string;
   clienteFinalId?: string;
 }
+
+// Format date from YYYY-MM-DD to DD-MM-YYYY
+const formatDateToText = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const [year, month, day] = dateStr.split('-');
+  return `${day}-${month}-${year}`;
+};
+
+// Format time range as "HH:MM - HH:MM"
+const formatTimeRange = (horarioInicio?: string, horarioFin?: string): string => {
+  if (!horarioInicio || !horarioFin) return '';
+  return `${horarioInicio} - ${horarioFin}`;
+};
+
+// Format date to timestamp for closedate (HubSpot still needs timestamp for this)
+const formatDateToTimestamp = (dateStr: string): number | null => {
+  if (!dateStr) return null;
+  const date = new Date(`${dateStr}T00:00:00`);
+  return date.getTime();
+};
 
 serve(async (req) => {
   console.log(`Method: ${req.method}, URL: ${req.url}`)
@@ -114,25 +136,6 @@ serve(async (req) => {
 
     if (action === 'create_deal') {
       console.log('Creating deal with data:', dealData)
-      
-      // Convert dates to timestamps in milliseconds
-      const formatDateToTimestamp = (dateStr: string, timeStr?: string) => {
-        if (!dateStr) return null;
-        
-        let fullDateTime = dateStr;
-        if (timeStr) {
-          fullDateTime = `${dateStr}T${timeStr}:00`;
-        } else {
-          fullDateTime = `${dateStr}T00:00:00`;
-        }
-        
-        const date = new Date(fullDateTime);
-        return date.getTime();
-      };
-
-      const fechaEventoTimestamp = formatDateToTimestamp(dealData.fecha_evento, dealData.horario_inicio);
-      const fechaEventoFinTimestamp = dealData.fecha_evento_fin ? formatDateToTimestamp(dealData.fecha_evento_fin, dealData.horario_fin) : null;
-      const fechaCierreTimestamp = dealData.fecha_cierre ? formatDateToTimestamp(dealData.fecha_cierre) : null;
 
       // Prepare deal properties
       const properties: any = {
@@ -147,15 +150,25 @@ serve(async (req) => {
         cantidad_de_asistentes: dealData.cantidad_asistentes.toString()
       };
 
-      // Add date properties if they exist
-      if (fechaEventoTimestamp) {
-        properties.fecha_y_hora_del_evento = fechaEventoTimestamp.toString();
+      // Add date properties in text format (DD-MM-YYYY)
+      if (dealData.fecha_evento) {
+        properties.fecha_inicio_del_evento = formatDateToText(dealData.fecha_evento);
       }
-      if (fechaEventoFinTimestamp) {
-        properties.fecha_y_hora_del_evento_termino = fechaEventoFinTimestamp.toString();
+      if (dealData.fecha_evento_fin) {
+        properties.fecha_fin_del_evento = formatDateToText(dealData.fecha_evento_fin);
       }
-      if (fechaCierreTimestamp) {
-        properties.closedate = fechaCierreTimestamp.toString();
+      
+      // Add time range in text format (HH:MM - HH:MM)
+      if (dealData.horario_inicio && dealData.horario_fin) {
+        properties.hora_de_inicio_y_fin_del_evento = formatTimeRange(dealData.horario_inicio, dealData.horario_fin);
+      }
+      
+      // Closedate still uses timestamp format (HubSpot standard property)
+      if (dealData.fecha_cierre) {
+        const fechaCierreTimestamp = formatDateToTimestamp(dealData.fecha_cierre);
+        if (fechaCierreTimestamp) {
+          properties.closedate = fechaCierreTimestamp.toString();
+        }
       }
 
       // Prepare associations
