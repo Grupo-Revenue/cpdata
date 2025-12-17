@@ -1,31 +1,19 @@
-
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { 
-  ArrowLeft, 
-  User, 
-  Building, 
-  Calendar, 
-  MapPin, 
-  Users, 
-  Phone,
-  Mail,
-  Pencil,
-  Clock
-} from 'lucide-react';
-import { Negocio } from '@/types';
-import { formatearFechaSinZonaHoraria } from '@/utils/formatters';
-import { calculateBusinessValue } from '@/utils/businessValueCalculator';
-import { formatBusinessStateForDisplay, getBusinessStateColors } from '@/utils/businessCalculations';
-import BusinessValueSection from './sections/BusinessValueSection';
-import { EditContactDialog } from './dialogs/EditContactDialog';
-import { EditCompanyDialog } from './dialogs/EditCompanyDialog';
-import { EditEventDialog } from './dialogs/EditEventDialog';
-import { useBusinessUpdate } from '@/hooks/useBusinessUpdate';
-import { useNegocio } from '@/context/NegocioContext';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowLeft, User, Building, Calendar, MapPin, Users, Phone, Mail, Pencil, Clock } from "lucide-react";
+import { Negocio } from "@/types";
+import { formatearFechaSinZonaHoraria } from "@/utils/formatters";
+import { calculateBusinessValue } from "@/utils/businessValueCalculator";
+import { formatBusinessStateForDisplay, getBusinessStateColors } from "@/utils/businessCalculations";
+import BusinessValueSection from "./sections/BusinessValueSection";
+import { EditContactDialog } from "./dialogs/EditContactDialog";
+import { EditCompanyDialog } from "./dialogs/EditCompanyDialog";
+import { EditEventDialog } from "./dialogs/EditEventDialog";
+import { useBusinessUpdate } from "@/hooks/useBusinessUpdate";
+import { useNegocio } from "@/context/NegocioContext";
 
 interface BusinessDetailHeaderProps {
   negocio: Negocio;
@@ -33,15 +21,11 @@ interface BusinessDetailHeaderProps {
   onCrearPresupuesto: () => void;
 }
 
-const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
-  negocio,
-  onVolver,
-  onCrearPresupuesto
-}) => {
+const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({ negocio, onVolver, onCrearPresupuesto }) => {
   const navigate = useNavigate();
   const { refreshNegocios } = useNegocio();
   const { updateContact, updateCompanies, updateEvent } = useBusinessUpdate();
-  
+
   const [editContactOpen, setEditContactOpen] = useState(false);
   const [editCompanyOpen, setEditCompanyOpen] = useState(false);
   const [editEventOpen, setEditEventOpen] = useState(false);
@@ -61,9 +45,9 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
     await updateEvent(negocio.id, eventData);
     await refreshNegocios();
   };
-  
+
   // Get company name for the title
-  const empresaDisplay = negocio.productora?.nombre || negocio.clienteFinal?.nombre || 'Sin empresa';
+  const empresaDisplay = negocio.productora?.nombre || negocio.clienteFinal?.nombre || "Sin empresa";
 
   return (
     <div className="space-y-6 mb-6">
@@ -91,10 +75,7 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
             <h1 className="text-2xl font-bold text-slate-900">
               {empresaDisplay} - Negocio #{negocio.numero}
             </h1>
-            <Badge 
-              variant="outline"
-              className={getBusinessStateColors(negocio.estado)}
-            >
+            <Badge variant="outline" className={getBusinessStateColors(negocio.estado)}>
               {formatBusinessStateForDisplay(negocio.estado)}
             </Badge>
           </div>
@@ -103,10 +84,7 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
 
         {/* Business Value Section */}
         <div className="lg:w-80">
-          <BusinessValueSection 
-            valorNegocio={valorTotal}
-            presupuestos={negocio.presupuestos}
-          />
+          <BusinessValueSection valorNegocio={valorTotal} presupuestos={negocio.presupuestos} />
         </div>
       </div>
 
@@ -128,7 +106,9 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
               <span className="text-sm font-medium text-slate-700">Contacto</span>
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-slate-800 font-medium">{negocio.contacto.nombre} {negocio.contacto.apellido}</p>
+              <p className="text-sm text-slate-800 font-medium">
+                {negocio.contacto.nombre} {negocio.contacto.apellido}
+              </p>
               <div className="flex items-center space-x-1">
                 <Phone className="w-3 h-3 text-slate-400" />
                 <span className="text-xs text-slate-600">{negocio.contacto.telefono}</span>
@@ -137,9 +117,7 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
                 <Mail className="w-3 h-3 text-slate-400" />
                 <span className="text-xs text-slate-600 truncate">{negocio.contacto.email}</span>
               </div>
-              {negocio.contacto.cargo && (
-                <p className="text-xs text-slate-500">{negocio.contacto.cargo}</p>
-              )}
+              {negocio.contacto.cargo && <p className="text-xs text-slate-500">{negocio.contacto.cargo}</p>}
             </div>
           </CardContent>
         </Card>
@@ -171,9 +149,7 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
                   </div>
                 </>
               )}
-              {negocio.productora && !negocio.clienteFinal && (
-                <div className="text-xs text-slate-500">Productora</div>
-              )}
+              {negocio.productora && !negocio.clienteFinal && <div className="text-xs text-slate-500">Productora</div>}
               {!negocio.productora && negocio.clienteFinal && (
                 <div className="text-xs text-slate-500">Cliente Directo</div>
               )}
@@ -201,10 +177,16 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
               <div className="flex items-center space-x-1">
                 <Calendar className="w-3 h-3 text-slate-400" />
                 <span className="text-xs text-slate-600">
-                  <span className="font-medium">Fecha Evento:</span>{' '}
-                  {negocio.evento.fechaEvento 
+                  {negocio.evento.fechaEvento
                     ? formatearFechaSinZonaHoraria(negocio.evento.fechaEvento)
-                    : 'Por definir'}
+                    : "Por definir"}
+                </span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Calendar className="w-3 h-3 text-slate-400" />
+                <span className="text-xs text-slate-600">
+                  <span className="font-medium">Cierre Esperado:</span>{" "}
+                  {negocio.fechaCierre ? formatearFechaSinZonaHoraria(negocio.fechaCierre) : "Por definir"}
                 </span>
               </div>
               {negocio.evento.horasAcreditacion && (
@@ -219,7 +201,9 @@ const BusinessDetailHeader: React.FC<BusinessDetailHeaderProps> = ({
               </div>
               <div className="flex items-center space-x-1">
                 <Users className="w-3 h-3 text-slate-400" />
-                <span className="text-xs text-slate-600">{negocio.evento.cantidadAsistentes.toLocaleString()} asistentes</span>
+                <span className="text-xs text-slate-600">
+                  {negocio.evento.cantidadAsistentes.toLocaleString()} asistentes
+                </span>
               </div>
             </div>
           </CardContent>
