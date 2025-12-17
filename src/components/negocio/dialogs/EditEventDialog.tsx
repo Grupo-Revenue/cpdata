@@ -17,6 +17,7 @@ interface EditEventDialogProps {
     tipo_evento?: string;
     nombre_evento?: string;
     fecha_evento?: string;
+    fecha_evento_fin?: string;
     cantidad_asistentes?: number;
     cantidad_invitados?: number;
     locacion?: string;
@@ -35,6 +36,7 @@ export const EditEventDialog: React.FC<EditEventDialogProps> = ({
     tipo_evento: negocio.tipo_evento,
     nombre_evento: negocio.nombre_evento,
     fecha_evento: negocio.fecha_evento || '',
+    fecha_evento_fin: negocio.fecha_evento_fin || '',
     cantidad_asistentes: negocio.cantidad_asistentes || 0,
     cantidad_invitados: negocio.cantidad_invitados || 0,
     locacion: negocio.locacion,
@@ -79,6 +81,7 @@ export const EditEventDialog: React.FC<EditEventDialogProps> = ({
         tipo_evento: negocio.tipo_evento,
         nombre_evento: negocio.nombre_evento,
         fecha_evento: negocio.fecha_evento || '',
+        fecha_evento_fin: negocio.fecha_evento_fin || '',
         cantidad_asistentes: negocio.cantidad_asistentes || 0,
         cantidad_invitados: negocio.cantidad_invitados || 0,
         locacion: negocio.locacion,
@@ -152,12 +155,22 @@ export const EditEventDialog: React.FC<EditEventDialogProps> = ({
           </div>
           
           <div>
-            <Label htmlFor="fechaEvento">Fecha del Evento *</Label>
+            <Label htmlFor="fechaEvento">Fecha Inicio del Evento *</Label>
             <Input
               id="fechaEvento"
               type="date"
               value={formData.fecha_evento}
               onChange={(e) => setFormData(prev => ({ ...prev, fecha_evento: e.target.value }))}
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="fechaEventoFin">Fecha Fin del Evento</Label>
+            <Input
+              id="fechaEventoFin"
+              type="date"
+              value={formData.fecha_evento_fin}
+              onChange={(e) => setFormData(prev => ({ ...prev, fecha_evento_fin: e.target.value }))}
             />
           </div>
           
