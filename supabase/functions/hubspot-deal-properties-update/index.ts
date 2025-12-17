@@ -6,6 +6,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Format date from YYYY-MM-DD to DD-MM-YYYY
+const formatDateToText = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const [year, month, day] = dateStr.split('-');
+  return `${day}-${month}-${year}`;
+};
+
+// Format time range as "HH:MM - HH:MM"
+const formatTimeRange = (horarioInicio?: string, horarioFin?: string): string => {
+  if (!horarioInicio || !horarioFin) return '';
+  return `${horarioInicio} - ${horarioFin}`;
+};
+
+// Format date to timestamp for closedate (HubSpot standard property)
+const formatDateToTimestamp = (dateStr: string): number | null => {
+  if (!dateStr) return null;
+  const date = new Date(`${dateStr}T00:00:00`);
+  return date.getTime();
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -57,13 +77,6 @@ serve(async (req) => {
       );
     }
 
-    // Convert date to timestamp (milliseconds) for HubSpot
-    const formatDateToTimestamp = (dateStr: string) => {
-      if (!dateStr) return null;
-      const date = new Date(`${dateStr}T00:00:00`);
-      return date.getTime();
-    };
-
     // Prepare properties to update
     const properties: any = {};
 
@@ -82,12 +95,21 @@ serve(async (req) => {
     if (eventData.cantidad_asistentes !== undefined) {
       properties.cantidad_de_asistentes = eventData.cantidad_asistentes.toString();
     }
+    
+    // Date properties in text format (DD-MM-YYYY)
     if (eventData.fecha_evento) {
-      const timestamp = formatDateToTimestamp(eventData.fecha_evento);
-      if (timestamp) {
-        properties.fecha_y_hora_del_evento = timestamp.toString();
-      }
+      properties.fecha_inicio_del_evento = formatDateToText(eventData.fecha_evento);
     }
+    if (eventData.fecha_evento_fin) {
+      properties.fecha_fin_del_evento = formatDateToText(eventData.fecha_evento_fin);
+    }
+    
+    // Time range in text format (HH:MM - HH:MM)
+    if (eventData.horario_inicio && eventData.horario_fin) {
+      properties.hora_de_inicio_y_fin_del_evento = formatTimeRange(eventData.horario_inicio, eventData.horario_fin);
+    }
+    
+    // Closedate still uses timestamp format (HubSpot standard property)
     if (eventData.fecha_cierre) {
       const timestamp = formatDateToTimestamp(eventData.fecha_cierre);
       if (timestamp) {
