@@ -64,6 +64,7 @@ export type Evento = {
   tipoEvento: string;
   nombreEvento: string;
   fechaEvento: string | null;
+  fechaEventoFin?: string | null;
   horasAcreditacion: string;
   cantidadAsistentes: number;
   cantidadInvitados: number;

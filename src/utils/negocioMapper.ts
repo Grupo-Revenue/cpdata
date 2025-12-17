@@ -18,6 +18,7 @@ export const mapDatabaseToExtendedNegocio = (
     tipoEvento: negocio.tipo_evento,
     nombreEvento: negocio.nombre_evento,
     fechaEvento: negocio.fecha_evento,
+    fechaEventoFin: (negocio as any).fecha_evento_fin || null,
     horasAcreditacion: negocio.horas_acreditacion,
     cantidadAsistentes: negocio.cantidad_asistentes || 0,
     cantidadInvitados: negocio.cantidad_invitados || 0,
