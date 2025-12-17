@@ -310,6 +310,7 @@ export const useBusinessUpdate = () => {
       tipo_evento?: string;
       nombre_evento?: string;
       fecha_evento?: string;
+      fecha_evento_fin?: string;
       cantidad_asistentes?: number;
       cantidad_invitados?: number;
       locacion?: string;
@@ -328,6 +329,7 @@ export const useBusinessUpdate = () => {
           tipo_evento: eventData.tipo_evento,
           nombre_evento: eventData.nombre_evento,
           fecha_evento: eventData.fecha_evento,
+          fecha_evento_fin: eventData.fecha_evento_fin,
           cantidad_asistentes: eventData.cantidad_asistentes,
           cantidad_invitados: eventData.cantidad_invitados,
           locacion: eventData.locacion,
@@ -356,6 +358,7 @@ export const useBusinessUpdate = () => {
                 tipo_evento: eventData.tipo_evento,
                 nombre_evento: eventData.nombre_evento,
                 fecha_evento: eventData.fecha_evento,
+                fecha_evento_fin: eventData.fecha_evento_fin,
                 cantidad_asistentes: eventData.cantidad_asistentes,
                 cantidad_invitados: eventData.cantidad_invitados,
                 locacion: eventData.locacion,
