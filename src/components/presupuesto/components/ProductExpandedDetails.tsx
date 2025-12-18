@@ -8,6 +8,7 @@ import { Copy, RefreshCw } from 'lucide-react';
 import RichTextEditor from '@/components/ui/rich-text-editor';
 import { ExtendedProductoPresupuesto, SessionAcreditacion } from '@/types';
 import AccreditationSessionsManager from './AccreditationSessionsManager';
+import { ACREDITACION_LINEA_PRODUCTO_ID } from '@/constants/productLines';
 
 interface ProductExpandedDetailsProps {
   producto: ExtendedProductoPresupuesto;
@@ -65,8 +66,10 @@ const ProductExpandedDetails: React.FC<ProductExpandedDetailsProps> = ({
   const libraryDescToShow = originalLibraryDescription || 
     (descriptionSource === 'library' ? producto.descripcion : '');
 
-  // Check if this is an accreditation product
-  const isAccreditationProduct = producto.nombre.toLowerCase().includes('acreditación') ||
+  // Check if this is an accreditation product by linea_producto_id or name/description fallback
+  const isAccreditationProduct = 
+    producto.linea_producto_id === ACREDITACION_LINEA_PRODUCTO_ID ||
+    producto.nombre.toLowerCase().includes('acreditación') ||
     producto.descripcion?.toLowerCase().includes('acreditación');
 
   return (

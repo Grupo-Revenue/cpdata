@@ -3,12 +3,17 @@ import { useState, useCallback } from 'react';
 import { ExtendedProductoPresupuesto, SessionAcreditacion } from '@/types';
 import { ProductoBiblioteca } from '@/hooks/useProductosBiblioteca';
 import { calcularTotalProducto } from '@/utils/quoteCalculations';
+import { ACREDITACION_LINEA_PRODUCTO_ID } from '@/constants/productLines';
 
 export const useProductManagement = (initialProducts: ExtendedProductoPresupuesto[] = []) => {
   const [productos, setProductos] = useState<ExtendedProductoPresupuesto[]>(initialProducts);
 
   const agregarProductoBiblioteca = useCallback((productoBiblioteca: ProductoBiblioteca) => {
-    const isAccreditationProduct = productoBiblioteca.nombre.toLowerCase().includes('acreditación') ||
+    // Verificar si es producto de acreditación por linea_producto_id o por nombre de categoría
+    const isAccreditationProduct = 
+      productoBiblioteca.linea_producto_id === ACREDITACION_LINEA_PRODUCTO_ID ||
+      productoBiblioteca.linea_producto?.nombre?.toLowerCase() === 'acreditación' ||
+      productoBiblioteca.nombre.toLowerCase().includes('acreditación') ||
       productoBiblioteca.descripcion?.toLowerCase().includes('acreditación');
 
     const nuevoProducto: ExtendedProductoPresupuesto = {
@@ -24,6 +29,7 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
       total: productoBiblioteca.precio_base,
       created_at: new Date().toISOString(),
       presupuesto_id: '',
+      linea_producto_id: productoBiblioteca.linea_producto_id,
       sessions: isAccreditationProduct ? [] : undefined,
       originalLibraryDescription: productoBiblioteca.descripcion || ''
     };
@@ -212,7 +218,10 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
     
     // Ensure backward compatibility by adding missing fields
     const productosExtendidos = newProductos.map(producto => {
-      const isAccreditationProduct = producto.nombre.toLowerCase().includes('acreditación') ||
+      // Verificar si es producto de acreditación por linea_producto_id o por nombre
+      const isAccreditationProduct = 
+        producto.linea_producto_id === ACREDITACION_LINEA_PRODUCTO_ID ||
+        producto.nombre.toLowerCase().includes('acreditación') ||
         producto.descripcion?.toLowerCase().includes('acreditación');
 
       return {
