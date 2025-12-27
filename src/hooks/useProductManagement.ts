@@ -90,7 +90,7 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
               acreditadores: session.acreditadores || 0,
               supervisor: session.supervisor || 0,
               precio: session.precio || 0,
-              monto: session.monto || ((session.acreditadores || 0) + (session.supervisor || 0)) * (session.precio || 0),
+              monto: session.monto || session.precio || 0,
               observacion: session.observacion || ''
             }));
             
