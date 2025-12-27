@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Plus, Edit2, Trash2, Calendar, Calculator } from 'lucide-react';
 import { SessionAcreditacion } from '@/types';
 import { useAccreditationSessions } from '@/hooks/useAccreditationSessions';
-import { formatearPrecio } from '@/utils/formatters';
+import { formatearPrecio, formatearFechaSinZonaHoraria } from '@/utils/formatters';
 import { useToast } from '@/hooks/use-toast';
 import SessionPriceCalculatorDialog from './SessionPriceCalculatorDialog';
 
@@ -346,7 +346,7 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
                   {sessions.map((session) => (
                     <TableRow key={session.id}>
                       <TableCell>
-                        {new Date(session.fecha).toLocaleDateString('es-CL')}
+                        {formatearFechaSinZonaHoraria(session.fecha)}
                       </TableCell>
                       <TableCell>{session.servicio}</TableCell>
                       <TableCell className="text-center">{session.acreditadores}</TableCell>
