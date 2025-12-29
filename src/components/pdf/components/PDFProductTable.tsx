@@ -157,14 +157,14 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
           const subtotal = session.precio * totalPersonal;
           
           return (
-            <div key={session.id || index} className="flex justify-between items-center py-1 text-sm border-b border-gray-200 last:border-b-0">
-              <div className="flex-1">
+            <div key={session.id || index} className="grid grid-cols-12 gap-2 py-1 text-sm border-b border-gray-200 last:border-b-0 items-center">
+              <div className="col-span-5">
                 <span className="text-gray-700">{session.fecha} - {session.servicio}</span>
               </div>
-              <div className="flex-1 text-center">
+              <div className="col-span-4 text-center">
                 <span className="text-gray-600">{acreditadores} acred. + {supervisor} super.</span>
               </div>
-              <div className="w-32 text-right">
+              <div className="col-span-3 text-right">
                 <span className="text-gray-700 font-medium">{formatearPrecio(subtotal)}</span>
               </div>
             </div>
