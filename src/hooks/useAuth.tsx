@@ -300,7 +300,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const resetPassword = async (email: string) => {
-    const redirectUrl = `${window.location.origin}/auth`;
+    const redirectUrl = 'https://cpdata-cotizador.vercel.app/auth';
     
     console.log('[Auth] Sending password reset email to:', email);
     
