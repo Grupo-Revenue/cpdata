@@ -17,20 +17,56 @@ const Auth = () => {
     user,
     signIn,
     signUp,
-    resetPassword
+    resetPassword,
+    updatePassword
   } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const [newPasswordForm, setNewPasswordForm] = useState({
+    password: '',
+    confirmPassword: ''
+  });
   const emailValidator = useEmailValidator();
+  const { toast } = useToast();
 
-  // Redirect if already authenticated
+  // Detect recovery mode from URL
   useEffect(() => {
-    if (user) {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const queryParams = new URLSearchParams(window.location.search);
+    
+    const type = hashParams.get('type') || queryParams.get('type');
+    const accessToken = hashParams.get('access_token') || queryParams.get('access_token');
+    const errorParam = hashParams.get('error');
+    const errorDescription = hashParams.get('error_description');
+    
+    // Si hay error en la URL, mostrar mensaje
+    if (errorParam) {
+      toast({
+        variant: 'destructive',
+        title: 'Enlace inválido',
+        description: errorDescription?.replace(/\+/g, ' ') || 'El enlace ha expirado. Solicita uno nuevo.'
+      });
+      // Limpiar la URL
+      window.history.replaceState({}, '', '/auth');
+      return;
+    }
+    
+    // Si es tipo recovery, activar modo recuperación
+    if (type === 'recovery' || accessToken) {
+      console.log('[Auth] Recovery mode detected');
+      setIsRecoveryMode(true);
+    }
+  }, [toast]);
+
+  // Redirect if already authenticated (but not in recovery mode)
+  useEffect(() => {
+    if (user && !isRecoveryMode) {
       navigate('/');
     }
-  }, [user, navigate]);
+  }, [user, navigate, isRecoveryMode]);
 
   const [loginForm, setLoginForm] = useState({
     email: '',
@@ -44,7 +80,6 @@ const Auth = () => {
     telefono: '',
     empresa: ''
   });
-  const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,6 +145,92 @@ const Auth = () => {
       setResetEmail('');
     }
   };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPasswordForm.password.length < 6) {
+      toast({
+        variant: 'destructive',
+        title: 'Contraseña muy corta',
+        description: 'La contraseña debe tener al menos 6 caracteres.'
+      });
+      return;
+    }
+    
+    if (newPasswordForm.password !== newPasswordForm.confirmPassword) {
+      toast({
+        variant: 'destructive',
+        title: 'Las contraseñas no coinciden',
+        description: 'Asegúrate de que ambas contraseñas sean iguales.'
+      });
+      return;
+    }
+    
+    setLoading(true);
+    const { error } = await updatePassword(newPasswordForm.password);
+    setLoading(false);
+    
+    if (!error) {
+      setIsRecoveryMode(false);
+      window.history.replaceState({}, '', '/auth');
+      navigate('/');
+    }
+  };
+
+  // Recovery mode view - set new password
+  if (isRecoveryMode && user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        {loading && <LoadingOverlay message="Actualizando..." />}
+        <div className="w-full max-w-md">
+          <Card>
+            <CardHeader>
+              <CardTitle>Nueva Contraseña</CardTitle>
+              <CardDescription>
+                Ingresa tu nueva contraseña para completar la recuperación
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleUpdatePassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">Nueva contraseña</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    value={newPasswordForm.password}
+                    onChange={e => setNewPasswordForm({
+                      ...newPasswordForm,
+                      password: e.target.value
+                    })}
+                    placeholder="Mínimo 6 caracteres"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirmar contraseña</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    value={newPasswordForm.confirmPassword}
+                    onChange={e => setNewPasswordForm({
+                      ...newPasswordForm,
+                      confirmPassword: e.target.value
+                    })}
+                    placeholder="Repite tu contraseña"
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Guardando...' : 'Guardar nueva contraseña'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   // Forgot password view
   if (showForgotPassword) {
