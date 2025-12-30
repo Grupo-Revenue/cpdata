@@ -14,6 +14,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   checkAdminStatus: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
+  updatePassword: (newPassword: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -324,6 +325,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return { error };
   };
 
+  const updatePassword = async (newPassword: string) => {
+    console.log('[Auth] Updating password...');
+    
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Contraseña actualizada",
+        description: "Tu contraseña ha sido cambiada exitosamente."
+      });
+    }
+
+    return { error };
+  };
+
   const value = {
     user,
     session,
@@ -333,7 +357,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signIn,
     signOut,
     checkAdminStatus,
-    resetPassword
+    resetPassword,
+    updatePassword
   };
 
   return (
