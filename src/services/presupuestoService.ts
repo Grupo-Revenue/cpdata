@@ -245,15 +245,21 @@ export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoD
         const discount = producto.descuentoPorcentaje || 0;
         const precioUnitario = producto.precio_unitario || producto.precioUnitario || 0;
         const cantidad = producto.cantidad || 1;
-        const baseTotal = cantidad * precioUnitario;
-        const discountAmount = baseTotal * (discount / 100);
-        const baseAfterDiscount = baseTotal - discountAmount;
         
-        // Add session values if they exist
+        // Check if product has sessions (accreditation products)
         const sessionsTotal = producto.sessions?.reduce((sum: number, session: any) => 
           sum + (Number(session.monto) || 0), 0) || 0;
         
-        const finalTotal = baseAfterDiscount + sessionsTotal;
+        let finalTotal;
+        if (producto.sessions && producto.sessions.length > 0 && sessionsTotal > 0) {
+          // Sessions already include attendee calculations, apply discount to sessions only
+          const discountOnSessions = sessionsTotal * (discount / 100);
+          finalTotal = sessionsTotal - discountOnSessions;
+        } else {
+          const baseTotal = cantidad * precioUnitario;
+          const discountAmount = baseTotal * (discount / 100);
+          finalTotal = baseTotal - discountAmount;
+        }
         
         return {
           presupuesto_id: presupuesto.id,
@@ -360,15 +366,21 @@ export const actualizarPresupuestoEnSupabase = async (presupuestoId: string, upd
           const discount = p.descuentoPorcentaje || 0;
           const precioUnitario = p.precio_unitario || p.precioUnitario || 0;
           const cantidad = p.cantidad || 1;
-          const baseTotal = cantidad * precioUnitario;
-          const discountAmount = baseTotal * (discount / 100);
-          const baseAfterDiscount = baseTotal - discountAmount;
           
-          // Add session values if they exist
+          // Check if product has sessions (accreditation products)
           const sessionsTotal = p.sessions?.reduce((sum: number, session: any) => 
             sum + (Number(session.monto) || 0), 0) || 0;
           
-          const finalTotal = baseAfterDiscount + sessionsTotal;
+          let finalTotal;
+          if (p.sessions && p.sessions.length > 0 && sessionsTotal > 0) {
+            // Sessions already include attendee calculations, apply discount to sessions only
+            const discountOnSessions = sessionsTotal * (discount / 100);
+            finalTotal = sessionsTotal - discountOnSessions;
+          } else {
+            const baseTotal = cantidad * precioUnitario;
+            const discountAmount = baseTotal * (discount / 100);
+            finalTotal = baseTotal - discountAmount;
+          }
           
           return {
             presupuesto_id: presupuestoId,

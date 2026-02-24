@@ -18,26 +18,37 @@ export const calcularTotalesPresupuesto = (productos: ProductoPresupuesto[]): Qu
   const subtotal = productos.reduce((sum, producto) => {
     const cantidad = producto.cantidad || 0;
     const precioUnitario = producto.precioUnitario || producto.precio_unitario || 0;
-    const baseTotal = cantidad * precioUnitario;
     
-    // Add session values if they exist (for accreditation products)
-    const sessionsTotal = (producto as any).sessions?.reduce((sessionSum: number, session: any) => 
+    // Check if product has sessions with values (accreditation products)
+    const sessions = (producto as any).sessions;
+    const sessionsTotal = sessions?.reduce((sessionSum: number, session: any) => 
       sessionSum + (Number(session.monto) || 0), 0) || 0;
     
-    return sum + baseTotal + sessionsTotal;
+    // If product has sessions, use ONLY sessions total (sessions already factor in attendees)
+    if (sessions && sessions.length > 0 && sessionsTotal > 0) {
+      return sum + sessionsTotal;
+    }
+    
+    // Otherwise use standard calculation
+    const baseTotal = cantidad * precioUnitario;
+    return sum + baseTotal;
   }, 0);
 
   const totalDescuentos = productos.reduce((sum, producto) => {
     const cantidad = producto.cantidad || 0;
     const precioUnitario = producto.precioUnitario || producto.precio_unitario || 0;
     const descuentoPorcentaje = producto.descuentoPorcentaje || 0;
-    const baseTotal = cantidad * precioUnitario;
     
-    // Add session values for discount calculation
-    const sessionsTotal = (producto as any).sessions?.reduce((sessionSum: number, session: any) => 
+    // Check if product has sessions with values
+    const sessions = (producto as any).sessions;
+    const sessionsTotal = sessions?.reduce((sessionSum: number, session: any) => 
       sessionSum + (Number(session.monto) || 0), 0) || 0;
     
-    const subtotalProducto = baseTotal + sessionsTotal;
+    // Use sessions total as base for discount if sessions exist
+    const subtotalProducto = (sessions && sessions.length > 0 && sessionsTotal > 0) 
+      ? sessionsTotal 
+      : cantidad * precioUnitario;
+    
     const descuento = subtotalProducto * (descuentoPorcentaje / 100);
     return sum + descuento;
   }, 0);
