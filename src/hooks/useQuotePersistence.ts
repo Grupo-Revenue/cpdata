@@ -44,8 +44,18 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
         isUpdate: !!presupuestoId
       });
 
-      // Calculate total from products
+      // Calculate total from products (sessions-aware)
       const total = productos.reduce((sum, producto) => {
+        const sessions = producto.sessions;
+        const sessionsTotal = sessions?.reduce((s: number, session: any) => 
+          s + (Number(session.monto) || 0), 0) || 0;
+        
+        // If product has sessions, use only sessions total
+        if (sessions && sessions.length > 0 && sessionsTotal > 0) {
+          console.log(`📊 [useQuotePersistence] Product (sessions): ${producto.nombre} = ${sessionsTotal}`);
+          return sum + sessionsTotal;
+        }
+        
         const productTotal = producto.cantidad * producto.precio_unitario;
         console.log(`📊 [useQuotePersistence] Product calculation: ${producto.nombre} = ${producto.cantidad} × ${producto.precio_unitario} = ${productTotal}`);
         return sum + productTotal;

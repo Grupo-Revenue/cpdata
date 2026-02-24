@@ -94,26 +94,19 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
               observacion: session.observacion || ''
             }));
             
-            // Calculate totals based on sessions
+            // Calculate totals based on sessions only (sessions already factor in attendees)
             const sessionsTotalAmount = productoActualizado.sessions.reduce((sum: number, session: SessionAcreditacion) => sum + (Number(session.monto) || 0), 0);
             
-            // Calculate base product total (original price * quantity - discount)
-            const basePrice = Number(productoActualizado.precio_unitario) || Number(productoActualizado.precioUnitario) || 0;
-            const baseQuantity = Number(productoActualizado.cantidad) || 1;
-            const discount = Number(productoActualizado.descuentoPorcentaje) || 0;
-            const baseTotal = calcularTotalProducto(baseQuantity, basePrice, discount);
-            
             // Store breakdown for clarity
-            (productoActualizado as any).baseTotal = baseTotal;
+            (productoActualizado as any).baseTotal = 0;
             (productoActualizado as any).sessionsTotal = sessionsTotalAmount;
             
-            // Total = base product value + sessions value
-            const totalSum = Number(baseTotal) + Number(sessionsTotalAmount);
-            productoActualizado.total = totalSum as any;
+            // Total = sessions value only (no base product multiplication)
+            productoActualizado.total = sessionsTotalAmount as any;
             
             console.log('Sessions updated successfully:', {
               sessionsCount: productoActualizado.sessions.length,
-              baseTotal: baseTotal,
+              baseTotal: 0,
               sessionsTotal: sessionsTotalAmount,
               totalAmount: productoActualizado.total
             });
@@ -181,13 +174,12 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
           // Calculate new base total
           const newBaseTotal = calcularTotalProducto(cantidad, precio, descuento);
           
-          // If product has sessions, add them to the base total
+          // If product has sessions, use only sessions total (no base multiplication)
           if (productoActualizado.sessions && productoActualizado.sessions.length > 0) {
             const sessionsTotal = productoActualizado.sessions.reduce((sum: number, session: SessionAcreditacion) => sum + (Number(session.monto) || 0), 0);
-            (productoActualizado as any).baseTotal = newBaseTotal;
+            (productoActualizado as any).baseTotal = 0;
             (productoActualizado as any).sessionsTotal = sessionsTotal;
-            const totalSum = Number(newBaseTotal) + Number(sessionsTotal);
-            productoActualizado.total = totalSum as any;
+            productoActualizado.total = sessionsTotal as any;
           } else {
             productoActualizado.total = newBaseTotal as any;
             (productoActualizado as any).baseTotal = undefined;
