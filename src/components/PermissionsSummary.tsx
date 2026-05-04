@@ -99,7 +99,7 @@ export const PermissionsSummary: React.FC<PermissionsSummaryProps> = ({ classNam
         )}
 
         {/* Información para desarrolladores (solo en desarrollo) */}
-        {process.env.NODE_ENV === 'development' && (
+        {import.meta.env.DEV && (
           <details className="mt-4">
             <summary className="text-xs text-gray-500 cursor-pointer">Debug Info (Development)</summary>
             <div className="mt-2 p-2 bg-gray-50 rounded text-xs font-mono">
