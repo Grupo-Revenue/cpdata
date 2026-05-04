@@ -225,7 +225,7 @@ export const actualizarNegocioEnSupabase = async (id: string, updates: Partial<N
   try {
     const { data, error } = await supabase
       .from('negocios')
-      .update(updates)
+      .update(updates as any)
       .eq('id', id)
       .select(`
         *,

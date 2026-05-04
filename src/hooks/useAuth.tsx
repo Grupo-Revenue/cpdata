@@ -40,7 +40,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   
   // Refs to prevent race conditions and duplicate calls
   const adminCheckInProgress = useRef(false);
-  const adminCheckTimeout = useRef<NodeJS.Timeout | null>(null);
+  const adminCheckTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryAttempts = useRef(0);
   const maxRetries = 3;
 
