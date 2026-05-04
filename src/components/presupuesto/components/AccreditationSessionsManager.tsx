@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 
 import { Plus, Edit2, Trash2, Calendar, Calculator } from 'lucide-react';
 import { SessionAcreditacion } from '@/types';
-import { useAccreditationSessions } from '@/hooks/useAccreditationSessions';
 import { formatearPrecio, formatearFechaSinZonaHoraria } from '@/utils/formatters';
 import { useToast } from '@/hooks/use-toast';
 import SessionPriceCalculatorDialog from './SessionPriceCalculatorDialog';
@@ -22,23 +21,40 @@ interface AccreditationSessionsManagerProps {
 
 
 const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> = ({
-  sessions: externalSessions,
+  sessions,
   onSessionsChange
 }) => {
   const { toast } = useToast();
-  const {
-    sessions,
-    addSession,
-    updateSession,
-    removeSession,
-    getTotalAmount,
-    getTotalAccreditors,
-    setSessions
-  } = useAccreditationSessions(externalSessions);
 
-  // Ref to track if we're updating internally to avoid infinite loops
-  const isInternalUpdate = useRef(false);
-  const lastExternalSessions = useRef<SessionAcreditacion[]>(externalSessions);
+  const addSession = (data: Omit<SessionAcreditacion, 'id' | 'monto'>) => {
+    const newSession: SessionAcreditacion = {
+      ...data,
+      id: `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      monto: data.precio
+    };
+    onSessionsChange([...(sessions || []), newSession]);
+  };
+
+  const updateSession = (id: string, updates: Partial<SessionAcreditacion>) => {
+    const next = (sessions || []).map(s => {
+      if (s.id !== id) return s;
+      const merged = { ...s, ...updates };
+      if ('precio' in updates && !('monto' in updates)) {
+        merged.monto = updates.precio!;
+      }
+      return merged;
+    });
+    onSessionsChange(next);
+  };
+
+  const removeSession = (id: string) => {
+    onSessionsChange((sessions || []).filter(s => s.id !== id));
+  };
+
+  const getTotalAmount = () =>
+    (sessions || []).reduce((t, s) => t + (Number(s.monto) || 0), 0);
+  const getTotalAccreditors = () =>
+    (sessions || []).reduce((t, s) => t + (Number(s.acreditadores) || 0), 0);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
@@ -52,46 +68,6 @@ const AccreditationSessionsManager: React.FC<AccreditationSessionsManagerProps> 
     observacion: '',
     precio: ''
   });
-
-  // Deep comparison function for sessions arrays
-  const sessionsAreEqual = useCallback((a: SessionAcreditacion[], b: SessionAcreditacion[]) => {
-    if (a.length !== b.length) return false;
-    return a.every((sessionA, index) => {
-      const sessionB = b[index];
-      return sessionA.id === sessionB.id &&
-             sessionA.fecha === sessionB.fecha &&
-             sessionA.servicio === sessionB.servicio &&
-             sessionA.acreditadores === sessionB.acreditadores &&
-             sessionA.supervisor === sessionB.supervisor &&
-             sessionA.observacion === sessionB.observacion &&
-             sessionA.precio === sessionB.precio &&
-             sessionA.monto === sessionB.monto;
-    });
-  }, []);
-
-  // Sync internal sessions with external changes (only when external changes come from outside)
-  React.useEffect(() => {
-    if (!isInternalUpdate.current && !sessionsAreEqual(externalSessions, lastExternalSessions.current)) {
-      console.log('AccreditationSessionsManager: Syncing external sessions to internal:', externalSessions);
-      setSessions(externalSessions);
-      lastExternalSessions.current = externalSessions;
-    }
-  }, [externalSessions, setSessions, sessionsAreEqual]);
-
-  // Notify parent of internal changes (only when changes are truly internal)
-  React.useEffect(() => {
-    if (!sessionsAreEqual(sessions, lastExternalSessions.current)) {
-      console.log('AccreditationSessionsManager: Notifying parent of internal sessions change:', sessions);
-      isInternalUpdate.current = true;
-      onSessionsChange(sessions);
-      lastExternalSessions.current = [...sessions];
-      
-      // Reset the flag after a microtask to allow the parent to update
-      Promise.resolve().then(() => {
-        isInternalUpdate.current = false;
-      });
-    }
-  }, [sessions, onSessionsChange, sessionsAreEqual]);
 
   const resetForm = () => {
     setFormData({
