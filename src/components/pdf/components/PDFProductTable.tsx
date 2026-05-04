@@ -212,7 +212,11 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
                 <td className="border border-gray-400 p-3 text-right font-medium">
                   {formatearPrecio(producto.precioUnitario || producto.precio_unitario)}
                 </td>
-                <td className="border border-gray-400 p-3 text-right font-bold">{formatearPrecio(producto.total)}</td>
+                <td className="border border-gray-400 p-3 text-right font-bold">{(() => {
+                  const sessionsTotal = (producto.sessions || []).reduce((sum: number, x: any) => sum + (Number(x.monto) || Number(x.precio) || 0), 0);
+                  const displayTotal = producto.sessions && producto.sessions.length > 0 && sessionsTotal > 0 ? sessionsTotal : Number(producto.total) || 0;
+                  return formatearPrecio(displayTotal);
+                })()}</td>
               </tr>
               
               {/* Session Details as Sub-rows */}
