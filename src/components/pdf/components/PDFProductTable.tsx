@@ -136,12 +136,8 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
     
     // Filter sessions that have valid personnel data
     const validSessions = sessions.filter(session => {
-      const acreditadores = session.acreditadores || 0;
-      const supervisor = session.supervisor || 0;
-      const totalPersonal = acreditadores + supervisor;
-      
-      // Only show sessions with personnel > 0 and valid pricing
-      return totalPersonal > 0 && session.precio > 0;
+      const monto = Number(session.monto) || Number(session.precio) || 0;
+      return monto > 0;
     });
 
     if (validSessions.length === 0) {
@@ -153,8 +149,7 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
         {validSessions.map((session, index) => {
           const acreditadores = session.acreditadores || 0;
           const supervisor = session.supervisor || 0;
-          const totalPersonal = acreditadores + supervisor;
-          const subtotal = session.precio * totalPersonal;
+          const subtotal = Number(session.monto) || Number(session.precio) || 0;
           
           return (
             <div key={session.id || index} className="grid grid-cols-12 gap-2 py-1 text-sm border-b border-gray-200 last:border-b-0 items-center">
