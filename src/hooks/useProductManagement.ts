@@ -216,13 +216,20 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
         producto.nombre.toLowerCase().includes('acreditación') ||
         producto.descripcion?.toLowerCase().includes('acreditación');
 
+      const sessionsArr = producto.sessions || (isAccreditationProduct ? [] : undefined);
+      const sessionsTotal = Array.isArray(sessionsArr)
+        ? sessionsArr.reduce((sum: number, s: any) => sum + (Number(s?.monto) || 0), 0)
+        : 0;
+      const recomputedTotal = sessionsTotal > 0 ? sessionsTotal : producto.total;
+
       return {
         ...producto,
         comentarios: producto.comentarios || '',
         descuentoPorcentaje: producto.descuentoPorcentaje || 0,
         descuento_porcentaje: producto.descuentoPorcentaje || producto.descuento_porcentaje || 0,
         precioUnitario: producto.precioUnitario || producto.precio_unitario,
-        sessions: producto.sessions || (isAccreditationProduct ? [] : undefined),
+        sessions: sessionsArr,
+        total: recomputedTotal,
         originalLibraryDescription: producto.originalLibraryDescription || producto.descripcion || ''
       };
     });

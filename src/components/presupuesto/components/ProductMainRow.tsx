@@ -36,6 +36,13 @@ const ProductMainRow: React.FC<ProductMainRowProps> = ({
     onToggleExpanded();
   };
 
+  const sessionsTotal = (producto.sessions || []).reduce(
+    (sum: number, s: any) => sum + (Number(s.monto) || 0),
+    0
+  );
+  const hasSessions = !!(producto.sessions && producto.sessions.length > 0 && sessionsTotal > 0);
+  const displayTotal = hasSessions ? sessionsTotal : Number(producto.total) || 0;
+
   return (
     <TableRow className="group hover:bg-gray-50/50">
       <TableCell className="py-3">
@@ -107,23 +114,20 @@ const ProductMainRow: React.FC<ProductMainRowProps> = ({
       
       <TableCell className="text-center align-middle py-3">
         <div className="text-right">
-          {producto.sessions && producto.sessions.length > 0 && (producto as any).baseTotal && (producto as any).sessionsTotal ? (
+          {hasSessions ? (
             <div className="space-y-1">
-              <div className="text-xs text-gray-500">
-                Base: {formatearPrecio((producto as any).baseTotal)}
-              </div>
               <div className="text-xs text-blue-600">
-                + Jornadas: {formatearPrecio((producto as any).sessionsTotal)}
+                Jornadas: {formatearPrecio(sessionsTotal)}
               </div>
               <div className="border-t pt-1">
                 <span className="font-semibold text-green-600 text-sm">
-                  {formatearPrecio(producto.total)}
+                  {formatearPrecio(displayTotal)}
                 </span>
               </div>
             </div>
           ) : (
             <span className="font-semibold text-green-600 text-sm">
-              {formatearPrecio(producto.total)}
+              {formatearPrecio(displayTotal)}
             </span>
           )}
         </div>
