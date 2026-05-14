@@ -183,6 +183,7 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
         <tbody>
           {(presupuesto.productos || []).map((producto, index) => (
             <React.Fragment key={`producto-${producto.id || index}`}>
+              {(() => null)()}
               <tr className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                 <td className="border border-gray-400 p-3">
                   <div className="product-description">
@@ -210,7 +211,13 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
                 </td>
                 <td className="border border-gray-400 p-3 text-center font-medium">{producto.cantidad}</td>
                 <td className="border border-gray-400 p-3 text-right font-medium">
-                  {formatearPrecio(producto.precioUnitario || producto.precio_unitario)}
+                  {(() => {
+                    const sessionsTotal = (producto.sessions || []).reduce((sum: number, x: any) => sum + (Number(x.monto) || Number(x.precio) || 0), 0);
+                    const hasSessions = producto.sessions && producto.sessions.length > 0 && sessionsTotal > 0;
+                    const cantidad = Number(producto.cantidad) || 1;
+                    const unit = hasSessions ? sessionsTotal / cantidad : (producto.precioUnitario || producto.precio_unitario);
+                    return formatearPrecio(unit);
+                  })()}
                 </td>
                 <td className="border border-gray-400 p-3 text-right font-bold">{(() => {
                   const sessionsTotal = (producto.sessions || []).reduce((sum: number, x: any) => sum + (Number(x.monto) || Number(x.precio) || 0), 0);
