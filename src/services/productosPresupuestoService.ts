@@ -30,7 +30,10 @@ export const actualizarProductosPresupuesto = async (
       const discount = producto.descuentoPorcentaje || 0;
       const baseTotal = producto.cantidad * producto.precio_unitario;
       const discountAmount = baseTotal * (discount / 100);
-      const finalTotal = baseTotal - discountAmount;
+      const baseAfterDiscount = baseTotal - discountAmount;
+      const manualRaw = (producto as any).precioFinalManual ?? (producto as any).precio_final_manual;
+      const hasManual = manualRaw !== null && manualRaw !== undefined && manualRaw !== '' && !Number.isNaN(Number(manualRaw));
+      const finalTotal = hasManual ? Math.max(0, Number(manualRaw)) : baseAfterDiscount;
       
       return {
         presupuesto_id: presupuestoId,
@@ -41,7 +44,8 @@ export const actualizarProductosPresupuesto = async (
         total: finalTotal,
         descuento_porcentaje: discount,
         comentarios: producto.comentarios || '',
-        sessions: producto.sessions && producto.sessions.length > 0 ? JSON.stringify(producto.sessions) : null
+        sessions: producto.sessions && producto.sessions.length > 0 ? JSON.stringify(producto.sessions) : null,
+        precio_final_manual: hasManual ? Number(manualRaw) : null
       };
     });
 
@@ -65,6 +69,7 @@ export const actualizarProductosPresupuesto = async (
       comentarios: producto.comentarios || '',
       descuentoPorcentaje: producto.descuento_porcentaje || 0,
       precioUnitario: producto.precio_unitario,
+      precioFinalManual: (producto as any).precio_final_manual ?? null,
       sessions: producto.sessions ? 
         (typeof producto.sessions === 'string' ? JSON.parse(producto.sessions) : producto.sessions) : 
         undefined

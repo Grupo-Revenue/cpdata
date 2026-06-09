@@ -250,8 +250,13 @@ export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoD
         const sessionsTotal = producto.sessions?.reduce((sum: number, session: any) => 
           sum + (Number(session.monto) || 0), 0) || 0;
         
+        const manualRaw = producto.precioFinalManual ?? producto.precio_final_manual;
+        const hasManual = manualRaw !== null && manualRaw !== undefined && manualRaw !== '' && !Number.isNaN(Number(manualRaw));
+
         let finalTotal;
-        if (producto.sessions && producto.sessions.length > 0 && sessionsTotal > 0) {
+        if (hasManual) {
+          finalTotal = Math.max(0, Number(manualRaw));
+        } else if (producto.sessions && producto.sessions.length > 0 && sessionsTotal > 0) {
           // Sessions already include attendee calculations, apply discount to sessions only
           const discountOnSessions = sessionsTotal * (discount / 100);
           finalTotal = sessionsTotal - discountOnSessions;
@@ -270,7 +275,8 @@ export const crearPresupuestoEnSupabase = async (negocioId: string, presupuestoD
           total: finalTotal,
           descuento_porcentaje: discount,
           comentarios: producto.comentarios || '',
-          sessions: producto.sessions || null
+          sessions: producto.sessions || null,
+          precio_final_manual: hasManual ? Number(manualRaw) : null
         };
       });
 
@@ -371,8 +377,13 @@ export const actualizarPresupuestoEnSupabase = async (presupuestoId: string, upd
           const sessionsTotal = p.sessions?.reduce((sum: number, session: any) => 
             sum + (Number(session.monto) || 0), 0) || 0;
           
+          const manualRaw = p.precioFinalManual ?? p.precio_final_manual;
+          const hasManual = manualRaw !== null && manualRaw !== undefined && manualRaw !== '' && !Number.isNaN(Number(manualRaw));
+
           let finalTotal;
-          if (p.sessions && p.sessions.length > 0 && sessionsTotal > 0) {
+          if (hasManual) {
+            finalTotal = Math.max(0, Number(manualRaw));
+          } else if (p.sessions && p.sessions.length > 0 && sessionsTotal > 0) {
             // Sessions already include attendee calculations, apply discount to sessions only
             const discountOnSessions = sessionsTotal * (discount / 100);
             finalTotal = sessionsTotal - discountOnSessions;
@@ -391,7 +402,8 @@ export const actualizarPresupuestoEnSupabase = async (presupuestoId: string, upd
             total: finalTotal,
             descuento_porcentaje: discount,
             comentarios: p.comentarios || '',
-            sessions: p.sessions || null
+            sessions: p.sessions || null,
+            precio_final_manual: hasManual ? Number(manualRaw) : null
           };
         });
 
