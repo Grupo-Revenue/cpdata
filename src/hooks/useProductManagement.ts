@@ -31,7 +31,9 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
       presupuesto_id: '',
       linea_producto_id: productoBiblioteca.linea_producto_id,
       sessions: isAccreditationProduct ? [] : undefined,
-      originalLibraryDescription: productoBiblioteca.descripcion || ''
+      originalLibraryDescription: productoBiblioteca.descripcion || '',
+      precio_final_manual: null,
+      precioFinalManual: null
     };
 
     setProductos(prev => [...prev, nuevoProducto]);
@@ -63,7 +65,9 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
       total: calcularTotalProducto(productoData.cantidad, productoData.precioUnitario, 0),
       created_at: new Date().toISOString(),
       presupuesto_id: '',
-      sessions: isAccreditationProduct ? [] : undefined
+      sessions: isAccreditationProduct ? [] : undefined,
+      precio_final_manual: null,
+      precioFinalManual: null
     };
 
     setProductos(prev => [...prev, nuevoProducto]);
