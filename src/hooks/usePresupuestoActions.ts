@@ -109,6 +109,7 @@ export const usePresupuestoActions = (negocioId: string, onRefresh: () => void) 
           total: p.total,
           comentarios: p.comentarios,
           sessions: p.sessions,
+          precio_final_manual: p.precio_final_manual ?? null,
           presupuesto_id: nuevoPresupuesto.id
         }));
 

@@ -12,6 +12,7 @@ interface ProductNumberInputProps {
   className?: string;
   placeholder?: string;
   allowEmpty?: boolean;
+  disabled?: boolean;
 }
 
 const ProductNumberInput: React.FC<ProductNumberInputProps> = ({
@@ -22,7 +23,8 @@ const ProductNumberInput: React.FC<ProductNumberInputProps> = ({
   step,
   className = "w-16 h-9 text-center text-sm border-gray-200 focus:border-blue-500 focus:ring-blue-500/20",
   placeholder = "0",
-  allowEmpty = false
+  allowEmpty = false,
+  disabled = false
 }) => {
   const {
     displayValue,
@@ -63,6 +65,7 @@ const ProductNumberInput: React.FC<ProductNumberInputProps> = ({
       value={displayValue}
       onChange={(e) => handleChange(e.target.value)}
       onBlur={handleBlur}
+      disabled={disabled}
       className={`${className} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
       placeholder={placeholder}
       style={{ MozAppearance: 'textfield' }}

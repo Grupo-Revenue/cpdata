@@ -1,0 +1,1 @@
+ALTER TABLE public.productos_presupuesto ADD COLUMN IF NOT EXISTS precio_final_manual numeric NULL;

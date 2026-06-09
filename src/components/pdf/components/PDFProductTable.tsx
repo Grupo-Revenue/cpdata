@@ -215,13 +215,21 @@ const PDFProductTable: React.FC<PDFProductTableProps> = ({ presupuesto }) => {
                     const sessionsTotal = (producto.sessions || []).reduce((sum: number, x: any) => sum + (Number(x.monto) || Number(x.precio) || 0), 0);
                     const hasSessions = producto.sessions && producto.sessions.length > 0 && sessionsTotal > 0;
                     const cantidad = Number(producto.cantidad) || 1;
-                    const unit = hasSessions ? sessionsTotal / cantidad : (producto.precioUnitario || producto.precio_unitario);
+                    const manualRaw = (producto as any).precioFinalManual ?? (producto as any).precio_final_manual;
+                    const hasManual = manualRaw !== null && manualRaw !== undefined;
+                    const unit = hasManual
+                      ? Number(manualRaw) / cantidad
+                      : (hasSessions ? sessionsTotal / cantidad : (producto.precioUnitario || producto.precio_unitario));
                     return formatearPrecio(unit);
                   })()}
                 </td>
                 <td className="border border-gray-400 p-3 text-right font-bold">{(() => {
                   const sessionsTotal = (producto.sessions || []).reduce((sum: number, x: any) => sum + (Number(x.monto) || Number(x.precio) || 0), 0);
-                  const displayTotal = producto.sessions && producto.sessions.length > 0 && sessionsTotal > 0 ? sessionsTotal : Number(producto.total) || 0;
+                  const manualRaw = (producto as any).precioFinalManual ?? (producto as any).precio_final_manual;
+                  const hasManual = manualRaw !== null && manualRaw !== undefined;
+                  const displayTotal = hasManual
+                    ? Number(manualRaw)
+                    : (producto.sessions && producto.sessions.length > 0 && sessionsTotal > 0 ? sessionsTotal : Number(producto.total) || 0);
                   return formatearPrecio(displayTotal);
                 })()}</td>
               </tr>

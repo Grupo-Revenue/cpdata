@@ -112,6 +112,7 @@ export const usePublicBudgetData = (negocioId: string, presupuestoId: string): P
           comentarios: undefined,
           descuentoPorcentaje: 0, // Set default value instead of undefined
           precioUnitario: p.precio_unitario,
+          precioFinalManual: p.precio_final_manual ?? null,
           linea_producto_id: undefined,
           originalLibraryDescription: undefined
         }));

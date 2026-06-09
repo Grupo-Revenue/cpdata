@@ -2,9 +2,10 @@
 import React from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Percent, Trash2, ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
+import { Percent, Trash2, ChevronDown, ChevronUp, Edit3, Tag, X } from 'lucide-react';
 import { ExtendedProductoPresupuesto } from '@/types';
 import { formatearPrecio } from '@/utils/formatters';
+import { calcularDescuentoEquivalente } from '@/utils/quoteCalculations';
 import ProductNumberInput from './ProductNumberInput';
 import ProductPriceInput from './ProductPriceInput';
 
@@ -41,7 +42,41 @@ const ProductMainRow: React.FC<ProductMainRowProps> = ({
     0
   );
   const hasSessions = !!(producto.sessions && producto.sessions.length > 0 && sessionsTotal > 0);
-  const displayTotal = hasSessions ? sessionsTotal : Number(producto.total) || 0;
+
+  const manualRaw = producto.precioFinalManual ?? producto.precio_final_manual;
+  const hasManual = manualRaw !== null && manualRaw !== undefined;
+  const manualValue = hasManual ? Number(manualRaw) : 0;
+
+  const cantidad = Number(producto.cantidad) || 1;
+  const precioUnit = Number(producto.precioUnitario || producto.precio_unitario) || 0;
+  const listaSubtotal = hasSessions ? sessionsTotal : cantidad * precioUnit;
+
+  const calculatedTotal = hasSessions ? sessionsTotal : Number(producto.total) || 0;
+  const displayTotal = hasManual ? manualValue : calculatedTotal;
+
+  const exceedsLista = hasManual && manualValue > listaSubtotal && listaSubtotal > 0;
+  const equivalente = hasManual
+    ? calcularDescuentoEquivalente(precioUnit, cantidad, manualValue)
+    : { porcentaje: 0, monto: 0 };
+
+  const handleManualChange = (raw: string) => {
+    if (raw === '') {
+      onActualizarProducto(producto.id, 'precioFinalManual' as any, null);
+      return;
+    }
+    const num = parseFloat(raw);
+    if (!Number.isFinite(num) || num < 0) return;
+    onActualizarProducto(producto.id, 'precioFinalManual' as any, num);
+  };
+
+  const handleFixPrice = () => {
+    // Start manual price at the current calculated total
+    onActualizarProducto(producto.id, 'precioFinalManual' as any, calculatedTotal || listaSubtotal || 0);
+  };
+
+  const handleClearManual = () => {
+    onActualizarProducto(producto.id, 'precioFinalManual' as any, null);
+  };
 
   return (
     <TableRow className="group hover:bg-gray-50/50">
@@ -107,28 +142,76 @@ const ProductMainRow: React.FC<ProductMainRowProps> = ({
             min={0}
             max={100}
             step={0.1}
-            className="w-20 h-9 text-center text-sm pr-7 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+            disabled={hasManual}
+            className={`w-20 h-9 text-center text-sm pr-7 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 ${hasManual ? 'opacity-50 cursor-not-allowed' : ''}`}
           />
         </div>
+        {hasManual && (
+          <div className="text-[10px] text-gray-400 mt-1" title="El precio manual tiene prioridad sobre el descuento %.">
+            Precio manual activo
+          </div>
+        )}
       </TableCell>
       
       <TableCell className="text-center align-middle py-3">
-        <div className="text-right">
-          {hasSessions ? (
-            <div className="space-y-1">
-              <div className="text-xs text-blue-600">
-                Jornadas: {formatearPrecio(sessionsTotal)}
-              </div>
-              <div className="border-t pt-1">
-                <span className="font-semibold text-green-600 text-sm">
-                  {formatearPrecio(displayTotal)}
-                </span>
-              </div>
+        <div className="text-right space-y-1">
+          {hasSessions && (
+            <div className="text-xs text-blue-600">
+              Jornadas: {formatearPrecio(sessionsTotal)}
             </div>
+          )}
+          {!hasManual ? (
+            <>
+              <span className="font-semibold text-green-600 text-sm block">
+                {formatearPrecio(displayTotal)}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleFixPrice}
+                className="h-6 px-2 text-[11px] text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                title="Fijar un precio final manual para esta línea"
+              >
+                <Tag className="w-3 h-3 mr-1" />
+                Fijar precio
+              </Button>
+            </>
           ) : (
-            <span className="font-semibold text-green-600 text-sm">
-              {formatearPrecio(displayTotal)}
-            </span>
+            <div className="space-y-1">
+              <div className="flex items-center justify-end gap-1">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                  MANUAL
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearManual}
+                  className="h-5 w-5 p-0 text-gray-400 hover:text-red-600"
+                  title="Quitar precio manual y volver al cálculo estándar"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={manualValue}
+                onChange={(e) => handleManualChange(e.target.value)}
+                className={`w-28 h-9 text-right text-sm px-2 rounded-md border ${exceedsLista ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-amber-300 focus:border-amber-500 focus:ring-amber-500/20'} bg-amber-50/40 font-semibold text-green-700 focus:outline-none focus:ring-2`}
+              />
+              {listaSubtotal > 0 && (
+                <div className={`text-[10px] ${exceedsLista ? 'text-red-600' : 'text-gray-500'}`}>
+                  {exceedsLista ? (
+                    <>No puede superar el precio de lista ({formatearPrecio(listaSubtotal)})</>
+                  ) : (
+                    <>
+                      Desc. equiv.: {equivalente.porcentaje.toFixed(2)}% (−{formatearPrecio(equivalente.monto)})
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </TableCell>

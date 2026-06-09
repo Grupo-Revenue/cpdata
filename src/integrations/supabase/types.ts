@@ -616,6 +616,7 @@ export type Database = {
           descuento_porcentaje: number | null
           id: string
           nombre: string
+          precio_final_manual: number | null
           precio_unitario: number
           presupuesto_id: string
           sessions: Json | null
@@ -629,6 +630,7 @@ export type Database = {
           descuento_porcentaje?: number | null
           id?: string
           nombre: string
+          precio_final_manual?: number | null
           precio_unitario: number
           presupuesto_id: string
           sessions?: Json | null
@@ -642,6 +644,7 @@ export type Database = {
           descuento_porcentaje?: number | null
           id?: string
           nombre?: string
+          precio_final_manual?: number | null
           precio_unitario?: number
           presupuesto_id?: string
           sessions?: Json | null

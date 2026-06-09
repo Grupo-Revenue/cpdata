@@ -37,6 +37,9 @@ export type ExtendedProductoPresupuesto = Database['public']['Tables']['producto
   originalLibraryDescription?: string; // Store original description from library for reference
   baseTotal?: number; // Base product total (price * quantity - discount)
   sessionsTotal?: number; // Total from accreditation sessions
+  // Manual final price override (net, without IVA). When set, takes priority over qty*price and % discount.
+  precioFinalManual?: number | null;
+  precio_final_manual?: number | null;
 }
 
 export type ExtendedNegocio = Database['public']['Tables']['negocios']['Row'] & {

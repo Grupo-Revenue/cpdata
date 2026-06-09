@@ -103,22 +103,31 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
         // Convert products to the format expected by the service
         productos: productos.map(producto => {
           const discount = Number(producto.descuentoPorcentaje) || 0;
-          const baseTotal = Number(producto.cantidad || 1) * Number(producto.precio_unitario || 0);
+          const cantidad = Number(producto.cantidad) || 1;
+          const precioUnitario = Number(producto.precio_unitario) || 0;
+          const baseTotal = cantidad * precioUnitario;
           const discountAmount = baseTotal * (discount / 100);
           const baseAfterDiscount = baseTotal - discountAmount;
-          
+
           // Add session values if they exist
-          const sessionsTotal = producto.sessions?.reduce((sum: number, session: any) => 
+          const sessionsTotal = producto.sessions?.reduce((sum: number, session: any) =>
             sum + (Number(session.monto) || 0), 0) || 0;
-          
-          const finalTotal = baseAfterDiscount + sessionsTotal;
+          const hasSessions = !!(producto.sessions && producto.sessions.length > 0 && sessionsTotal > 0);
+
+          // Manual price has priority over everything
+          const manualRaw = (producto as any).precioFinalManual ?? (producto as any).precio_final_manual;
+          const hasManual = manualRaw !== null && manualRaw !== undefined && manualRaw !== '' && !Number.isNaN(Number(manualRaw));
+
+          const finalTotal = hasManual
+            ? Math.max(0, Number(manualRaw))
+            : (hasSessions ? sessionsTotal - sessionsTotal * (discount / 100) : baseAfterDiscount);
           
           const cleanProduct = {
             id: producto.id || `temp-${Date.now()}-${Math.random()}`,
             nombre: producto.nombre || 'Producto sin nombre',
             descripcion: producto.descripcion || '',
-            cantidad: Number(producto.cantidad) || 1,
-            precio_unitario: Number(producto.precio_unitario) || 0,
+            cantidad,
+            precio_unitario: precioUnitario,
             total: finalTotal,
             created_at: new Date().toISOString(),
             presupuesto_id: presupuestoId || '',
@@ -126,8 +135,10 @@ export const useQuotePersistence = ({ negocioId, presupuestoId, onCerrar }: UseQ
             comentarios: producto.comentarios || '',
             descuentoPorcentaje: discount,
             descuento_porcentaje: discount,
-            precioUnitario: Number(producto.precio_unitario) || 0,
-            sessions: producto.sessions || null
+            precioUnitario: precioUnitario,
+            sessions: producto.sessions || null,
+            precio_final_manual: hasManual ? Number(manualRaw) : null,
+            precioFinalManual: hasManual ? Number(manualRaw) : null
           };
           
           console.log('🔧 [useQuotePersistence] Cleaned product:', {

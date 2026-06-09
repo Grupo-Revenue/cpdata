@@ -31,7 +31,9 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
       presupuesto_id: '',
       linea_producto_id: productoBiblioteca.linea_producto_id,
       sessions: isAccreditationProduct ? [] : undefined,
-      originalLibraryDescription: productoBiblioteca.descripcion || ''
+      originalLibraryDescription: productoBiblioteca.descripcion || '',
+      precio_final_manual: null,
+      precioFinalManual: null
     };
 
     setProductos(prev => [...prev, nuevoProducto]);
@@ -63,7 +65,9 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
       total: calcularTotalProducto(productoData.cantidad, productoData.precioUnitario, 0),
       created_at: new Date().toISOString(),
       presupuesto_id: '',
-      sessions: isAccreditationProduct ? [] : undefined
+      sessions: isAccreditationProduct ? [] : undefined,
+      precio_final_manual: null,
+      precioFinalManual: null
     };
 
     setProductos(prev => [...prev, nuevoProducto]);
@@ -145,6 +149,34 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
           productoActualizado.nombre = valor;
         } else if (campo === 'descripcion') {
           productoActualizado.descripcion = valor;
+        } else if (campo === 'precioFinalManual' || (campo as any) === 'precio_final_manual') {
+          const isClearing = valor === null || valor === undefined || valor === '';
+          if (isClearing) {
+            productoActualizado.precioFinalManual = null;
+            productoActualizado.precio_final_manual = null;
+          } else {
+            const num = typeof valor === 'number' ? valor : parseFloat(valor);
+            const safe = !Number.isFinite(num) || num < 0 ? 0 : num;
+            productoActualizado.precioFinalManual = safe;
+            productoActualizado.precio_final_manual = safe;
+          }
+
+          // Recalculate total honoring manual override priority
+          if (productoActualizado.precioFinalManual !== null && productoActualizado.precioFinalManual !== undefined) {
+            productoActualizado.total = Number(productoActualizado.precioFinalManual) as any;
+          } else {
+            // Manual cleared: fall back to sessions or qty*price-%
+            const precio = Number(productoActualizado.precio_unitario) || Number(productoActualizado.precioUnitario) || 0;
+            const cantidad = Number(productoActualizado.cantidad) || 1;
+            const descuento = Number(productoActualizado.descuentoPorcentaje) || 0;
+            const sessionsTotal = (productoActualizado.sessions || []).reduce(
+              (s: number, x: any) => s + (Number(x?.monto) || 0), 0
+            );
+            const hasSessions = !!(productoActualizado.sessions && productoActualizado.sessions.length > 0 && sessionsTotal > 0);
+            productoActualizado.total = (hasSessions
+              ? sessionsTotal - sessionsTotal * (descuento / 100)
+              : calcularTotalProducto(cantidad, precio, descuento)) as any;
+          }
         }
         
         // Recalculate total for price/quantity/discount changes (but not for sessions as they're handled above)
@@ -174,8 +206,11 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
           // Calculate new base total
           const newBaseTotal = calcularTotalProducto(cantidad, precio, descuento);
           
-          // If product has sessions, use only sessions total (no base multiplication)
-          if (productoActualizado.sessions && productoActualizado.sessions.length > 0) {
+          // Manual final price has top priority — keep it regardless of qty/price/discount changes
+          const manualVal = (productoActualizado.precioFinalManual ?? productoActualizado.precio_final_manual);
+          if (manualVal !== null && manualVal !== undefined) {
+            productoActualizado.total = Number(manualVal) as any;
+          } else if (productoActualizado.sessions && productoActualizado.sessions.length > 0) {
             const sessionsTotal = productoActualizado.sessions.reduce((sum: number, session: SessionAcreditacion) => sum + (Number(session.monto) || 0), 0);
             (productoActualizado as any).baseTotal = 0;
             (productoActualizado as any).sessionsTotal = sessionsTotal;
@@ -220,7 +255,11 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
       const sessionsTotal = Array.isArray(sessionsArr)
         ? sessionsArr.reduce((sum: number, s: any) => sum + (Number(s?.monto) || 0), 0)
         : 0;
-      const recomputedTotal = sessionsTotal > 0 ? sessionsTotal : producto.total;
+      const manualVal = (producto as any).precioFinalManual ?? (producto as any).precio_final_manual;
+      const hasManual = manualVal !== null && manualVal !== undefined;
+      const recomputedTotal = hasManual
+        ? Number(manualVal)
+        : (sessionsTotal > 0 ? sessionsTotal : producto.total);
 
       return {
         ...producto,
@@ -228,6 +267,8 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
         descuentoPorcentaje: producto.descuentoPorcentaje || 0,
         descuento_porcentaje: producto.descuentoPorcentaje || producto.descuento_porcentaje || 0,
         precioUnitario: producto.precioUnitario || producto.precio_unitario,
+        precioFinalManual: (producto as any).precioFinalManual ?? (producto as any).precio_final_manual ?? null,
+        precio_final_manual: (producto as any).precio_final_manual ?? (producto as any).precioFinalManual ?? null,
         sessions: sessionsArr,
         total: recomputedTotal,
         originalLibraryDescription: producto.originalLibraryDescription || producto.descripcion || ''

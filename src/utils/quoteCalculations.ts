@@ -14,46 +14,54 @@ export const calcularTotalProducto = (cantidad: number, precioUnitario: number, 
   return subtotalProducto - descuento;
 };
 
+// Calculate equivalent discount info when a manual final price is applied
+export const calcularDescuentoEquivalente = (
+  precioLista: number,
+  cantidad: number,
+  precioManual: number
+): { porcentaje: number; monto: number } => {
+  const subtotalLista = (Number(precioLista) || 0) * (Number(cantidad) || 0);
+  const manual = Number(precioManual) || 0;
+  const monto = Math.max(0, subtotalLista - manual);
+  const porcentaje = subtotalLista > 0 ? (monto / subtotalLista) * 100 : 0;
+  return { porcentaje, monto };
+};
+
+// Resolve the effective net subtotal for a single product line, honoring manual override.
+const getEffectiveLineSubtotal = (producto: any): { effective: number; listaSubtotal: number } => {
+  const cantidad = Number(producto.cantidad) || 0;
+  const precioUnitario = Number(producto.precioUnitario || producto.precio_unitario) || 0;
+  const descuentoPorcentaje = Number(producto.descuentoPorcentaje || producto.descuento_porcentaje) || 0;
+
+  const manualRaw = producto.precioFinalManual ?? producto.precio_final_manual;
+  const hasManual = manualRaw !== null && manualRaw !== undefined && manualRaw !== '' && !Number.isNaN(Number(manualRaw));
+
+  const sessions = producto.sessions;
+  const sessionsTotal = Array.isArray(sessions)
+    ? sessions.reduce((s: number, x: any) => s + (Number(x?.monto) || 0), 0)
+    : 0;
+  const hasSessions = Array.isArray(sessions) && sessions.length > 0 && sessionsTotal > 0;
+
+  const listaSubtotal = hasSessions ? sessionsTotal : cantidad * precioUnitario;
+
+  if (hasManual) {
+    return { effective: Math.max(0, Number(manualRaw)), listaSubtotal };
+  }
+
+  const baseForDiscount = hasSessions ? sessionsTotal : cantidad * precioUnitario;
+  const descuento = baseForDiscount * (descuentoPorcentaje / 100);
+  return { effective: baseForDiscount - descuento, listaSubtotal };
+};
+
 export const calcularTotalesPresupuesto = (productos: ProductoPresupuesto[]): QuoteTotals => {
-  const subtotal = productos.reduce((sum, producto) => {
-    const cantidad = producto.cantidad || 0;
-    const precioUnitario = producto.precioUnitario || producto.precio_unitario || 0;
-    
-    // Check if product has sessions with values (accreditation products)
-    const sessions = (producto as any).sessions;
-    const sessionsTotal = sessions?.reduce((sessionSum: number, session: any) => 
-      sessionSum + (Number(session.monto) || 0), 0) || 0;
-    
-    // If product has sessions, use ONLY sessions total (sessions already factor in attendees)
-    if (sessions && sessions.length > 0 && sessionsTotal > 0) {
-      return sum + sessionsTotal;
-    }
-    
-    // Otherwise use standard calculation
-    const baseTotal = cantidad * precioUnitario;
-    return sum + baseTotal;
-  }, 0);
-
-  const totalDescuentos = productos.reduce((sum, producto) => {
-    const cantidad = producto.cantidad || 0;
-    const precioUnitario = producto.precioUnitario || producto.precio_unitario || 0;
-    const descuentoPorcentaje = producto.descuentoPorcentaje || 0;
-    
-    // Check if product has sessions with values
-    const sessions = (producto as any).sessions;
-    const sessionsTotal = sessions?.reduce((sessionSum: number, session: any) => 
-      sessionSum + (Number(session.monto) || 0), 0) || 0;
-    
-    // Use sessions total as base for discount if sessions exist
-    const subtotalProducto = (sessions && sessions.length > 0 && sessionsTotal > 0) 
-      ? sessionsTotal 
-      : cantidad * precioUnitario;
-    
-    const descuento = subtotalProducto * (descuentoPorcentaje / 100);
-    return sum + descuento;
-  }, 0);
-
-  const subtotalConDescuento = subtotal - totalDescuentos;
+  let subtotal = 0;
+  let subtotalConDescuento = 0;
+  for (const producto of productos) {
+    const { effective, listaSubtotal } = getEffectiveLineSubtotal(producto as any);
+    subtotal += listaSubtotal;
+    subtotalConDescuento += effective;
+  }
+  const totalDescuentos = Math.max(0, subtotal - subtotalConDescuento);
   const iva = subtotalConDescuento * (IVA_PERCENTAGE / 100);
   const total = subtotalConDescuento + iva;
 
