@@ -206,8 +206,11 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
           // Calculate new base total
           const newBaseTotal = calcularTotalProducto(cantidad, precio, descuento);
           
-          // If product has sessions, use only sessions total (no base multiplication)
-          if (productoActualizado.sessions && productoActualizado.sessions.length > 0) {
+          // Manual final price has top priority — keep it regardless of qty/price/discount changes
+          const manualVal = (productoActualizado.precioFinalManual ?? productoActualizado.precio_final_manual);
+          if (manualVal !== null && manualVal !== undefined) {
+            productoActualizado.total = Number(manualVal) as any;
+          } else if (productoActualizado.sessions && productoActualizado.sessions.length > 0) {
             const sessionsTotal = productoActualizado.sessions.reduce((sum: number, session: SessionAcreditacion) => sum + (Number(session.monto) || 0), 0);
             (productoActualizado as any).baseTotal = 0;
             (productoActualizado as any).sessionsTotal = sessionsTotal;
@@ -252,7 +255,11 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
       const sessionsTotal = Array.isArray(sessionsArr)
         ? sessionsArr.reduce((sum: number, s: any) => sum + (Number(s?.monto) || 0), 0)
         : 0;
-      const recomputedTotal = sessionsTotal > 0 ? sessionsTotal : producto.total;
+      const manualVal = (producto as any).precioFinalManual ?? (producto as any).precio_final_manual;
+      const hasManual = manualVal !== null && manualVal !== undefined;
+      const recomputedTotal = hasManual
+        ? Number(manualVal)
+        : (sessionsTotal > 0 ? sessionsTotal : producto.total);
 
       return {
         ...producto,
