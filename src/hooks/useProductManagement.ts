@@ -149,6 +149,34 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
           productoActualizado.nombre = valor;
         } else if (campo === 'descripcion') {
           productoActualizado.descripcion = valor;
+        } else if (campo === 'precioFinalManual' || (campo as any) === 'precio_final_manual') {
+          const isClearing = valor === null || valor === undefined || valor === '';
+          if (isClearing) {
+            productoActualizado.precioFinalManual = null;
+            productoActualizado.precio_final_manual = null;
+          } else {
+            const num = typeof valor === 'number' ? valor : parseFloat(valor);
+            const safe = !Number.isFinite(num) || num < 0 ? 0 : num;
+            productoActualizado.precioFinalManual = safe;
+            productoActualizado.precio_final_manual = safe;
+          }
+
+          // Recalculate total honoring manual override priority
+          if (productoActualizado.precioFinalManual !== null && productoActualizado.precioFinalManual !== undefined) {
+            productoActualizado.total = Number(productoActualizado.precioFinalManual) as any;
+          } else {
+            // Manual cleared: fall back to sessions or qty*price-%
+            const precio = Number(productoActualizado.precio_unitario) || Number(productoActualizado.precioUnitario) || 0;
+            const cantidad = Number(productoActualizado.cantidad) || 1;
+            const descuento = Number(productoActualizado.descuentoPorcentaje) || 0;
+            const sessionsTotal = (productoActualizado.sessions || []).reduce(
+              (s: number, x: any) => s + (Number(x?.monto) || 0), 0
+            );
+            const hasSessions = !!(productoActualizado.sessions && productoActualizado.sessions.length > 0 && sessionsTotal > 0);
+            productoActualizado.total = (hasSessions
+              ? sessionsTotal - sessionsTotal * (descuento / 100)
+              : calcularTotalProducto(cantidad, precio, descuento)) as any;
+          }
         }
         
         // Recalculate total for price/quantity/discount changes (but not for sessions as they're handled above)
@@ -232,6 +260,8 @@ export const useProductManagement = (initialProducts: ExtendedProductoPresupuest
         descuentoPorcentaje: producto.descuentoPorcentaje || 0,
         descuento_porcentaje: producto.descuentoPorcentaje || producto.descuento_porcentaje || 0,
         precioUnitario: producto.precioUnitario || producto.precio_unitario,
+        precioFinalManual: (producto as any).precioFinalManual ?? (producto as any).precio_final_manual ?? null,
+        precio_final_manual: (producto as any).precio_final_manual ?? (producto as any).precioFinalManual ?? null,
         sessions: sessionsArr,
         total: recomputedTotal,
         originalLibraryDescription: producto.originalLibraryDescription || producto.descripcion || ''
