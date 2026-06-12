@@ -54,10 +54,11 @@ const ProductMainRow: React.FC<ProductMainRowProps> = ({
   const calculatedTotal = hasSessions ? sessionsTotal : Number(producto.total) || 0;
   const displayTotal = hasManual ? manualValue : calculatedTotal;
 
-  const exceedsLista = hasManual && manualValue > listaSubtotal && listaSubtotal > 0;
   const equivalente = hasManual
     ? calcularDescuentoEquivalente(precioUnit, cantidad, manualValue)
     : { porcentaje: 0, monto: 0 };
+  const isRecargo = hasManual && manualValue > listaSubtotal && listaSubtotal > 0;
+  const recargoMonto = isRecargo ? manualValue - listaSubtotal : 0;
 
   const handleManualChange = (raw: string) => {
     if (raw === '') {
@@ -198,16 +199,14 @@ const ProductMainRow: React.FC<ProductMainRowProps> = ({
                 step={1}
                 value={manualValue}
                 onChange={(e) => handleManualChange(e.target.value)}
-                className={`w-28 h-9 text-right text-sm px-2 rounded-md border ${exceedsLista ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-amber-300 focus:border-amber-500 focus:ring-amber-500/20'} bg-amber-50/40 font-semibold text-green-700 focus:outline-none focus:ring-2`}
+                className="w-28 h-9 text-right text-sm px-2 rounded-md border border-amber-300 focus:border-amber-500 focus:ring-amber-500/20 bg-amber-50/40 font-semibold text-green-700 focus:outline-none focus:ring-2"
               />
               {listaSubtotal > 0 && (
-                <div className={`text-[10px] ${exceedsLista ? 'text-red-600' : 'text-gray-500'}`}>
-                  {exceedsLista ? (
-                    <>No puede superar el precio de lista ({formatearPrecio(listaSubtotal)})</>
+                <div className="text-[10px] text-gray-500">
+                  {isRecargo ? (
+                    <>Recargo equiv.: +{formatearPrecio(recargoMonto)}</>
                   ) : (
-                    <>
-                      Desc. equiv.: {equivalente.porcentaje.toFixed(2)}% (−{formatearPrecio(equivalente.monto)})
-                    </>
+                    <>Desc. equiv.: {equivalente.porcentaje.toFixed(2)}% (−{formatearPrecio(equivalente.monto)})</>
                   )}
                 </div>
               )}
