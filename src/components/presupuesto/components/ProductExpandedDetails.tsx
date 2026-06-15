@@ -70,7 +70,8 @@ const ProductExpandedDetails: React.FC<ProductExpandedDetailsProps> = ({
   const isAccreditationProduct = 
     producto.linea_producto_id === ACREDITACION_LINEA_PRODUCTO_ID ||
     producto.nombre.toLowerCase().includes('acreditación') ||
-    producto.descripcion?.toLowerCase().includes('acreditación');
+    producto.descripcion?.toLowerCase().includes('acreditación') ||
+    (Array.isArray(producto.sessions) && producto.sessions.length > 0);
 
   return (
     <TableRow className="bg-gray-50/30">
