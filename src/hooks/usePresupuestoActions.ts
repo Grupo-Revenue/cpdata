@@ -68,6 +68,11 @@ export const usePresupuestoActions = (negocioId: string, onRefresh: () => void) 
         .select('*')
         .eq('presupuesto_id', presupuestoId);
       if (prodError) throw prodError;
+      if (!Array.isArray(productos)) {
+        throw new Error('No se pudieron leer las líneas del presupuesto original');
+      }
+
+      console.log('[clonarPresupuesto] productos origen:', productos.length);
 
       // Crear nuevo presupuesto en estado borrador con nombre correlativo
       // Obtener negocio y presupuestos existentes para generar nombre
@@ -99,31 +104,59 @@ export const usePresupuestoActions = (negocioId: string, onRefresh: () => void) 
         .single();
       if (insertError || !nuevoPresupuesto) throw insertError || new Error('No se pudo crear el presupuesto clonado');
       // Clonar productos si existen
-      if (productos && productos.length > 0) {
-        const productosClonados = productos.map((p: any) => ({
-          nombre: p.nombre,
-          descripcion: p.descripcion,
-          cantidad: p.cantidad,
-          precio_unitario: p.precio_unitario,
-          descuento_porcentaje: p.descuento_porcentaje,
-          total: p.total,
-          comentarios: p.comentarios,
-          sessions: p.sessions,
-          precio_final_manual: p.precio_final_manual ?? null,
-          presupuesto_id: nuevoPresupuesto.id
-        }));
+      if (productos.length > 0) {
+        const productosClonados = productos.map((p: any) => {
+          // Normalizar sessions: si viene como array/objeto no vacío, stringify; si está vacío o nulo, null
+          let sessionsValue: string | null = null;
+          const raw = p.sessions;
+          if (raw !== null && raw !== undefined) {
+            try {
+              const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                sessionsValue = JSON.stringify(parsed);
+              }
+            } catch {
+              sessionsValue = null;
+            }
+          }
 
-        const { error: prodInsertError } = await supabase
+          return {
+            nombre: p.nombre,
+            descripcion: p.descripcion ?? '',
+            cantidad: p.cantidad,
+            precio_unitario: p.precio_unitario,
+            descuento_porcentaje: p.descuento_porcentaje ?? 0,
+            total: p.total ?? 0,
+            comentarios: p.comentarios ?? '',
+            sessions: sessionsValue,
+            precio_final_manual: p.precio_final_manual ?? null,
+            presupuesto_id: nuevoPresupuesto.id,
+          };
+        });
+
+        const { data: insertedRows, error: prodInsertError } = await supabase
           .from('productos_presupuesto')
-          .insert(productosClonados);
-        if (prodInsertError) throw prodInsertError;
+          .insert(productosClonados)
+          .select('id');
+
+        if (prodInsertError || !insertedRows || insertedRows.length !== productos.length) {
+          console.error('[clonarPresupuesto] Falló insert de productos, haciendo rollback', {
+            error: prodInsertError,
+            esperados: productos.length,
+            insertados: insertedRows?.length ?? 0,
+          });
+          await supabase.from('presupuestos').delete().eq('id', nuevoPresupuesto.id);
+          throw prodInsertError || new Error('No se pudieron clonar todas las líneas del presupuesto');
+        }
+
+        console.log('[clonarPresupuesto] productos clonados:', insertedRows.length);
       }
 
+      await Promise.resolve(onRefresh());
       toast.success('Presupuesto clonado como borrador');
-      onRefresh();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al clonar presupuesto:', error);
-      toast.error('Error al clonar presupuesto');
+      toast.error(`Error al clonar presupuesto: ${error?.message ?? 'desconocido'}`);
     } finally {
       setLoading(false);
     }
