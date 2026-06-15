@@ -1,38 +1,43 @@
-## Problema
+# Problema
 
-Al rechazar un presupuesto y usar "Clonar como borrador", el nuevo borrador aparece sin líneas de producto. Revisando la base de datos en el negocio 5299:
+En el presupuesto, el producto "Control de Acceso" tiene 2 sesiones de acreditación guardadas (se ven correctamente en el PDF), pero al **Editar** no aparece el bloque "Detalle de Sesiones de Acreditación" para poder modificarlas.
 
-- `5299G` (borrador clonado, creado 14:15:16) tiene su único producto creado 14 minutos después → indica que el clon nació vacío y la línea se agregó a mano.
-- `5299H` (borrador clonado, creado 14:23:15) tiene su producto creado 34 s después → mismo patrón.
+# Causa
 
-El código actual de `clonarPresupuesto` en `src/hooks/usePresupuestoActions.ts` sí intenta copiar los productos, pero hay varios puntos frágiles que pueden hacer que la copia se pierda silenciosamente o que la UI no la muestre tras el clon.
+En `ProductExpandedDetails.tsx`, la detección de producto de acreditación es:
 
-## Causas probables
+```text
+linea_producto_id === ACREDITACION  OR
+nombre incluye "acreditación"  OR
+descripcion incluye "acreditación"
+```
 
-1. `select('*')` de `productos_presupuesto` puede devolver `[]` si la sesión todavía no está plenamente autenticada al momento del clic; el código entonces salta el `INSERT` sin avisar.
-2. El campo `sessions` se pasa tal cual viene de Supabase (objeto JSONB). En otras partes del proyecto (`productosPresupuestoService`) se serializa con `JSON.stringify` cuando hay sesiones — la inconsistencia puede hacer que el `INSERT` falle parcialmente o quede mal formateado.
-3. Tras el clon se llama `onRefresh()` pero no se navega al nuevo borrador; el `NegocioContext` puede tardar en refrescar y el usuario abre el clon antes de que aparezcan los productos en cache.
-4. Si el `INSERT` de productos falla, hoy se hace `throw` pero el presupuesto vacío ya quedó creado, dejando un borrador huérfano sin productos (justo el síntoma reportado).
+- La tabla `productos_presupuesto` **no tiene** la columna `linea_producto_id` (verificado en BD), así que ese check siempre da falso al editar.
+- El producto se llama "Control de Acceso" y su descripción tampoco contiene la palabra "acreditación".
+- Resultado: `isAccreditationProduct = false` → no se renderiza `<AccreditationSessionsManager>`, aunque el producto sí tenga `sessions` cargadas.
 
-## Cambios
+El PDF funciona porque renderiza las sesiones sin chequear el flag, solo mira `producto.sessions.length > 0`.
 
-### `src/hooks/usePresupuestoActions.ts` — `clonarPresupuesto`
+# Solución
 
-- Validar que la lectura de productos devuelva un array real antes de continuar. Si el `select` falla o devuelve `null`, abortar **antes** de crear el presupuesto.
-- Crear el presupuesto sólo después de tener los productos en memoria.
-- Mapear cada producto cubriendo todos los campos persistidos: `nombre`, `descripcion`, `cantidad`, `precio_unitario`, `descuento_porcentaje`, `comentarios`, `total`, `precio_final_manual`, y `sessions` normalizando como hace `productosPresupuestoService` (stringify si viene como objeto/array no vacío, `null` si está vacío).
-- Envolver la inserción de productos en try/catch: si falla, hacer `delete` del presupuesto recién creado para no dejar el borrador huérfano y mostrar `toast.error` con el detalle real (`error.message`).
-- Loggear `productos.length` antes y después del `insert` para tener trazabilidad.
-- Después del `insert` de productos, volver a leer `productos_presupuesto` del clon y verificar que la cantidad coincida; si no coincide, avisar al usuario.
-- Llamar `await onRefresh()` y, si `onRefresh` retorna promesa, esperar antes de mostrar el toast de éxito.
+Agregar una condición extra: también tratar el producto como de acreditación cuando **ya tiene `sessions` guardadas** (array con al menos 1 elemento). Así cualquier producto que tenga sesiones persistidas (como "Control de Acceso") muestra el editor de sesiones en Editar.
 
-### Verificación
+## Cambio
 
-- Probar el clon desde un presupuesto `rechazado` con varias líneas (incluido uno con sesiones de acreditación) y confirmar que el borrador resultante muestra todas las líneas inmediatamente.
-- Confirmar en consola los logs nuevos (`[clonarPresupuesto] productos origen: N`, `productos clonados: N`).
-- Confirmar en DB con una consulta puntual que `productos_presupuesto.count` del clon coincide con el original.
+**`src/components/presupuesto/components/ProductExpandedDetails.tsx`** (líneas 69-73):
 
-## Fuera de alcance
+```text
+const isAccreditationProduct =
+  producto.linea_producto_id === ACREDITACION_LINEA_PRODUCTO_ID ||
+  producto.nombre.toLowerCase().includes('acreditación') ||
+  producto.descripcion?.toLowerCase().includes('acreditación') ||
+  (Array.isArray(producto.sessions) && producto.sessions.length > 0); // NUEVO
+```
 
-- No se modifica el cálculo de totales ni la lógica de `precio_final_manual` ya implementada.
-- No se cambian políticas RLS ni el esquema de la tabla.
+No se toca lógica de cálculo, PDF, ni la creación de productos nuevos desde la biblioteca (esos siguen detectándose por `linea_producto_id`/nombre como hoy).
+
+# Fuera de alcance
+
+- Agregar columna `linea_producto_id` a `productos_presupuesto` (cambio mayor de schema/migraciones).
+- Cambios en cálculo de totales, precio manual, o en el PDF.
+- Cambios en el clonado de presupuestos.
